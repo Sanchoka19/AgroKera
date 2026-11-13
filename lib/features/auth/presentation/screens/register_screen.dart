@@ -9,14 +9,13 @@ import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/primary_button.dart';
 import 'role_selection_screen.dart';
 
-/// Screen: რეგისტრაცია (Universal Quick Sign Up Screen)
-/// Follows Figma aesthetic & progressive onboarding:
-/// - Header with chevron back button & centered "რეგისტრაცია"
-/// - Official SignIn.svg illustration
-/// - Full Name, Email, Phone, and Password input fields
-/// - "რეგისტრაცია" primary CTA button -> proceeds to Role Selection
-/// - "ან გააგრძელე" divider & Google 1-click Sign-Up
-/// - "უკვე გაქვთ ანგარიში? შესვლა" bottom prompt
+/// Screen: რეგისტრაცია (Universal Quick Sign-Up Screen)
+/// One-Screen / No-Scroll Architecture:
+/// - Prominent 1-click Google Sign-Up at the top (highest conversion)
+/// - "ან ელ.ფოსტით" divider
+/// - Only 3 essential fields: Full Name, Email, Password (phone deferred to order/farmer KYC)
+/// - Fits 100% on screen without scrolling
+/// - Leads directly to Role Selection
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
 
@@ -27,7 +26,6 @@ class RegisterScreen extends ConsumerStatefulWidget {
 class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
-  final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
 
@@ -35,7 +33,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   void dispose() {
     _nameController.dispose();
     _emailController.dispose();
-    _phoneController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -43,14 +40,25 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   void _onSignUp() {
     final name = _nameController.text.trim();
     final email = _emailController.text.trim();
-    final phone = _phoneController.text.trim();
 
-    // Register basic credentials in state, then guide to role selection
     ref.read(authStateProvider.notifier).register(
       role: UserRole.customer,
       name: name.isNotEmpty ? name : 'მომხმარებელი',
       email: email.isNotEmpty ? email : 'example@gmail.com',
-      phone: phone.isNotEmpty ? phone : '+995 599 00 00 00',
+    );
+
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const RoleSelectionScreen(),
+      ),
+    );
+  }
+
+  void _onGoogleSignUp() {
+    ref.read(authStateProvider.notifier).register(
+      role: UserRole.customer,
+      name: 'Google მომხმარებელი',
+      email: 'user@gmail.com',
     );
 
     Navigator.of(context).push(
@@ -83,114 +91,38 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Illustration
-              Center(
-                child: SizedBox(
-                  height: 130,
-                  child: SvgPicture.asset(
-                    AppAssets.signIn,
-                    fit: BoxFit.contain,
-                  ),
+              // Header text
+              Text(
+                'შექმენი ანგარიში',
+                style: AppTypography.h2.copyWith(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textPrimary,
                 ),
               ),
-              const SizedBox(height: 24),
-
-              // Full Name
-              _buildInputLabel('სრული სახელი', isRequired: true),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _nameController,
-                textCapitalization: TextCapitalization.words,
-                style: const TextStyle(fontSize: 15, color: AppColors.textPrimary),
-                decoration: _buildInputDecoration(hint: 'გიორგი ბერიძე'),
-              ),
-              const SizedBox(height: 16),
-
-              // Email
-              _buildInputLabel('ელ.ფოსტა', isRequired: true),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _emailController,
-                keyboardType: TextInputType.emailAddress,
-                style: const TextStyle(fontSize: 15, color: AppColors.textPrimary),
-                decoration: _buildInputDecoration(hint: 'example@gmail.com'),
-              ),
-              const SizedBox(height: 16),
-
-              // Phone number
-              _buildInputLabel('ტელეფონის ნომერი', isRequired: false),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _phoneController,
-                keyboardType: TextInputType.phone,
-                style: const TextStyle(fontSize: 15, color: AppColors.textPrimary),
-                decoration: _buildInputDecoration(hint: '+995 599 12 34 56'),
-              ),
-              const SizedBox(height: 16),
-
-              // Password
-              _buildInputLabel('პაროლი', isRequired: true),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _passwordController,
-                obscureText: _obscurePassword,
-                style: const TextStyle(fontSize: 15, color: AppColors.textPrimary),
-                decoration: _buildInputDecoration(
-                  hint: '********',
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscurePassword ? LucideIcons.eyeOff : LucideIcons.eye,
-                      size: 20,
-                      color: const Color(0xFF334155),
-                    ),
-                    onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
-                  ),
+              const SizedBox(height: 4),
+              Text(
+                'დარეგისტრირდი და დაიწყე ნატურალური პროდუქტების შეძენა',
+                style: AppTypography.caption.copyWith(
+                  fontSize: 13,
+                  color: const Color(0xFF64748B),
                 ),
-              ),
-              const SizedBox(height: 28),
-
-              // Primary "რეგისტრაცია" CTA button
-              PrimaryButton(
-                text: 'რეგისტრაცია',
-                borderRadius: BorderRadius.circular(12),
-                height: 52,
-                onPressed: _onSignUp,
-              ),
-              const SizedBox(height: 24),
-
-              // "ან გააგრძელე" Divider
-              Row(
-                children: [
-                  const Expanded(child: Divider(color: Color(0xFFCBD5E1), thickness: 1)),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: Text(
-                      'ან გააგრძელე',
-                      style: AppTypography.caption.copyWith(
-                        color: const Color(0xFF64748B),
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                  const Expanded(child: Divider(color: Color(0xFFCBD5E1), thickness: 1)),
-                ],
               ),
               const SizedBox(height: 20),
 
-              // Google OAuth Button
+              // 1. Google 1-Click Fast Sign-Up Button at the top
               InkWell(
-                onTap: _onSignUp,
-                borderRadius: BorderRadius.circular(26),
+                onTap: _onGoogleSignUp,
+                borderRadius: BorderRadius.circular(14),
                 child: Container(
-                  height: 52,
+                  height: 50,
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(26),
+                    borderRadius: BorderRadius.circular(14),
                     border: Border.all(color: const Color(0xFFE2E8F0), width: 1.2),
                   ),
                   child: Row(
@@ -214,7 +146,79 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 18),
+
+              // Divider "ან ელ.ფოსტით"
+              Row(
+                children: [
+                  const Expanded(child: Divider(color: Color(0xFFCBD5E1), thickness: 1)),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: Text(
+                      'ან ელ.ფოსტით',
+                      style: AppTypography.caption.copyWith(
+                        color: const Color(0xFF64748B),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                  const Expanded(child: Divider(color: Color(0xFFCBD5E1), thickness: 1)),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              // 2. Full Name
+              _buildInputLabel('სრული სახელი', isRequired: true),
+              const SizedBox(height: 6),
+              TextField(
+                controller: _nameController,
+                textCapitalization: TextCapitalization.words,
+                style: const TextStyle(fontSize: 15, color: AppColors.textPrimary),
+                decoration: _buildInputDecoration(hint: 'გიორგი ბერიძე'),
+              ),
+              const SizedBox(height: 14),
+
+              // 3. Email
+              _buildInputLabel('ელ.ფოსტა', isRequired: true),
+              const SizedBox(height: 6),
+              TextField(
+                controller: _emailController,
+                keyboardType: TextInputType.emailAddress,
+                style: const TextStyle(fontSize: 15, color: AppColors.textPrimary),
+                decoration: _buildInputDecoration(hint: 'example@gmail.com'),
+              ),
+              const SizedBox(height: 14),
+
+              // 4. Password
+              _buildInputLabel('პაროლი', isRequired: true),
+              const SizedBox(height: 6),
+              TextField(
+                controller: _passwordController,
+                obscureText: _obscurePassword,
+                style: const TextStyle(fontSize: 15, color: AppColors.textPrimary),
+                decoration: _buildInputDecoration(
+                  hint: '********',
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscurePassword ? LucideIcons.eyeOff : LucideIcons.eye,
+                      size: 20,
+                      color: const Color(0xFF334155),
+                    ),
+                    onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 22),
+
+              // Primary "რეგისტრაცია" CTA button
+              PrimaryButton(
+                text: 'რეგისტრაცია',
+                borderRadius: BorderRadius.circular(12),
+                height: 50,
+                onPressed: _onSignUp,
+              ),
+              const SizedBox(height: 20),
 
               // Bottom prompt: "უკვე გაქვთ ანგარიში? შესვლა"
               Center(
@@ -241,7 +245,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 16),
             ],
           ),
         ),
@@ -275,7 +279,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 15),
       filled: true,
       fillColor: Colors.white,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
       suffixIcon: suffixIcon,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),

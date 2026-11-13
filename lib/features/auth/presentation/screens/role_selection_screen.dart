@@ -49,13 +49,26 @@ class RoleSelectionScreen extends StatelessWidget {
                   context: context,
                   title: 'მე ვარ ფერმერი',
                   subtitle: 'მოაწყვე და მართე შენი ფერმა',
-                  illustration: ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
-                    child: SizedBox(
-                      height: 130,
+                  illustration: Container(
+                    width: 120,
+                    height: 120,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.08),
+                          blurRadius: 10,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                      border: Border.all(color: const Color(0xFFF1F5F9), width: 2.5),
+                    ),
+                    child: ClipOval(
                       child: SvgPicture.asset(
                         AppAssets.farmerRole,
-                        fit: BoxFit.contain,
+                        width: 120,
+                        height: 120,
+                        fit: BoxFit.cover,
                       ),
                     ),
                   ),
@@ -78,13 +91,26 @@ class RoleSelectionScreen extends StatelessWidget {
                   context: context,
                   title: 'მე ვარ მომხმარებელი',
                   subtitle: 'იყიდე ეკოლოგიურად სუფთა პროდუქტები',
-                  illustration: ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
-                    child: SizedBox(
-                      height: 130,
+                  illustration: Container(
+                    width: 120,
+                    height: 120,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.08),
+                          blurRadius: 10,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                      border: Border.all(color: const Color(0xFFF1F5F9), width: 2.5),
+                    ),
+                    child: ClipOval(
                       child: Image.asset(
                         AppAssets.customerRole,
-                        fit: BoxFit.contain,
+                        width: 120,
+                        height: 120,
+                        fit: BoxFit.cover,
                       ),
                     ),
                   ),

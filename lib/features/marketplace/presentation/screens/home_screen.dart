@@ -74,13 +74,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const SizedBox(height: 12),
-                    // App Bar: Logo + Wishlist & Cart Icons
+                    // App Bar: Logo + Search, Wishlist & Cart Icons
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         const AppLogo(),
                         Row(
                           children: [
+                            IconButton(
+                              onPressed: widget.onSearchTap,
+                              icon: const Icon(
+                                LucideIcons.search,
+                                size: 24,
+                                color: AppColors.primary,
+                              ),
+                            ),
                             IconButton(
                               onPressed: () {
                                 requireAuth(
@@ -124,37 +132,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           ],
                         ),
                       ],
-                    ),
-                    const SizedBox(height: 14),
-
-                    // Search Bar
-                    GestureDetector(
-                      onTap: widget.onSearchTap,
-                      child: Container(
-                        height: 48,
-                        decoration: BoxDecoration(
-                          color: AppColors.surface,
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: AppColors.border, width: 1),
-                        ),
-                        padding: const EdgeInsets.symmetric(horizontal: 14),
-                        child: Row(
-                          children: [
-                            const Icon(
-                              LucideIcons.search,
-                              size: 20,
-                              color: AppColors.textSecondary,
-                            ),
-                            const SizedBox(width: 10),
-                            Text(
-                              'მომძებნე აქ ...',
-                              style: AppTypography.bodyMedium.copyWith(
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
                     ),
                     const SizedBox(height: 16),
 

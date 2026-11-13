@@ -547,13 +547,33 @@ class _GlobalSearchDialogState extends State<GlobalSearchDialog> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text(
-                  '₾${product.price.toStringAsFixed(0)}/${product.unit}',
-                  style: AppTypography.titleMedium.copyWith(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 15,
-                  ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: [
+                    Text(
+                      '₾${product.price.toStringAsFixed(0)}/${product.unit}',
+                      style: AppTypography.titleMedium.copyWith(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 15,
+                      ),
+                    ),
+                    if (product.effectiveOriginalPrice != null) ...[
+                      const SizedBox(width: 4),
+                      Text(
+                        '₾${product.effectiveOriginalPrice!.toStringAsFixed(0)}',
+                        style: AppTypography.caption.copyWith(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                          color: AppColors.textSecondary,
+                          decoration: TextDecoration.lineThrough,
+                          decorationColor: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
                 if (product.discountPercent != null) ...[
                   const SizedBox(height: 2),

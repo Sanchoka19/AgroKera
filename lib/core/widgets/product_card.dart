@@ -184,13 +184,32 @@ class ProductCard extends StatelessWidget {
                                 : AppColors.accentWarm,
                           ),
                         ),
-                        Text(
-                          '₾${product.price.toStringAsFixed(0)}/${product.unit}',
-                          style: AppTypography.titleMedium.copyWith(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.textPrimary,
-                          ),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.baseline,
+                          textBaseline: TextBaseline.alphabetic,
+                          children: [
+                            Text(
+                              '₾${product.price.toStringAsFixed(0)}/${product.unit}',
+                              style: AppTypography.titleMedium.copyWith(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                            if (product.effectiveOriginalPrice != null) ...[
+                              const SizedBox(width: 4),
+                              Text(
+                                '₾${product.effectiveOriginalPrice!.toStringAsFixed(0)}',
+                                style: AppTypography.caption.copyWith(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                  color: AppColors.textSecondary,
+                                  decoration: TextDecoration.lineThrough,
+                                  decorationColor: AppColors.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
                       ],
                     ),

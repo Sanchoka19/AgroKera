@@ -438,13 +438,33 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                         color: AppColors.textSecondary,
                       ),
                     ),
-                    Text(
-                      '₾${totalPrice.toStringAsFixed(2)}',
-                      style: AppTypography.h1.copyWith(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.primary,
-                      ),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.baseline,
+                      textBaseline: TextBaseline.alphabetic,
+                      children: [
+                        Text(
+                          '₾${totalPrice.toStringAsFixed(2)}',
+                          style: AppTypography.h1.copyWith(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                        if (product.effectiveOriginalPrice != null) ...[
+                          const SizedBox(width: 8),
+                          Text(
+                            '₾${(product.effectiveOriginalPrice! * _quantity).toStringAsFixed(2)}',
+                            style: AppTypography.bodyMedium.copyWith(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textSecondary,
+                              decoration: TextDecoration.lineThrough,
+                              decorationColor: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ],
                 ),

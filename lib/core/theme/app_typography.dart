@@ -12,48 +12,53 @@ abstract final class AppTypography {
   ];
 
   /// Display / Screen Title: 24px, FontWeight.w700
-  static TextStyle get h1 => GoogleFonts.inter(
+  static TextStyle get h1 => GoogleFonts.notoSansGeorgian(
     fontSize: 24,
     fontWeight: FontWeight.w700,
     color: AppColors.textPrimary,
     letterSpacing: -0.4,
+    height: 1.25,
   ).copyWith(fontFamilyFallback: fontFallbacks);
 
   /// Section Header: 18px, FontWeight.w700
-  static TextStyle get h2 => GoogleFonts.inter(
+  static TextStyle get h2 => GoogleFonts.notoSansGeorgian(
     fontSize: 18,
     fontWeight: FontWeight.w700,
     color: AppColors.textPrimary,
     letterSpacing: -0.2,
+    height: 1.25,
   ).copyWith(fontFamilyFallback: fontFallbacks);
 
   /// Card Title / Product Name: 16px, FontWeight.w600
-  static TextStyle get titleMedium => GoogleFonts.inter(
+  static TextStyle get titleMedium => GoogleFonts.notoSansGeorgian(
     fontSize: 16,
     fontWeight: FontWeight.w600,
     color: AppColors.textPrimary,
+    height: 1.25,
   ).copyWith(fontFamilyFallback: fontFallbacks);
 
   /// Body / Description: 14px, FontWeight.w400
-  static TextStyle get bodyMedium => GoogleFonts.inter(
+  static TextStyle get bodyMedium => GoogleFonts.notoSansGeorgian(
     fontSize: 14,
     fontWeight: FontWeight.w400,
     color: AppColors.textPrimary,
-    height: 1.4,
+    height: 1.35,
   ).copyWith(fontFamilyFallback: fontFallbacks);
 
   /// Caption / Unit / Badge: 12px, FontWeight.w500
-  static TextStyle get caption => GoogleFonts.inter(
+  static TextStyle get caption => GoogleFonts.notoSansGeorgian(
     fontSize: 12,
     fontWeight: FontWeight.w500,
     color: AppColors.textSecondary,
+    height: 1.2,
   ).copyWith(fontFamilyFallback: fontFallbacks);
 
-  /// Primary Button label: 16px, FontWeight.w600
-  static TextStyle get button => GoogleFonts.inter(
-    fontSize: 16,
+  /// Primary Button label: 15.5px, FontWeight.w600, with dedicated Georgian descender clearance
+  static TextStyle get button => GoogleFonts.notoSansGeorgian(
+    fontSize: 15.5,
     fontWeight: FontWeight.w600,
     color: AppColors.textOnPrimary,
+    height: 1.25,
   ).copyWith(fontFamilyFallback: fontFallbacks);
 
   /// Material 3 TextTheme mapped with the Design System tokens

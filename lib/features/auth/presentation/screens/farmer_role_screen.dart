@@ -163,6 +163,7 @@ class FarmerRoleScreen extends ConsumerWidget {
                               color: AppColors.textPrimary,
                               fontSize: 15,
                               fontWeight: FontWeight.w600,
+                              height: 1.25,
                             ),
                           ),
                         ),

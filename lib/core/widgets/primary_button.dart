@@ -58,6 +58,7 @@ class PrimaryButton extends StatelessWidget {
                   text,
                   style: AppTypography.button.copyWith(
                     color: effectiveTextColor,
+                    height: 1.25,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -70,6 +71,7 @@ class PrimaryButton extends StatelessWidget {
         ? OutlinedButton.styleFrom(
             foregroundColor: effectiveTextColor,
             minimumSize: Size(width ?? double.infinity, height),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
             shape: RoundedRectangleBorder(borderRadius: effectiveBorderRadius),
             side: BorderSide(
               color: backgroundColor ?? AppColors.primary,
@@ -82,6 +84,7 @@ class PrimaryButton extends StatelessWidget {
             disabledBackgroundColor: AppColors.disabled,
             elevation: 0,
             minimumSize: Size(width ?? double.infinity, height),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
             shape: RoundedRectangleBorder(borderRadius: effectiveBorderRadius),
           );
 

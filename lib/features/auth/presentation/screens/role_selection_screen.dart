@@ -166,13 +166,14 @@ class RoleSelectionScreen extends StatelessWidget {
               // Green Button
               SizedBox(
                 width: double.infinity,
-                height: 46,
+                height: 48,
                 child: ElevatedButton(
                   onPressed: onTap,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
                     elevation: 0,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),
@@ -183,6 +184,7 @@ class RoleSelectionScreen extends StatelessWidget {
                       color: Colors.white,
                       fontSize: 15.5,
                       fontWeight: FontWeight.w700,
+                      height: 1.25,
                     ),
                   ),
                 ),

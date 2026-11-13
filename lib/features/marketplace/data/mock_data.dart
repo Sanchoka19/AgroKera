@@ -88,6 +88,24 @@ abstract final class MockData {
           'საგვარეულო მეურნეობა თელავში. ვამარაგებთ რესტორნებსა და კერძო კლიენტებს ახალი ბოსტნეულითა და მწვანილეულით.',
       phone: '+995 599 11 22 33',
     ),
+    FarmerModel(
+      id: 'farmer_3',
+      farmName: 'ალაზნის ბაღები',
+      farmerName: 'დავით ნოზაძე',
+      location: 'ყვარელი, კახეთი',
+      rating: 4.8,
+      reviewCount: 65,
+      totalRatings: 110,
+      isVerified: true,
+      isVatPayer: true,
+      avatarUrl:
+          'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&auto=format&fit=crop&q=80',
+      coverUrl:
+          'https://images.unsplash.com/photo-1464965911861-746a04b4bca6?w=1000&auto=format&fit=crop&q=80',
+      about:
+          'ალაზნის ველზე გაშენებული მრავალწლიანი ხეხილისა და ციტრუსის ბაღები. 100% ნატურალური და მზით გამთბარი მოსავალი ყვარლიდან.',
+      phone: '+995 599 44 55 66',
+    ),
   ];
 
   static const List<ProductModel> products = [

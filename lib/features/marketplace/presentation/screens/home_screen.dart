@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -22,13 +24,38 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
-  final int _currentBannerIndex = 0;
+  late final PageController _bannerController;
+  Timer? _bannerTimer;
+  int _currentBannerIndex = 0;
 
   final List<String> _bannerImages = const [
     'https://images.unsplash.com/photo-1537640538966-79f369143f8f?w=1000&auto=format&fit=crop&q=80',
     'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=1000&auto=format&fit=crop&q=80',
     'https://images.unsplash.com/photo-1464965911861-746a04b4bca6?w=1000&auto=format&fit=crop&q=80',
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _bannerController = PageController();
+    _bannerTimer = Timer.periodic(const Duration(seconds: 4), (timer) {
+      if (_bannerController.hasClients) {
+        final nextIndex = (_currentBannerIndex + 1) % _bannerImages.length;
+        _bannerController.animateToPage(
+          nextIndex,
+          duration: const Duration(milliseconds: 600),
+          curve: Curves.easeInOut,
+        );
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _bannerTimer?.cancel();
+    _bannerController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -133,51 +160,91 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 const SizedBox(height: 16),
               ],
 
-              // Hero Carousel Banner (Grapes)
-              Stack(
-                alignment: Alignment.bottomCenter,
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
-                    child: Image.network(
-                      _bannerImages[_currentBannerIndex],
-                      height: 180,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => Container(
-                        height: 180,
-                        width: double.infinity,
-                        color: AppColors.surfaceInput,
-                        alignment: Alignment.center,
-                        child: const Icon(
-                          LucideIcons.image,
-                          color: AppColors.textSecondary,
-                          size: 40,
-                        ),
+              // Hero Carousel Banner with Auto-slide & subtle blur
+              ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: SizedBox(
+                  height: 180,
+                  width: double.infinity,
+                  child: Stack(
+                    children: [
+                      PageView.builder(
+                        controller: _bannerController,
+                        onPageChanged: (idx) {
+                          setState(() => _currentBannerIndex = idx);
+                        },
+                        itemCount: _bannerImages.length,
+                        itemBuilder: (context, index) {
+                          return Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              Image.network(
+                                _bannerImages[index],
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) =>
+                                    Container(
+                                  color: AppColors.surfaceInput,
+                                  alignment: Alignment.center,
+                                  child: const Icon(
+                                    LucideIcons.image,
+                                    color: AppColors.textSecondary,
+                                    size: 40,
+                                  ),
+                                ),
+                              ),
+                              // Subtle blur overlay as requested by user
+                              BackdropFilter(
+                                filter: ImageFilter.blur(
+                                  sigmaX: 1.5,
+                                  sigmaY: 1.5,
+                                ),
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      begin: Alignment.topCenter,
+                                      end: Alignment.bottomCenter,
+                                      colors: [
+                                        Colors.black.withValues(alpha: 0.15),
+                                        Colors.transparent,
+                                        Colors.black.withValues(alpha: 0.35),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          );
+                        },
                       ),
-                    ),
-                  ),
-                  Positioned(
-                    bottom: 10,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: List.generate(
-                        _bannerImages.length,
-                        (index) => Container(
-                          width: index == _currentBannerIndex ? 18 : 6,
-                          height: 6,
-                          margin: const EdgeInsets.symmetric(horizontal: 3),
-                          decoration: BoxDecoration(
-                            color: index == _currentBannerIndex
-                                ? AppColors.primary
-                                : Colors.white.withValues(alpha: 0.6),
-                            borderRadius: BorderRadius.circular(3),
+                      // Carousel Indicator Dots
+                      Positioned(
+                        bottom: 10,
+                        left: 0,
+                        right: 0,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: List.generate(
+                            _bannerImages.length,
+                            (index) => AnimatedContainer(
+                              duration: const Duration(milliseconds: 300),
+                              width: index == _currentBannerIndex ? 18 : 6,
+                              height: 6,
+                              margin: const EdgeInsets.symmetric(
+                                horizontal: 3,
+                              ),
+                              decoration: BoxDecoration(
+                                color: index == _currentBannerIndex
+                                    ? AppColors.primary
+                                    : Colors.white.withValues(alpha: 0.65),
+                                borderRadius: BorderRadius.circular(3),
+                              ),
+                            ),
                           ),
                         ),
                       ),
-                    ),
+                    ],
                   ),
-                ],
+                ),
               ),
               const SizedBox(height: 22),
 
@@ -221,7 +288,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         );
                       },
                       child: Container(
-                        width: 200,
+                        width: 165,
                         decoration: BoxDecoration(
                           color: AppColors.surface,
                           borderRadius: BorderRadius.circular(16),
@@ -233,12 +300,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             Image.network(
                               farmer.coverUrl,
                               height: 140,
-                              width: 200,
+                              width: 165,
                               fit: BoxFit.cover,
                               errorBuilder: (context, error, stackTrace) =>
                                   Container(
                                     height: 140,
-                                    width: 200,
+                                    width: 165,
                                     color: AppColors.surfaceInput,
                                     alignment: Alignment.center,
                                     child: const Icon(
@@ -330,7 +397,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   crossAxisCount: 2,
                   crossAxisSpacing: 12,
                   mainAxisSpacing: 12,
-                  childAspectRatio: 0.67,
+                  childAspectRatio: 0.73,
                 ),
                 itemCount: MockData.products.length,
                 itemBuilder: (context, index) {

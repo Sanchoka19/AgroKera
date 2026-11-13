@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -11,12 +10,12 @@ import '../../data/mock_data.dart';
 import '../../data/models/farmer_model.dart';
 import 'product_details_screen.dart';
 
-/// Farmer Profile Screen adhering to Screenshot 11 & user refinements:
-/// - Transparent floating back button & title matching ProductDetailsScreen
-/// - Cover photo header in SliverAppBar
-/// - Frosted Glass Card under Avatar, Name, Location & Rating for high contrast & elegance
-/// - Single unified CustomScrollView (no double scrollbars, no cut-offs)
-/// - Full-height Product Grid showing complete product cards with price & unit
+/// Farmer Profile Screen exactly matching Screenshot:
+/// - Cover photo header with translucent back button, farm name & VAT badge
+/// - White profile card with circular avatar, farmer name, location & 5-star ratings
+/// - "გაიცანი ჩვენი ფერმერი" green CTA button
+/// - "პროდუქტები" / "ფერმის შესახებ" tabs
+/// - 2-column Grid of Product Cards
 class FarmerProfileScreen extends ConsumerStatefulWidget {
   final FarmerModel farmer;
 
@@ -60,9 +59,9 @@ class _FarmerProfileScreenState extends ConsumerState<FarmerProfileScreen>
       backgroundColor: AppColors.bgPrimary,
       body: CustomScrollView(
         slivers: [
-          // 1. Transparent / Translucent Header like Product Details Screen
+          // 1. Cover Photo Header with Back Button, Title & VAT badge
           SliverAppBar(
-            expandedHeight: 220,
+            expandedHeight: 200,
             pinned: true,
             backgroundColor: AppColors.bgPrimary,
             elevation: 0,
@@ -70,7 +69,7 @@ class _FarmerProfileScreenState extends ConsumerState<FarmerProfileScreen>
             leading: Padding(
               padding: const EdgeInsets.all(8.0),
               child: CircleAvatar(
-                backgroundColor: Colors.white.withValues(alpha: 0.85),
+                backgroundColor: Colors.white.withValues(alpha: 0.90),
                 child: IconButton(
                   icon: const Icon(
                     LucideIcons.chevronLeft,
@@ -101,7 +100,7 @@ class _FarmerProfileScreenState extends ConsumerState<FarmerProfileScreen>
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.90),
+                      color: Colors.white.withValues(alpha: 0.92),
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
                         color: AppColors.info.withValues(alpha: 0.3),
@@ -145,7 +144,6 @@ class _FarmerProfileScreenState extends ConsumerState<FarmerProfileScreen>
                     errorBuilder: (context, error, stackTrace) =>
                         Container(color: AppColors.primaryLight),
                   ),
-                  // Gradient shadow for top bar readability
                   Positioned.fill(
                     child: Container(
                       decoration: BoxDecoration(
@@ -153,9 +151,9 @@ class _FarmerProfileScreenState extends ConsumerState<FarmerProfileScreen>
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
                           colors: [
-                            Colors.black.withValues(alpha: 0.45),
+                            Colors.black.withValues(alpha: 0.40),
                             Colors.transparent,
-                            Colors.black.withValues(alpha: 0.25),
+                            Colors.black.withValues(alpha: 0.15),
                           ],
                         ),
                       ),
@@ -166,145 +164,119 @@ class _FarmerProfileScreenState extends ConsumerState<FarmerProfileScreen>
             ),
           ),
 
-          // 2. Frosted Glass Profile Card (Avatar, Name, Location & Ratings)
+          // 2. White Profile Card (Matching Screenshot)
           SliverToBoxAdapter(
-            child: Transform.translate(
-              offset: const Offset(0, -24),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(20),
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-                    child: Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: AppColors.surface.withValues(alpha: 0.92),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.7),
-                          width: 1.5,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.08),
-                            blurRadius: 16,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              // Avatar
-                              Container(
-                                width: 70,
-                                height: 70,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: AppColors.primary,
-                                    width: 2.5,
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withValues(
-                                        alpha: 0.12,
-                                      ),
-                                      blurRadius: 8,
-                                    ),
-                                  ],
-                                ),
-                                child: ClipOval(
-                                  child: Image.network(
-                                    farmer.avatarUrl,
-                                    fit: BoxFit.cover,
-                                    errorBuilder:
-                                        (context, error, stackTrace) =>
-                                            Container(
-                                              color: AppColors.primaryLight,
-                                            ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 14),
-                              // Farmer Name & Location
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      farmer.farmerName,
-                                      style: AppTypography.h2.copyWith(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.w800,
-                                        color: AppColors.textPrimary,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 3),
-                                    Row(
-                                      children: [
-                                        const Icon(
-                                          LucideIcons.mapPin,
-                                          size: 14,
-                                          color: AppColors.primary,
-                                        ),
-                                        const SizedBox(width: 4),
-                                        Expanded(
-                                          child: Text(
-                                            farmer.location,
-                                            style:
-                                                AppTypography.caption.copyWith(
-                                              color: AppColors.textSecondary,
-                                              fontSize: 12.5,
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          const Divider(height: 1, color: AppColors.border),
-                          const SizedBox(height: 10),
-                          // Rating row
-                          Row(
-                            children: [
-                              ...List.generate(
-                                5,
-                                (index) => const Icon(
-                                  Icons.star_rounded,
-                                  size: 19,
-                                  color: AppColors.rating,
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                              Expanded(
-                                child: Text(
-                                  '${farmer.rating} (${farmer.reviewCount}) (${farmer.totalRatings} შეფასება)',
-                                  style: AppTypography.caption.copyWith(
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 12,
-                                    color: AppColors.textPrimary,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
                     ),
-                  ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        // Avatar
+                        Container(
+                          width: 64,
+                          height: 64,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: AppColors.primary,
+                              width: 2.5,
+                            ),
+                          ),
+                          child: ClipOval(
+                            child: Image.network(
+                              farmer.avatarUrl,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  Container(color: AppColors.primaryLight),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        // Farmer Name & Location
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                farmer.farmerName,
+                                style: AppTypography.h2.copyWith(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                              const SizedBox(height: 3),
+                              Row(
+                                children: [
+                                  const Icon(
+                                    LucideIcons.mapPin,
+                                    size: 14,
+                                    color: AppColors.primary,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Expanded(
+                                    child: Text(
+                                      farmer.location,
+                                      style: AppTypography.caption.copyWith(
+                                        color: AppColors.textSecondary,
+                                        fontSize: 12.5,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    const Divider(height: 1, color: AppColors.border),
+                    const SizedBox(height: 10),
+                    // Rating row
+                    Row(
+                      children: [
+                        ...List.generate(
+                          5,
+                          (index) => const Icon(
+                            Icons.star_rounded,
+                            size: 19,
+                            color: AppColors.rating,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            '${farmer.rating} (${farmer.reviewCount}) (${farmer.totalRatings} შეფასება)',
+                            style: AppTypography.caption.copyWith(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 12.5,
+                              color: AppColors.textPrimary,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -313,7 +285,7 @@ class _FarmerProfileScreenState extends ConsumerState<FarmerProfileScreen>
           // 3. Action Button: "გაიცანი ჩვენი ფერმერი"
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
               child: PrimaryButton(
                 text: 'გაიცანი ჩვენი ფერმერი',
                 onPressed: () {
@@ -400,7 +372,7 @@ class _FarmerProfileScreenState extends ConsumerState<FarmerProfileScreen>
                         crossAxisCount: 2,
                         crossAxisSpacing: 12,
                         mainAxisSpacing: 12,
-                        childAspectRatio: 0.70,
+                        childAspectRatio: 0.73,
                       ),
                   delegate: SliverChildBuilderDelegate(
                     (context, index) {

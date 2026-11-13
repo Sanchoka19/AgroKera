@@ -161,7 +161,7 @@ class ProductCard extends StatelessWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 10),
 
                   // Stock status & Price + (+) Button
                   Row(

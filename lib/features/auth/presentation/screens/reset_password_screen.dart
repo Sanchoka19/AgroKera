@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import '../../../../core/constants/app_assets.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/primary_button.dart';
@@ -89,6 +91,18 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      // Illustration
+                      Center(
+                        child: SizedBox(
+                          height: 140,
+                          child: SvgPicture.asset(
+                            AppAssets.verification,
+                            fit: BoxFit.contain,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+
                       // Info description
                       Text(
                         'თქვენი ახალი პაროლი განსხვავებული უნდა იყოს ძველი პაროლისგან',
@@ -98,7 +112,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                           height: 1.45,
                         ),
                       ),
-                      const SizedBox(height: 28),
+                      const SizedBox(height: 24),
 
                       // Field 1: ახალი პაროლი *
                       RichText(

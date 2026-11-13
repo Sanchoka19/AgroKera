@@ -385,7 +385,7 @@ class _FarmerProfileScreenState extends ConsumerState<FarmerProfileScreen>
                           crossAxisCount: 2,
                           crossAxisSpacing: 12,
                           mainAxisSpacing: 12,
-                          childAspectRatio: 0.73,
+                          childAspectRatio: 0.64,
                         ),
                     itemCount: farmerProducts.length,
                     itemBuilder: (context, index) {

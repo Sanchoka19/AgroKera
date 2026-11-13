@@ -28,8 +28,17 @@ void main() {
     expect(find.text('ჩემი მისამართი'), findsOneWidget);
     expect(find.text('საბანკო ანგარიშები'), findsOneWidget);
 
-    // Section 2 Header & Item
+    // Section 2: პარამეტრები
+    expect(find.text('პარამეტრები'), findsOneWidget);
+    expect(find.text('აპლიკაციის ენა'), findsOneWidget);
+    expect(find.text('შეტყობინებები'), findsOneWidget);
+
+    // Section 3: დახმარება და მხარდაჭერა
     expect(find.text('დახმარება და მხარდაჭერა'), findsOneWidget);
     expect(find.text('დახმარების ცენტრი'), findsOneWidget);
+
+    // Footer Version
+    expect(find.text('აგროკერა • ვერსია 1.0.0'), findsOneWidget);
   });
 }
+

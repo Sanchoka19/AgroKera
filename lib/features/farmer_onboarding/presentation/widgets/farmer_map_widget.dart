@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart' hide Path;
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -233,6 +234,7 @@ class _FarmerMapWidgetState extends State<FarmerMapWidget> {
   }
 
   void _onMapTap(TapPosition tapPosition, LatLng point) {
+    HapticFeedback.lightImpact();
     setState(() {
       _pinnedLocation = point;
     });
@@ -240,6 +242,7 @@ class _FarmerMapWidgetState extends State<FarmerMapWidget> {
   }
 
   void _zoomIn() {
+    HapticFeedback.selectionClick();
     setState(() {
       _currentZoom = (_currentZoom + 1).clamp(3.0, 18.0);
     });
@@ -247,6 +250,7 @@ class _FarmerMapWidgetState extends State<FarmerMapWidget> {
   }
 
   void _zoomOut() {
+    HapticFeedback.selectionClick();
     setState(() {
       _currentZoom = (_currentZoom - 1).clamp(3.0, 18.0);
     });
@@ -254,6 +258,7 @@ class _FarmerMapWidgetState extends State<FarmerMapWidget> {
   }
 
   void _recenter() {
+    HapticFeedback.lightImpact();
     final target = _resolveDefaultCoordinates(widget.locationText);
     setState(() {
       _mapCenter = target;
@@ -610,6 +615,35 @@ class _FarmerMapWidgetState extends State<FarmerMapWidget> {
                         ),
                       ),
                     ],
+                  ),
+                ),
+              ),
+
+              // GPS Recenter Button (top right, left of maximize)
+              Positioned(
+                top: 8,
+                right: 46,
+                child: InkWell(
+                  onTap: _recenter,
+                  borderRadius: BorderRadius.circular(8),
+                  child: Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.12),
+                          blurRadius: 4,
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      LucideIcons.crosshair,
+                      size: 16,
+                      color: AppColors.textPrimary,
+                    ),
                   ),
                 ),
               ),

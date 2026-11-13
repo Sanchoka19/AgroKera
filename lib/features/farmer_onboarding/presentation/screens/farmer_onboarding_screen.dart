@@ -148,6 +148,7 @@ class _FarmerOnboardingScreenState extends ConsumerState<FarmerOnboardingScreen>
   }
 
   void _onNext() {
+    HapticFeedback.lightImpact();
     if (_currentStep < 5) {
       setState(() => _currentStep++);
     } else {
@@ -156,6 +157,7 @@ class _FarmerOnboardingScreenState extends ConsumerState<FarmerOnboardingScreen>
   }
 
   void _onBack() {
+    HapticFeedback.lightImpact();
     if (_currentStep > 1) {
       setState(() => _currentStep--);
     } else {
@@ -472,6 +474,7 @@ class _FarmerOnboardingScreenState extends ConsumerState<FarmerOnboardingScreen>
             padding: const EdgeInsets.only(bottom: 10),
             child: InkWell(
               onTap: () {
+                HapticFeedback.selectionClick();
                 setState(() => _selectedStatus = status);
               },
               borderRadius: BorderRadius.circular(18),
@@ -775,82 +778,84 @@ class _FarmerOnboardingScreenState extends ConsumerState<FarmerOnboardingScreen>
           title: 'წესები და პირობები',
           icon: LucideIcons.building2,
           children: [
-            // Checkbox 1
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: Checkbox(
+            // Checkbox 1 (Custom Modern iOS/AgroKera rounded checkbox)
+            InkWell(
+              onTap: () {
+                HapticFeedback.lightImpact();
+                setState(() => _agreeTerms = !_agreeTerms);
+              },
+              borderRadius: BorderRadius.circular(10),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildCustomCheckbox(
                     value: _agreeTerms,
-                    activeColor: AppColors.primary,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-                    onChanged: (val) => setState(() => _agreeTerms = val ?? false),
+                    onChanged: (val) => setState(() => _agreeTerms = val),
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: RichText(
-                    text: TextSpan(
-                      text: 'ვეთანხმები agrokera-ს ',
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: RichText(
+                      text: TextSpan(
+                        text: 'ვეთანხმები agrokera-ს ',
+                        style: AppTypography.bodyMedium.copyWith(
+                          fontSize: 13.5,
+                          color: AppColors.textPrimary,
+                          height: 1.4,
+                        ),
+                        children: const [
+                          TextSpan(
+                            text: 'მომსახურების პირობებსა',
+                            style: TextStyle(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w600,
+                              decoration: TextDecoration.underline,
+                            ),
+                          ),
+                          TextSpan(text: ' და '),
+                          TextSpan(
+                            text: 'კონფიდენციალურობის პოლიტიკას',
+                            style: TextStyle(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w600,
+                              decoration: TextDecoration.underline,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Checkbox 2 (Custom Modern iOS/AgroKera rounded checkbox)
+            InkWell(
+              onTap: () {
+                HapticFeedback.lightImpact();
+                setState(() => _agreeQuality = !_agreeQuality);
+              },
+              borderRadius: BorderRadius.circular(10),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildCustomCheckbox(
+                    value: _agreeQuality,
+                    onChanged: (val) => setState(() => _agreeQuality = val),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'ვაცნობიერებ სრულ პასუხისმგებლობას ჩემ მიერ განთავსებული პროდუქციის ხარისხზე, უსაფრთხოებასა და ბუნებრიობაზე.',
                       style: AppTypography.bodyMedium.copyWith(
                         fontSize: 13.5,
                         color: AppColors.textPrimary,
                         height: 1.4,
                       ),
-                      children: const [
-                        TextSpan(
-                          text: 'მომსახურების პირობებსა',
-                          style: TextStyle(
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.w600,
-                            decoration: TextDecoration.underline,
-                          ),
-                        ),
-                        TextSpan(text: ' და '),
-                        TextSpan(
-                          text: 'კონფიდენციალურობის პოლიტიკას',
-                          style: TextStyle(
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.w600,
-                            decoration: TextDecoration.underline,
-                          ),
-                        ),
-                      ],
                     ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-
-            // Checkbox 2
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: Checkbox(
-                    value: _agreeQuality,
-                    activeColor: AppColors.primary,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-                    onChanged: (val) => setState(() => _agreeQuality = val ?? false),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    'ვაცნობიერებ სრულ პასუხისმგებლობას ჩემ მიერ განთავსებული პროდუქციის ხარისხზე, უსაფრთხოებასა და ბუნებრიობაზე.',
-                    style: AppTypography.bodyMedium.copyWith(
-                      fontSize: 13.5,
-                      color: AppColors.textPrimary,
-                      height: 1.4,
-                    ),
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ],
         ),
@@ -1251,6 +1256,41 @@ class _FarmerOnboardingScreenState extends ConsumerState<FarmerOnboardingScreen>
     );
   }
 
+  Widget _buildCustomCheckbox({
+    required bool value,
+    required ValueChanged<bool> onChanged,
+  }) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      width: 24,
+      height: 24,
+      decoration: BoxDecoration(
+        color: value ? AppColors.primary : Colors.white,
+        borderRadius: BorderRadius.circular(7),
+        border: Border.all(
+          color: value ? AppColors.primary : const Color(0xFFCBD5E1),
+          width: 1.8,
+        ),
+        boxShadow: value
+            ? [
+                BoxShadow(
+                  color: AppColors.primary.withValues(alpha: 0.25),
+                  blurRadius: 4,
+                  offset: const Offset(0, 1),
+                ),
+              ]
+            : null,
+      ),
+      child: value
+          ? const Icon(
+              LucideIcons.check,
+              size: 15,
+              color: Colors.white,
+            )
+          : null,
+    );
+  }
+
   Widget _buildUploadBox({
     required String label,
     required IconData icon,
@@ -1258,37 +1298,93 @@ class _FarmerOnboardingScreenState extends ConsumerState<FarmerOnboardingScreen>
     required VoidCallback onTap,
   }) {
     return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        height: 84,
-        padding: const EdgeInsets.all(8),
+      onTap: () {
+        HapticFeedback.lightImpact();
+        onTap();
+      },
+      borderRadius: BorderRadius.circular(14),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        height: 88,
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
         decoration: BoxDecoration(
-          color: isDone ? const Color(0xFFEBF7EF) : const Color(0xFFF8FAFC),
-          borderRadius: BorderRadius.circular(12),
+          color: isDone ? const Color(0xFFF0FDF4) : const Color(0xFFF8FAFC),
+          borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: isDone ? AppColors.primary : const Color(0xFFCBD5E1),
-            width: 1.2,
+            width: isDone ? 1.6 : 1.2,
           ),
+          boxShadow: isDone
+              ? [
+                  BoxShadow(
+                    color: AppColors.primary.withValues(alpha: 0.12),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
         ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+        child: Stack(
+          alignment: Alignment.center,
           children: [
-            Icon(
-              isDone ? LucideIcons.checkCircle : icon,
-              size: 22,
-              color: isDone ? AppColors.primary : const Color(0xFF334155),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 11.5,
-                fontWeight: FontWeight.w600,
-                color: isDone ? AppColors.primary : AppColors.textPrimary,
+            if (isDone)
+              Positioned(
+                top: 0,
+                right: 0,
+                child: Container(
+                  padding: const EdgeInsets.all(3),
+                  decoration: const BoxDecoration(
+                    color: AppColors.primary,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    LucideIcons.check,
+                    size: 9,
+                    color: Colors.white,
+                  ),
+                ),
               ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: isDone
+                        ? AppColors.primaryLight
+                        : const Color(0xFFE2E8F0),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    isDone ? LucideIcons.fileCheck2 : icon,
+                    size: 17,
+                    color: isDone ? AppColors.primary : const Color(0xFF475569),
+                  ),
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: isDone ? AppColors.primaryDark : AppColors.textPrimary,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (isDone) ...[
+                  const SizedBox(height: 2),
+                  const Text(
+                    'ატვირთულია',
+                    style: TextStyle(
+                      fontSize: 9,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                ],
+              ],
             ),
           ],
         ),

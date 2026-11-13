@@ -271,19 +271,24 @@ class _CategoryCard extends StatelessWidget {
                     ),
             ),
 
-            // 2. Frosted Glass Blur covering the ENTIRE card
+            // 2. Lightened Frosted Glass Blur covering the ENTIRE card
             Positioned.fill(
               child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+                filter: ImageFilter.blur(sigmaX: 3.5, sigmaY: 3.5),
                 child: Container(
                   decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.12),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.35),
+                      width: 1.2,
+                    ),
                     gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                       colors: [
-                        Colors.black.withValues(alpha: 0.50),
-                        Colors.black.withValues(alpha: 0.25),
-                        Colors.black.withValues(alpha: 0.45),
+                        Colors.black.withValues(alpha: 0.35),
+                        Colors.black.withValues(alpha: 0.08),
+                        Colors.black.withValues(alpha: 0.20),
                       ],
                     ),
                   ),

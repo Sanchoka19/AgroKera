@@ -143,7 +143,7 @@ class _GlobalSearchDialogState extends State<GlobalSearchDialog> {
               width: double.infinity,
               constraints: const BoxConstraints(maxWidth: 520, maxHeight: 600),
               decoration: BoxDecoration(
-                color: AppColors.surface,
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(22),
                 border: Border.all(
                   color: AppColors.border.withValues(alpha: 0.8),
@@ -196,40 +196,58 @@ class _GlobalSearchDialogState extends State<GlobalSearchDialog> {
                                 color: AppColors.textSecondary,
                                 fontSize: 15,
                               ),
+                              filled: true,
+                              fillColor: Colors.white,
                               border: InputBorder.none,
                               enabledBorder: InputBorder.none,
                               focusedBorder: InputBorder.none,
                               isDense: true,
                               contentPadding: EdgeInsets.zero,
+                              suffixIcon: _searchQuery.isNotEmpty
+                                  ? GestureDetector(
+                                      onTap: () {
+                                        _searchController.clear();
+                                        _onQueryChanged('');
+                                      },
+                                      child: Container(
+                                        margin: const EdgeInsets.only(left: 6, right: 4),
+                                        padding: const EdgeInsets.all(3),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.surfaceInput,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Icon(
+                                          LucideIcons.x,
+                                          size: 13,
+                                          color: AppColors.textSecondary,
+                                        ),
+                                      ),
+                                    )
+                                  : null,
+                              suffixIconConstraints: const BoxConstraints(
+                                minWidth: 24,
+                                minHeight: 24,
+                              ),
                             ),
                           ),
                         ),
-                        if (_searchQuery.isNotEmpty)
-                          IconButton(
-                            onPressed: () {
-                              _searchController.clear();
-                              _onQueryChanged('');
-                            },
-                            tooltip: 'გასუფთავება',
-                            icon: const Icon(
-                              LucideIcons.delete,
-                              size: 18,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        IconButton(
+                        const SizedBox(width: 8),
+                        TextButton(
                           onPressed: () => Navigator.of(context).pop(),
-                          tooltip: 'დახურვა',
-                          icon: Container(
-                            padding: const EdgeInsets.all(4),
-                            decoration: BoxDecoration(
-                              color: AppColors.surfaceInput,
-                              shape: BoxShape.circle,
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 6,
                             ),
-                            child: const Icon(
-                              LucideIcons.x,
-                              size: 18,
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          child: Text(
+                            'დახურვა',
+                            style: AppTypography.bodyMedium.copyWith(
                               color: AppColors.textSecondary,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
                             ),
                           ),
                         ),
@@ -274,9 +292,9 @@ class _GlobalSearchDialogState extends State<GlobalSearchDialog> {
         Row(
           children: [
             const Icon(
-              LucideIcons.sparkles,
-              size: 16,
-              color: AppColors.primary,
+              LucideIcons.flame,
+              size: 17,
+              color: AppColors.accentWarm,
             ),
             const SizedBox(width: 6),
             Text(

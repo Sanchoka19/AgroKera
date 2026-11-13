@@ -59,6 +59,7 @@ class _FarmerOnboardingScreenState extends ConsumerState<FarmerOnboardingScreen>
   bool _hasFarmPhoto = false;
   String _selectedRegion = 'კახეთი';
   String _selectedCity = 'გურჯაანი';
+  String _dynamicAddress = 'კახეთი, გურჯაანი';
   LatLng? _selectedLocation;
 
   final List<String> _regions = [
@@ -189,10 +190,18 @@ class _FarmerOnboardingScreenState extends ConsumerState<FarmerOnboardingScreen>
         fullscreenDialog: true,
         builder: (context) => FarmerMapWidget(
           isFullScreen: true,
-          locationText: '$_selectedRegion, $_selectedCity',
+          locationText: _dynamicAddress.isNotEmpty
+              ? _dynamicAddress
+              : '$_selectedRegion, $_selectedCity',
           initialLocation: _selectedLocation,
           onLocationChanged: (point) {
             setState(() => _selectedLocation = point);
+          },
+          onAddressResolved: (point, address) {
+            setState(() {
+              _selectedLocation = point;
+              _dynamicAddress = address;
+            });
           },
           onToggleFullScreen: () => Navigator.of(context).pop(),
         ),
@@ -422,6 +431,7 @@ class _FarmerOnboardingScreenState extends ConsumerState<FarmerOnboardingScreen>
                 setState(() {
                   _selectedRegion = val;
                   _selectedCity = _citiesByRegion[val]?.first ?? 'თელავი';
+                  _dynamicAddress = '$_selectedRegion, $_selectedCity';
                 });
               },
             ),
@@ -433,15 +443,26 @@ class _FarmerOnboardingScreenState extends ConsumerState<FarmerOnboardingScreen>
               value: _selectedCity,
               items: availableCities,
               onChanged: (val) {
-                setState(() => _selectedCity = val);
+                setState(() {
+                  _selectedCity = val;
+                  _dynamicAddress = '$_selectedRegion, $_selectedCity';
+                });
               },
             ),
             const SizedBox(height: 16),
             FarmerMapWidget(
-              locationText: '$_selectedRegion, $_selectedCity',
+              locationText: _dynamicAddress.isNotEmpty
+                  ? _dynamicAddress
+                  : '$_selectedRegion, $_selectedCity',
               initialLocation: _selectedLocation,
               onLocationChanged: (point) {
                 setState(() => _selectedLocation = point);
+              },
+              onAddressResolved: (point, address) {
+                setState(() {
+                  _selectedLocation = point;
+                  _dynamicAddress = address;
+                });
               },
               onToggleFullScreen: _openFullScreenMap,
             ),
@@ -769,7 +790,12 @@ class _FarmerOnboardingScreenState extends ConsumerState<FarmerOnboardingScreen>
               const SizedBox(height: 16),
               _buildReviewRow('სრული სახელი:', 'ლანა მახარაძე'),
               _buildReviewRow('ფერმის სახელი:', _farmNameController.text.isNotEmpty ? _farmNameController.text : 'ოქროს ქვაფი'),
-              _buildReviewRow('მისამართი:', '$_selectedRegion, $_selectedCity, 1 რაიონი'),
+              _buildReviewRow(
+                'მისამართი:',
+                _dynamicAddress.isNotEmpty
+                    ? _dynamicAddress
+                    : '$_selectedRegion, $_selectedCity, 1 რაიონი',
+              ),
               _buildReviewRow('ბანკი:', _selectedBank),
               _buildReviewRow('IBAN:', _ibanController.text.length > 7 ? '****${_ibanController.text.substring(_ibanController.text.length - 7)}' : '****7ER9', isLast: true),
             ],

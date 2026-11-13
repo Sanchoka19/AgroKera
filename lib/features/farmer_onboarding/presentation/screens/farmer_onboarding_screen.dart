@@ -246,12 +246,10 @@ class _FarmerOnboardingScreenState extends ConsumerState<FarmerOnboardingScreen>
                 child: KeyedSubtree(
                   key: ValueKey<int>(_currentStep),
                   child: SingleChildScrollView(
-                    physics: _currentStep == 2
-                        ? const NeverScrollableScrollPhysics()
-                        : const BouncingScrollPhysics(),
-                    padding: EdgeInsets.symmetric(
+                    physics: const BouncingScrollPhysics(),
+                    padding: const EdgeInsets.symmetric(
                       horizontal: 20,
-                      vertical: _currentStep == 2 ? 0 : 8,
+                      vertical: 8,
                     ),
                     child: _buildCurrentStepContent(),
                   ),
@@ -526,7 +524,64 @@ class _FarmerOnboardingScreenState extends ConsumerState<FarmerOnboardingScreen>
                 ),
                 child: Stack(
                   clipBehavior: Clip.none,
+                  alignment: Alignment.center,
                   children: [
+                    SizedBox(
+                      width: double.infinity,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          // Centered large circular icon badge (increased height)
+                          Container(
+                            width: 62,
+                            height: 62,
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? AppColors.primaryLight
+                                  : const Color(0xFFF1F5F9),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              status.icon,
+                              size: 28,
+                              color: isSelected
+                                  ? AppColors.primary
+                                  : const Color(0xFF475569),
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+
+                          // Title below the icon
+                          Text(
+                            status.label,
+                            style: AppTypography.titleMedium.copyWith(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w800,
+                              color: isSelected
+                                  ? AppColors.primaryDark
+                                  : AppColors.textPrimary,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 4),
+
+                          // Explanatory subtitle below title
+                          Text(
+                            status.subtitle,
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              color: isSelected
+                                  ? AppColors.primaryDark.withValues(alpha: 0.8)
+                                  : const Color(0xFF64748B),
+                              fontWeight: FontWeight.w500,
+                              height: 1.3,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    ),
                     if (isSelected)
                       Positioned(
                         top: -5,
@@ -544,59 +599,6 @@ class _FarmerOnboardingScreenState extends ConsumerState<FarmerOnboardingScreen>
                           ),
                         ),
                       ),
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        // Centered large circular icon badge (increased height)
-                        Container(
-                          width: 62,
-                          height: 62,
-                          decoration: BoxDecoration(
-                            color: isSelected
-                                ? AppColors.primaryLight
-                                : const Color(0xFFF1F5F9),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            status.icon,
-                            size: 28,
-                            color: isSelected
-                                ? AppColors.primary
-                                : const Color(0xFF475569),
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-
-                        // Title below the icon
-                        Text(
-                          status.label,
-                          style: AppTypography.titleMedium.copyWith(
-                            fontSize: 17,
-                            fontWeight: FontWeight.w800,
-                            color: isSelected
-                                ? AppColors.primaryDark
-                                : AppColors.textPrimary,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 4),
-
-                        // Explanatory subtitle below title
-                        Text(
-                          status.subtitle,
-                          style: TextStyle(
-                            fontSize: 12.5,
-                            color: isSelected
-                                ? AppColors.primaryDark.withValues(alpha: 0.8)
-                                : const Color(0xFF64748B),
-                            fontWeight: FontWeight.w500,
-                            height: 1.3,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
                   ],
                 ),
               ),

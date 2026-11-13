@@ -235,6 +235,9 @@ class _FarmerOnboardingScreenState extends ConsumerState<FarmerOnboardingScreen>
                 child: KeyedSubtree(
                   key: ValueKey<int>(_currentStep),
                   child: SingleChildScrollView(
+                    physics: _currentStep == 2
+                        ? const NeverScrollableScrollPhysics()
+                        : const BouncingScrollPhysics(),
                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                     child: _buildCurrentStepContent(),
                   ),
@@ -451,45 +454,45 @@ class _FarmerOnboardingScreenState extends ConsumerState<FarmerOnboardingScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const SizedBox(height: 8),
+        const SizedBox(height: 4),
         Text(
           'აირჩიე\nთქვენი სტატუსი',
           style: AppTypography.h1.copyWith(
-            fontSize: 22,
+            fontSize: 20,
             fontWeight: FontWeight.w800,
             color: AppColors.textPrimary,
-            height: 1.3,
+            height: 1.25,
           ),
           textAlign: TextAlign.center,
         ),
-        const SizedBox(height: 28),
+        const SizedBox(height: 14),
         ...LegalStatus.values.map((status) {
           final isSelected = _selectedStatus == status;
           return Padding(
-            padding: const EdgeInsets.only(bottom: 18),
+            padding: const EdgeInsets.only(bottom: 10),
             child: InkWell(
               onTap: () {
                 setState(() => _selectedStatus = status);
               },
-              borderRadius: BorderRadius.circular(22),
+              borderRadius: BorderRadius.circular(18),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 220),
                 curve: Curves.easeInOut,
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 decoration: BoxDecoration(
                   color: isSelected ? const Color(0xFFFAFDFB) : Colors.white,
-                  borderRadius: BorderRadius.circular(22),
+                  borderRadius: BorderRadius.circular(18),
                   border: Border.all(
                     color: isSelected ? AppColors.primary : const Color(0xFFE2E8F0),
-                    width: isSelected ? 2.2 : 1.2,
+                    width: isSelected ? 2.0 : 1.2,
                   ),
                   boxShadow: [
                     BoxShadow(
                       color: isSelected
                           ? AppColors.primary.withValues(alpha: 0.12)
                           : Colors.black.withValues(alpha: 0.02),
-                      blurRadius: isSelected ? 12 : 6,
-                      offset: const Offset(0, 3),
+                      blurRadius: isSelected ? 10 : 4,
+                      offset: const Offset(0, 2),
                     ),
                   ],
                 ),
@@ -498,17 +501,17 @@ class _FarmerOnboardingScreenState extends ConsumerState<FarmerOnboardingScreen>
                   children: [
                     if (isSelected)
                       Positioned(
-                        top: -6,
+                        top: -4,
                         right: -4,
                         child: Container(
-                          padding: const EdgeInsets.all(5),
+                          padding: const EdgeInsets.all(4),
                           decoration: const BoxDecoration(
                             color: AppColors.primary,
                             shape: BoxShape.circle,
                           ),
                           child: const Icon(
                             LucideIcons.check,
-                            size: 14,
+                            size: 13,
                             color: Colors.white,
                           ),
                         ),
@@ -517,10 +520,10 @@ class _FarmerOnboardingScreenState extends ConsumerState<FarmerOnboardingScreen>
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        // Centered large circular icon badge
+                        // Centered circular icon badge
                         Container(
-                          width: 68,
-                          height: 68,
+                          width: 50,
+                          height: 50,
                           decoration: BoxDecoration(
                             color: isSelected
                                 ? AppColors.primaryLight
@@ -529,19 +532,19 @@ class _FarmerOnboardingScreenState extends ConsumerState<FarmerOnboardingScreen>
                           ),
                           child: Icon(
                             status.icon,
-                            size: 32,
+                            size: 26,
                             color: isSelected
                                 ? AppColors.primary
                                 : const Color(0xFF475569),
                           ),
                         ),
-                        const SizedBox(height: 14),
+                        const SizedBox(height: 8),
 
                         // Title below the icon
                         Text(
                           status.label,
                           style: AppTypography.titleMedium.copyWith(
-                            fontSize: 18,
+                            fontSize: 16,
                             fontWeight: FontWeight.w800,
                             color: isSelected
                                 ? AppColors.primaryDark
@@ -549,18 +552,18 @@ class _FarmerOnboardingScreenState extends ConsumerState<FarmerOnboardingScreen>
                           ),
                           textAlign: TextAlign.center,
                         ),
-                        const SizedBox(height: 5),
+                        const SizedBox(height: 3),
 
                         // Explanatory subtitle below title
                         Text(
                           status.subtitle,
                           style: TextStyle(
-                            fontSize: 13,
+                            fontSize: 12,
                             color: isSelected
                                 ? AppColors.primaryDark.withValues(alpha: 0.75)
                                 : const Color(0xFF64748B),
                             fontWeight: FontWeight.w500,
-                            height: 1.35,
+                            height: 1.25,
                           ),
                           textAlign: TextAlign.center,
                         ),

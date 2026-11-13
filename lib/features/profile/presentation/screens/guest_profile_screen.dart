@@ -46,9 +46,11 @@ class GuestProfileScreen extends ConsumerWidget {
                       CircleAvatar(
                         radius: 30,
                         backgroundColor: AppColors.primaryLight,
-                        child: const Icon(
-                          LucideIcons.user,
-                          size: 32,
+                        child: Icon(
+                          authState.role == UserRole.farmer
+                              ? LucideIcons.sprout
+                              : LucideIcons.user,
+                          size: 30,
                           color: AppColors.primary,
                         ),
                       ),
@@ -66,7 +68,7 @@ class GuestProfileScreen extends ConsumerWidget {
                             ),
                             const SizedBox(height: 3),
                             Text(
-                              authState.userPhone ?? '',
+                              '${authState.role.displayName} • ${authState.userPhone ?? ''}',
                               style: AppTypography.caption,
                             ),
                           ],

@@ -5,7 +5,8 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../core/constants/app_assets.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
-import '../../../../core/widgets/auth_required_bottom_sheet.dart';
+import '../../../auth/presentation/screens/login_screen.dart';
+import '../../../auth/presentation/screens/role_selection_screen.dart';
 
 /// Guest Promo Banner displayed across Home & Profile screens
 /// Exact visual match to Figma screenshots using official SVG illustration:
@@ -101,7 +102,13 @@ class _GuestPromoBannerState extends ConsumerState<GuestPromoBanner> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   GestureDetector(
-                    onTap: () => AuthRequiredBottomSheet.show(context),
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const LoginScreen(),
+                        ),
+                      );
+                    },
                     child: Text(
                       'ავტორიზაცია',
                       style: AppTypography.titleMedium.copyWith(
@@ -118,7 +125,13 @@ class _GuestPromoBannerState extends ConsumerState<GuestPromoBanner> {
                     color: AppColors.border,
                   ),
                   GestureDetector(
-                    onTap: () => AuthRequiredBottomSheet.show(context),
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const RoleSelectionScreen(),
+                        ),
+                      );
+                    },
                     child: Text(
                       'რეგისტრაცია',
                       style: AppTypography.titleMedium.copyWith(

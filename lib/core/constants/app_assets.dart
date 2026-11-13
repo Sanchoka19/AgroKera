@@ -1,11 +1,16 @@
 /// Centralized asset paths adhering to CODE_STYLE.md and DESIGN_SYSTEM.md
 abstract final class AppAssets {
-  // Logos
+  // Logos & Brand Icons
   static const String logoGreen = 'assets/icons/logo_green.svg';
   static const String logoWhite = 'assets/icons/logo_white.svg';
+  static const String google = 'assets/icons/google.svg';
+  static const String farmer = 'assets/icons/farmer.svg';
+  static const String customer = 'assets/icons/customer.svg';
 
   // Illustrations
   static const String requireSignIn = 'assets/illustrations/require_signin.svg';
+  static const String signIn = 'assets/illustrations/sign_in.svg';
+  static const String verification = 'assets/illustrations/verification.svg';
 
   // Categories
   static const String categoryBean =

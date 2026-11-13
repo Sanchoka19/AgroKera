@@ -2,6 +2,8 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import '../../features/auth/presentation/screens/login_screen.dart';
+import '../../features/auth/presentation/screens/role_selection_screen.dart';
 import '../auth/auth_state_provider.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
@@ -120,14 +122,10 @@ class AuthRequiredBottomSheet extends ConsumerWidget {
           PrimaryButton(
             text: 'ავტორიზაცია',
             onPressed: () {
-              // Sign in the user for guest-mode transition demo
-              ref.read(authStateProvider.notifier).login();
               Navigator.of(context).pop();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('წარმატებით გაიარეთ ავტორიზაცია!'),
-                  backgroundColor: AppColors.primary,
-                  behavior: SnackBarBehavior.floating,
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const LoginScreen(),
                 ),
               );
             },
@@ -138,13 +136,10 @@ class AuthRequiredBottomSheet extends ConsumerWidget {
           Center(
             child: GestureDetector(
               onTap: () {
-                ref.read(authStateProvider.notifier).login();
                 Navigator.of(context).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('რეგისტრაცია წარმატებით დასრულდა!'),
-                    backgroundColor: AppColors.primary,
-                    behavior: SnackBarBehavior.floating,
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const RoleSelectionScreen(),
                   ),
                 );
               },

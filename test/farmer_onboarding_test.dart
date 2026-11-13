@@ -77,9 +77,10 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('მიმდინარე მისამართი'), findsOneWidget);
+    expect(find.text('მონიშნეთ რუკაზე'), findsOneWidget);
     expect(find.text('Leaflet | © OpenStreetMap contributors'), findsOneWidget);
     expect(find.byType(FlutterMap), findsOneWidget);
+    expect(find.text('შეეხეთ რუკას მოსანიშნად'), findsOneWidget);
   });
 }
 

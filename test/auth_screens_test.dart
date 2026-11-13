@@ -3,11 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:agrokera/features/auth/presentation/screens/login_screen.dart';
+import 'package:agrokera/features/auth/presentation/screens/register_screen.dart';
 import 'package:agrokera/features/auth/presentation/screens/sms_verification_screen.dart';
 import 'package:agrokera/features/auth/presentation/screens/reset_password_screen.dart';
 import 'package:agrokera/features/auth/presentation/screens/role_selection_screen.dart';
 import 'package:agrokera/features/auth/presentation/screens/farmer_role_screen.dart';
 import 'package:agrokera/features/auth/presentation/screens/customer_role_screen.dart';
+import 'package:agrokera/features/auth/presentation/widgets/forgot_password_sheet.dart';
 import 'test_helper.dart';
 
 void main() {
@@ -34,6 +36,28 @@ void main() {
     expect(
       find.byWidgetPredicate(
         (w) => w is RichText && w.text.toPlainText().contains('შექმენით'),
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('ForgotPasswordSheet renders email input and submit button', (WidgetTester tester) async {
+    await tester.pumpWidget(wrapWithScaffold(const ForgotPasswordSheet(initialEmail: 'test@agrokera.ge')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('პაროლის აღდგენა'), findsOneWidget);
+    expect(find.text('კოდის გაგზავნა'), findsOneWidget);
+  });
+
+  testWidgets('RegisterScreen renders registration inputs and CTA', (WidgetTester tester) async {
+    await tester.pumpWidget(wrapWithScaffold(const RegisterScreen()));
+    await tester.pumpAndSettle();
+
+    expect(find.text('რეგისტრაცია'), findsWidgets);
+    expect(find.text('Google-ით რეგისტრაცია'), findsOneWidget);
+    expect(
+      find.byWidgetPredicate(
+        (w) => w is RichText && w.text.toPlainText().contains('შესვლა'),
       ),
       findsOneWidget,
     );

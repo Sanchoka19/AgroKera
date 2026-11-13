@@ -7,8 +7,8 @@ import '../../../../core/constants/app_assets.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/primary_button.dart';
-import 'role_selection_screen.dart';
-import 'sms_verification_screen.dart';
+import '../widgets/forgot_password_sheet.dart';
+import 'register_screen.dart';
 
 /// Screen 1: ავტორიზაცია (Login / Sign In Screen)
 /// Matching Figma screenshot:
@@ -198,14 +198,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 alignment: Alignment.centerRight,
                 child: GestureDetector(
                   onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => SmsVerificationScreen(
-                          email: _emailController.text.trim().isNotEmpty
-                              ? _emailController.text.trim()
-                              : 'example@gmail.com',
-                        ),
-                      ),
+                    ForgotPasswordSheet.show(
+                      context,
+                      initialEmail: _emailController.text.trim(),
                     );
                   },
                   child: Text(
@@ -289,7 +284,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   onTap: () {
                     Navigator.of(context).push(
                       MaterialPageRoute(
-                        builder: (context) => const RoleSelectionScreen(),
+                        builder: (context) => const RegisterScreen(),
                       ),
                     );
                   },

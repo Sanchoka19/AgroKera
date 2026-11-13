@@ -11,6 +11,8 @@ abstract final class AppAssets {
   static const String requireSignIn = 'assets/illustrations/require_signin.svg';
   static const String signIn = 'assets/illustrations/sign_in.svg';
   static const String verification = 'assets/illustrations/verification.svg';
+  static const String farmerRole = 'assets/illustrations/farmer_role.svg';
+  static const String customerRole = 'assets/illustrations/customer_role.png';
 
   // Categories
   static const String categoryBean =

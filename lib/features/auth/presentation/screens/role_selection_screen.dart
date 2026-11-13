@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../core/constants/app_assets.dart';
@@ -8,24 +9,18 @@ import 'customer_role_screen.dart';
 import 'farmer_role_screen.dart';
 
 /// Screen 4: აირჩიე როლი (Role Selection Screen)
-/// Matching Figma screenshot:
-/// - AppBar with back button & "აირჩიე როლი" title
-/// - Farmer Section:
-///   - Official Farmer SVG icon (#4B5563)
-///   - "მე ვარ ფერმერი" green button (#53B175)
-///   - "მოაწყვე და მართე შენი ფერმა" description
-/// - Divider
-/// - Customer Section:
-///   - Official Customer SVG icon (#4B5563)
-///   - "მე ვარ მომხმარებელი" green button (#53B175)
-///   - "იყიდე ეკოლოგიურად სუფთა პროდუქტები" description
+/// Evolution:
+/// - Rich full-color illustrations for Farmer and Customer roles
+/// - Interactive rounded selection cards with soft tints and borders
+/// - Prominent green CTA buttons & clear descriptive value propositions
+/// - Preserves exact Georgian texts matching Design System & Test Suite
 class RoleSelectionScreen extends StatelessWidget {
   const RoleSelectionScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -44,137 +39,144 @@ class RoleSelectionScreen extends StatelessWidget {
         ),
       ),
       body: SafeArea(
-        child: Column(
-          children: [
-            // Farmer Section
-            Expanded(
-              child: Center(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      SizedBox(
-                        width: 96,
-                        height: 96,
-                        child: SvgPicture.asset(
-                          AppAssets.farmer,
-                          fit: BoxFit.contain,
-                        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+          child: Column(
+            children: [
+              // 1. Farmer Role Card
+              Expanded(
+                child: _buildRoleCard(
+                  context: context,
+                  title: 'მე ვარ ფერმერი',
+                  subtitle: 'მოაწყვე და მართე შენი ფერმა',
+                  illustration: ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: SizedBox(
+                      height: 130,
+                      child: SvgPicture.asset(
+                        AppAssets.farmerRole,
+                        fit: BoxFit.contain,
                       ),
-                      const SizedBox(height: 22),
-                      SizedBox(
-                        width: 240,
-                        height: 48,
-                        child: ElevatedButton(
-                          onPressed: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (context) => const FarmerRoleScreen(),
-                              ),
-                            );
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: Text(
-                            'მე ვარ ფერმერი',
-                            style: AppTypography.button.copyWith(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
+                    ),
+                  ),
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const FarmerRoleScreen(),
                       ),
-                      const SizedBox(height: 12),
-                      Text(
-                        'მოაწყვე და მართე შენი ფერმა',
-                        style: AppTypography.bodyMedium.copyWith(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.textPrimary,
-                        ),
-                        textAlign: TextAlign.center,
+                    );
+                  },
+                ),
+              ),
+
+              const SizedBox(height: 14),
+
+              // 2. Customer Role Card
+              Expanded(
+                child: _buildRoleCard(
+                  context: context,
+                  title: 'მე ვარ მომხმარებელი',
+                  subtitle: 'იყიდე ეკოლოგიურად სუფთა პროდუქტები',
+                  illustration: ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: SizedBox(
+                      height: 130,
+                      child: Image.asset(
+                        AppAssets.customerRole,
+                        fit: BoxFit.contain,
                       ),
-                    ],
+                    ),
+                  ),
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const CustomerRoleScreen(),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRoleCard({
+    required BuildContext context,
+    required String title,
+    required String subtitle,
+    required Widget illustration,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(22),
+      elevation: 1,
+      shadowColor: Colors.black.withValues(alpha: 0.06),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(22),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: const Color(0xFFE2E8F0), width: 1.2),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Illustration
+              Expanded(
+                child: Center(
+                  child: illustration,
+                ),
+              ),
+              const SizedBox(height: 10),
+
+              // Green Button
+              SizedBox(
+                width: double.infinity,
+                height: 46,
+                child: ElevatedButton(
+                  onPressed: onTap,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  child: Text(
+                    title,
+                    style: AppTypography.button.copyWith(
+                      color: Colors.white,
+                      fontSize: 15.5,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
               ),
-            ),
+              const SizedBox(height: 8),
 
-            // Divider between sections
-            const Divider(
-              color: Color(0xFFF1F5F9),
-              thickness: 2,
-              height: 2,
-            ),
-
-            // Customer Section
-            Expanded(
-              child: Center(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      SizedBox(
-                        width: 96,
-                        height: 96,
-                        child: SvgPicture.asset(
-                          AppAssets.customer,
-                          fit: BoxFit.contain,
-                        ),
-                      ),
-                      const SizedBox(height: 22),
-                      SizedBox(
-                        width: 240,
-                        height: 48,
-                        child: ElevatedButton(
-                          onPressed: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (context) => const CustomerRoleScreen(),
-                              ),
-                            );
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: Text(
-                            'მე ვარ მომხმარებელი',
-                            style: AppTypography.button.copyWith(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        'იყიდე ეკოლოგიურად სუფთა პროდუქტები',
-                        style: AppTypography.bodyMedium.copyWith(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.textPrimary,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
+              // Description subtitle
+              Text(
+                subtitle,
+                style: AppTypography.bodyMedium.copyWith(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.textSecondary,
                 ),
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

@@ -20,7 +20,20 @@ class CategoriesScreen extends StatefulWidget {
 }
 
 class _CategoriesScreenState extends State<CategoriesScreen> {
+  late final TextEditingController _searchController;
   String _searchQuery = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,94 +43,187 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.bgPrimary,
-      appBar: AppBar(
-        title: Text(
-          'აგრო მარკეტი',
-          style: AppTypography.h1.copyWith(
-            fontSize: 20,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        centerTitle: true,
-      ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Column(
-            children: [
-              const SizedBox(height: 8),
-              // Search field
-              Container(
-                height: 48,
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: AppColors.border, width: 1),
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                child: Row(
-                  children: [
-                    const Icon(
-                      LucideIcons.search,
-                      size: 20,
-                      color: AppColors.textSecondary,
+        child: CustomScrollView(
+          slivers: [
+            // 1. Collapsible Title "აგრო მარკეტი": scrolls away on scroll down
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.only(top: 14, bottom: 8),
+                child: Center(
+                  child: Text(
+                    'აგრო მარკეტი',
+                    style: AppTypography.h1.copyWith(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
                     ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: TextField(
-                        onChanged: (val) => setState(() => _searchQuery = val),
-                        style: AppTypography.bodyMedium,
-                        decoration: InputDecoration(
-                          hintText: 'ძებნა...',
-                          hintStyle: AppTypography.bodyMedium.copyWith(
-                            color: AppColors.textSecondary,
-                          ),
-                          border: InputBorder.none,
-                          enabledBorder: InputBorder.none,
-                          focusedBorder: InputBorder.none,
-                          filled: false,
-                          isDense: true,
-                          contentPadding: EdgeInsets.zero,
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
-              const SizedBox(height: 16),
+            ),
 
-              // Categories Grid
-              Expanded(
-                child: GridView.builder(
-                  padding: const EdgeInsets.only(bottom: 60),
+            // 2. Sticky Search Bar: sticks to the top (top: 0) while scrolling
+            SliverPersistentHeader(
+              pinned: true,
+              delegate: _StickySearchBarDelegate(
+                child: Container(
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: AppColors.border, width: 1),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        LucideIcons.search,
+                        size: 20,
+                        color: AppColors.textSecondary,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: TextField(
+                          key: const ValueKey('categories_search_input'),
+                          controller: _searchController,
+                          onChanged: (val) =>
+                              setState(() => _searchQuery = val),
+                          style: AppTypography.bodyMedium,
+                          decoration: InputDecoration(
+                            hintText: 'ძებნა...',
+                            hintStyle: AppTypography.bodyMedium.copyWith(
+                              color: AppColors.textSecondary,
+                            ),
+                            border: InputBorder.none,
+                            enabledBorder: InputBorder.none,
+                            focusedBorder: InputBorder.none,
+                            filled: false,
+                            isDense: true,
+                            contentPadding: EdgeInsets.zero,
+                          ),
+                        ),
+                      ),
+                      if (_searchQuery.isNotEmpty)
+                        GestureDetector(
+                          onTap: () {
+                            _searchController.clear();
+                            setState(() => _searchQuery = '');
+                          },
+                          child: const Icon(
+                            LucideIcons.x,
+                            size: 18,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+            // 3. Categories Grid or Empty State
+            if (filteredCategories.isEmpty)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 60),
+                  child: Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          LucideIcons.searchX,
+                          size: 44,
+                          color: AppColors.textSecondary,
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'კატეგორია ვერ მოიძებნა',
+                          style: AppTypography.titleMedium.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              )
+            else
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 60),
+                sliver: SliverGrid(
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
                     crossAxisSpacing: 14,
                     mainAxisSpacing: 14,
                     childAspectRatio: 0.82,
                   ),
-                  itemCount: filteredCategories.length,
-                  itemBuilder: (context, index) {
-                    final cat = filteredCategories[index];
-                    return _CategoryCard(
-                      category: cat,
-                      onTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                CategoryProductsScreen(category: cat),
-                          ),
-                        );
-                      },
-                    );
-                  },
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final cat = filteredCategories[index];
+                      return _CategoryCard(
+                        category: cat,
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  CategoryProductsScreen(category: cat),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                    childCount: filteredCategories.length,
+                  ),
                 ),
               ),
-            ],
-          ),
+          ],
         ),
       ),
     );
+  }
+}
+
+class _StickySearchBarDelegate extends SliverPersistentHeaderDelegate {
+  final Widget child;
+  static const double headerHeight = 64.0;
+
+  _StickySearchBarDelegate({required this.child});
+
+  @override
+  double get minExtent => headerHeight;
+
+  @override
+  double get maxExtent => headerHeight;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    return Container(
+      height: headerHeight,
+      decoration: BoxDecoration(
+        color: AppColors.bgPrimary,
+        border: overlapsContent
+            ? Border(
+                bottom: BorderSide(
+                  color: AppColors.border.withValues(alpha: 0.6),
+                  width: 1,
+                ),
+              )
+            : null,
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      alignment: Alignment.center,
+      child: child,
+    );
+  }
+
+  @override
+  bool shouldRebuild(covariant _StickySearchBarDelegate oldDelegate) {
+    return oldDelegate.child != child;
   }
 }
 

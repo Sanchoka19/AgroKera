@@ -1,0 +1,143 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  FARMER
+  CLIENT
+  AGRO_MARKET
+  LOGISTICS_PROVIDER
+}
+
+enum VerificationStatus {
+  UNVERIFIED
+  PENDING_REVIEW
+  VERIFIED
+  REJECTED
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
+
+enum ShipmentStatus {
+  PENDING
+  READY_FOR_PICKUP
+  IN_TRANSIT
+  DELIVERED
+  CONFIRMED
+}
+
+enum FulfillmentType {
+  FARMER_DELIVERY
+  SELF_PICKUP
+}
+
+model User {
+  id                 String             @id @default(cuid())
+  email              String?            @unique
+  phoneNumber        String?            @unique
+  fullName           String
+  role               Role               @default(CLIENT)
+  verificationStatus VerificationStatus @default(UNVERIFIED)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  farmerProfile      FarmerProfile?
+  orders             Order[]
+}
+
+model FarmerProfile {
+  id                 String             @id @default(cuid())
+  userId             String             @unique
+  user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  farmName           String
+  idCardFrontUrl     String?
+  idCardBackUrl      String?
+  region             String
+  city               String?
+  address            String?
+  latitude           Float?
+  longitude          Float?
+  isDeliveryEnabled  Boolean            @default(true)
+  deliveryFee        Float              @default(0.0)
+  rating             Float              @default(5.0)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  products           Product[]
+}
+
+model Product {
+  id                 String             @id @default(cuid())
+  farmerId           String
+  farmer             FarmerProfile      @relation(fields: [farmerId], references: [id], onDelete: Cascade)
+  title              String
+  description        String?
+  category           String
+  pricePerUnit       Float
+  unit               String             @default("კგ")
+  stockQuantity      Float              @default(0.0)
+  minOrderQuantity   Float              @default(1.0)
+  imageUrl           String?
+  isAvailable        Boolean            @default(true)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  orderItems         OrderItem[]
+}
+
+model Order {
+  id                 String             @id @default(cuid())
+  clientId           String
+  client             User               @relation(fields: [clientId], references: [id])
+  status             OrderStatus        @default(PENDING)
+  totalAmount        Float
+  fulfillmentType    FulfillmentType    @default(FARMER_DELIVERY)
+  deliveryAddress    String?
+  deliveryNotes      String?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  items              OrderItem[]
+  shipment           Shipment?
+}
+
+model OrderItem {
+  id                 String             @id @default(cuid())
+  orderId            String
+  order              Order              @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId          String
+  product            Product            @relation(fields: [productId], references: [id])
+  quantity           Float
+  pricePerUnit       Float
+  subtotal           Float
+}
+
+model Shipment {
+  id                 String             @id @default(cuid())
+  orderId            String             @unique
+  order              Order              @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  status             ShipmentStatus     @default(PENDING)
+  trackingNumber     String?            @unique
+  carrierId          String?
+  agroMarketLocationId String?
+  pickupWindowStart  DateTime?
+  pickupWindowEnd    DateTime?
+  estimatedDelivery  DateTime?
+  actualDelivery     DateTime?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+}
+

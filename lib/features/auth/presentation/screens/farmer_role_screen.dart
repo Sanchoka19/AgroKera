@@ -2,35 +2,26 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import '../../../../core/auth/auth_state_provider.dart';
 import '../../../../core/constants/app_assets.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/primary_button.dart';
+import '../../../farmer_onboarding/presentation/screens/farmer_onboarding_screen.dart';
 
 /// Screen 5: ფერმერი (Farmer Role Registration / Overview Screen)
 /// Matching Figma screenshot:
 /// - Green rounded hero banner with white Farmer SVG icon, "ფერმერი" title & description
 /// - "რისი გაკეთება შეგიძლია:" list with green checkmarks
 /// - "თქვენი სარგებელი" tag pills
-/// - "რეგისტრაცია ფერმერად" primary button
+/// - "რეგისტრაცია ფერმერად" primary button -> starts 5-step Farmer Onboarding & Verification
 /// - "სხვა როლის არჩევა" secondary button
 class FarmerRoleScreen extends ConsumerWidget {
   const FarmerRoleScreen({super.key});
 
   void _onRegister(BuildContext context, WidgetRef ref) {
-    ref.read(authStateProvider.notifier).register(
-      role: UserRole.farmer,
-      name: 'გიორგი ფერმერი',
-      phone: '+995 599 44 55 66',
-      email: 'farmer@agrokera.ge',
-    );
-    Navigator.of(context).popUntil((route) => route.isFirst);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('წარმატებით დარეგისტრირდით ფერმერად!'),
-        backgroundColor: AppColors.primary,
-        behavior: SnackBarBehavior.floating,
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const FarmerOnboardingScreen(),
       ),
     );
   }

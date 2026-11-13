@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,21 +13,34 @@ import '../../../../core/widgets/primary_button.dart';
 import '../widgets/farmer_map_widget.dart';
 
 enum LegalStatus {
-  physical('ფიზიკური პირი', LucideIcons.user),
-  entrepreneur('ინდ. მეწარმე', LucideIcons.briefcase),
-  company('შპს', LucideIcons.building2);
+  physical(
+    'ფიზიკური პირი',
+    'სასოფლო-სამეურნეო საქმიანობა პირადი ნომრით',
+    LucideIcons.user,
+  ),
+  entrepreneur(
+    'ინდ. მეწარმე',
+    'რეგისტრირებული ინდივიდუალური მეწარმე',
+    LucideIcons.briefcase,
+  ),
+  company(
+    'შპს',
+    'იურიდიული პირი და აგრო-კომპანია',
+    LucideIcons.building2,
+  );
 
   final String label;
+  final String subtitle;
   final IconData icon;
-  const LegalStatus(this.label, this.icon);
+  const LegalStatus(this.label, this.subtitle, this.icon);
 }
 
 /// 5-Step Farmer Onboarding & Verification Wizard
 /// Strictly adhering to Figma screenshots:
 /// - Step 1/5: ფერმის ინფორმაცია & მისამართი (Name, Photo, Region, City, Interactive Map)
-/// - Step 2/5: აირჩიე თქვენი სტატუსი (ფიზიკური პირი / ინდ. მეწარმე / შპს)
+/// - Step 2/5: აირჩიე თქვენი სტატუსი (Centered large cards with rich rounded corners)
 /// - Step 3/5: იურიდიული დეტალები & საბანკო ანგარიში (ID, Documents Upload, Bank & IBAN)
-/// - Step 4/5: დეტალები & წესები და პირობები (Summary review with "შეცვლა" + 2 Checkboxes)
+/// - Step 4/5: დეტალები & წესები და პირობები (Summary review with spacious "შეცვლა" + 2 Checkboxes)
 /// - Step 5/5: SMS დადასტურება (5-digit OTP verification & complete onboarding)
 class FarmerOnboardingScreen extends ConsumerStatefulWidget {
   const FarmerOnboardingScreen({super.key});
@@ -196,9 +210,29 @@ class _FarmerOnboardingScreenState extends ConsumerState<FarmerOnboardingScreen>
         child: Column(
           children: [
             Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                child: _buildCurrentStepContent(),
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 320),
+                switchInCurve: Curves.easeInOutCubic,
+                switchOutCurve: Curves.easeInOutCubic,
+                transitionBuilder: (Widget child, Animation<double> animation) {
+                  return FadeTransition(
+                    opacity: animation,
+                    child: SlideTransition(
+                      position: Tween<Offset>(
+                        begin: const Offset(0.04, 0),
+                        end: Offset.zero,
+                      ).animate(animation),
+                      child: child,
+                    ),
+                  );
+                },
+                child: KeyedSubtree(
+                  key: ValueKey<int>(_currentStep),
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                    child: _buildCurrentStepContent(),
+                  ),
+                ),
               ),
             ),
             _buildBottomBar(),
@@ -208,27 +242,44 @@ class _FarmerOnboardingScreenState extends ConsumerState<FarmerOnboardingScreen>
     );
   }
 
+  /// Smooth Animated Progress Bar (Item 4)
   Widget _buildProgressBar() {
+    final targetValue = _currentStep / 5.0;
+
     return Row(
       children: [
         Expanded(
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(6),
-            child: LinearProgressIndicator(
-              value: _currentStep / 5.0,
-              backgroundColor: const Color(0xFFE2E8F0),
-              valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
-              minHeight: 6,
+          child: TweenAnimationBuilder<double>(
+            duration: const Duration(milliseconds: 380),
+            curve: Curves.easeInOutCubic,
+            tween: Tween<double>(
+              begin: (_currentStep - 1) / 5.0,
+              end: targetValue,
             ),
+            builder: (context, animatedValue, child) {
+              return ClipRRect(
+                borderRadius: BorderRadius.circular(6),
+                child: LinearProgressIndicator(
+                  value: animatedValue,
+                  backgroundColor: const Color(0xFFE2E8F0),
+                  valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
+                  minHeight: 6,
+                ),
+              );
+            },
           ),
         ),
         const SizedBox(width: 14),
-        Text(
-          '$_currentStep/5',
-          style: const TextStyle(
-            color: Color(0xFF64748B),
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 250),
+          child: Text(
+            '$_currentStep/5',
+            key: ValueKey<int>(_currentStep),
+            style: const TextStyle(
+              color: Color(0xFF64748B),
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
       ],
@@ -350,27 +401,25 @@ class _FarmerOnboardingScreenState extends ConsumerState<FarmerOnboardingScreen>
             _buildFieldLabel('რეგიონი *'),
             const SizedBox(height: 8),
             _buildDropdown(
+              title: 'აირჩიეთ რეგიონი',
               value: _selectedRegion,
               items: _regions,
               onChanged: (val) {
-                if (val != null) {
-                  setState(() {
-                    _selectedRegion = val;
-                    _selectedCity = _citiesByRegion[val]?.first ?? 'თელავი';
-                  });
-                }
+                setState(() {
+                  _selectedRegion = val;
+                  _selectedCity = _citiesByRegion[val]?.first ?? 'თელავი';
+                });
               },
             ),
             const SizedBox(height: 16),
             _buildFieldLabel('ქალაქი/რაიონი *'),
             const SizedBox(height: 8),
             _buildDropdown(
+              title: 'აირჩიეთ ქალაქი/რაიონი',
               value: _selectedCity,
               items: availableCities,
               onChanged: (val) {
-                if (val != null) {
-                  setState(() => _selectedCity = val);
-                }
+                setState(() => _selectedCity = val);
               },
             ),
             const SizedBox(height: 16),
@@ -386,13 +435,13 @@ class _FarmerOnboardingScreenState extends ConsumerState<FarmerOnboardingScreen>
   }
 
   // ==========================================
-  // STEP 2: აირჩიე თქვენი სტატუსი
+  // STEP 2: აირჩიე თქვენი სტატუსი (Item 2 Design Evolution)
   // ==========================================
   Widget _buildStep2StatusSelection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const SizedBox(height: 12),
+        const SizedBox(height: 8),
         Text(
           'აირჩიე\nთქვენი სტატუსი',
           style: AppTypography.h1.copyWith(
@@ -403,56 +452,109 @@ class _FarmerOnboardingScreenState extends ConsumerState<FarmerOnboardingScreen>
           ),
           textAlign: TextAlign.center,
         ),
-        const SizedBox(height: 32),
+        const SizedBox(height: 28),
         ...LegalStatus.values.map((status) {
           final isSelected = _selectedStatus == status;
           return Padding(
-            padding: const EdgeInsets.only(bottom: 16),
+            padding: const EdgeInsets.only(bottom: 18),
             child: InkWell(
               onTap: () {
                 setState(() => _selectedStatus = status);
               },
-              borderRadius: BorderRadius.circular(16),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
+              borderRadius: BorderRadius.circular(22),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 220),
+                curve: Curves.easeInOut,
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
+                  color: isSelected ? const Color(0xFFFAFDFB) : Colors.white,
+                  borderRadius: BorderRadius.circular(22),
                   border: Border.all(
-                    color: isSelected ? AppColors.primary : const Color(0xFFF1F5F9),
-                    width: isSelected ? 2.0 : 1.2,
+                    color: isSelected ? AppColors.primary : const Color(0xFFE2E8F0),
+                    width: isSelected ? 2.2 : 1.2,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: isSelected ? 0.06 : 0.02),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
+                      color: isSelected
+                          ? AppColors.primary.withValues(alpha: 0.12)
+                          : Colors.black.withValues(alpha: 0.02),
+                      blurRadius: isSelected ? 12 : 6,
+                      offset: const Offset(0, 3),
                     ),
                   ],
                 ),
-                child: Row(
+                child: Stack(
+                  clipBehavior: Clip.none,
                   children: [
-                    Container(
-                      width: 52,
-                      height: 52,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFEBF7EF),
-                        shape: BoxShape.circle,
+                    if (isSelected)
+                      Positioned(
+                        top: -6,
+                        right: -4,
+                        child: Container(
+                          padding: const EdgeInsets.all(5),
+                          decoration: const BoxDecoration(
+                            color: AppColors.primary,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            LucideIcons.check,
+                            size: 14,
+                            color: Colors.white,
+                          ),
+                        ),
                       ),
-                      child: Icon(
-                        status.icon,
-                        size: 24,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                    const SizedBox(width: 18),
-                    Text(
-                      status.label,
-                      style: AppTypography.titleMedium.copyWith(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary,
-                      ),
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        // Centered large circular icon badge
+                        Container(
+                          width: 68,
+                          height: 68,
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? AppColors.primaryLight
+                                : const Color(0xFFF1F5F9),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            status.icon,
+                            size: 32,
+                            color: isSelected
+                                ? AppColors.primary
+                                : const Color(0xFF475569),
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+
+                        // Title below the icon
+                        Text(
+                          status.label,
+                          style: AppTypography.titleMedium.copyWith(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            color: isSelected
+                                ? AppColors.primaryDark
+                                : AppColors.textPrimary,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 5),
+
+                        // Explanatory subtitle below title
+                        Text(
+                          status.subtitle,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: isSelected
+                                ? AppColors.primaryDark.withValues(alpha: 0.75)
+                                : const Color(0xFF64748B),
+                            fontWeight: FontWeight.w500,
+                            height: 1.35,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -562,10 +664,11 @@ class _FarmerOnboardingScreenState extends ConsumerState<FarmerOnboardingScreen>
             _buildFieldLabel('ბენეფიციარი ბანკი *'),
             const SizedBox(height: 8),
             _buildDropdown(
+              title: 'აირჩიეთ ბანკი',
               value: _selectedBank,
               items: _banks,
               onChanged: (val) {
-                if (val != null) setState(() => _selectedBank = val);
+                setState(() => _selectedBank = val);
               },
             ),
             const SizedBox(height: 16),
@@ -620,20 +723,24 @@ class _FarmerOnboardingScreenState extends ConsumerState<FarmerOnboardingScreen>
                       color: AppColors.textPrimary,
                     ),
                   ),
-                  OutlinedButton(
-                    onPressed: () => setState(() => _currentStep = 1),
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: Color(0xFFCBD5E1)),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                      minimumSize: Size.zero,
-                    ),
-                    child: const Text(
-                      'შეცვლა',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
+                  // Spacious, perfectly proportioned pill button (Item 3)
+                  InkWell(
+                    onTap: () => setState(() => _currentStep = 1),
+                    borderRadius: BorderRadius.circular(20),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 7),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: const Color(0xFFCBD5E1), width: 1.2),
+                      ),
+                      child: const Text(
+                        'შეცვლა',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
+                        ),
                       ),
                     ),
                   ),
@@ -970,33 +1077,162 @@ class _FarmerOnboardingScreenState extends ConsumerState<FarmerOnboardingScreen>
     );
   }
 
+  /// Modern, Elegant Selection BottomSheet (Item 1 Dropdown Fix)
   Widget _buildDropdown({
+    required String title,
     required String value,
     required List<String> items,
-    required ValueChanged<String?> onChanged,
+    required ValueChanged<String> onChanged,
   }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFCBD5E1), width: 1.2),
+    return InkWell(
+      onTap: () => _openSelectionSheet(
+        title: title,
+        selectedValue: value,
+        items: items,
+        onSelected: onChanged,
       ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: items.contains(value) ? value : items.first,
-          isExpanded: true,
-          icon: const Icon(LucideIcons.chevronDown, size: 20, color: AppColors.textPrimary),
-          items: items.map((item) {
-            return DropdownMenuItem<String>(
-              value: item,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        height: 52,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFFCBD5E1), width: 1.2),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
               child: Text(
-                item,
-                style: const TextStyle(fontSize: 15, color: AppColors.textPrimary),
+                value,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.textPrimary,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-            );
-          }).toList(),
-          onChanged: onChanged,
+            ),
+            const Icon(LucideIcons.chevronDown, size: 20, color: Color(0xFF64748B)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _openSelectionSheet({
+    required String title,
+    required String selectedValue,
+    required List<String> items,
+    required ValueChanged<String> onSelected,
+  }) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 4, sigmaY: 4),
+        child: Container(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(ctx).size.height * 0.65,
+          ),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 12),
+              // Pill drag handle
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFCBD5E1),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      title,
+                      style: AppTypography.h1.copyWith(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    InkWell(
+                      onTap: () => Navigator.of(ctx).pop(),
+                      borderRadius: BorderRadius.circular(10),
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: AppColors.surfaceInput,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(LucideIcons.x, size: 16, color: AppColors.textPrimary),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 10),
+              const Divider(color: Color(0xFFF1F5F9), height: 1),
+              Flexible(
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  itemCount: items.length,
+                  separatorBuilder: (_, index) => const SizedBox(height: 6),
+                  itemBuilder: (context, index) {
+                    final item = items[index];
+                    final isSelected = item == selectedValue;
+                    return InkWell(
+                      onTap: () {
+                        onSelected(item);
+                        Navigator.of(ctx).pop();
+                      },
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        decoration: BoxDecoration(
+                          color: isSelected ? const Color(0xFFEBF7EF) : Colors.transparent,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: isSelected ? AppColors.primary : Colors.transparent,
+                            width: 1.2,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              item,
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                                color: isSelected ? AppColors.primaryDark : AppColors.textPrimary,
+                              ),
+                            ),
+                            if (isSelected)
+                              const Icon(LucideIcons.check, size: 18, color: AppColors.primary),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

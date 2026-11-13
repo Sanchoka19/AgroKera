@@ -1,8 +1,10 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:agrokera/features/farmer_onboarding/presentation/screens/farmer_onboarding_screen.dart';
+import 'package:agrokera/features/farmer_onboarding/presentation/widgets/farmer_map_widget.dart';
 import 'test_helper.dart';
 
 void main() {
@@ -63,6 +65,21 @@ void main() {
     expect(find.text('5/5'), findsOneWidget);
     expect(find.text('შეიყვანეთ SMS კოდი'), findsOneWidget);
     expect(find.text('დადასტურება'), findsOneWidget);
+  });
+
+  testWidgets('FarmerMapWidget renders OpenStreetMap tiles and attribution', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      wrapWithScaffold(
+        const FarmerMapWidget(
+          locationText: 'კახეთი, გურჯაანი',
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('მიმდინარე მისამართი'), findsOneWidget);
+    expect(find.text('Leaflet | © OpenStreetMap contributors'), findsOneWidget);
+    expect(find.byType(FlutterMap), findsOneWidget);
   });
 }
 

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../core/auth/auth_state_provider.dart';
 import '../../../../core/constants/app_assets.dart';
@@ -58,6 +59,7 @@ class _FarmerOnboardingScreenState extends ConsumerState<FarmerOnboardingScreen>
   bool _hasFarmPhoto = false;
   String _selectedRegion = 'კახეთი';
   String _selectedCity = 'გურჯაანი';
+  LatLng? _selectedLocation;
 
   final List<String> _regions = [
     'კახეთი',
@@ -186,6 +188,10 @@ class _FarmerOnboardingScreenState extends ConsumerState<FarmerOnboardingScreen>
         builder: (context) => FarmerMapWidget(
           isFullScreen: true,
           locationText: '$_selectedRegion, $_selectedCity',
+          initialLocation: _selectedLocation,
+          onLocationChanged: (point) {
+            setState(() => _selectedLocation = point);
+          },
           onToggleFullScreen: () => Navigator.of(context).pop(),
         ),
       ),
@@ -425,6 +431,10 @@ class _FarmerOnboardingScreenState extends ConsumerState<FarmerOnboardingScreen>
             const SizedBox(height: 16),
             FarmerMapWidget(
               locationText: '$_selectedRegion, $_selectedCity',
+              initialLocation: _selectedLocation,
+              onLocationChanged: (point) {
+                setState(() => _selectedLocation = point);
+              },
               onToggleFullScreen: _openFullScreenMap,
             ),
           ],

@@ -95,7 +95,35 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
               background: Stack(
                 fit: StackFit.expand,
                 children: [
-                  Image.network(product.imageUrl, fit: BoxFit.cover),
+                  product.imageUrl.startsWith('assets/')
+                      ? Image.asset(
+                          product.imageUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) =>
+                              Container(
+                                color: AppColors.surfaceInput,
+                                alignment: Alignment.center,
+                                child: const Icon(
+                                  LucideIcons.image,
+                                  color: AppColors.textSecondary,
+                                  size: 48,
+                                ),
+                              ),
+                        )
+                      : Image.network(
+                          product.imageUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) =>
+                              Container(
+                                color: AppColors.surfaceInput,
+                                alignment: Alignment.center,
+                                child: const Icon(
+                                  LucideIcons.image,
+                                  color: AppColors.textSecondary,
+                                  size: 48,
+                                ),
+                              ),
+                        ),
                   if (product.discountPercent != null)
                     Positioned(
                       top: 100,

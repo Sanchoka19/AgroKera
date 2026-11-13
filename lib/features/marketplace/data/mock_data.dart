@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/constants/app_assets.dart';
 import 'models/category_model.dart';
 import 'models/farmer_model.dart';
 import 'models/product_model.dart';
@@ -17,40 +18,35 @@ abstract final class MockData {
       id: 'cat_citrus',
       name: 'ციტრუსი',
       productCount: 3,
-      imageUrl:
-          'https://images.unsplash.com/photo-1533038590840-1cde6e668a91?w=600&auto=format&fit=crop&q=80',
+      imageUrl: AppAssets.categoryCitrus,
       backgroundColor: Color(0xFFE5A93C),
     ),
     CategoryModel(
       id: 'cat_berry',
       name: 'კენკრა',
       productCount: 5,
-      imageUrl:
-          'https://images.unsplash.com/photo-1464965911861-746a04b4bca6?w=600&auto=format&fit=crop&q=80',
+      imageUrl: AppAssets.categoryBerry,
       backgroundColor: Color(0xFF8B263E),
     ),
     CategoryModel(
       id: 'cat_veg',
       name: 'ბოსტნეული',
       productCount: 5,
-      imageUrl:
-          'https://images.unsplash.com/photo-1524179091875-bf99a9a6af57?w=600&auto=format&fit=crop&q=80',
+      imageUrl: AppAssets.categoryVegetable,
       backgroundColor: Color(0xFF1E7B54),
     ),
     CategoryModel(
       id: 'cat_dairy',
       name: 'ცხოველური პროდუქტები',
       productCount: 5,
-      imageUrl:
-          'https://images.unsplash.com/photo-1486297678162-eb2a19b0a32d?w=600&auto=format&fit=crop&q=80',
+      imageUrl: AppAssets.categoryMilk,
       backgroundColor: Color(0xFFDE8D1D),
     ),
     CategoryModel(
       id: 'cat_grain',
       name: 'მარცვლეული და პარკოსანი',
       productCount: 5,
-      imageUrl:
-          'https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=600&auto=format&fit=crop&q=80',
+      imageUrl: AppAssets.categoryBean,
       backgroundColor: Color(0xFFC78F52),
     ),
   ];

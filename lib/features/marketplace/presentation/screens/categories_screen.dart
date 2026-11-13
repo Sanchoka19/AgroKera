@@ -143,12 +143,19 @@ class _CategoryCard extends StatelessWidget {
               right: 0,
               bottom: 0,
               height: 120,
-              child: Image.network(
-                category.imageUrl,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) =>
-                    const SizedBox.shrink(),
-              ),
+              child: category.imageUrl.startsWith('assets/')
+                  ? Image.asset(
+                      category.imageUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) =>
+                          const SizedBox.shrink(),
+                    )
+                  : Image.network(
+                      category.imageUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) =>
+                          const SizedBox.shrink(),
+                    ),
             ),
             // Text Header
             Padding(

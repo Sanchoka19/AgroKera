@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import '../../../../core/constants/app_assets.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/auth_required_bottom_sheet.dart';
 
 /// Guest Promo Banner displayed across Home & Profile screens
-/// Exact visual match to Figma screenshots:
-/// - Monitor with security key illustration
+/// Exact visual match to Figma screenshots using official SVG illustration:
+/// - Official require_signin.svg illustration
 /// - Title: "არ გაქვს ანგარიში?"
 /// - Subtitle: "აპლიკაციის ფუნქციონალით სრულყოფილად სარგებლობისთვის გაიარე რეგისტრაცია"
 /// - Green CTA links: "ავტორიზაცია | რეგისტრაცია"
@@ -59,40 +61,13 @@ class _GuestPromoBannerState extends ConsumerState<GuestPromoBanner> {
             mainAxisSize: MainAxisSize.min,
             children: [
               const SizedBox(height: 4),
-              // Illustration: circular leaf/monitor container
-              Container(
+              // Official SVG Illustration
+              SizedBox(
                 width: 80,
                 height: 80,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFF1F8F4),
-                  shape: BoxShape.circle,
-                ),
-                alignment: Alignment.center,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    const Icon(
-                      LucideIcons.monitor,
-                      size: 44,
-                      color: Color(0xFF2E7D32),
-                    ),
-                    Positioned(
-                      bottom: 8,
-                      right: 12,
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: const BoxDecoration(
-                          color: AppColors.primary,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          LucideIcons.keyRound,
-                          size: 14,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ],
+                child: SvgPicture.asset(
+                  AppAssets.requireSignIn,
+                  fit: BoxFit.contain,
                 ),
               ),
               const SizedBox(height: 14),

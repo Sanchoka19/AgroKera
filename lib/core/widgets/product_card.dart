@@ -42,19 +42,35 @@ class ProductCard extends StatelessWidget {
               children: [
                 AspectRatio(
                   aspectRatio: 1.3,
-                  child: Image.network(
-                    product.imageUrl,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => Container(
-                      color: AppColors.surfaceInput,
-                      alignment: Alignment.center,
-                      child: const Icon(
-                        LucideIcons.image,
-                        color: AppColors.textSecondary,
-                        size: 32,
-                      ),
-                    ),
-                  ),
+                  child: product.imageUrl.startsWith('assets/')
+                      ? Image.asset(
+                          product.imageUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) =>
+                              Container(
+                                color: AppColors.surfaceInput,
+                                alignment: Alignment.center,
+                                child: const Icon(
+                                  LucideIcons.image,
+                                  color: AppColors.textSecondary,
+                                  size: 32,
+                                ),
+                              ),
+                        )
+                      : Image.network(
+                          product.imageUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) =>
+                              Container(
+                                color: AppColors.surfaceInput,
+                                alignment: Alignment.center,
+                                child: const Icon(
+                                  LucideIcons.image,
+                                  color: AppColors.textSecondary,
+                                  size: 32,
+                                ),
+                              ),
+                        ),
                 ),
                 if (product.discountPercent != null)
                   Positioned(

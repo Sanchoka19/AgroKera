@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import '../constants/app_assets.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
 
 /// Authentic AgroKera brand logo based on Figma screenshots:
-/// Green sprout icon + "აგრო" (#181725) + "კერა" (#53B175)
+/// Official SVG sprout emblem + "აგრო" (#181725) + "კერა" (#53B175)
 class AppLogo extends StatelessWidget {
   final double fontSize;
   final double iconSize;
 
-  const AppLogo({super.key, this.fontSize = 22, this.iconSize = 26});
+  const AppLogo({super.key, this.fontSize = 22, this.iconSize = 28});
 
   @override
   Widget build(BuildContext context) {
@@ -17,17 +19,13 @@ class AppLogo extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Container(
-          width: iconSize + 6,
-          height: iconSize + 6,
-          decoration: BoxDecoration(
-            color: AppColors.primaryLight,
-            shape: BoxShape.circle,
-          ),
-          alignment: Alignment.center,
-          child: Icon(
+        SvgPicture.asset(
+          AppAssets.logoGreen,
+          width: iconSize,
+          height: iconSize,
+          placeholderBuilder: (context) => Icon(
             LucideIcons.sprout,
-            size: iconSize - 2,
+            size: iconSize,
             color: AppColors.primary,
           ),
         ),

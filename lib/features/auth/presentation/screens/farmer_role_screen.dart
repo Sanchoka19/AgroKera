@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../core/constants/app_assets.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -8,13 +9,12 @@ import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/primary_button.dart';
 import '../../../farmer_onboarding/presentation/screens/farmer_onboarding_screen.dart';
 
-/// Screen 5: ფერმერი (Farmer Role Registration / Overview Screen)
-/// Matching Figma screenshot:
-/// - Green rounded hero banner with white Farmer SVG icon, "ფერმერი" title & description
-/// - "რისი გაკეთება შეგიძლია:" list with green checkmarks
-/// - "თქვენი სარგებელი" tag pills
-/// - "რეგისტრაცია ფერმერად" primary button -> starts 5-step Farmer Onboarding & Verification
-/// - "სხვა როლის არჩევა" secondary button
+/// Screen: ფერმერი (Farmer Role Modern Overview Screen)
+/// Reimagined with Modern Hero Card & 2x2 Bento Feature Grid (No Emojis):
+/// - Vibrant Organic Forest-to-Emerald Hero Card with Farmer Character Vignette
+/// - 2x2 Bento Feature Grid with clean vector icons and micro-copy
+/// - Trust & Benefit Indicators ("თქვენი სარგებელი")
+/// - Bold Primary & Secondary CTA Buttons
 class FarmerRoleScreen extends ConsumerWidget {
   const FarmerRoleScreen({super.key});
 
@@ -29,146 +29,353 @@ class FarmerRoleScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: const Color(0xFFF8FAFC),
         elevation: 0,
+        scrolledUnderElevation: 0,
         leading: IconButton(
-          icon: const Icon(LucideIcons.chevronLeft, color: AppColors.textPrimary, size: 28),
+          icon: const Icon(LucideIcons.chevronLeft, color: AppColors.textPrimary, size: 24),
           onPressed: () => Navigator.of(context).pop(),
         ),
+        title: Text(
+          'როლის მიმოხილვა',
+          style: AppTypography.titleMedium.copyWith(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        centerTitle: true,
       ),
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
             return SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
               child: ConstrainedBox(
                 constraints: BoxConstraints(minHeight: constraints.maxHeight - 16),
                 child: IntrinsicHeight(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // Top Green Banner Card
+                      // ==========================================
+                      // 1. HERO CARD: Gradient, Character & Badge
+                      // ==========================================
                       Container(
                         width: double.infinity,
-                        padding: const EdgeInsets.all(22),
+                        padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
-                          color: AppColors.primary,
-                          borderRadius: BorderRadius.circular(18),
+                          borderRadius: BorderRadius.circular(24),
+                          gradient: const LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              Color(0xFF1B4332), // Deep Forest Green
+                              Color(0xFF2D6A4F), // Emerald Green
+                              Color(0xFF53B175), // Vibrant Brand Green
+                            ],
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF1B4332).withValues(alpha: 0.22),
+                              blurRadius: 18,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            // Left Column: Texts and Badge
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // AgroKera Partner Badge (Vector icon, no emojis)
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withValues(alpha: 0.16),
+                                      borderRadius: BorderRadius.circular(20),
+                                      border: Border.all(
+                                        color: Colors.white.withValues(alpha: 0.25),
+                                        width: 1,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(
+                                          LucideIcons.sparkles,
+                                          size: 13,
+                                          color: Colors.white,
+                                        ),
+                                        const SizedBox(width: 5),
+                                        Text(
+                                          'AgroKera Partner',
+                                          style: GoogleFonts.notoSansGeorgian(
+                                            color: Colors.white,
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w700,
+                                            letterSpacing: 0.2,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(height: 12),
+
+                                  // Title
+                                  Text(
+                                    'ფერმერი',
+                                    style: GoogleFonts.notoSansGeorgian(
+                                      color: Colors.white,
+                                      fontSize: 26,
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: -0.5,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+
+                                  // Subtitle
+                                  Text(
+                                    'მოაწყვე და მართე შენი ფერმა ციფრულად',
+                                    style: GoogleFonts.notoSansGeorgian(
+                                      color: Colors.white.withValues(alpha: 0.92),
+                                      fontSize: 13.5,
+                                      fontWeight: FontWeight.w500,
+                                      height: 1.35,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 14),
+
+                            // Right: Character Illustration in Circular Frame
+                            Container(
+                              width: 88,
+                              height: 88,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.white,
+                                border: Border.all(
+                                  color: Colors.white.withValues(alpha: 0.35),
+                                  width: 2.5,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.14),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: ClipOval(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(4),
+                                  child: SvgPicture.asset(
+                                    AppAssets.farmerRole,
+                                    fit: BoxFit.contain,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+
+                      // ==========================================
+                      // 2. SECTION HEADER
+                      // ==========================================
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: AppColors.primaryLight,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(
+                              LucideIcons.layoutGrid,
+                              size: 16,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Text(
+                            'რისი გაკეთება შეგიძლია:',
+                            style: AppTypography.titleMedium.copyWith(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+
+                      // ==========================================
+                      // 3. 2x2 BENTO FEATURE GRID (Pure Vectors, No Emojis)
+                      // ==========================================
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildBentoCard(
+                              icon: LucideIcons.circleDollarSign,
+                              iconColor: AppColors.primary,
+                              iconBg: const Color(0xFFEBF7EF),
+                              title: 'პროდუქტების გაყიდვა',
+                              description: 'პირდაპირი წვდომა რესტორნებსა და კლიენტებზე შუამავლების გარეშე.',
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _buildBentoCard(
+                              icon: LucideIcons.packageCheck,
+                              iconColor: const Color(0xFFD97706),
+                              iconBg: const Color(0xFFFEF3C7),
+                              title: 'მოსავლის მართვა',
+                              description: 'მარაგების აღრიცხვა, ფასების კონტროლი და ციფრული კატალოგი.',
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildBentoCard(
+                              icon: LucideIcons.barChart3,
+                              iconColor: const Color(0xFF2563EB),
+                              iconBg: const Color(0xFFEFF6FF),
+                              title: 'ბაზრის ანალიტიკა',
+                              description: 'მოთხოვნისა და რეალური საბაზრო ფასების დინამიკური ანალიზი.',
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _buildBentoCard(
+                              icon: LucideIcons.truck,
+                              iconColor: const Color(0xFF0D9488),
+                              iconBg: const Color(0xFFF0FDFA),
+                              title: 'მოქნილი ლოგისტიკა',
+                              description: 'ტრანსპორტირებისა და შეკვეთების მიწოდების სწრაფი ორგანიზება.',
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 18),
+
+                      // ==========================================
+                      // 4. BENEFIT BADGES ("თქვენი სარგებელი")
+                      // ==========================================
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: const Color(0xFFE2E8F0)),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Row(
                               children: [
-                                SvgPicture.asset(
-                                  AppAssets.farmer,
-                                  width: 36,
-                                  height: 36,
-                                  colorFilter: const ColorFilter.mode(
-                                    Colors.white,
-                                    BlendMode.srcIn,
-                                  ),
+                                const Icon(
+                                  LucideIcons.shieldCheck,
+                                  size: 15,
+                                  color: AppColors.primary,
                                 ),
-                                const SizedBox(width: 14),
+                                const SizedBox(width: 6),
                                 Text(
-                                  'ფერმერი',
-                                  style: AppTypography.h1.copyWith(
-                                    color: Colors.white,
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.w800,
+                                  'თქვენი სარგებელი',
+                                  style: AppTypography.caption.copyWith(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.textPrimary,
                                   ),
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 14),
-                            Text(
-                              'მოაწყვე და მართე შენი ფერმა\nციფრულად',
-                              style: AppTypography.bodyMedium.copyWith(
-                                color: Colors.white,
-                                fontSize: 15,
-                                fontWeight: FontWeight.w500,
-                                height: 1.4,
-                              ),
+                            const SizedBox(height: 8),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: const [
+                                _BenefitPill(
+                                  icon: LucideIcons.badgePercent,
+                                  label: '0% საკომისიო საწყის ეტაპზე',
+                                ),
+                                _BenefitPill(
+                                  icon: LucideIcons.badgeCheck,
+                                  label: 'ვერიფიცირებული პარტნიორი',
+                                ),
+                                _BenefitPill(
+                                  icon: LucideIcons.wallet,
+                                  label: 'მაღალი შემოსავალი',
+                                ),
+                                _BenefitPill(
+                                  icon: LucideIcons.arrowUpRight,
+                                  label: 'პირდაპირი გაყიდვები',
+                                ),
+                              ],
                             ),
                           ],
                         ),
                       ),
-                      const SizedBox(height: 28),
-
-                      // Section 1: რისი გაკეთება შეგიძლია:
-                      Text(
-                        'რისი გაკეთება შეგიძლია:',
-                        style: AppTypography.h2.copyWith(
-                          fontSize: 19,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                      _buildFeatureItem('პროდუქტების გაყიდვა'),
-                      const SizedBox(height: 12),
-                      _buildFeatureItem('მოსავლის მართვა და აღწერა'),
-                      const SizedBox(height: 12),
-                      _buildFeatureItem('ბაზრის ანალიზი'),
-                      const SizedBox(height: 24),
-
-                      // Section 2: თქვენი სარგებელი
-                      Text(
-                        'თქვენი სარგებელი',
-                        style: AppTypography.h2.copyWith(
-                          fontSize: 19,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                      Wrap(
-                        spacing: 10,
-                        runSpacing: 10,
-                        children: const [
-                          _BenefitTag(label: 'მაღალი შემოსავალი'),
-                          _BenefitTag(label: 'პირდაპირი გაყიდვები'),
-                        ],
-                      ),
 
                       const Spacer(),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 16),
 
-                      // Primary: რეგისტრაცია ფერმერად
+                      // ==========================================
+                      // 5. ACTION BUTTONS
+                      // ==========================================
                       PrimaryButton(
                         text: 'რეგისტრაცია ფერმერად',
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(14),
                         height: 52,
                         onPressed: () => _onRegister(context, ref),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 10),
 
                       // Secondary: სხვა როლის არჩევა
                       InkWell(
                         onTap: () => Navigator.of(context).pop(),
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(14),
                         child: Container(
-                          height: 52,
+                          height: 48,
                           decoration: BoxDecoration(
                             color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(14),
                             border: Border.all(color: const Color(0xFFCBD5E1), width: 1.2),
                           ),
                           alignment: Alignment.center,
-                          child: Text(
-                            'სხვა როლის არჩევა',
-                            style: AppTypography.button.copyWith(
-                              color: AppColors.textPrimary,
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                              height: 1.25,
-                            ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(
+                                LucideIcons.arrowLeft,
+                                size: 16,
+                                color: AppColors.textPrimary,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                'სხვა როლის არჩევა',
+                                style: AppTypography.button.copyWith(
+                                  color: AppColors.textPrimary,
+                                  fontSize: 14.5,
+                                  fontWeight: FontWeight.w600,
+                                  height: 1.25,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 8),
                     ],
                   ),
                 ),
@@ -180,48 +387,107 @@ class FarmerRoleScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildFeatureItem(String label) {
-    return Row(
-      children: [
-        const Icon(
-          LucideIcons.check,
-          color: AppColors.primary,
-          size: 20,
-        ),
-        const SizedBox(width: 10),
-        Text(
-          label,
-          style: AppTypography.titleMedium.copyWith(
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
+  Widget _buildBentoCard({
+    required IconData icon,
+    required Color iconColor,
+    required Color iconBg,
+    required String title,
+    required String description,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0), width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
-        ),
-      ],
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: iconBg,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              icon,
+              size: 18,
+              color: iconColor,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            title,
+            style: AppTypography.titleMedium.copyWith(
+              fontSize: 13.5,
+              fontWeight: FontWeight.w800,
+              color: AppColors.textPrimary,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            description,
+            style: AppTypography.caption.copyWith(
+              fontSize: 11,
+              height: 1.35,
+              color: const Color(0xFF64748B),
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
     );
   }
 }
 
-class _BenefitTag extends StatelessWidget {
+class _BenefitPill extends StatelessWidget {
+  final IconData icon;
   final String label;
 
-  const _BenefitTag({required this.label});
+  const _BenefitPill({
+    required this.icon,
+    required this.label,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: const Color(0xFFE2E8F0).withValues(alpha: 0.65),
-        borderRadius: BorderRadius.circular(8),
+        color: const Color(0xFFF1F5F9),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
-      child: Text(
-        label,
-        style: const TextStyle(
-          color: AppColors.textPrimary,
-          fontSize: 14,
-          fontWeight: FontWeight.w600,
-        ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            size: 13,
+            color: AppColors.primary,
+          ),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: AppTypography.caption.copyWith(
+              fontSize: 11.5,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
+          ),
+        ],
       ),
     );
   }

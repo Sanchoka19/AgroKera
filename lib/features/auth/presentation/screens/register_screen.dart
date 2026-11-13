@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../core/auth/auth_state_provider.dart';
 import '../../../../core/constants/app_assets.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/primary_button.dart';
+import '../widgets/google_sign_in_sheet.dart';
 import 'login_screen.dart';
 import 'role_selection_screen.dart';
 
@@ -57,19 +59,24 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     );
   }
 
-  void _onGoogleSignUp() {
+  Future<void> _onGoogleSignUp() async {
+    final account = await GoogleSignInSheet.show(context);
+    if (account == null || !mounted) return;
+
     HapticFeedback.lightImpact();
     ref.read(authStateProvider.notifier).register(
       role: UserRole.customer,
-      name: 'Google მომხმარებელი',
-      email: 'user@gmail.com',
+      name: account.name,
+      email: account.email,
     );
 
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => const RoleSelectionScreen(),
-      ),
-    );
+    if (mounted) {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => const RoleSelectionScreen(),
+        ),
+      );
+    }
   }
 
   @override
@@ -88,21 +95,21 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   child: Column(
                     children: [
                       // ==========================================
-                      // HEADER: Brand, Back & Right-aligned Illustration (Submerged 30%)
+                      // HEADER: Brand, Back & Right-aligned Illustration (Submerged ~30%)
                       // ==========================================
                       SizedBox(
-                        height: 130,
+                        height: 145,
                         width: double.infinity,
                         child: Stack(
                           clipBehavior: Clip.none,
                           children: [
-                            // Illustration placed on the right, submerged ~30% under the white sheet
+                            // Illustration placed on the right, maximized and submerged ~30% under the white sheet
                             Positioned(
-                              right: 6,
-                              bottom: -26,
+                              right: 2,
+                              bottom: -28,
                               child: SizedBox(
-                                width: 145,
-                                height: 125,
+                                width: 195,
+                                height: 160,
                                 child: SvgPicture.asset(
                                   AppAssets.requireSignIn,
                                   fit: BoxFit.contain,
@@ -138,7 +145,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                   ),
                                   const SizedBox(width: 12),
 
-                                  // Enlarged Brand Logo & Title
+                                  // Brand Logo & Split-Colored Title matching Main Screen
                                   Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
@@ -148,13 +155,28 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                         height: 28,
                                       ),
                                       const SizedBox(width: 8),
-                                      Text(
-                                        'აგროკერა',
-                                        style: AppTypography.h2.copyWith(
-                                          fontSize: 20,
-                                          fontWeight: FontWeight.w800,
-                                          color: AppColors.primary,
-                                          letterSpacing: -0.4,
+                                      RichText(
+                                        text: TextSpan(
+                                          children: [
+                                            TextSpan(
+                                              text: 'აგრო',
+                                              style: GoogleFonts.notoSansGeorgian(
+                                                fontSize: 21,
+                                                fontWeight: FontWeight.w900,
+                                                color: AppColors.textPrimary,
+                                                letterSpacing: -0.5,
+                                              ),
+                                            ),
+                                            TextSpan(
+                                              text: 'კერა',
+                                              style: GoogleFonts.notoSansGeorgian(
+                                                fontSize: 21,
+                                                fontWeight: FontWeight.w900,
+                                                color: AppColors.primary,
+                                                letterSpacing: -0.5,
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       ),
                                     ],
@@ -322,15 +344,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                               Center(
                                 child: GestureDetector(
                                   onTap: () {
-                                    if (Navigator.of(context).canPop()) {
-                                      Navigator.of(context).pop();
-                                    } else {
-                                      Navigator.of(context).pushReplacement(
-                                        MaterialPageRoute(
-                                          builder: (context) => const LoginScreen(),
-                                        ),
-                                      );
-                                    }
+                                    Navigator.of(context).pushReplacement(
+                                      MaterialPageRoute(
+                                        builder: (context) => const LoginScreen(),
+                                      ),
+                                    );
                                   },
                                   child: RichText(
                                     text: TextSpan(

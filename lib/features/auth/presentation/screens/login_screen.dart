@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../core/auth/auth_state_provider.dart';
 import '../../../../core/constants/app_assets.dart';
@@ -9,6 +10,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/primary_button.dart';
 import '../widgets/forgot_password_sheet.dart';
+import '../widgets/google_sign_in_sheet.dart';
 import 'register_screen.dart';
 
 /// Screen 1: ავტორიზაცია (Login / Sign In Screen)
@@ -56,6 +58,29 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     );
   }
 
+  Future<void> _onGoogleSignIn() async {
+    final account = await GoogleSignInSheet.show(context);
+    if (account == null || !mounted) return;
+
+    HapticFeedback.lightImpact();
+    ref.read(authStateProvider.notifier).login(
+      name: account.name,
+      email: account.email,
+      role: UserRole.customer,
+    );
+
+    if (mounted) {
+      Navigator.of(context).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('მოგესალმებით, ${account.name}!'),
+          backgroundColor: AppColors.primary,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -72,21 +97,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   child: Column(
                     children: [
                       // ==========================================
-                      // HEADER: Brand, Back & Right-aligned Illustration (Submerged 30%)
+                      // HEADER: Brand, Back & Right-aligned Illustration (Submerged ~30%)
                       // ==========================================
                       SizedBox(
-                        height: 135,
+                        height: 155,
                         width: double.infinity,
                         child: Stack(
                           clipBehavior: Clip.none,
                           children: [
-                            // Illustration placed on the right, submerged ~30% under the white sheet
+                            // Illustration placed on the right, maximized and submerged ~30% under the white sheet
                             Positioned(
-                              right: 8,
-                              bottom: -28,
+                              right: 2,
+                              bottom: -32,
                               child: SizedBox(
-                                width: 155,
-                                height: 135,
+                                width: 205,
+                                height: 170,
                                 child: SvgPicture.asset(
                                   AppAssets.signIn,
                                   fit: BoxFit.contain,
@@ -122,7 +147,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                   ),
                                   const SizedBox(width: 12),
 
-                                  // Enlarged Brand Logo & Title
+                                  // Brand Logo & Split-Colored Title matching Main Screen
                                   Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
@@ -132,13 +157,28 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                         height: 28,
                                       ),
                                       const SizedBox(width: 8),
-                                      Text(
-                                        'აგროკერა',
-                                        style: AppTypography.h2.copyWith(
-                                          fontSize: 20,
-                                          fontWeight: FontWeight.w800,
-                                          color: AppColors.primary,
-                                          letterSpacing: -0.4,
+                                      RichText(
+                                        text: TextSpan(
+                                          children: [
+                                            TextSpan(
+                                              text: 'აგრო',
+                                              style: GoogleFonts.notoSansGeorgian(
+                                                fontSize: 21,
+                                                fontWeight: FontWeight.w900,
+                                                color: AppColors.textPrimary,
+                                                letterSpacing: -0.5,
+                                              ),
+                                            ),
+                                            TextSpan(
+                                              text: 'კერა',
+                                              style: GoogleFonts.notoSansGeorgian(
+                                                fontSize: 21,
+                                                fontWeight: FontWeight.w900,
+                                                color: AppColors.primary,
+                                                letterSpacing: -0.5,
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       ),
                                     ],
@@ -328,7 +368,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                               // Google OAuth Button
                               InkWell(
-                                onTap: _onSignIn,
+                                onTap: _onGoogleSignIn,
                                 borderRadius: BorderRadius.circular(14),
                                 child: Container(
                                   height: 46,
@@ -371,7 +411,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               Center(
                                 child: GestureDetector(
                                   onTap: () {
-                                    Navigator.of(context).push(
+                                    Navigator.of(context).pushReplacement(
                                       MaterialPageRoute(
                                         builder: (context) => const RegisterScreen(),
                                       ),

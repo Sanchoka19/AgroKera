@@ -35,7 +35,7 @@ class _MainNavScreenState extends State<MainNavScreen> {
   @override
   Widget build(BuildContext context) {
     final screens = [
-      HomeScreen(onSearchTap: () => _onTabSelected(1)),
+      const HomeScreen(),
       const CategoriesScreen(),
       const GuestProfileScreen(),
     ];

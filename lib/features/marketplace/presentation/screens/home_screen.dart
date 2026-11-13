@@ -10,6 +10,7 @@ import '../../../../core/widgets/app_logo.dart';
 import '../../../../core/widgets/auth_required_bottom_sheet.dart';
 import '../../../../core/widgets/product_card.dart';
 import '../../data/mock_data.dart';
+import '../widgets/global_search_dialog.dart';
 import '../widgets/guest_promo_banner.dart';
 import 'farmer_profile_screen.dart';
 import 'product_details_screen.dart';
@@ -82,7 +83,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         Row(
                           children: [
                             IconButton(
-                              onPressed: widget.onSearchTap,
+                              onPressed: widget.onSearchTap ??
+                                  () => GlobalSearchDialog.show(context),
                               icon: const Icon(
                                 LucideIcons.search,
                                 size: 24,

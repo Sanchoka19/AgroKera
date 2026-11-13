@@ -11,7 +11,7 @@ class AppLogo extends StatelessWidget {
   final double fontSize;
   final double iconSize;
 
-  const AppLogo({super.key, this.fontSize = 22, this.iconSize = 28});
+  const AppLogo({super.key, this.fontSize = 25, this.iconSize = 34});
 
   @override
   Widget build(BuildContext context) {
@@ -37,18 +37,18 @@ class AppLogo extends StatelessWidget {
                 text: 'აგრო',
                 style: AppTypography.h1.copyWith(
                   fontSize: fontSize,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w900,
                   color: AppColors.textPrimary,
-                  letterSpacing: -0.5,
+                  letterSpacing: -0.6,
                 ),
               ),
               TextSpan(
                 text: 'კერა',
                 style: AppTypography.h1.copyWith(
                   fontSize: fontSize,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w900,
                   color: AppColors.primary,
-                  letterSpacing: -0.5,
+                  letterSpacing: -0.6,
                 ),
               ),
             ],

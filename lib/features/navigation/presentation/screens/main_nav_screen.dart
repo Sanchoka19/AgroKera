@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:agrokera/core/theme/app_colors.dart';
 import 'package:agrokera/core/theme/app_typography.dart';
 import 'package:agrokera/features/marketplace/presentation/screens/categories_screen.dart';
@@ -7,7 +6,7 @@ import 'package:agrokera/features/marketplace/presentation/screens/home_screen.d
 import 'package:agrokera/features/profile/presentation/screens/guest_profile_screen.dart';
 
 /// Main Bottom Navigation Shell adhering to Figma screenshots:
-/// 3 tabs:
+/// 3 tabs with filled active icons and bolder active typography:
 /// 1. მთავარი (Home)
 /// 2. მარკეტი (Categories & Agro Market)
 /// 3. პროფილი (Profile / Guest Profile)
@@ -64,11 +63,11 @@ class _MainNavScreenState extends State<MainNavScreen> {
           selectedItemColor: AppColors.primary,
           unselectedItemColor: AppColors.textSecondary,
           selectedLabelStyle: AppTypography.caption.copyWith(
-            fontWeight: FontWeight.w700,
-            fontSize: 12,
+            fontWeight: FontWeight.w800,
+            fontSize: 12.5,
           ),
           unselectedLabelStyle: AppTypography.caption.copyWith(
-            fontWeight: FontWeight.w500,
+            fontWeight: FontWeight.w600,
             fontSize: 12,
           ),
           type: BottomNavigationBarType.fixed,
@@ -77,13 +76,13 @@ class _MainNavScreenState extends State<MainNavScreen> {
             BottomNavigationBarItem(
               icon: Padding(
                 padding: EdgeInsets.only(bottom: 4),
-                child: Icon(LucideIcons.home, size: 24),
+                child: Icon(Icons.home_outlined, size: 26),
               ),
               activeIcon: Padding(
                 padding: EdgeInsets.only(bottom: 4),
                 child: Icon(
-                  LucideIcons.home,
-                  size: 24,
+                  Icons.home_rounded,
+                  size: 26,
                   color: AppColors.primary,
                 ),
               ),
@@ -92,13 +91,13 @@ class _MainNavScreenState extends State<MainNavScreen> {
             BottomNavigationBarItem(
               icon: Padding(
                 padding: EdgeInsets.only(bottom: 4),
-                child: Icon(LucideIcons.store, size: 24),
+                child: Icon(Icons.storefront_outlined, size: 26),
               ),
               activeIcon: Padding(
                 padding: EdgeInsets.only(bottom: 4),
                 child: Icon(
-                  LucideIcons.store,
-                  size: 24,
+                  Icons.storefront_rounded,
+                  size: 26,
                   color: AppColors.primary,
                 ),
               ),
@@ -107,13 +106,13 @@ class _MainNavScreenState extends State<MainNavScreen> {
             BottomNavigationBarItem(
               icon: Padding(
                 padding: EdgeInsets.only(bottom: 4),
-                child: Icon(LucideIcons.user, size: 24),
+                child: Icon(Icons.person_outline_rounded, size: 26),
               ),
               activeIcon: Padding(
                 padding: EdgeInsets.only(bottom: 4),
                 child: Icon(
-                  LucideIcons.user,
-                  size: 24,
+                  Icons.person_rounded,
+                  size: 26,
                   color: AppColors.primary,
                 ),
               ),

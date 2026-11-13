@@ -154,6 +154,7 @@ class GuestProfileScreen extends ConsumerWidget {
                   );
                 },
               ),
+              const SizedBox(height: 48),
             ],
           ),
         ),

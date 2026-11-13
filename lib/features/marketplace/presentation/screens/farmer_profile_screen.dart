@@ -297,7 +297,7 @@ class _FarmerProfileScreenState extends ConsumerState<FarmerProfileScreen>
                                   crossAxisCount: 2,
                                   crossAxisSpacing: 12,
                                   mainAxisSpacing: 12,
-                                  childAspectRatio: 0.72,
+                                  childAspectRatio: 0.67,
                                 ),
                             itemCount: farmerProducts.length,
                             itemBuilder: (context, index) {
@@ -369,6 +369,7 @@ class _FarmerProfileScreenState extends ConsumerState<FarmerProfileScreen>
                 ],
               ),
             ),
+            const SizedBox(height: 48),
           ],
         ),
       ),

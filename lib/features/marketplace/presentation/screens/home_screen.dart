@@ -330,7 +330,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   crossAxisCount: 2,
                   crossAxisSpacing: 12,
                   mainAxisSpacing: 12,
-                  childAspectRatio: 0.72,
+                  childAspectRatio: 0.67,
                 ),
                 itemCount: MockData.products.length,
                 itemBuilder: (context, index) {
@@ -364,7 +364,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   );
                 },
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 48),
             ],
           ),
         ),

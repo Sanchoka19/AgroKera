@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -9,7 +10,8 @@ import 'category_products_screen.dart';
 /// Categories & Agro-Market screen adhering to Screenshot 4:
 /// - Title "აგრო მარკეტი"
 /// - Search bar "ძებნა..."
-/// - 2xN Grid of colored category cards with item counts and photos
+/// - 2xN Grid of category cards with full-bleed photos & frosted glass blur text header
+/// - Bottom padding so items never stick against the bottom navigation bar
 class CategoriesScreen extends StatefulWidget {
   const CategoriesScreen({super.key});
 
@@ -87,6 +89,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
               // Categories Grid
               Expanded(
                 child: GridView.builder(
+                  padding: const EdgeInsets.only(bottom: 60),
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
                     crossAxisSpacing: 14,
@@ -133,55 +136,107 @@ class _CategoryCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: category.backgroundColor,
           borderRadius: BorderRadius.circular(18),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.06),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
+            ),
+          ],
         ),
         clipBehavior: Clip.antiAlias,
         child: Stack(
+          fit: StackFit.expand,
           children: [
-            // Background Image positioned at the bottom
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              height: 120,
+            // 1. Full-bleed background photo covering the entire card
+            Positioned.fill(
               child: category.imageUrl.startsWith('assets/')
                   ? Image.asset(
                       category.imageUrl,
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) =>
-                          const SizedBox.shrink(),
+                          Container(color: category.backgroundColor),
                     )
                   : Image.network(
                       category.imageUrl,
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) =>
-                          const SizedBox.shrink(),
+                          Container(color: category.backgroundColor),
                     ),
             ),
-            // Text Header
-            Padding(
-              padding: const EdgeInsets.all(14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    category.name,
-                    style: AppTypography.titleMedium.copyWith(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+
+            // 2. Subtle gradient overlay
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.black.withValues(alpha: 0.35),
+                      Colors.transparent,
+                      Colors.black.withValues(alpha: 0.35),
+                    ],
                   ),
-                  const SizedBox(height: 3),
-                  Text(
-                    '${category.productCount} პროდუქტი',
-                    style: AppTypography.caption.copyWith(
-                      color: Colors.white.withValues(alpha: 0.85),
-                      fontSize: 12,
+                ),
+              ),
+            ),
+
+            // 3. Frosted Glass Blur Banner with Title & Count
+            Positioned(
+              top: 10,
+              left: 10,
+              right: 10,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.35),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.25),
+                        width: 1,
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          category.name,
+                          style: AppTypography.titleMedium.copyWith(
+                            color: Colors.white,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800,
+                            shadows: [
+                              Shadow(
+                                color: Colors.black.withValues(alpha: 0.7),
+                                blurRadius: 4,
+                              ),
+                            ],
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '${category.productCount} პროდუქტი',
+                          style: AppTypography.caption.copyWith(
+                            color: Colors.white.withValues(alpha: 0.95),
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ],
+                ),
               ),
             ),
           ],

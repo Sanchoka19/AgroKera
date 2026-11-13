@@ -166,12 +166,13 @@ class _CategoryProductsScreenState
                         ),
                       )
                     : GridView.builder(
+                        padding: const EdgeInsets.only(bottom: 80),
                         gridDelegate:
                             const SliverGridDelegateWithFixedCrossAxisCount(
                               crossAxisCount: 2,
                               crossAxisSpacing: 12,
                               mainAxisSpacing: 12,
-                              childAspectRatio: 0.72,
+                              childAspectRatio: 0.67,
                             ),
                         itemCount: products.length,
                         itemBuilder: (context, index) {

@@ -91,28 +91,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Header text
-              Text(
-                'შექმენი ანგარიში',
-                style: AppTypography.h2.copyWith(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'დარეგისტრირდი და დაიწყე ნატურალური პროდუქტების შეძენა',
-                style: AppTypography.caption.copyWith(
-                  fontSize: 13,
-                  color: const Color(0xFF64748B),
-                ),
-              ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 8),
 
               // 1. Google 1-Click Fast Sign-Up Button at the top
               InkWell(

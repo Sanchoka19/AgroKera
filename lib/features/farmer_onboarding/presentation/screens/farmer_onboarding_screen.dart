@@ -240,7 +240,10 @@ class _FarmerOnboardingScreenState extends ConsumerState<FarmerOnboardingScreen>
                     physics: _currentStep == 2
                         ? const NeverScrollableScrollPhysics()
                         : const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: _currentStep == 2 ? 0 : 8,
+                    ),
                     child: _buildCurrentStepContent(),
                   ),
                 ),
@@ -456,45 +459,46 @@ class _FarmerOnboardingScreenState extends ConsumerState<FarmerOnboardingScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const SizedBox(height: 4),
+        // Sits closely under progress bar
+        const SizedBox(height: 0),
         Text(
           'აირჩიე\nთქვენი სტატუსი',
           style: AppTypography.h1.copyWith(
-            fontSize: 20,
+            fontSize: 22,
             fontWeight: FontWeight.w800,
             color: AppColors.textPrimary,
             height: 1.25,
           ),
           textAlign: TextAlign.center,
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: 16),
         ...LegalStatus.values.map((status) {
           final isSelected = _selectedStatus == status;
           return Padding(
-            padding: const EdgeInsets.only(bottom: 10),
+            padding: const EdgeInsets.only(bottom: 12),
             child: InkWell(
               onTap: () {
                 HapticFeedback.selectionClick();
                 setState(() => _selectedStatus = status);
               },
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(22),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 220),
                 curve: Curves.easeInOut,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
                 decoration: BoxDecoration(
                   color: isSelected ? const Color(0xFFFAFDFB) : Colors.white,
-                  borderRadius: BorderRadius.circular(18),
+                  borderRadius: BorderRadius.circular(22),
                   border: Border.all(
                     color: isSelected ? AppColors.primary : const Color(0xFFE2E8F0),
-                    width: isSelected ? 2.0 : 1.2,
+                    width: isSelected ? 2.2 : 1.2,
                   ),
                   boxShadow: [
                     BoxShadow(
                       color: isSelected
                           ? AppColors.primary.withValues(alpha: 0.12)
                           : Colors.black.withValues(alpha: 0.02),
-                      blurRadius: isSelected ? 10 : 4,
+                      blurRadius: isSelected ? 12 : 5,
                       offset: const Offset(0, 2),
                     ),
                   ],
@@ -504,10 +508,10 @@ class _FarmerOnboardingScreenState extends ConsumerState<FarmerOnboardingScreen>
                   children: [
                     if (isSelected)
                       Positioned(
-                        top: -4,
+                        top: -5,
                         right: -4,
                         child: Container(
-                          padding: const EdgeInsets.all(4),
+                          padding: const EdgeInsets.all(5),
                           decoration: const BoxDecoration(
                             color: AppColors.primary,
                             shape: BoxShape.circle,
@@ -523,10 +527,10 @@ class _FarmerOnboardingScreenState extends ConsumerState<FarmerOnboardingScreen>
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        // Centered circular icon badge
+                        // Centered large circular icon badge (increased height)
                         Container(
-                          width: 50,
-                          height: 50,
+                          width: 62,
+                          height: 62,
                           decoration: BoxDecoration(
                             color: isSelected
                                 ? AppColors.primaryLight
@@ -535,19 +539,19 @@ class _FarmerOnboardingScreenState extends ConsumerState<FarmerOnboardingScreen>
                           ),
                           child: Icon(
                             status.icon,
-                            size: 26,
+                            size: 28,
                             color: isSelected
                                 ? AppColors.primary
                                 : const Color(0xFF475569),
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 10),
 
                         // Title below the icon
                         Text(
                           status.label,
                           style: AppTypography.titleMedium.copyWith(
-                            fontSize: 16,
+                            fontSize: 17,
                             fontWeight: FontWeight.w800,
                             color: isSelected
                                 ? AppColors.primaryDark
@@ -555,18 +559,18 @@ class _FarmerOnboardingScreenState extends ConsumerState<FarmerOnboardingScreen>
                           ),
                           textAlign: TextAlign.center,
                         ),
-                        const SizedBox(height: 3),
+                        const SizedBox(height: 4),
 
                         // Explanatory subtitle below title
                         Text(
                           status.subtitle,
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: 12.5,
                             color: isSelected
-                                ? AppColors.primaryDark.withValues(alpha: 0.75)
+                                ? AppColors.primaryDark.withValues(alpha: 0.8)
                                 : const Color(0xFF64748B),
                             fontWeight: FontWeight.w500,
-                            height: 1.25,
+                            height: 1.3,
                           ),
                           textAlign: TextAlign.center,
                         ),

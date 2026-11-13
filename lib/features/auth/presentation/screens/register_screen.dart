@@ -12,13 +12,12 @@ import 'login_screen.dart';
 import 'role_selection_screen.dart';
 
 /// Screen: რეგისტრაცია (Sign-Up Screen)
-/// Matching Parcel-style unified architecture:
-/// - Warm organic header background (#FAF5ED) with illustration and back button
-/// - Overlapping curved white card container (top radius 28px) with subtle elevation
-/// - 3 Essential pill-shaped input fields with icons (#F8FAFC): Full Name, Email, Password
-/// - Primary green CTA button (#53B175)
-/// - "ან გააგრძელეთ" divider & Google 1-Click Sign-Up button
-/// - "უკვე გაქვთ ანგარიში? შესვლა" link & guest quick access link
+/// Evolution:
+/// - Soft brand green tint background (AppColors.primaryLight #EBF7EF)
+/// - Prominent enlarged brand logo (28x28) and title ("აგროკერა" 20px bold) on top left
+/// - Illustration shifted to the right, submerged ~30% behind the overlapping white card
+/// - Zero-scroll viewport architecture: fits 100% on screen without scrolling
+/// - 3 Essential pill inputs, green CTA, Google 1-Click button & guest link
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
 
@@ -75,85 +74,101 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const warmHeaderBg = Color(0xFFFAF5ED);
-
     return Scaffold(
-      backgroundColor: warmHeaderBg,
+      backgroundColor: AppColors.primaryLight,
       body: SafeArea(
         bottom: false,
         child: LayoutBuilder(
           builder: (context, constraints) {
             return SingleChildScrollView(
+              physics: const ClampingScrollPhysics(),
               child: ConstrainedBox(
                 constraints: BoxConstraints(minHeight: constraints.maxHeight),
                 child: IntrinsicHeight(
                   child: Column(
                     children: [
-                      // Warm Header Section with Back Button & Brand Badge
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      // ==========================================
+                      // HEADER: Brand, Back & Right-aligned Illustration (Submerged 30%)
+                      // ==========================================
+                      SizedBox(
+                        height: 130,
+                        width: double.infinity,
+                        child: Stack(
+                          clipBehavior: Clip.none,
                           children: [
-                            // Circular back button
-                            Material(
-                              color: Colors.white,
-                              shape: const CircleBorder(),
-                              elevation: 1,
-                              shadowColor: Colors.black.withValues(alpha: 0.08),
-                              child: InkWell(
-                                customBorder: const CircleBorder(),
-                                onTap: () => Navigator.of(context).pop(),
-                                child: const Padding(
-                                  padding: EdgeInsets.all(10),
-                                  child: Icon(
-                                    LucideIcons.chevronLeft,
-                                    color: AppColors.textPrimary,
-                                    size: 22,
-                                  ),
+                            // Illustration placed on the right, submerged ~30% under the white sheet
+                            Positioned(
+                              right: 6,
+                              bottom: -26,
+                              child: SizedBox(
+                                width: 145,
+                                height: 125,
+                                child: SvgPicture.asset(
+                                  AppAssets.requireSignIn,
+                                  fit: BoxFit.contain,
                                 ),
                               ),
                             ),
-                            // Brand badge
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                SvgPicture.asset(
-                                  AppAssets.logoGreen,
-                                  width: 22,
-                                  height: 22,
-                                ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  'აგროკერა',
-                                  style: AppTypography.titleMedium.copyWith(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.primary,
-                                    letterSpacing: -0.3,
+
+                            // Top Navigation & Branding Bar
+                            Positioned(
+                              top: 6,
+                              left: 16,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  // Circular back button
+                                  Material(
+                                    color: Colors.white,
+                                    shape: const CircleBorder(),
+                                    elevation: 1,
+                                    shadowColor: Colors.black.withValues(alpha: 0.08),
+                                    child: InkWell(
+                                      customBorder: const CircleBorder(),
+                                      onTap: () => Navigator.of(context).pop(),
+                                      child: const Padding(
+                                        padding: EdgeInsets.all(9),
+                                        child: Icon(
+                                          LucideIcons.chevronLeft,
+                                          color: AppColors.textPrimary,
+                                          size: 20,
+                                        ),
+                                      ),
+                                    ),
                                   ),
-                                ),
-                              ],
+                                  const SizedBox(width: 12),
+
+                                  // Enlarged Brand Logo & Title
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      SvgPicture.asset(
+                                        AppAssets.logoGreen,
+                                        width: 28,
+                                        height: 28,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        'აგროკერა',
+                                        style: AppTypography.h2.copyWith(
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.w800,
+                                          color: AppColors.primary,
+                                          letterSpacing: -0.4,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
                             ),
-                            // Spacer to balance back button
-                            const SizedBox(width: 42),
                           ],
                         ),
                       ),
 
-                      // Header Illustration
-                      Padding(
-                        padding: const EdgeInsets.only(top: 4, bottom: 18),
-                        child: SizedBox(
-                          height: 120,
-                          child: SvgPicture.asset(
-                            AppAssets.requireSignIn,
-                            fit: BoxFit.contain,
-                          ),
-                        ),
-                      ),
-
-                      // Overlapping White Sheet Card
+                      // ==========================================
+                      // OVERLAPPING WHITE SHEET CARD (100% No-Scroll Viewport)
+                      // ==========================================
                       Expanded(
                         child: Container(
                           width: double.infinity,
@@ -168,7 +183,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                               ),
                             ],
                           ),
-                          padding: const EdgeInsets.fromLTRB(24, 26, 24, 24),
+                          padding: const EdgeInsets.fromLTRB(22, 18, 22, 14),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
@@ -176,13 +191,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                               Text(
                                 'რეგისტრაცია',
                                 style: AppTypography.h1.copyWith(
-                                  fontSize: 24,
+                                  fontSize: 22,
                                   fontWeight: FontWeight.w800,
                                   color: AppColors.textPrimary,
                                   letterSpacing: -0.3,
                                 ),
                               ),
-                              const SizedBox(height: 6),
+                              const SizedBox(height: 3),
                               Text(
                                 'შექმენით ანგარიში და დაიწყეთ ნატურალური პროდუქტების შეძენა',
                                 style: AppTypography.bodyMedium.copyWith(
@@ -190,7 +205,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                   fontSize: 13,
                                 ),
                               ),
-                              const SizedBox(height: 20),
+                              const SizedBox(height: 12),
 
                               // Full Name Field
                               _buildPillTextField(
@@ -199,7 +214,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                 prefixIcon: LucideIcons.user,
                                 textCapitalization: TextCapitalization.words,
                               ),
-                              const SizedBox(height: 12),
+                              const SizedBox(height: 8),
 
                               // Email Field
                               _buildPillTextField(
@@ -208,7 +223,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                 hintText: 'ელ.ფოსტა (მაგ. example@gmail.com)',
                                 prefixIcon: LucideIcons.mail,
                               ),
-                              const SizedBox(height: 12),
+                              const SizedBox(height: 8),
 
                               // Password Field
                               _buildPillTextField(
@@ -219,7 +234,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                 suffixIcon: IconButton(
                                   icon: Icon(
                                     _obscurePassword ? LucideIcons.eyeOff : LucideIcons.eye,
-                                    size: 20,
+                                    size: 19,
                                     color: const Color(0xFF64748B),
                                   ),
                                   onPressed: () {
@@ -227,16 +242,16 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                   },
                                 ),
                               ),
-                              const SizedBox(height: 20),
+                              const SizedBox(height: 12),
 
                               // Primary "რეგისტრაცია" CTA Button
                               PrimaryButton(
                                 text: 'რეგისტრაცია',
-                                borderRadius: BorderRadius.circular(16),
-                                height: 52,
+                                borderRadius: BorderRadius.circular(14),
+                                height: 46,
                                 onPressed: _onSignUp,
                               ),
-                              const SizedBox(height: 18),
+                              const SizedBox(height: 10),
 
                               // "ან გააგრძელეთ" Divider
                               Row(
@@ -245,12 +260,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                     child: Divider(color: Color(0xFFE2E8F0), thickness: 1),
                                   ),
                                   Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 14),
+                                    padding: const EdgeInsets.symmetric(horizontal: 12),
                                     child: Text(
                                       'ან გააგრძელეთ',
                                       style: AppTypography.caption.copyWith(
                                         color: const Color(0xFF94A3B8),
-                                        fontSize: 13,
+                                        fontSize: 12,
                                         fontWeight: FontWeight.w500,
                                       ),
                                     ),
@@ -260,22 +275,22 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 16),
+                              const SizedBox(height: 9),
 
                               // Google 1-Click Fast Sign-Up Button
                               InkWell(
                                 onTap: _onGoogleSignUp,
-                                borderRadius: BorderRadius.circular(16),
+                                borderRadius: BorderRadius.circular(14),
                                 child: Container(
-                                  height: 50,
+                                  height: 44,
                                   decoration: BoxDecoration(
                                     color: Colors.white,
-                                    borderRadius: BorderRadius.circular(16),
+                                    borderRadius: BorderRadius.circular(14),
                                     border: Border.all(color: const Color(0xFFE2E8F0), width: 1.2),
                                     boxShadow: [
                                       BoxShadow(
                                         color: Colors.black.withValues(alpha: 0.02),
-                                        blurRadius: 8,
+                                        blurRadius: 6,
                                         offset: const Offset(0, 2),
                                       ),
                                     ],
@@ -285,15 +300,15 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                     children: [
                                       SvgPicture.asset(
                                         AppAssets.google,
-                                        width: 20,
-                                        height: 20,
+                                        width: 18,
+                                        height: 18,
                                       ),
-                                      const SizedBox(width: 10),
+                                      const SizedBox(width: 8),
                                       Text(
                                         'Google-ით რეგისტრაცია',
                                         style: AppTypography.button.copyWith(
                                           color: AppColors.textPrimary,
-                                          fontSize: 15,
+                                          fontSize: 13.5,
                                           fontWeight: FontWeight.w600,
                                         ),
                                       ),
@@ -301,7 +316,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                   ),
                                 ),
                               ),
-                              const SizedBox(height: 22),
+                              const SizedBox(height: 12),
 
                               // Bottom prompt: "უკვე გაქვთ ანგარიში? შესვლა"
                               Center(
@@ -322,14 +337,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                       text: 'უკვე გაქვთ ანგარიში? ',
                                       style: AppTypography.bodyMedium.copyWith(
                                         color: const Color(0xFF64748B),
-                                        fontSize: 14,
+                                        fontSize: 13,
                                       ),
                                       children: [
                                         TextSpan(
                                           text: 'შესვლა',
                                           style: AppTypography.bodyMedium.copyWith(
                                             color: AppColors.primary,
-                                            fontSize: 14,
+                                            fontSize: 13,
                                             fontWeight: FontWeight.w700,
                                           ),
                                         ),
@@ -338,7 +353,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                   ),
                                 ),
                               ),
-                              const SizedBox(height: 14),
+                              const SizedBox(height: 6),
 
                               // Guest shortcut: "მარკეტის დათვალიერება სტუმრად →"
                               Center(
@@ -348,13 +363,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                     'მარკეტის დათვალიერება სტუმრად →',
                                     style: AppTypography.bodyMedium.copyWith(
                                       color: AppColors.primary,
-                                      fontSize: 13,
+                                      fontSize: 12.5,
                                       fontWeight: FontWeight.w600,
                                     ),
                                   ),
                                 ),
                               ),
-                              const SizedBox(height: 8),
+                              const SizedBox(height: 2),
                             ],
                           ),
                         ),
@@ -382,28 +397,28 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     return Container(
       decoration: BoxDecoration(
         color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0), width: 1.2),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFE2E8F0), width: 1.1),
       ),
       child: TextField(
         controller: controller,
         keyboardType: keyboardType,
         textCapitalization: textCapitalization,
         obscureText: obscureText,
-        style: const TextStyle(fontSize: 15, color: AppColors.textPrimary, fontWeight: FontWeight.w500),
+        style: const TextStyle(fontSize: 14, color: AppColors.textPrimary, fontWeight: FontWeight.w500),
         decoration: InputDecoration(
           hintText: hintText,
-          hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 14),
-          prefixIcon: Icon(prefixIcon, size: 20, color: const Color(0xFF94A3B8)),
+          hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
+          prefixIcon: Icon(prefixIcon, size: 18, color: const Color(0xFF94A3B8)),
           suffixIcon: suffixIcon,
           filled: true,
           fillColor: Colors.transparent,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           border: InputBorder.none,
           enabledBorder: InputBorder.none,
           focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(16),
-            borderSide: const BorderSide(color: AppColors.primary, width: 1.8),
+            borderRadius: BorderRadius.circular(14),
+            borderSide: const BorderSide(color: AppColors.primary, width: 1.6),
           ),
         ),
       ),

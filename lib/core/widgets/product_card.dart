@@ -215,18 +215,25 @@ class ProductCard extends StatelessWidget {
                     ),
                     InkWell(
                       onTap: onAddPressed,
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(18),
                       child: Container(
-                        width: 30,
-                        height: 30,
-                        decoration: const BoxDecoration(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
                           color: AppColors.primary,
                           shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.primary.withValues(alpha: 0.28),
+                              blurRadius: 6,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
                         ),
                         alignment: Alignment.center,
                         child: const Icon(
                           LucideIcons.plus,
-                          size: 17,
+                          size: 20,
                           color: AppColors.textOnPrimary,
                         ),
                       ),

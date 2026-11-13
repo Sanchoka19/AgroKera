@@ -1,19 +1,28 @@
+import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:agrokera/main.dart';
-import 'package:agrokera/core/widgets/primary_button.dart';
-import 'package:agrokera/core/widgets/custom_text_field.dart';
-import 'package:agrokera/core/widgets/status_badge.dart';
+import 'package:agrokera/core/widgets/app_logo.dart';
+import 'package:agrokera/features/marketplace/presentation/widgets/guest_promo_banner.dart';
+import 'test_helper.dart';
 
 void main() {
-  testWidgets('AgroKera foundation smoke test', (WidgetTester tester) async {
-    await tester.pumpWidget(const ProviderScope(child: AgroKeraApp()));
+  setUpAll(() {
+    HttpOverrides.global = TestHttpOverrides();
+  });
 
-    // Verify Title and Core Widgets are present
-    expect(find.text('AgroKera 🌱'), findsOneWidget);
-    expect(find.byType(PrimaryButton), findsAtLeastNWidgets(1));
-    expect(find.byType(CustomTextField), findsAtLeastNWidgets(1));
-    expect(find.byType(StatusBadge), findsAtLeastNWidgets(1));
-    expect(find.text('შეკვეთის გაფორმება'), findsOneWidget);
+  testWidgets('AgroKera Guest Mode smoke test', (WidgetTester tester) async {
+    await tester.pumpWidget(const ProviderScope(child: AgroKeraApp()));
+    await tester.pumpAndSettle();
+
+    // Verify AppLogo and Navigation Tabs are present
+    expect(find.byType(AppLogo), findsOneWidget);
+    expect(find.text('მთავარი'), findsOneWidget);
+    expect(find.text('მარკეტი'), findsOneWidget);
+    expect(find.text('პროფილი'), findsOneWidget);
+
+    // Verify Guest Promo Banner is shown on Home screen in Guest Mode
+    expect(find.byType(GuestPromoBanner), findsOneWidget);
+    expect(find.text('არ გაქვს ანგარიში?'), findsOneWidget);
   });
 }

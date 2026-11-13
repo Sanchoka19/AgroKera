@@ -100,125 +100,119 @@ class ProductCard extends StatelessWidget {
             ),
 
             // Details section
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(10, 6, 10, 8),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Product title
-                        Text(
-                          product.title,
-                          style: AppTypography.titleMedium.copyWith(
-                            fontSize: 13.5,
-                            fontWeight: FontWeight.w700,
+            Padding(
+              padding: const EdgeInsets.fromLTRB(10, 6, 10, 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Product title
+                  Text(
+                    product.title,
+                    style: AppTypography.titleMedium.copyWith(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w700,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+
+                  // Farm Name with icon
+                  Row(
+                    children: [
+                      const Icon(
+                        LucideIcons.store,
+                        size: 11,
+                        color: AppColors.primary,
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          product.farmerName,
+                          style: AppTypography.caption.copyWith(
+                            fontSize: 10.5,
+                            color: AppColors.textSecondary,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        const SizedBox(height: 2),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 2),
 
-                        // Farm Name with icon
-                        Row(
-                          children: [
-                            const Icon(
-                              LucideIcons.store,
-                              size: 11,
-                              color: AppColors.primary,
-                            ),
-                            const SizedBox(width: 4),
-                            Expanded(
-                              child: Text(
-                                product.farmerName,
-                                style: AppTypography.caption.copyWith(
-                                  fontSize: 10.5,
-                                  color: AppColors.textSecondary,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
+                  // Rating row
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.star_rounded,
+                        size: 14,
+                        color: AppColors.rating,
+                      ),
+                      const SizedBox(width: 2),
+                      Text(
+                        '${product.rating} (${product.reviewCount})',
+                        style: AppTypography.caption.copyWith(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textSecondary,
                         ),
-                        const SizedBox(height: 2),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
 
-                        // Rating row
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.star_rounded,
-                              size: 14,
-                              color: AppColors.rating,
-                            ),
-                            const SizedBox(width: 2),
-                            Text(
-                              '${product.rating} (${product.reviewCount})',
-                              style: AppTypography.caption.copyWith(
-                                fontSize: 10.5,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-
-                    // Stock status & Price + (+) Button
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              product.stockStatus,
-                              style: AppTypography.caption.copyWith(
-                                fontSize: 10.5,
-                                fontWeight: FontWeight.w600,
-                                color: product.stockStatus == 'მარაგშია'
-                                    ? AppColors.primary
-                                    : AppColors.accentWarm,
-                              ),
-                            ),
-                            Text(
-                              '₾${product.price.toStringAsFixed(0)}/${product.unit}',
-                              style: AppTypography.titleMedium.copyWith(
-                                fontSize: 14.5,
-                                fontWeight: FontWeight.w800,
-                                color: AppColors.textPrimary,
-                              ),
-                            ),
-                          ],
-                        ),
-                        InkWell(
-                          onTap: onAddPressed,
-                          borderRadius: BorderRadius.circular(16),
-                          child: Container(
-                            width: 32,
-                            height: 32,
-                            decoration: const BoxDecoration(
-                              color: AppColors.primary,
-                              shape: BoxShape.circle,
-                            ),
-                            alignment: Alignment.center,
-                            child: const Icon(
-                              LucideIcons.plus,
-                              size: 18,
-                              color: AppColors.textOnPrimary,
+                  // Stock status & Price + (+) Button
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            product.stockStatus,
+                            style: AppTypography.caption.copyWith(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: product.stockStatus == 'მარაგშია'
+                                  ? AppColors.primary
+                                  : AppColors.accentWarm,
                             ),
                           ),
+                          Text(
+                            '₾${product.price.toStringAsFixed(0)}/${product.unit}',
+                            style: AppTypography.titleMedium.copyWith(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                        ],
+                      ),
+                      InkWell(
+                        onTap: onAddPressed,
+                        borderRadius: BorderRadius.circular(16),
+                        child: Container(
+                          width: 30,
+                          height: 30,
+                          decoration: const BoxDecoration(
+                            color: AppColors.primary,
+                            shape: BoxShape.circle,
+                          ),
+                          alignment: Alignment.center,
+                          child: const Icon(
+                            LucideIcons.plus,
+                            size: 17,
+                            color: AppColors.textOnPrimary,
+                          ),
                         ),
-                      ],
-                    ),
-                  ],
-                ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
           ],

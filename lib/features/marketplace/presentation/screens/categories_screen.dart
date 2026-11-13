@@ -150,7 +150,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
               )
             else
               SliverPadding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 60),
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
                 sliver: SliverGrid(
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
@@ -271,78 +271,69 @@ class _CategoryCard extends StatelessWidget {
                     ),
             ),
 
-            // 2. Subtle gradient overlay
+            // 2. Frosted Glass Blur covering the ENTIRE card
             Positioned.fill(
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.black.withValues(alpha: 0.35),
-                      Colors.transparent,
-                      Colors.black.withValues(alpha: 0.35),
-                    ],
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.black.withValues(alpha: 0.50),
+                        Colors.black.withValues(alpha: 0.25),
+                        Colors.black.withValues(alpha: 0.45),
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
 
-            // 3. Frosted Glass Blur Banner with Title & Count
+            // 3. Category Title & Count directly on the blurred card
             Positioned(
-              top: 10,
-              left: 10,
-              right: 10,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.35),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.25),
-                        width: 1,
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          category.name,
-                          style: AppTypography.titleMedium.copyWith(
-                            color: Colors.white,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w800,
-                            shadows: [
-                              Shadow(
-                                color: Colors.black.withValues(alpha: 0.7),
-                                blurRadius: 4,
-                              ),
-                            ],
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+              top: 14,
+              left: 14,
+              right: 14,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    category.name,
+                    style: AppTypography.titleMedium.copyWith(
+                      color: Colors.white,
+                      fontSize: 16.5,
+                      fontWeight: FontWeight.w800,
+                      shadows: [
+                        Shadow(
+                          color: Colors.black.withValues(alpha: 0.7),
+                          blurRadius: 6,
+                          offset: const Offset(0, 1),
                         ),
-                        const SizedBox(height: 2),
-                        Text(
-                          '${category.productCount} პროდუქტი',
-                          style: AppTypography.caption.copyWith(
-                            color: Colors.white.withValues(alpha: 0.95),
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w600,
-                          ),
+                      ],
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    '${category.productCount} პროდუქტი',
+                    style: AppTypography.caption.copyWith(
+                      color: Colors.white.withValues(alpha: 0.95),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      shadows: [
+                        Shadow(
+                          color: Colors.black.withValues(alpha: 0.6),
+                          blurRadius: 4,
+                          offset: const Offset(0, 1),
                         ),
                       ],
                     ),
                   ),
-                ),
+                ],
               ),
             ),
           ],

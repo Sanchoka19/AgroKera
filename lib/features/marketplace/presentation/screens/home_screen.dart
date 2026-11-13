@@ -364,7 +364,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   );
                 },
               ),
-              const SizedBox(height: 48),
+              const SizedBox(height: 16),
             ],
           ),
         ),

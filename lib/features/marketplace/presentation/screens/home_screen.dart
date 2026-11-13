@@ -65,271 +65,275 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       backgroundColor: AppColors.bgPrimary,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 12),
-              // App Bar: Logo + Wishlist & Cart Icons
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const AppLogo(),
-                  Row(
-                    children: [
-                      IconButton(
-                        onPressed: () {
-                          requireAuth(
-                            context,
-                            ref: ref,
-                            onAuthenticated: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('სურვილების სია გახსნილია'),
-                                ),
-                              );
-                            },
-                          );
-                        },
-                        icon: const Icon(
-                          LucideIcons.heart,
-                          size: 24,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                      IconButton(
-                        onPressed: () {
-                          requireAuth(
-                            context,
-                            ref: ref,
-                            onAuthenticated: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('კალათა გახსნილია'),
-                                ),
-                              );
-                            },
-                          );
-                        },
-                        icon: const Icon(
-                          LucideIcons.shoppingCart,
-                          size: 24,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              const SizedBox(height: 14),
-
-              // Search Bar
-              GestureDetector(
-                onTap: widget.onSearchTap,
-                child: Container(
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: AppColors.border, width: 1),
-                  ),
-                  padding: const EdgeInsets.symmetric(horizontal: 14),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        LucideIcons.search,
-                        size: 20,
-                        color: AppColors.textSecondary,
-                      ),
-                      const SizedBox(width: 10),
-                      Text(
-                        'მომძებნე აქ ...',
-                        style: AppTypography.bodyMedium.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Guest Promo Banner (if unauthenticated)
-              if (!authState.isAuthenticated) ...[
-                const GuestPromoBanner(),
-                const SizedBox(height: 16),
-              ],
-
-              // Hero Carousel Banner with Auto-slide & subtle blur
-              ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: SizedBox(
-                  height: 180,
-                  width: double.infinity,
-                  child: Stack(
-                    children: [
-                      PageView.builder(
-                        controller: _bannerController,
-                        onPageChanged: (idx) {
-                          setState(() => _currentBannerIndex = idx);
-                        },
-                        itemCount: _bannerImages.length,
-                        itemBuilder: (context, index) {
-                          return Stack(
-                            fit: StackFit.expand,
-                            children: [
-                              Image.network(
-                                _bannerImages[index],
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) =>
-                                    Container(
-                                  color: AppColors.surfaceInput,
-                                  alignment: Alignment.center,
-                                  child: const Icon(
-                                    LucideIcons.image,
-                                    color: AppColors.textSecondary,
-                                    size: 40,
-                                  ),
-                                ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 12),
+                    // App Bar: Logo + Wishlist & Cart Icons
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const AppLogo(),
+                        Row(
+                          children: [
+                            IconButton(
+                              onPressed: () {
+                                requireAuth(
+                                  context,
+                                  ref: ref,
+                                  onAuthenticated: () {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('სურვილების სია გახსნილია'),
+                                      ),
+                                    );
+                                  },
+                                );
+                              },
+                              icon: const Icon(
+                                LucideIcons.heart,
+                                size: 24,
+                                color: AppColors.primary,
                               ),
-                              // Subtle blur overlay as requested by user
-                              BackdropFilter(
-                                filter: ImageFilter.blur(
-                                  sigmaX: 1.5,
-                                  sigmaY: 1.5,
-                                ),
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      begin: Alignment.topCenter,
-                                      end: Alignment.bottomCenter,
-                                      colors: [
-                                        Colors.black.withValues(alpha: 0.15),
-                                        Colors.transparent,
-                                        Colors.black.withValues(alpha: 0.35),
-                                      ],
+                            ),
+                            IconButton(
+                              onPressed: () {
+                                requireAuth(
+                                  context,
+                                  ref: ref,
+                                  onAuthenticated: () {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('კალათა გახსნილია'),
+                                      ),
+                                    );
+                                  },
+                                );
+                              },
+                              icon: const Icon(
+                                LucideIcons.shoppingCart,
+                                size: 24,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+
+                    // Search Bar
+                    GestureDetector(
+                      onTap: widget.onSearchTap,
+                      child: Container(
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: AppColors.surface,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: AppColors.border, width: 1),
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 14),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              LucideIcons.search,
+                              size: 20,
+                              color: AppColors.textSecondary,
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              'მომძებნე აქ ...',
+                              style: AppTypography.bodyMedium.copyWith(
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Guest Promo Banner (if unauthenticated)
+                    if (!authState.isAuthenticated) ...[
+                      const GuestPromoBanner(),
+                      const SizedBox(height: 16),
+                    ],
+
+                    // Hero Carousel Banner with Auto-slide & subtle blur
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: SizedBox(
+                        height: 180,
+                        width: double.infinity,
+                        child: Stack(
+                          children: [
+                            PageView.builder(
+                              controller: _bannerController,
+                              onPageChanged: (idx) {
+                                setState(() => _currentBannerIndex = idx);
+                              },
+                              itemCount: _bannerImages.length,
+                              itemBuilder: (context, index) {
+                                return Stack(
+                                  fit: StackFit.expand,
+                                  children: [
+                                    Image.network(
+                                      _bannerImages[index],
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (context, error, stackTrace) =>
+                                          Container(
+                                        color: AppColors.surfaceInput,
+                                        alignment: Alignment.center,
+                                        child: const Icon(
+                                          LucideIcons.image,
+                                          color: AppColors.textSecondary,
+                                          size: 40,
+                                        ),
+                                      ),
+                                    ),
+                                    // Subtle blur overlay as requested by user
+                                    BackdropFilter(
+                                      filter: ImageFilter.blur(
+                                        sigmaX: 1.5,
+                                        sigmaY: 1.5,
+                                      ),
+                                      child: Container(
+                                        decoration: BoxDecoration(
+                                          gradient: LinearGradient(
+                                            begin: Alignment.topCenter,
+                                            end: Alignment.bottomCenter,
+                                            colors: [
+                                              Colors.black.withValues(alpha: 0.15),
+                                              Colors.transparent,
+                                              Colors.black.withValues(alpha: 0.35),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              },
+                            ),
+                            // Carousel Indicator Dots
+                            Positioned(
+                              bottom: 10,
+                              left: 0,
+                              right: 0,
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: List.generate(
+                                  _bannerImages.length,
+                                  (index) => AnimatedContainer(
+                                    duration: const Duration(milliseconds: 300),
+                                    width: index == _currentBannerIndex ? 18 : 6,
+                                    height: 6,
+                                    margin: const EdgeInsets.symmetric(
+                                      horizontal: 3,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: index == _currentBannerIndex
+                                          ? AppColors.primary
+                                          : Colors.white.withValues(alpha: 0.65),
+                                      borderRadius: BorderRadius.circular(3),
                                     ),
                                   ),
                                 ),
                               ),
-                            ],
-                          );
-                        },
-                      ),
-                      // Carousel Indicator Dots
-                      Positioned(
-                        bottom: 10,
-                        left: 0,
-                        right: 0,
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: List.generate(
-                            _bannerImages.length,
-                            (index) => AnimatedContainer(
-                              duration: const Duration(milliseconds: 300),
-                              width: index == _currentBannerIndex ? 18 : 6,
-                              height: 6,
-                              margin: const EdgeInsets.symmetric(
-                                horizontal: 3,
-                              ),
-                              decoration: BoxDecoration(
-                                color: index == _currentBannerIndex
-                                    ? AppColors.primary
-                                    : Colors.white.withValues(alpha: 0.65),
-                                borderRadius: BorderRadius.circular(3),
-                              ),
                             ),
-                          ),
+                          ],
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(height: 22),
+
+                    // Section 1: "ახლოს მდებარე" (Nearby Farms)
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'ახლოს მდებარე',
+                          style: AppTypography.h1.copyWith(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const Icon(
+                          LucideIcons.chevronRight,
+                          size: 20,
+                          color: AppColors.textPrimary,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                  ],
                 ),
               ),
-              const SizedBox(height: 22),
 
-              // Section 1: "ახლოს მდებარე" (Nearby Farms)
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'ახლოს მდებარე',
-                    style: AppTypography.h1.copyWith(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const Icon(
-                    LucideIcons.chevronRight,
-                    size: 20,
-                    color: AppColors.textPrimary,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-
-              // Horizontal list of farms (Edge-to-edge scrolling)
-              Transform.translate(
-                offset: const Offset(-16, 0),
-                child: SizedBox(
-                  width: MediaQuery.of(context).size.width,
-                  height: 145,
-                  child: ListView.separated(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    clipBehavior: Clip.none,
-                    scrollDirection: Axis.horizontal,
-                    itemCount: MockData.farmers.length,
-                    separatorBuilder: (context, index) =>
-                        const SizedBox(width: 14),
-                    itemBuilder: (context, index) {
-                      final farmer = MockData.farmers[index];
-                      return GestureDetector(
-                        onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  FarmerProfileScreen(farmer: farmer),
-                            ),
-                          );
-                        },
-                        child: Container(
-                          width: 220,
-                          decoration: BoxDecoration(
-                            color: AppColors.surface,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: AppColors.border,
-                              width: 1,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.05),
-                                blurRadius: 6,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
+              // Horizontal list of farms (Edge-to-edge scrolling with 16px start/end insets)
+              SizedBox(
+                height: 145,
+                child: ListView.separated(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  clipBehavior: Clip.none,
+                  scrollDirection: Axis.horizontal,
+                  itemCount: MockData.farmers.length,
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(width: 12),
+                  itemBuilder: (context, index) {
+                    final farmer = MockData.farmers[index];
+                    return GestureDetector(
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                FarmerProfileScreen(farmer: farmer),
                           ),
-                          clipBehavior: Clip.antiAlias,
-                          child: Stack(
-                            children: [
-                              Image.network(
-                                farmer.coverUrl,
+                        );
+                      },
+                      child: Container(
+                        width: 200,
+                        decoration: BoxDecoration(
+                          color: AppColors.surface,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: AppColors.border,
+                            width: 1,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.05),
+                              blurRadius: 6,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        clipBehavior: Clip.antiAlias,
+                        child: Stack(
+                          children: [
+                            Image.network(
+                              farmer.coverUrl,
+                              height: 145,
+                              width: 200,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  Container(
                                 height: 145,
-                                width: 220,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) =>
-                                    Container(
-                                  height: 145,
-                                  width: 220,
-                                  color: AppColors.surfaceInput,
-                                  alignment: Alignment.center,
-                                  child: const Icon(
-                                    LucideIcons.image,
-                                    color: AppColors.textSecondary,
-                                    size: 32,
-                                  ),
+                                width: 200,
+                                color: AppColors.surfaceInput,
+                                alignment: Alignment.center,
+                                child: const Icon(
+                                  LucideIcons.image,
+                                  color: AppColors.textSecondary,
+                                  size: 32,
                                 ),
                               ),
+                            ),
                               Container(
                                 decoration: BoxDecoration(
                                   gradient: LinearGradient(
@@ -399,62 +403,70 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     },
                   ),
                 ),
-              ),
-              const SizedBox(height: 22),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 22),
 
-              // Section 2: "პოპულარული პროდუქტები"
-              Text(
-                'პოპულარული პროდუქტები',
-                style: AppTypography.h1.copyWith(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 12),
+                    // Section 2: "პოპულარული პროდუქტები"
+                    Text(
+                      'პოპულარული პროდუქტები',
+                      style: AppTypography.h1.copyWith(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
 
-              // 2-column grid of products
-              GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                  childAspectRatio: 0.73,
-                ),
-                itemCount: MockData.products.length,
-                itemBuilder: (context, index) {
-                  final product = MockData.products[index];
-                  return ProductCard(
-                    product: product,
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              ProductDetailsScreen(product: product),
-                        ),
-                      );
-                    },
-                    onAddPressed: () {
-                      requireAuth(
-                        context,
-                        ref: ref,
-                        onAuthenticated: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                '${product.title} დამატებულია კალათაში!',
+                    // 2-column grid of products
+                    GridView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        crossAxisSpacing: 12,
+                        mainAxisSpacing: 12,
+                        childAspectRatio: 0.73,
+                      ),
+                      itemCount: MockData.products.length,
+                      itemBuilder: (context, index) {
+                        final product = MockData.products[index];
+                        return ProductCard(
+                          product: product,
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    ProductDetailsScreen(product: product),
                               ),
-                              backgroundColor: AppColors.primary,
-                            ),
-                          );
-                        },
-                      );
-                    },
-                  );
-                },
+                            );
+                          },
+                          onAddPressed: () {
+                            requireAuth(
+                              context,
+                              ref: ref,
+                              onAuthenticated: () {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      '${product.title} დამატებულია კალათაში!',
+                                    ),
+                                    backgroundColor: AppColors.primary,
+                                  ),
+                                );
+                              },
+                            );
+                          },
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                ),
               ),
-              const SizedBox(height: 16),
             ],
           ),
         ),

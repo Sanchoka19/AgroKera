@@ -399,16 +399,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ),
                     const SizedBox(height: 12),
 
-                    // 2-column grid of products
+                    // Responsive grid of products (auto 2, 3, 4+ columns based on screen width)
                     GridView.builder(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
                       gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
+                          const SliverGridDelegateWithMaxCrossAxisExtent(
+                        maxCrossAxisExtent: 210,
                         crossAxisSpacing: 12,
                         mainAxisSpacing: 12,
-                        childAspectRatio: 0.64,
+                        childAspectRatio: 0.70,
                       ),
                       itemCount: MockData.products.length,
                       itemBuilder: (context, index) {

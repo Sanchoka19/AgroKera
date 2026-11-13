@@ -381,11 +381,11 @@ class _FarmerProfileScreenState extends ConsumerState<FarmerProfileScreen>
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
                     gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
+                        const SliverGridDelegateWithMaxCrossAxisExtent(
+                          maxCrossAxisExtent: 210,
                           crossAxisSpacing: 12,
                           mainAxisSpacing: 12,
-                          childAspectRatio: 0.64,
+                          childAspectRatio: 0.70,
                         ),
                     itemCount: farmerProducts.length,
                     itemBuilder: (context, index) {

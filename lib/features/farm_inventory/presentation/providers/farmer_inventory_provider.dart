@@ -1,7 +1,9 @@
+import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../../core/auth/auth_state_provider.dart';
+import '../../../../core/network/api_client.dart';
 import '../../../marketplace/data/models/product_model.dart';
 import '../../../marketplace/presentation/providers/marketplace_provider.dart';
 
@@ -117,21 +119,44 @@ class FarmerInventoryNotifier extends Notifier<FarmerInventoryState> {
     return null;
   }
 
-  /// Captures or selects a product photo from Camera or Gallery
+  /// Captures or selects a product photo from Camera or Gallery and uploads it to Cloudflare R2
   Future<PickedProductPhoto?> pickPhoto(ImageSource source) async {
     try {
       final XFile? file = await _imagePicker.pickImage(
         source: source,
         preferredCameraDevice: CameraDevice.rear,
-        imageQuality: 85,
+        maxWidth: 900,
+        maxHeight: 900,
+        imageQuality: 80,
       );
       if (file == null) return null;
       final bytes = await file.readAsBytes();
-      final url = file.path.startsWith('http') || file.path.startsWith('blob:')
-          ? file.path
-          : 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=600&auto=format&fit=crop&q=80';
+
+      String uploadedUrl =
+          'https://images.unsplash.com/photo-1542838132-92c53300491e?w=600&auto=format&fit=crop&q=80';
+      try {
+        final api = ref.read(apiClientProvider);
+        final response = await api.post<Map<String, dynamic>>(
+          '/api/upload',
+          data: {
+            'fileName': file.name,
+            'base64Data': base64Encode(bytes),
+            'contentType': 'image/jpeg',
+            'folder': 'products',
+          },
+        );
+        final remoteUrl = response.data?['url'] as String?;
+        if (remoteUrl != null && remoteUrl.isNotEmpty) {
+          uploadedUrl = remoteUrl;
+        }
+      } catch (_) {
+        if (file.path.startsWith('http') || file.path.startsWith('blob:')) {
+          uploadedUrl = file.path;
+        }
+      }
+
       return PickedProductPhoto(
-        url: url,
+        url: uploadedUrl,
         name: file.name,
         bytes: bytes,
       );

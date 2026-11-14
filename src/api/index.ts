@@ -1,6 +1,7 @@
 import prisma from "../lib/prisma.ts";
 import { OrderStatus, Role, ShipmentStatus, VerificationStatus, FulfillmentType } from "@prisma/client";
 import nodemailer from "nodemailer";
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 
 const otpStore = new Map<string, { code: string; expiresAt: number }>();
 
@@ -47,6 +48,79 @@ export default {
           service: "AgroKera Neon API",
           database: "connected",
           stats: { products: productCount, farmers: farmerCount },
+        });
+      }
+
+      // ==========================================
+      // 1.5 CLOUDFLARE R2 IMAGE UPLOAD
+      // ==========================================
+      if (method === "POST" && path === "/api/upload") {
+        const body = (await request.json()) as {
+          fileName?: string;
+          base64Data?: string;
+          contentType?: string;
+          folder?: string;
+        };
+
+        if (!body.base64Data) {
+          return errorResponse("base64Data is required", 400);
+        }
+
+        const r2Endpoint = (process.env.R2_ENDPOINT || "").trim();
+        const r2AccessKeyId = (process.env.R2_ACCESS_KEY_ID || "").trim();
+        const r2SecretAccessKey = (process.env.R2_SECRET_ACCESS_KEY || "").trim();
+        const r2Bucket = (process.env.R2_BUCKET_NAME || "agrokera-assets").trim();
+        const r2PublicUrl = (process.env.R2_PUBLIC_URL || "").trim().replace(/\/+$/, "");
+
+        const rawBase64 = body.base64Data.replace(/^data:[^;]+;base64,/, "");
+        const buffer = Buffer.from(rawBase64, "base64");
+        const contentType = body.contentType || "image/jpeg";
+        const ext = (body.fileName?.split(".").pop() || "jpg").toLowerCase();
+        const folder = body.folder || "products";
+        const objectKey = `${folder}/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
+
+        if (
+          r2Endpoint &&
+          r2AccessKeyId &&
+          r2SecretAccessKey &&
+          !r2Endpoint.includes("YOUR_ACCOUNT_ID")
+        ) {
+          const s3 = new S3Client({
+            region: "auto",
+            endpoint: r2Endpoint,
+            credentials: {
+              accessKeyId: r2AccessKeyId,
+              secretAccessKey: r2SecretAccessKey,
+            },
+          });
+
+          await s3.send(
+            new PutObjectCommand({
+              Bucket: r2Bucket,
+              Key: objectKey,
+              Body: buffer,
+              ContentType: contentType,
+              CacheControl: "public, max-age=31536000, immutable",
+            })
+          );
+
+          const finalUrl = r2PublicUrl
+            ? `${r2PublicUrl}/${objectKey}`
+            : `${r2Endpoint}/${r2Bucket}/${objectKey}`;
+
+          return jsonResponse({
+            uploaded: true,
+            storage: "cloudflare_r2",
+            key: objectKey,
+            url: finalUrl,
+          });
+        }
+
+        // Fallback to inline Data URL if R2 env vars are not filled yet
+        return jsonResponse({
+          uploaded: true,
+          storage: "inline_data_url",
+          url: `data:${contentType};base64,${rawBase64}`,
         });
       }
 

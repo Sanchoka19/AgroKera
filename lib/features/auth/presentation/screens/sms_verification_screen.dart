@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import '../../../../core/auth/auth_state_provider.dart';
 import '../../../../core/constants/app_assets.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
@@ -11,28 +13,19 @@ import '../../../../core/widgets/primary_button.dart';
 import 'reset_password_screen.dart';
 
 /// Screen 2: SMS დადასტურება (OTP / SMS Verification Screen)
-/// Matching Figma screenshot:
-/// - AppBar with back button & "SMS დადასტურება" title
-/// - Official Verification.svg illustration
-/// - "შეიყვანეთ SMS კოდი" bold heading
-/// - "კოდი გაიგზავნა example@gmail.com" subtle info
-/// - 5-digit verification PIN input boxes
-/// - "არ მიგიღიათ კოდი? ახლიდან გაგზავნა" resend prompt
-/// - Active countdown clock timer (09:00)
-/// - "დადასტურება" CTA button leading to Password Reset
-class SmsVerificationScreen extends StatefulWidget {
+class SmsVerificationScreen extends ConsumerStatefulWidget {
   final String email;
 
   const SmsVerificationScreen({
     super.key,
-    this.email = 'example@gmail.com',
+    this.email = 'ajariswyali123@gmail.com',
   });
 
   @override
-  State<SmsVerificationScreen> createState() => _SmsVerificationScreenState();
+  ConsumerState<SmsVerificationScreen> createState() => _SmsVerificationScreenState();
 }
 
-class _SmsVerificationScreenState extends State<SmsVerificationScreen> {
+class _SmsVerificationScreenState extends ConsumerState<SmsVerificationScreen> {
   static const int _pinLength = 5;
   final List<TextEditingController> _controllers =
       List.generate(_pinLength, (_) => TextEditingController());
@@ -46,6 +39,9 @@ class _SmsVerificationScreenState extends State<SmsVerificationScreen> {
   void initState() {
     super.initState();
     _startTimer();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(ref.read(authStateProvider.notifier).sendEmailOtp(widget.email));
+    });
   }
 
   void _startTimer() {
@@ -78,7 +74,21 @@ class _SmsVerificationScreenState extends State<SmsVerificationScreen> {
     super.dispose();
   }
 
-  void _onVerify() {
+  Future<void> _onVerify() async {
+    final otpCode = _controllers.map((c) => c.text.trim()).join();
+    if (otpCode.length < _pinLength) {
+      AppToast.error(context, 'გთხოვთ სრულად შეიყვანოთ $_pinLength-ნიშნა SMS კოდი');
+      return;
+    }
+    final error = await ref.read(authStateProvider.notifier).verifyEmailOtp(
+          email: widget.email,
+          code: otpCode,
+        );
+    if (!mounted) return;
+    if (error != null) {
+      AppToast.error(context, error);
+      return;
+    }
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => const ResetPasswordScreen(),
@@ -207,10 +217,12 @@ class _SmsVerificationScreenState extends State<SmsVerificationScreen> {
               // "არ მიგიღიათ კოდი? ახლიდან გაგზავნა"
               Center(
                 child: GestureDetector(
-                  onTap: () {
+                  onTap: () async {
                     setState(() => _secondsRemaining = 540);
                     _startTimer();
-                    AppToast.success(context, 'ახალი SMS კოდი გაიგზავნა.');
+                    await ref.read(authStateProvider.notifier).sendEmailOtp(widget.email);
+                    if (!context.mounted) return;
+                    AppToast.success(context, 'ახალი კოდი გაიგზავნა ${widget.email}-ზე.');
                   },
                   child: RichText(
                     text: TextSpan(

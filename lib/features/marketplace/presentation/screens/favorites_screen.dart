@@ -6,8 +6,8 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/auth_required_bottom_sheet.dart';
 import '../../../../core/widgets/product_card.dart';
-import '../../data/mock_data.dart';
 import '../providers/favorites_provider.dart';
+import '../providers/marketplace_provider.dart';
 import 'product_details_screen.dart';
 
 class FavoritesScreen extends ConsumerWidget {
@@ -106,7 +106,8 @@ class FavoritesScreen extends ConsumerWidget {
     }
 
     final favoriteIds = ref.watch(favoritesProvider);
-    final favoriteProducts = MockData.products
+    final allProducts = ref.watch(marketplaceProvider).products;
+    final favoriteProducts = allProducts
         .where((product) => favoriteIds.contains(product.id))
         .toList();
 

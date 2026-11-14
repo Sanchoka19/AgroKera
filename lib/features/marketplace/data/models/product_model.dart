@@ -11,7 +11,8 @@ class ProductModel {
   final double rating;
   final int reviewCount;
   final bool isAvailable;
-  final String stockStatus; // 'მარაგშია' or 'იწურება'
+  final double stockQuantity;
+  final String stockStatus; // 'მარაგშია', 'იწურება', 'ამოწურულია'
   final String imageUrl;
   final String description;
   final double minOrderQuantity;
@@ -29,6 +30,7 @@ class ProductModel {
     this.rating = 4.9,
     this.reviewCount = 80,
     this.isAvailable = true,
+    this.stockQuantity = 50.0,
     this.stockStatus = 'მარაგშია',
     required this.imageUrl,
     required this.description,
@@ -42,5 +44,73 @@ class ProductModel {
       return price / (1.0 - (discountPercent! / 100.0));
     }
     return null;
+  }
+
+  factory ProductModel.fromJson(Map<String, dynamic> json) {
+    final stockQty = (json['stockQuantity'] as num?)?.toDouble() ?? 50.0;
+    return ProductModel(
+      id: json['id'] as String,
+      title: json['title'] as String? ?? '',
+      category: json['category'] as String? ?? 'ბოსტნეული',
+      farmerId: json['farmerId'] as String? ?? 'farmer_2',
+      farmerName: json['farmerName'] as String? ?? 'გიორგის ფერმა',
+      price: ((json['price'] ?? json['pricePerUnit']) as num?)?.toDouble() ?? 0.0,
+      unit: json['unit'] as String? ?? 'კგ',
+      discountPercent: (json['discountPercent'] as num?)?.toInt(),
+      rating: (json['rating'] as num?)?.toDouble() ?? 4.9,
+      reviewCount: (json['reviewCount'] as num?)?.toInt() ?? 0,
+      isAvailable: json['isAvailable'] as bool? ?? true,
+      stockQuantity: stockQty,
+      stockStatus: json['stockStatus'] as String? ??
+          (stockQty <= 0
+              ? 'ამოწურულია'
+              : stockQty < 20
+                  ? 'იწურება'
+                  : 'მარაგშია'),
+      imageUrl: json['imageUrl'] as String? ??
+          'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=600&auto=format&fit=crop&q=80',
+      description: json['description'] as String? ?? '',
+      minOrderQuantity: (json['minOrderQuantity'] as num?)?.toDouble() ?? 1.0,
+    );
+  }
+
+  ProductModel copyWith({
+    String? id,
+    String? title,
+    String? category,
+    String? farmerId,
+    String? farmerName,
+    double? price,
+    double? originalPrice,
+    String? unit,
+    int? discountPercent,
+    double? rating,
+    int? reviewCount,
+    bool? isAvailable,
+    double? stockQuantity,
+    String? stockStatus,
+    String? imageUrl,
+    String? description,
+    double? minOrderQuantity,
+  }) {
+    return ProductModel(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      category: category ?? this.category,
+      farmerId: farmerId ?? this.farmerId,
+      farmerName: farmerName ?? this.farmerName,
+      price: price ?? this.price,
+      originalPrice: originalPrice ?? this.originalPrice,
+      unit: unit ?? this.unit,
+      discountPercent: discountPercent ?? this.discountPercent,
+      rating: rating ?? this.rating,
+      reviewCount: reviewCount ?? this.reviewCount,
+      isAvailable: isAvailable ?? this.isAvailable,
+      stockQuantity: stockQuantity ?? this.stockQuantity,
+      stockStatus: stockStatus ?? this.stockStatus,
+      imageUrl: imageUrl ?? this.imageUrl,
+      description: description ?? this.description,
+      minOrderQuantity: minOrderQuantity ?? this.minOrderQuantity,
+    );
   }
 }

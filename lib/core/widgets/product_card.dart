@@ -214,7 +214,7 @@ class ProductCard extends StatelessWidget {
                       ],
                     ),
                     InkWell(
-                      onTap: onAddPressed,
+                      onTap: onAddPressed ?? onTap,
                       borderRadius: BorderRadius.circular(18),
                       child: Container(
                         width: 36,

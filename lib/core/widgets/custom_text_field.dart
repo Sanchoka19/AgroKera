@@ -24,6 +24,7 @@ class CustomTextField extends StatelessWidget {
   final bool enabled;
   final bool readOnly;
   final int maxLines;
+  final int? minLines;
   final FocusNode? focusNode;
   final Color? fillColor;
 
@@ -45,6 +46,7 @@ class CustomTextField extends StatelessWidget {
     this.enabled = true,
     this.readOnly = false,
     this.maxLines = 1,
+    this.minLines,
     this.focusNode,
     this.fillColor,
   });
@@ -79,6 +81,7 @@ class CustomTextField extends StatelessWidget {
           onFieldSubmitted: onSubmitted,
           onTap: onTap,
           maxLines: maxLines,
+          minLines: minLines,
           style: AppTypography.bodyMedium.copyWith(
             color: enabled ? AppColors.textPrimary : AppColors.textSecondary,
           ),

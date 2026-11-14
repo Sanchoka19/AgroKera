@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -7,19 +8,20 @@ import '../../../../core/widgets/app_header.dart';
 import '../../../../core/widgets/app_search_bar.dart';
 import '../../data/mock_data.dart';
 import '../../data/models/category_model.dart';
+import '../providers/marketplace_provider.dart';
 import 'category_products_screen.dart';
 
 /// Categories & Agro-Market screen (Modern Fresh Bento):
 /// - Unified AppHeader with title "აგრო მარკეტი", search bar, notifications & cart
 /// - Bento style category cards with delicious proportions filling the screen naturally
-class CategoriesScreen extends StatefulWidget {
+class CategoriesScreen extends ConsumerStatefulWidget {
   const CategoriesScreen({super.key});
 
   @override
-  State<CategoriesScreen> createState() => _CategoriesScreenState();
+  ConsumerState<CategoriesScreen> createState() => _CategoriesScreenState();
 }
 
-class _CategoriesScreenState extends State<CategoriesScreen> {
+class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
   late final TextEditingController _searchController;
   String _searchQuery = '';
 
@@ -37,8 +39,20 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final availableProducts = ref.watch(marketplaceProvider).availableProducts;
     final filteredCategories = MockData.categories.where((c) {
       return c.name.toLowerCase().contains(_searchQuery.toLowerCase());
+    }).map((c) {
+      final liveCount = availableProducts
+          .where((p) => p.category == c.name)
+          .length;
+      return CategoryModel(
+        id: c.id,
+        name: c.name,
+        imageUrl: c.imageUrl,
+        productCount: liveCount,
+        backgroundColor: c.backgroundColor,
+      );
     }).toList();
 
     return Scaffold(

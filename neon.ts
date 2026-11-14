@@ -5,6 +5,7 @@ export default defineConfig({
   auth: true,
   functions: {
     hello: { name: "Hello World", source: "./hello.ts" },
+    api: { name: "AgroKera Core API", source: "./src/api/index.ts" },
   },
   buckets: {
     // "private" is the default; use "public_read" for anonymous reads

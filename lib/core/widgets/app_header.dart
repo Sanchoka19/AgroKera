@@ -18,6 +18,7 @@ class AppHeader extends ConsumerWidget {
   final String? title;
   final Widget? titleWidget;
   final bool showLogo;
+  final bool showBack;
   final bool showNotificationBell;
   final bool showCart;
   final Widget? searchBar;
@@ -29,6 +30,7 @@ class AppHeader extends ConsumerWidget {
     this.title,
     this.titleWidget,
     this.showLogo = false,
+    this.showBack = false,
     this.showNotificationBell = true,
     this.showCart = false,
     this.searchBar,
@@ -57,15 +59,40 @@ class AppHeader extends ConsumerWidget {
               if (showLogo)
                 const AppLogo()
               else if (titleWidget != null)
-                titleWidget!
+                Expanded(child: titleWidget!)
               else if (title != null)
-                Text(
-                  title!,
-                  style: GoogleFonts.notoSansGeorgian(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
-                    color: const Color(0xFF0F172A),
-                    letterSpacing: -0.3,
+                Expanded(
+                  child: Row(
+                    children: [
+                      if (showBack) ...[
+                        InkWell(
+                          onTap: () => Navigator.of(context).maybePop(),
+                          borderRadius: BorderRadius.circular(10),
+                          child: const Padding(
+                            padding: EdgeInsets.all(6),
+                            child: Icon(
+                              LucideIcons.arrowLeft,
+                              size: 20,
+                              color: Color(0xFF0F172A),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                      ],
+                      Expanded(
+                        child: Text(
+                          title!,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.notoSansGeorgian(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w800,
+                            color: const Color(0xFF0F172A),
+                            letterSpacing: -0.3,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 )
               else

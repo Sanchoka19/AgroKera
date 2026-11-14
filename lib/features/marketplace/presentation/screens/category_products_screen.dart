@@ -4,14 +4,13 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../core/auth/auth_state_provider.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
-import '../../../../core/widgets/app_toast.dart';
 import '../../../../core/widgets/auth_required_bottom_sheet.dart';
 import '../../../../core/widgets/product_card.dart';
-import '../../data/mock_data.dart';
 import '../../data/models/category_model.dart';
 import '../../data/models/product_model.dart';
 import '../../../cart_checkout/presentation/providers/cart_provider.dart';
 import '../../../cart_checkout/presentation/screens/cart_screen.dart';
+import '../providers/marketplace_provider.dart';
 import '../widgets/filter_bottom_sheet.dart';
 import 'product_details_screen.dart';
 
@@ -44,8 +43,9 @@ class _CategoryProductsScreenState
 
   @override
   Widget build(BuildContext context) {
+    final allProducts = ref.watch(marketplaceProvider).availableProducts;
     // Filter products
-    List<ProductModel> products = MockData.products.where((p) {
+    List<ProductModel> products = allProducts.where((p) {
       final matchesSearch = p.title.toLowerCase().contains(
         _searchQuery.toLowerCase(),
       );
@@ -193,23 +193,11 @@ class _CategoryProductsScreenState
                               );
                             },
                             onAddPressed: () {
-                              requireAuth(
-                                context,
-                                ref: ref,
-                                onAuthenticated: () {
-                                  AppToast.success(
-                                    context,
-                                    '${product.title} დამატებულია კალათაში!',
-                                    actionLabel: 'კალათა',
-                                    onAction: () {
-                                      Navigator.of(context).push(
-                                        MaterialPageRoute(
-                                          builder: (_) => const CartScreen(),
-                                        ),
-                                      );
-                                    },
-                                  );
-                                },
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      ProductDetailsScreen(product: product),
+                                ),
                               );
                             },
                           );

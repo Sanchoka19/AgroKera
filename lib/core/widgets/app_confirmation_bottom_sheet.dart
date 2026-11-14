@@ -112,7 +112,7 @@ class AppConfirmationBottomSheet extends StatelessWidget {
       context: context,
       title: 'შეკვეთის დასრულება',
       message: 'დაადასტურეთ, რომ შეკვეთა #$orderId ჩაბარდა შემკვეთს და მიწოდება წარმატებით დასრულდა.',
-      confirmText: 'შეკვეთის დასრულება',
+      confirmText: 'დასრულება',
       cancelText: 'უკან',
       type: ConfirmationType.positive,
       icon: LucideIcons.checkCircle2,

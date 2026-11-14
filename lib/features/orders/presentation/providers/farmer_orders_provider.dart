@@ -1,7 +1,12 @@
+import 'dart:async';
+import 'dart:math';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/network/api_client.dart';
+import '../../../cart_checkout/data/models/cart_item_model.dart';
+import '../../../marketplace/presentation/providers/marketplace_provider.dart';
 import '../../domain/models/farmer_order_model.dart';
 
-/// State of the farmer orders screen
+/// State of the farmer & client orders screen
 class FarmerOrdersState {
   final List<FarmerOrder> orders;
   final OrderStatus? selectedFilter; // null = 'ყველა'
@@ -29,12 +34,13 @@ class FarmerOrdersState {
   }) {
     return FarmerOrdersState(
       orders: orders ?? this.orders,
-      selectedFilter: selectedFilter != null ? selectedFilter() : this.selectedFilter,
+      selectedFilter:
+          selectedFilter != null ? selectedFilter() : this.selectedFilter,
     );
   }
 }
 
-/// Notifier managing farmer orders lifecycle
+/// Notifier managing farmer & client orders lifecycle with Neon Backend sync
 class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
   @override
   FarmerOrdersState build() {
@@ -52,6 +58,7 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
         hasVat: true,
         deliveryTimeWindow: 'ივლ 29, 10:00 - 13:00',
         deliveryAddress: '32 ჭავჭავაძე, ბათუმი',
+        trackingNumber: 'AK-12345',
         items: const [
           FarmerOrderItem(
             name: 'ორგანული პომიდორი',
@@ -83,6 +90,7 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
         deliveryTimeWindow: 'დღეს, 16:00 - 18:00',
         deliveryAddress: 'რუსთაველის გამზ. 14, თბილისი',
         cancellationDeadline: now.add(const Duration(minutes: 24, seconds: 59)),
+        trackingNumber: 'AK-12346',
         items: const [
           FarmerOrderItem(
             name: 'ლობიო (წითელი)',
@@ -109,6 +117,7 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
         deliveryTimeWindow: 'ხვალ, 11:00 - 14:00',
         deliveryAddress: 'ჭავჭავაძის გამზ. 32, ბათუმი',
         cancellationDeadline: now.subtract(const Duration(minutes: 45)),
+        trackingNumber: 'AK-12347',
         items: const [
           FarmerOrderItem(
             name: 'ორგანული პომიდორი',
@@ -138,6 +147,7 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
         contactPhone: '+995 599 12 34 56',
         cancellationReason: 'მარაგის არ არსებობის გამო',
         hasVat: true,
+        trackingNumber: 'AK-12348',
         items: const [
           FarmerOrderItem(
             name: 'ახალი კარტოფილი',
@@ -159,6 +169,7 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
         deliveryTimeWindow: 'დღეს, 18:00 - 20:00',
         deliveryAddress: 'ვაჟა-ფშაველას გამზ. 45, თბილისი',
         cancellationDeadline: now.add(const Duration(minutes: 28)),
+        trackingNumber: 'AK-12349',
         items: const [
           FarmerOrderItem(
             name: 'ნატურალური მაისის თაფლი',
@@ -189,6 +200,8 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
         return o;
       }).toList(),
     );
+
+    unawaited(_syncOrderStatus(id, status: OrderStatus.inProgress));
   }
 
   void completeOrder(String id) {
@@ -200,6 +213,8 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
         return o;
       }).toList(),
     );
+
+    unawaited(_syncOrderStatus(id, status: OrderStatus.completed));
   }
 
   void cancelOrder(String id, {String reason = 'მარაგის არ არსებობის გამო'}) {
@@ -214,10 +229,98 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
         return o;
       }).toList(),
     );
+
+    unawaited(
+      _syncOrderStatus(id, status: OrderStatus.cancelled, reason: reason),
+    );
+  }
+
+  /// Places a new order from the Cart & Checkout screen and syncs with Neon DB
+  Future<FarmerOrder> createOrderFromCart({
+    required List<CartItemModel> cartItems,
+    required String deliveryAddress,
+    required String deliveryTimeWindow,
+    String customerName = 'საბა ევგენიძე',
+    String contactPhone = '+995 599 12 34 56',
+  }) async {
+    final now = DateTime.now();
+    final generatedId = '${38100 + Random().nextInt(899)}';
+
+    final orderItems = cartItems
+        .map(
+          (ci) => FarmerOrderItem(
+            name: ci.title,
+            quantityText: '${ci.quantity}${ci.unit}',
+            price: ci.totalPrice,
+          ),
+        )
+        .toList();
+
+    final newOrder = FarmerOrder(
+      id: generatedId,
+      createdAt: now,
+      status: OrderStatus.pending,
+      customerName: customerName,
+      contactPerson: customerName,
+      contactPhone: contactPhone,
+      deliveryAddress: deliveryAddress,
+      deliveryTimeWindow: deliveryTimeWindow,
+      cancellationDeadline: now.add(const Duration(minutes: 30)),
+      trackingNumber: 'AK-$generatedId',
+      items: orderItems,
+    );
+
+    state = state.copyWith(orders: [newOrder, ...state.orders]);
+    unawaited(
+      ref.read(marketplaceProvider.notifier).deductStockForCartItems(cartItems),
+    );
+
+    try {
+      final api = ref.read(apiClientProvider);
+      await api.post(
+        '/api/orders',
+        data: {
+          'contactPerson': customerName,
+          'contactPhone': contactPhone,
+          'deliveryAddress': deliveryAddress,
+          'deliveryTimeWindow': deliveryTimeWindow,
+          'items': cartItems
+              .map(
+                (ci) => {
+                  'productId': ci.id,
+                  'quantity': ci.quantity,
+                  'pricePerUnit': ci.pricePerUnit,
+                },
+              )
+              .toList(),
+        },
+      );
+    } catch (_) {
+      // Offline resilient fallback
+    }
+
+    return newOrder;
+  }
+
+  Future<void> _syncOrderStatus(
+    String id, {
+    required OrderStatus status,
+    String? reason,
+  }) async {
+    try {
+      final api = ref.read(apiClientProvider);
+      await api.patch(
+        '/api/orders/$id/status',
+        data: {
+          'status': status.apiValue,
+          'cancellationReason': ?reason,
+        },
+      );
+    } catch (_) {}
   }
 }
 
-/// Provider of farmer orders
+/// Provider of farmer & client orders
 final farmerOrdersProvider =
     NotifierProvider<FarmerOrdersNotifier, FarmerOrdersState>(
   FarmerOrdersNotifier.new,

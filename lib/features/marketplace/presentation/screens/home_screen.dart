@@ -8,11 +8,9 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/app_header.dart';
 import '../../../../core/widgets/app_search_bar.dart';
-import '../../../../core/widgets/app_toast.dart';
 import '../../../../core/widgets/auth_required_bottom_sheet.dart';
 import '../../../../core/widgets/product_card.dart';
-import '../../data/mock_data.dart';
-import '../../../cart_checkout/presentation/screens/cart_screen.dart';
+import '../providers/marketplace_provider.dart';
 import '../widgets/global_search_dialog.dart';
 import '../widgets/guest_promo_banner.dart';
 import 'favorites_screen.dart';
@@ -65,6 +63,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authStateProvider);
+    final marketplace = ref.watch(marketplaceProvider);
+    final farmers = marketplace.farmers;
+    final products = marketplace.availableProducts;
 
     return Scaffold(
       backgroundColor: AppColors.bgPrimary,
@@ -239,11 +240,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   clipBehavior: Clip.none,
                   scrollDirection: Axis.horizontal,
-                  itemCount: MockData.farmers.length,
+                  itemCount: farmers.length,
                   separatorBuilder: (context, index) =>
                       const SizedBox(width: 12),
                   itemBuilder: (context, index) {
-                    final farmer = MockData.farmers[index];
+                    final farmer = farmers[index];
                     return GestureDetector(
                       onTap: () {
                         Navigator.of(context).push(
@@ -388,9 +389,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         mainAxisSpacing: 12,
                         childAspectRatio: 0.70,
                       ),
-                      itemCount: MockData.products.length,
+                      itemCount: products.length,
                       itemBuilder: (context, index) {
-                        final product = MockData.products[index];
+                        final product = products[index];
                         return ProductCard(
                           product: product,
                           onTap: () {
@@ -402,23 +403,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             );
                           },
                           onAddPressed: () {
-                            requireAuth(
-                              context,
-                              ref: ref,
-                              onAuthenticated: () {
-                                AppToast.success(
-                                  context,
-                                  '${product.title} დამატებულია კალათაში!',
-                                  actionLabel: 'კალათა',
-                                  onAction: () {
-                                    Navigator.of(context).push(
-                                      MaterialPageRoute(
-                                        builder: (_) => const CartScreen(),
-                                      ),
-                                    );
-                                  },
-                                );
-                              },
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    ProductDetailsScreen(product: product),
+                              ),
                             );
                           },
                         );

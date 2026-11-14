@@ -21,7 +21,7 @@ class LoginScreen extends ConsumerStatefulWidget {
 }
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
-  final _emailController = TextEditingController(text: 'user@example.ge');
+  final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
 
@@ -34,11 +34,30 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   void _onSignIn() {
     HapticFeedback.lightImpact();
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+
+    if (email.isEmpty) {
+      AppToast.error(context, 'გთხოვთ შეიყვანოთ ელექტრონული ფოსტა');
+      return;
+    }
+    if (!email.contains('@') && email.length < 9) {
+      AppToast.error(context, 'გთხოვთ შეიყვანოთ სწორი ელ-ფოსტა ან ნომერი');
+      return;
+    }
+    if (password.isEmpty || password.length < 4) {
+      AppToast.error(context, 'გთხოვთ შეიყვანოთ პაროლი (მინიმუმ 4 სიმბოლო)');
+      return;
+    }
+
+    final isFarmerEmail = email.toLowerCase().contains('farmer') ||
+        email.toLowerCase().contains('giorgi') ||
+        email.toLowerCase().contains('lana') ||
+        email.toLowerCase().contains('davit');
+
     ref.read(authStateProvider.notifier).login(
-      email: _emailController.text.trim().isNotEmpty
-          ? _emailController.text.trim()
-          : 'user@example.ge',
-      role: UserRole.customer,
+      email: email,
+      role: isFarmerEmail ? UserRole.farmer : UserRole.customer,
     );
     Navigator.of(context).pop();
     AppToast.success(context, 'წარმატებით გაიარეთ ავტორიზაცია!');

@@ -3,13 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
-import '../../../../core/widgets/app_toast.dart';
 import '../../../../core/widgets/auth_required_bottom_sheet.dart';
 import '../../../../core/widgets/primary_button.dart';
 import '../../../../core/widgets/product_card.dart';
-import '../../data/mock_data.dart';
 import '../../data/models/farmer_model.dart';
-import '../../../cart_checkout/presentation/screens/cart_screen.dart';
+import '../providers/marketplace_provider.dart';
 import 'product_details_screen.dart';
 
 /// Farmer Profile Screen:
@@ -55,7 +53,9 @@ class _FarmerProfileScreenState extends ConsumerState<FarmerProfileScreen>
   @override
   Widget build(BuildContext context) {
     final farmer = widget.farmer;
-    final farmerProducts = MockData.products
+    final farmerProducts = ref
+        .watch(marketplaceProvider)
+        .availableProducts
         .where((p) => p.farmerId == farmer.id)
         .toList();
 
@@ -403,23 +403,11 @@ class _FarmerProfileScreenState extends ConsumerState<FarmerProfileScreen>
                           );
                         },
                         onAddPressed: () {
-                          requireAuth(
-                            context,
-                            ref: ref,
-                            onAuthenticated: () {
-                              AppToast.success(
-                                context,
-                                '${product.title} დამატებულია კალათაში!',
-                                actionLabel: 'კალათა',
-                                onAction: () {
-                                  Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                      builder: (_) => const CartScreen(),
-                                    ),
-                                  );
-                                },
-                              );
-                            },
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  ProductDetailsScreen(product: product),
+                            ),
                           );
                         },
                       );

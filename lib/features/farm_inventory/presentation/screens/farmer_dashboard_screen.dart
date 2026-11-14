@@ -4,27 +4,13 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_header.dart';
+import '../../../../core/widgets/app_reason_bottom_sheet.dart';
 import '../../../../core/widgets/app_toast.dart';
-import '../../../marketplace/presentation/screens/categories_screen.dart';
+import '../../../orders/domain/models/farmer_order_model.dart';
+import '../../../orders/presentation/providers/farmer_orders_provider.dart';
 import '../../../orders/presentation/screens/incoming_orders_screen.dart';
 import '../../../orders/presentation/screens/farmer_order_detail_screen.dart';
-
-/// Model for a Farmer Cabinet Order
-class _FarmerCabinetOrder {
-  final String id;
-  final String itemsText;
-  final String priceText;
-  String status; // 'new', 'inProgress', 'cancelled'
-  final bool isAutoAccepted;
-
-  _FarmerCabinetOrder({
-    required this.id,
-    required this.itemsText,
-    required this.priceText,
-    required this.status,
-    this.isAutoAccepted = false,
-  });
-}
+import 'farmer_inventory_screen.dart';
 
 /// Farmer Dashboard Tab: "ჩემი ფერმა"
 /// Rebuilt to match the clean, focused Figma design:
@@ -40,187 +26,52 @@ class FarmerDashboardScreen extends ConsumerStatefulWidget {
 }
 
 class _FarmerDashboardScreenState extends ConsumerState<FarmerDashboardScreen> {
-  // Live orders state
-  late List<_FarmerCabinetOrder> _orders;
-
-  @override
-  void initState() {
-    super.initState();
-    _orders = [
-      _FarmerCabinetOrder(
-        id: '12345',
-        itemsText: '3 პროდუქტი',
-        priceText: '₾140',
-        status: 'new',
-      ),
-      _FarmerCabinetOrder(
-        id: '12346',
-        itemsText: '3 პროდუქტი',
-        priceText: '₾140',
-        status: 'inProgress',
-        isAutoAccepted: true,
-      ),
-      _FarmerCabinetOrder(
-        id: '12347',
-        itemsText: '4 პროდუქტი',
-        priceText: '₾240',
-        status: 'inProgress',
-      ),
-    ];
-  }
-
-  void _onAcceptOrder(int index) {
-    final order = _orders[index];
-    setState(() {
-      order.status = 'inProgress';
-    });
+  void _onAcceptOrder(FarmerOrder order) {
+    ref.read(farmerOrdersProvider.notifier).acceptOrder(order.id);
     AppToast.success(
       context,
       'შეკვეთა #${order.id} დადასტურებულია და გადავიდა პროცესში!',
     );
   }
 
-  void _onCancelOrder(int index) {
-    final order = _orders[index];
-    setState(() {
-      _orders.removeAt(index);
-    });
-    AppToast.info(
-      context,
-      'შეკვეთა #${order.id} გაუქმებულია',
+  Future<void> _onCancelOrder(FarmerOrder order) async {
+    final reason = await AppReasonBottomSheet.show(
+      context: context,
+      title: 'შეკვეთის გაუქმება',
+      subtitle: 'შეკვეთა #${order.id} • გთხოვთ მიუთითოთ მიზეზი',
+      confirmButtonText: 'დადასტურება',
+      confirmButtonColor: const Color(0xFFDC2626),
+      icon: LucideIcons.alertTriangle,
+      reasons: AppReasonBottomSheet.defaultOrderCancellationReasons,
     );
+    if (reason != null && mounted) {
+      ref.read(farmerOrdersProvider.notifier).cancelOrder(order.id, reason: reason);
+      AppToast.info(
+        context,
+        'შეკვეთა #${order.id} გაუქმებულია',
+      );
+    }
   }
 
   void _openAddProductSheet() {
-    final titleController = TextEditingController();
-    final priceController = TextEditingController();
-    final stockController = TextEditingController();
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        return Container(
-          padding: EdgeInsets.fromLTRB(
-            20,
-            16,
-            20,
-            MediaQuery.of(context).viewInsets.bottom + 24,
-          ),
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFCBD5E1),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'დაამატე ახალი პროდუქტი',
-                style: GoogleFonts.notoSansGeorgian(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'შეავსეთ პროდუქტის ძირითადი პარამეტრები',
-                style: GoogleFonts.notoSansGeorgian(
-                  fontSize: 13,
-                  color: AppColors.textSecondary,
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: titleController,
-                decoration: InputDecoration(
-                  labelText: 'პროდუქტის დასახელება',
-                  hintText: 'მაგ: ნატურალური თაფლი',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: priceController,
-                      keyboardType: TextInputType.number,
-                      decoration: InputDecoration(
-                        labelText: 'ფასი (₾)',
-                        hintText: '25.00',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: TextField(
-                      controller: stockController,
-                      keyboardType: TextInputType.number,
-                      decoration: InputDecoration(
-                        labelText: 'მარაგი (კგ/ც)',
-                        hintText: '50',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 18),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  AppToast.success(
-                    context,
-                    'ახალი პროდუქტი წარმატებით დაემატა კატალოგში!',
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  minimumSize: const Size.fromHeight(50),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                ),
-                child: Text(
-                  'პროდუქტის შენახვა',
-                  style: GoogleFonts.notoSansGeorgian(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) =>
+            const FarmerInventoryScreen(openAddOnStart: true),
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final activeOrders = ref
+        .watch(farmerOrdersProvider)
+        .orders
+        .where((o) =>
+            o.status == OrderStatus.pending ||
+            o.status == OrderStatus.inProgress)
+        .toList();
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       body: SafeArea(
@@ -273,7 +124,7 @@ class _FarmerDashboardScreenState extends ConsumerState<FarmerDashboardScreen> {
               onTap: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (context) => const CategoriesScreen(),
+                    builder: (context) => const FarmerInventoryScreen(),
                   ),
                 );
               },
@@ -339,7 +190,7 @@ class _FarmerDashboardScreenState extends ConsumerState<FarmerDashboardScreen> {
             ),
 
             // Order Cards List
-            if (_orders.isEmpty)
+            if (activeOrders.isEmpty)
               Container(
                 padding: const EdgeInsets.all(28),
                 decoration: BoxDecoration(
@@ -381,11 +232,10 @@ class _FarmerDashboardScreenState extends ConsumerState<FarmerDashboardScreen> {
                 ),
               )
             else
-              ...List.generate(_orders.length, (index) {
-                final order = _orders[index];
+              ...activeOrders.map((order) {
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 12),
-                  child: _buildOrderCard(order, index),
+                  child: _buildOrderCard(order),
                 );
               }),
                   ],
@@ -482,8 +332,8 @@ class _FarmerDashboardScreenState extends ConsumerState<FarmerDashboardScreen> {
   }
 
   /// Single Order Card
-  Widget _buildOrderCard(_FarmerCabinetOrder order, int index) {
-    final isNew = order.status == 'new';
+  Widget _buildOrderCard(FarmerOrder order) {
+    final isNew = order.status == OrderStatus.pending;
 
     return Material(
       color: Colors.white,
@@ -525,145 +375,124 @@ class _FarmerDashboardScreenState extends ConsumerState<FarmerDashboardScreen> {
                       color: const Color(0xFF0F172A),
                     ),
                   ),
-              // Refined Status Badge with modern Dot Indicator & Organic palette
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
-                decoration: BoxDecoration(
-                  color: isNew
-                      ? const Color(0xFFFFFBEB)
-                      : const Color(0xFFF0FDF4),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: isNew
-                        ? const Color(0xFFFDE68A)
-                        : const Color(0xFF99F6E4),
-                    width: 1,
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 6,
-                      height: 6,
-                      decoration: BoxDecoration(
+                  // Refined Status Badge with modern Dot Indicator & Organic palette
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
+                    decoration: BoxDecoration(
+                      color: isNew
+                          ? const Color(0xFFFFFBEB)
+                          : const Color(0xFFF0FDF4),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
                         color: isNew
-                            ? const Color(0xFFD97706)
-                            : const Color(0xFF0F766E),
-                        shape: BoxShape.circle,
+                            ? const Color(0xFFFDE68A)
+                            : const Color(0xFF99F6E4),
+                        width: 1,
                       ),
                     ),
-                    const SizedBox(width: 5),
-                    Text(
-                      isNew ? 'ახალი' : 'პროცესშია',
-                      style: GoogleFonts.notoSansGeorgian(
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w700,
-                        color: isNew
-                            ? const Color(0xFFB45309)
-                            : const Color(0xFF0F766E),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 6,
+                          height: 6,
+                          decoration: BoxDecoration(
+                            color: isNew
+                                ? const Color(0xFFD97706)
+                                : const Color(0xFF0F766E),
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 5),
+                        Text(
+                          isNew ? 'ახალი' : 'პროცესშია',
+                          style: GoogleFonts.notoSansGeorgian(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w700,
+                            color: isNew
+                                ? const Color(0xFFB45309)
+                                : const Color(0xFF0F766E),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+
+              // Row 2: Subtitle
+              Text(
+                '${order.productsSummary} • ₾${order.totalAmount.toStringAsFixed(2)}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.notoSansGeorgian(
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w500,
+                  color: const Color(0xFF64748B),
+                ),
+              ),
+
+              // Row 3: Action Buttons (Only for New orders)
+              if (isNew) ...[
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    // "გაუქმება" Button
+                    Expanded(
+                      child: InkWell(
+                        onTap: () => _onCancelOrder(order),
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF1F5F9),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            'გაუქმება',
+                            style: GoogleFonts.notoSansGeorgian(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: const Color(0xFF1E293B),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+
+                    // "დათანხმება" Button
+                    Expanded(
+                      child: InkWell(
+                        onTap: () => _onAcceptOrder(order),
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: AppColors.primary,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            'დათანხმება',
+                            style: GoogleFonts.notoSansGeorgian(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                   ],
                 ),
-              ),
+              ],
             ],
           ),
-          const SizedBox(height: 4),
-
-          // Row 2: Subtitle
-          Text(
-            '${order.itemsText} - ${order.priceText}',
-            style: GoogleFonts.notoSansGeorgian(
-              fontSize: 13.5,
-              fontWeight: FontWeight.w500,
-              color: const Color(0xFF64748B),
-            ),
-          ),
-
-          // Extra auto-accepted notice (matching screenshot)
-          if (order.isAutoAccepted) ...[
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                const Icon(
-                  LucideIcons.sparkles,
-                  size: 14,
-                  color: Color(0xFF059669),
-                ),
-                const SizedBox(width: 5),
-                Text(
-                  'ავტომატურად მიღებული',
-                  style: GoogleFonts.notoSansGeorgian(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: const Color(0xFF059669),
-                  ),
-                ),
-              ],
-            ),
-          ],
-
-          // Row 3: Action Buttons (Only for New orders)
-          if (isNew) ...[
-            const SizedBox(height: 14),
-            Row(
-              children: [
-                // "გაუქმება" Button
-                Expanded(
-                  child: InkWell(
-                    onTap: () => _onCancelOrder(index),
-                    borderRadius: BorderRadius.circular(12),
-                    child: Container(
-                      height: 44,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF1F5F9),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      alignment: Alignment.center,
-                      child: Text(
-                        'გაუქმება',
-                        style: GoogleFonts.notoSansGeorgian(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: const Color(0xFF1E293B),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-
-                // "დათანხმება" Button
-                Expanded(
-                  child: InkWell(
-                    onTap: () => _onAcceptOrder(index),
-                    borderRadius: BorderRadius.circular(12),
-                    child: Container(
-                      height: 44,
-                      decoration: BoxDecoration(
-                        color: AppColors.primary,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      alignment: Alignment.center,
-                      child: Text(
-                        'დათანხმება',
-                        style: GoogleFonts.notoSansGeorgian(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ],
+        ),
       ),
-    ),
-  ),
-);
+    );
   }
 }

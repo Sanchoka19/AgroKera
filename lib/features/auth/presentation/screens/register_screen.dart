@@ -8,6 +8,7 @@ import '../../../../core/auth/auth_state_provider.dart';
 import '../../../../core/constants/app_assets.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../core/widgets/app_toast.dart';
 import '../widgets/google_sign_in_sheet.dart';
 import 'login_screen.dart';
 import 'role_selection_screen.dart';
@@ -37,11 +38,25 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     HapticFeedback.lightImpact();
     final name = _nameController.text.trim();
     final email = _emailController.text.trim();
+    final password = _passwordController.text;
+
+    if (name.isEmpty) {
+      AppToast.error(context, 'გთხოვთ შეიყვანოთ სრული სახელი');
+      return;
+    }
+    if (email.isEmpty || !email.contains('@')) {
+      AppToast.error(context, 'გთხოვთ შეიყვანოთ სწორი ელექტრონული ფოსტა');
+      return;
+    }
+    if (password.length < 6) {
+      AppToast.error(context, 'პაროლი უნდა შედგებოდეს მინიმუმ 6 სიმბოლოსგან');
+      return;
+    }
 
     ref.read(authStateProvider.notifier).register(
       role: UserRole.customer,
-      name: name.isNotEmpty ? name : 'მომხმარებელი',
-      email: email.isNotEmpty ? email : 'example@gmail.com',
+      name: name,
+      email: email,
     );
 
     Navigator.of(context).push(

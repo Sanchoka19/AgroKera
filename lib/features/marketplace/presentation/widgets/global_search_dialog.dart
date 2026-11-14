@@ -1,17 +1,18 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
-import '../../data/mock_data.dart';
 import '../../data/models/farmer_model.dart';
 import '../../data/models/product_model.dart';
+import '../providers/marketplace_provider.dart';
 import '../screens/farmer_profile_screen.dart';
 import '../screens/product_details_screen.dart';
 
 /// Global Search Dialog with frosted backdrop blur, dimmed scrim,
 /// and live search over all products and farmers in AgroKera.
-class GlobalSearchDialog extends StatefulWidget {
+class GlobalSearchDialog extends ConsumerStatefulWidget {
   const GlobalSearchDialog({super.key});
 
   /// Opens the modal dialog with backdrop blur & smooth entrance animation
@@ -46,10 +47,11 @@ class GlobalSearchDialog extends StatefulWidget {
   }
 
   @override
-  State<GlobalSearchDialog> createState() => _GlobalSearchDialogState();
+  ConsumerState<GlobalSearchDialog> createState() =>
+      _GlobalSearchDialogState();
 }
 
-class _GlobalSearchDialogState extends State<GlobalSearchDialog> {
+class _GlobalSearchDialogState extends ConsumerState<GlobalSearchDialog> {
   late final TextEditingController _searchController;
   late final FocusNode _focusNode;
   String _searchQuery = '';
@@ -112,10 +114,11 @@ class _GlobalSearchDialogState extends State<GlobalSearchDialog> {
   @override
   Widget build(BuildContext context) {
     final query = _searchQuery.toLowerCase();
+    final marketplace = ref.watch(marketplaceProvider);
 
     final matchingProducts = query.isEmpty
         ? <ProductModel>[]
-        : MockData.products.where((p) {
+        : marketplace.availableProducts.where((p) {
             return p.title.toLowerCase().contains(query) ||
                 p.category.toLowerCase().contains(query) ||
                 p.farmerName.toLowerCase().contains(query) ||
@@ -124,7 +127,7 @@ class _GlobalSearchDialogState extends State<GlobalSearchDialog> {
 
     final matchingFarmers = query.isEmpty
         ? <FarmerModel>[]
-        : MockData.farmers.where((f) {
+        : marketplace.farmers.where((f) {
             return f.farmName.toLowerCase().contains(query) ||
                 f.farmerName.toLowerCase().contains(query) ||
                 f.location.toLowerCase().contains(query);
@@ -371,7 +374,10 @@ class _GlobalSearchDialogState extends State<GlobalSearchDialog> {
           ],
         ),
         const SizedBox(height: 10),
-        ...MockData.farmers.map((farmer) => _buildFarmerTile(farmer)),
+        ...ref
+            .watch(marketplaceProvider)
+            .farmers
+            .map((farmer) => _buildFarmerTile(farmer)),
       ],
     );
   }

@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../core/widgets/app_toast.dart';
+import '../../../farmer_onboarding/presentation/widgets/farmer_map_widget.dart';
+import '../../../orders/presentation/providers/farmer_orders_provider.dart';
 import '../providers/cart_provider.dart';
 import '../widgets/fee_breakdown_sheet.dart';
 
@@ -25,11 +30,50 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('მიტანის მისამართი'),
-        content: TextField(
-          controller: controller,
-          decoration: const InputDecoration(
-            hintText: 'შეიყვანეთ მისამართი',
-          ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            TextField(
+              controller: controller,
+              decoration: const InputDecoration(
+                hintText: 'შეიყვანეთ მისამართი',
+              ),
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: () async {
+                try {
+                  LocationPermission perm = await Geolocator.checkPermission();
+                  if (perm == LocationPermission.denied) {
+                    perm = await Geolocator.requestPermission();
+                    if (perm == LocationPermission.denied) {
+                      if (!mounted) return;
+                      AppToast.error(
+                        context,
+                        'მდებარეობაზე წვდომის ნებართვა უარყოფილია',
+                      );
+                      return;
+                    }
+                  }
+                  final pos = await Geolocator.getCurrentPosition();
+                  final resolved = GeorgianGeoLookup.resolveInstantAddress(
+                    LatLng(pos.latitude, pos.longitude),
+                  );
+                  controller.text = resolved;
+                  setState(() => _address = resolved);
+                } catch (_) {
+                  if (!mounted) return;
+                  AppToast.error(
+                    context,
+                    'GPS მდებარეობის დადგენა ვერ მოხერხდა',
+                  );
+                }
+              },
+              icon: const Icon(LucideIcons.locateFixed, size: 16),
+              label: const Text('ჩემი მდებარეობის დადგენა (GPS)'),
+            ),
+          ],
         ),
         actions: [
           TextButton(
@@ -94,6 +138,15 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   }
 
   void _showSuccessDialog(double total) {
+    final cartItems = ref.read(cartProvider);
+    if (cartItems.isNotEmpty) {
+      ref.read(farmerOrdersProvider.notifier).createOrderFromCart(
+            cartItems: cartItems,
+            deliveryAddress: _address,
+            deliveryTimeWindow: _deliverySlot,
+          );
+    }
+
     showDialog(
       context: context,
       barrierDismissible: false,

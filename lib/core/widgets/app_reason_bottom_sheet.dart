@@ -44,7 +44,7 @@ class AppReasonBottomSheet extends StatefulWidget {
     required BuildContext context,
     required String title,
     String? subtitle,
-    String confirmButtonText = 'გაუქმების დადასტურება',
+    String confirmButtonText = 'დადასტურება',
     Color confirmButtonColor = const Color(0xFFDC2626),
     IconData icon = LucideIcons.alertTriangle,
     List<String> reasons = defaultOrderCancellationReasons,

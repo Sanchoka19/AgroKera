@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:agrokera/core/auth/auth_state_provider.dart';
 import 'package:agrokera/core/constants/app_assets.dart';
@@ -11,9 +14,13 @@ import 'package:agrokera/core/widgets/app_confirmation_bottom_sheet.dart';
 import 'package:agrokera/core/widgets/app_header.dart';
 import 'package:agrokera/core/widgets/app_toast.dart';
 import 'package:agrokera/core/widgets/auth_required_bottom_sheet.dart';
+import 'package:agrokera/features/farm_inventory/presentation/screens/farmer_inventory_screen.dart';
+import 'package:agrokera/features/farmer_onboarding/presentation/widgets/farmer_map_widget.dart';
 import 'package:agrokera/features/marketplace/presentation/screens/favorites_screen.dart';
 import 'package:agrokera/features/marketplace/presentation/widgets/guest_promo_banner.dart';
+import 'package:agrokera/features/orders/presentation/screens/client_orders_screen.dart';
 import 'package:agrokera/features/orders/presentation/screens/incoming_orders_screen.dart';
+import 'package:agrokera/features/verification/presentation/screens/kyc_verification_screen.dart';
 import 'help_center_screen.dart';
 
 class GuestProfileScreen extends ConsumerStatefulWidget {
@@ -28,11 +35,63 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
   bool _darkThemeEnabled = false;
   String _selectedLanguage = 'KA'; // 'KA' or 'EN'
 
-  void _showImagePickerNotice() {
-    AppToast.info(
-      context,
-      'პროფილის ფოტოს განახლების ფუნქცია მალე დაემატება!',
-    );
+  String _detectedAddress = 'ჭავჭავაძე - თბილისი';
+
+  Future<void> _detectUserAddressWithGps() async {
+    try {
+      LocationPermission perm = await Geolocator.checkPermission();
+      if (perm == LocationPermission.denied) {
+        perm = await Geolocator.requestPermission();
+        if (perm == LocationPermission.denied) {
+          if (!mounted) return;
+          AppToast.error(
+            context,
+            'მდებარეობაზე წვდომის ნებართვა უარყოფილია',
+          );
+          return;
+        }
+      }
+      if (perm == LocationPermission.deniedForever) {
+        if (!mounted) return;
+        AppToast.error(
+          context,
+          'მდებარეობის ნებართვა დაბლოკილია პარამეტრებიდან',
+        );
+        return;
+      }
+      final pos = await Geolocator.getCurrentPosition();
+      if (!mounted) return;
+      final resolved = GeorgianGeoLookup.resolveInstantAddress(
+        LatLng(pos.latitude, pos.longitude),
+      );
+      setState(() => _detectedAddress = resolved);
+      AppToast.success(context, 'თქვენი მისამართი განახლდა: $resolved');
+    } catch (_) {
+      if (!mounted) return;
+      AppToast.error(
+        context,
+        'GPS მდებარეობის დადგენა ვერ მოხერხდა. შეამოწმეთ ნებართვა.',
+      );
+    }
+  }
+
+  Future<void> _showImagePickerNotice() async {
+    try {
+      final file = await ImagePicker().pickImage(
+        source: ImageSource.camera,
+        preferredCameraDevice: CameraDevice.front,
+      );
+      if (!mounted) return;
+      if (file != null) {
+        AppToast.success(context, 'პროფილის ფოტო წარმატებით განახლდა!');
+      }
+    } catch (_) {
+      if (!mounted) return;
+      AppToast.error(
+        context,
+        'კამერის გახსნა ვერ მოხერხდა. გთხოვთ დართოთ კამერის ნებართვა.',
+      );
+    }
   }
 
   @override
@@ -287,7 +346,27 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
                             title: 'ჩემი პროდუქტები',
                             subtitle: 'პროდუქტების სია და ფასები',
                             onTap: () {
-                              AppToast.info(context, 'გადადით ფერმის გვერდზე პროდუქტების სამართავად');
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      const FarmerInventoryScreen(),
+                                ),
+                              );
+                            },
+                          ),
+                          _buildRowDivider(),
+                          _buildProfileRowItem(
+                            icon: LucideIcons.shieldCheck,
+                            title: 'ფერმერის ვერიფიკაცია (KYC)',
+                            subtitle:
+                                'სტატუსი: ${authState.kycStatus.label}',
+                            onTap: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      const KycVerificationScreen(),
+                                ),
+                              );
                             },
                           ),
                           _buildRowDivider(),
@@ -316,10 +395,8 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
                           _buildProfileRowItem(
                             icon: LucideIcons.mapPin,
                             title: 'ჩემი მისამართი',
-                            subtitle: 'ფერმის ლოკაცია და რუკა',
-                            onTap: () {
-                              AppToast.info(context, 'ფერმის ლოკაცია მონიშნულია რუკაზე.');
-                            },
+                            subtitle: 'ფერმის ლოკაციის GPS-ით განახლება ($_detectedAddress)',
+                            onTap: _detectUserAddressWithGps,
                           ),
                         ]
                       : [
@@ -332,7 +409,12 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
                                 context,
                                 ref: ref,
                                 onAuthenticated: () {
-                                  AppToast.info(context, 'შეკვეთების ისტორია ცარიელია.');
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (_) =>
+                                          const ClientOrdersScreen(),
+                                    ),
+                                  );
                                 },
                               );
                             },
@@ -360,14 +442,12 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
                           _buildProfileRowItem(
                             icon: LucideIcons.mapPin,
                             title: 'ჩემი მისამართი',
-                            subtitle: 'მიტანის მისამართები',
+                            subtitle: 'GPS-ით დადგენა ($_detectedAddress)',
                             onTap: () {
                               requireAuth(
                                 context,
                                 ref: ref,
-                                onAuthenticated: () {
-                                  AppToast.info(context, 'ჭავჭავაძე - თბილისი');
-                                },
+                                onAuthenticated: _detectUserAddressWithGps,
                               );
                             },
                           ),

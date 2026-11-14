@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart' hide Path;
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -585,14 +586,83 @@ class _FarmerMapWidgetState extends State<FarmerMapWidget> {
     _mapController.move(_pinnedLocation ?? _mapCenter, _currentZoom);
   }
 
-  void _recenter() {
+  Future<void> _recenter() async {
     HapticFeedback.lightImpact();
-    final target = _pinnedLocation ?? _resolveDefaultCoordinates(widget.locationText);
-    setState(() {
-      _mapCenter = target;
-      _currentZoom = 13.0;
-    });
-    _mapController.move(target, 13.0);
+
+    try {
+      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        if (!mounted) return;
+        AppToast.warning(context, 'გთხოვთ ჩართოთ GPS / მდებარეობის სერვისი');
+        return;
+      }
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          if (!mounted) return;
+          AppToast.error(
+            context,
+            'მდებარეობაზე წვდომის ნებართვა უარყოფილია',
+          );
+          return;
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        if (!mounted) return;
+        AppToast.error(
+          context,
+          'მდებარეობის ნებართვა დაბლოკილია. გთხოვთ ჩართოთ ბრაუზერის/ტელეფონის პარამეტრებიდან.',
+        );
+        return;
+      }
+
+      final pos = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          timeLimit: Duration(seconds: 8),
+        ),
+      );
+      if (!mounted) return;
+
+      final gpsPoint = LatLng(pos.latitude, pos.longitude);
+      final quickAddress = GeorgianGeoLookup.resolveInstantAddress(gpsPoint);
+
+      setState(() {
+        _pinnedLocation = gpsPoint;
+        _mapCenter = gpsPoint;
+        _currentAddress = quickAddress;
+        _currentZoom = 15.0;
+      });
+      _mapController.move(gpsPoint, 15.0);
+      widget.onLocationChanged?.call(gpsPoint);
+      widget.onAddressResolved?.call(gpsPoint, quickAddress);
+
+      AppToast.success(context, 'თქვენი GPS მდებარეობა დადგენილია: $quickAddress');
+
+      GeorgianGeoLookup.fetchNominatimAddress(gpsPoint).then((onlineAddr) {
+        if (!mounted) return;
+        if (onlineAddr != null && _pinnedLocation == gpsPoint) {
+          setState(() => _currentAddress = onlineAddr);
+          widget.onAddressResolved?.call(gpsPoint, onlineAddr);
+        }
+      });
+    } catch (_) {
+      if (!mounted) return;
+      final target =
+          _pinnedLocation ?? _resolveDefaultCoordinates(widget.locationText);
+      setState(() {
+        _mapCenter = target;
+        _currentZoom = 13.0;
+      });
+      _mapController.move(target, 13.0);
+      AppToast.info(
+        context,
+        'GPS მდებარეობის მიღება ვერ მოხერხდა, შეამოწმეთ ნებართვა',
+      );
+    }
   }
 
   /// Show Full Address Modal Bottom Sheet when address pill or pin is tapped

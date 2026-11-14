@@ -33,7 +33,7 @@ class FarmerOrderCard extends StatelessWidget {
       context: context,
       title: 'შეკვეთის გაუქმება',
       subtitle: 'შეკვეთა #${order.id} • გთხოვთ მიუთითოთ მიზეზი',
-      confirmButtonText: 'გაუქმების დადასტურება',
+      confirmButtonText: 'დადასტურება',
       confirmButtonColor: const Color(0xFFDC2626),
       icon: LucideIcons.alertTriangle,
       reasons: AppReasonBottomSheet.defaultOrderCancellationReasons,
@@ -371,51 +371,63 @@ class FarmerOrderCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 10),
 
-                      // Action Buttons Row
-                      Row(
-                        children: [
-                          if (isPending) ...[
-                            // 1. Details Button
-                            OutlinedButton(
-                              onPressed: () => _openDetails(context),
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: const Color(0xFF475569),
-                                side: const BorderSide(color: Color(0xFFCBD5E1), width: 1.2),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                                minimumSize: const Size(0, 38),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Icon(LucideIcons.eye, size: 14, color: Color(0xFF64748B)),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    'დეტალები',
-                                    style: GoogleFonts.notoSansGeorgian(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                ],
+                      // Action Buttons
+                      if (isPending) ...[
+                        // 1. Top Row: Full-width Details Button
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            onPressed: () => _openDetails(context),
+                            icon: const Icon(
+                              LucideIcons.eye,
+                              size: 15,
+                              color: Color(0xFF64748B),
+                            ),
+                            label: Text(
+                              'დეტალები',
+                              style: GoogleFonts.notoSansGeorgian(
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w700,
                               ),
                             ),
-                            const SizedBox(width: 6),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: const Color(0xFF475569),
+                              side: const BorderSide(
+                                color: Color(0xFFCBD5E1),
+                                width: 1.2,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 8,
+                              ),
+                              minimumSize: const Size(double.infinity, 38),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
 
-                            // 2. Cancel / Reject Button
+                        // 2. Bottom Row: Cancel & Accept Buttons
+                        Row(
+                          children: [
                             Expanded(
                               child: OutlinedButton(
                                 onPressed: () => _handleCancel(context),
                                 style: OutlinedButton.styleFrom(
                                   foregroundColor: const Color(0xFFDC2626),
                                   backgroundColor: const Color(0xFFFEF2F2),
-                                  side: const BorderSide(color: Color(0xFFFECACA), width: 1.2),
+                                  side: const BorderSide(
+                                    color: Color(0xFFFECACA),
+                                    width: 1.2,
+                                  ),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(10),
                                   ),
-                                  padding: const EdgeInsets.symmetric(vertical: 8),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 8,
+                                  ),
                                   minimumSize: const Size(0, 38),
                                 ),
                                 child: Text(
@@ -427,9 +439,7 @@ class FarmerOrderCard extends StatelessWidget {
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 6),
-
-                            // 3. Accept Button
+                            const SizedBox(width: 8),
                             Expanded(
                               child: ElevatedButton(
                                 onPressed: onAccept,
@@ -440,7 +450,9 @@ class FarmerOrderCard extends StatelessWidget {
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(10),
                                   ),
-                                  padding: const EdgeInsets.symmetric(vertical: 8),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 8,
+                                  ),
                                   minimumSize: const Size(0, 38),
                                 ),
                                 child: Text(
@@ -452,7 +464,11 @@ class FarmerOrderCard extends StatelessWidget {
                                 ),
                               ),
                             ),
-                          ] else ...[
+                          ],
+                        ),
+                      ] else ...[
+                        Row(
+                          children: [
                             // Standard Details Outline Button
                             Expanded(
                               child: OutlinedButton.icon(
@@ -467,11 +483,16 @@ class FarmerOrderCard extends StatelessWidget {
                                 ),
                                 style: OutlinedButton.styleFrom(
                                   foregroundColor: AppColors.primary,
-                                  side: const BorderSide(color: Color(0xFFCBD5E1), width: 1.2),
+                                  side: const BorderSide(
+                                    color: Color(0xFFCBD5E1),
+                                    width: 1.2,
+                                  ),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(10),
                                   ),
-                                  padding: const EdgeInsets.symmetric(vertical: 8),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 8,
+                                  ),
                                   minimumSize: const Size(0, 38),
                                 ),
                               ),
@@ -488,7 +509,10 @@ class FarmerOrderCard extends StatelessWidget {
                                   height: 38,
                                   decoration: BoxDecoration(
                                     color: Colors.white,
-                                    border: Border.all(color: const Color(0xFFCBD5E1), width: 1.2),
+                                    border: Border.all(
+                                      color: const Color(0xFFCBD5E1),
+                                      width: 1.2,
+                                    ),
                                     borderRadius: BorderRadius.circular(10),
                                   ),
                                   child: const Icon(
@@ -500,8 +524,8 @@ class FarmerOrderCard extends StatelessWidget {
                               ),
                             ],
                           ],
-                        ],
-                      ),
+                        ),
+                      ],
                     ],
                   ),
                 ),

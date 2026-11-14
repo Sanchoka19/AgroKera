@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../core/auth/auth_state_provider.dart';
@@ -12,6 +14,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/app_toast.dart';
 import '../../../../core/widgets/primary_button.dart';
+import '../providers/farmer_onboarding_validator.dart';
 import '../widgets/farmer_map_widget.dart';
 
 enum LegalStatus {
@@ -56,7 +59,7 @@ class _FarmerOnboardingScreenState extends ConsumerState<FarmerOnboardingScreen>
   int _currentStep = 1; // 1 to 5
 
   // Step 1: Farm Information & Address
-  final _farmNameController = TextEditingController(text: 'მწვანე ველი');
+  final _farmNameController = TextEditingController();
   bool _hasFarmPhoto = false;
   String _selectedRegion = 'კახეთი';
   String _selectedCity = 'გურჯაანი';
@@ -89,17 +92,22 @@ class _FarmerOnboardingScreenState extends ConsumerState<FarmerOnboardingScreen>
   LegalStatus _selectedStatus = LegalStatus.physical;
 
   // Step 3: Legal Details & Bank
-  final _idNumberController = TextEditingController(text: '61000000000');
-  bool _uploadedSelfie = true;
-  bool _uploadedIdFront = true;
-  bool _uploadedIdBack = true;
+  final _imagePicker = ImagePicker();
+  final _idNumberController = TextEditingController();
+  bool _uploadedSelfie = false;
+  bool _uploadedIdFront = false;
+  bool _uploadedIdBack = false;
+  String? _farmPhotoName;
+  String? _selfieFileName;
+  String? _idFrontFileName;
+  String? _idBackFileName;
   String _selectedBank = 'TBC';
   final List<String> _banks = ['TBC', 'BOG', 'Liberty Bank', 'BasisBank'];
-  final _ibanController = TextEditingController(text: 'GE79TB7700000000000000');
+  final _ibanController = TextEditingController();
 
   // Step 4: Terms & Conditions Checkboxes
-  bool _agreeTerms = true;
-  bool _agreeQuality = true;
+  bool _agreeTerms = false;
+  bool _agreeQuality = false;
 
   // Step 5: SMS OTP Verification
   static const int _pinLength = 5;
@@ -149,11 +157,245 @@ class _FarmerOnboardingScreenState extends ConsumerState<FarmerOnboardingScreen>
     super.dispose();
   }
 
-  void _onNext() {
+  Future<void> _detectMyGpsLocation() async {
     HapticFeedback.lightImpact();
+    try {
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          if (!mounted) return;
+          AppToast.error(
+            context,
+            'მდებარეობაზე წვდომის ნებართვა უარყოფილია',
+          );
+          return;
+        }
+      }
+      if (permission == LocationPermission.deniedForever) {
+        if (!mounted) return;
+        AppToast.error(
+          context,
+          'მდებარეობის ნებართვა დაბლოკილია პარამეტრებიდან',
+        );
+        return;
+      }
+
+      final pos = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          timeLimit: Duration(seconds: 8),
+        ),
+      );
+      if (!mounted) return;
+      final point = LatLng(pos.latitude, pos.longitude);
+      final resolved = GeorgianGeoLookup.resolveInstantAddress(point);
+      setState(() {
+        _selectedLocation = point;
+        _dynamicAddress = resolved;
+      });
+      AppToast.success(context, 'მისამართი დადგენილია: $resolved');
+    } catch (_) {
+      if (!mounted) return;
+      AppToast.error(
+        context,
+        'GPS მდებარეობის დადგენა ვერ მოხერხდა. შეამოწმეთ ნებართვა.',
+      );
+    }
+  }
+
+  Future<void> _captureDocumentWithCamera({
+    required String label,
+    CameraDevice preferredCamera = CameraDevice.rear,
+    required ValueChanged<String> onCaptured,
+  }) async {
+    try {
+      final XFile? file = await _imagePicker.pickImage(
+        source: ImageSource.camera,
+        preferredCameraDevice: preferredCamera,
+        imageQuality: 85,
+      );
+      if (!mounted) return;
+      if (file != null) {
+        onCaptured(file.name);
+        AppToast.success(context, '$label წარმატებით გადაღებულია!');
+      }
+    } on PlatformException catch (e) {
+      if (!mounted) return;
+      AppToast.error(
+        context,
+        'კამერაზე წვდომა ვერ მოხერხდა (${e.message ?? "შეამოწმეთ ნებართვა"})',
+      );
+    } catch (_) {
+      if (!mounted) return;
+      AppToast.error(
+        context,
+        'კამერის გახსნა ვერ მოხერხდა. გთხოვთ დართოთ კამერის ნებართვა.',
+      );
+    }
+  }
+
+  Future<void> _pickPhotoOrDocument({
+    required String label,
+    CameraDevice preferredCamera = CameraDevice.rear,
+    required ValueChanged<String> onSelected,
+  }) async {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                ListTile(
+                  leading: const Icon(LucideIcons.camera, color: AppColors.primary),
+                  title: const Text(
+                    'კამერით გადაღება',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  subtitle: const Text('მოითხოვს კამერის ნებართვას'),
+                  onTap: () async {
+                    Navigator.pop(ctx);
+                    await _captureDocumentWithCamera(
+                      label: label,
+                      preferredCamera: preferredCamera,
+                      onCaptured: onSelected,
+                    );
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(LucideIcons.image, color: AppColors.primary),
+                  title: const Text(
+                    'გალერეიდან არჩევა',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  onTap: () async {
+                    Navigator.pop(ctx);
+                    try {
+                      final XFile? file = await _imagePicker.pickImage(
+                        source: ImageSource.gallery,
+                        imageQuality: 85,
+                      );
+                      if (!mounted) return;
+                      if (file != null) {
+                        onSelected(file.name);
+                        AppToast.success(context, '$label წარმატებით აიტვირთა!');
+                      }
+                    } catch (_) {
+                      if (!mounted) return;
+                      AppToast.error(context, 'ფოტოს არჩევა ვერ მოხერხდა');
+                    }
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _pickFarmPhoto() async {
+    await _pickPhotoOrDocument(
+      label: 'ფერმის ფოტო',
+      onSelected: (name) {
+        setState(() {
+          _hasFarmPhoto = true;
+          _farmPhotoName = name;
+        });
+      },
+    );
+  }
+
+  String? _validateCurrentStep() {
+    switch (_currentStep) {
+      case 1:
+        return FarmerOnboardingValidator.validateStep1(
+          farmName: _farmNameController.text,
+          hasFarmPhoto: _hasFarmPhoto,
+          region: _selectedRegion,
+          city: _selectedCity,
+        );
+      case 3:
+        return FarmerOnboardingValidator.validateStep3(
+          status: _selectedStatus,
+          idNumber: _idNumberController.text,
+          uploadedSelfie: _uploadedSelfie,
+          uploadedIdFront: _uploadedIdFront,
+          uploadedIdBack: _uploadedIdBack,
+          bank: _selectedBank,
+          iban: _ibanController.text,
+        );
+      case 4:
+        return FarmerOnboardingValidator.validateStep4(
+          agreeTerms: _agreeTerms,
+          agreeQuality: _agreeQuality,
+        );
+      case 5:
+        final otpCode = _pinControllers.map((c) => c.text.trim()).join();
+        return FarmerOnboardingValidator.validateStep5(
+          otpCode: otpCode,
+          requiredLength: _pinLength,
+        );
+      default:
+        return null;
+    }
+  }
+
+  String get _verificationEmail {
+    final userEmail = ref.read(authStateProvider).userEmail;
+    if (userEmail != null && userEmail.isNotEmpty && userEmail != 'example@gmail.com') {
+      return userEmail;
+    }
+    return 'ajariswyali123@gmail.com';
+  }
+
+  Future<void> _onNext() async {
+    HapticFeedback.lightImpact();
+    final validationError = _validateCurrentStep();
+    if (validationError != null) {
+      AppToast.error(context, validationError);
+      return;
+    }
+
     if (_currentStep < 5) {
-      setState(() => _currentStep++);
+      final nextStep = _currentStep + 1;
+      setState(() => _currentStep = nextStep);
+      if (nextStep == 5) {
+        final email = _verificationEmail;
+        final sent = await ref.read(authStateProvider.notifier).sendEmailOtp(email);
+        if (!mounted) return;
+        if (sent) {
+          AppToast.success(context, 'ვერიფიკაციის კოდი გაიგზავნა: $email');
+        }
+      }
     } else {
+      final otpCode = _pinControllers.map((c) => c.text.trim()).join();
+      final error = await ref.read(authStateProvider.notifier).verifyEmailOtp(
+            email: _verificationEmail,
+            code: otpCode,
+          );
+      if (!mounted) return;
+      if (error != null) {
+        AppToast.error(context, error);
+        return;
+      }
       _onCompleteOnboarding();
     }
   }
@@ -375,14 +617,7 @@ class _FarmerOnboardingScreenState extends ConsumerState<FarmerOnboardingScreen>
             _buildFieldLabel('ატვირთეთ თქვენი ან ფერმის ფოტო *'),
             const SizedBox(height: 8),
             InkWell(
-              onTap: () {
-                setState(() => _hasFarmPhoto = !_hasFarmPhoto);
-                if (_hasFarmPhoto) {
-                  AppToast.success(context, 'ფოტო წარმატებით აიტვირთა!');
-                } else {
-                  AppToast.info(context, 'ფოტო წაიშალა');
-                }
-              },
+              onTap: _pickFarmPhoto,
               borderRadius: BorderRadius.circular(12),
               child: Container(
                 height: 100,
@@ -390,7 +625,7 @@ class _FarmerOnboardingScreenState extends ConsumerState<FarmerOnboardingScreen>
                   color: const Color(0xFFF8FAFC),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: const Color(0xFFCBD5E1),
+                    color: _hasFarmPhoto ? AppColors.primary : const Color(0xFFCBD5E1),
                     width: 1.2,
                   ),
                 ),
@@ -404,7 +639,9 @@ class _FarmerOnboardingScreenState extends ConsumerState<FarmerOnboardingScreen>
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      _hasFarmPhoto ? 'ფოტო ატვირთულია' : 'ატვირთე',
+                      _hasFarmPhoto
+                          ? 'ფოტო ატვირთულია (${_farmPhotoName ?? "farm.jpg"})'
+                          : 'ატვირთე (კამერა / გალერეა)',
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
@@ -453,6 +690,29 @@ class _FarmerOnboardingScreenState extends ConsumerState<FarmerOnboardingScreen>
               },
             ),
             const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              height: 44,
+              child: OutlinedButton.icon(
+                onPressed: _detectMyGpsLocation,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.primary,
+                  side: const BorderSide(color: AppColors.primary, width: 1.2),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                icon: const Icon(LucideIcons.locateFixed, size: 17),
+                label: const Text(
+                  'ჩემი მდებარეობის დადგენა (GPS)',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
             FarmerMapWidget(
               locationText: _dynamicAddress.isNotEmpty
                   ? _dynamicAddress
@@ -659,33 +919,60 @@ class _FarmerOnboardingScreenState extends ConsumerState<FarmerOnboardingScreen>
             ),
             const SizedBox(height: 18),
 
-            // 3 Upload Boxes: სელფი, წინა მხარე, უკანა მხარე
+            // 3 Upload Boxes: სელფი, წინა მხარე, უკანა მხარე (Camera or Gallery)
             Row(
               children: [
                 Expanded(
                   child: _buildUploadBox(
-                    label: 'სელფი',
+                    label: _selfieFileName != null ? 'სელფი ✓' : 'სელფი',
                     icon: LucideIcons.smile,
                     isDone: _uploadedSelfie,
-                    onTap: () => setState(() => _uploadedSelfie = !_uploadedSelfie),
+                    onTap: () => _pickPhotoOrDocument(
+                      label: 'სელფი პირადობით',
+                      preferredCamera: CameraDevice.front,
+                      onSelected: (name) {
+                        setState(() {
+                          _uploadedSelfie = true;
+                          _selfieFileName = name;
+                        });
+                      },
+                    ),
                   ),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: _buildUploadBox(
-                    label: 'წინა მხარე',
+                    label: _idFrontFileName != null ? 'წინა მხარე ✓' : 'წინა მხარე',
                     icon: LucideIcons.contact,
                     isDone: _uploadedIdFront,
-                    onTap: () => setState(() => _uploadedIdFront = !_uploadedIdFront),
+                    onTap: () => _pickPhotoOrDocument(
+                      label: 'პირადობის წინა მხარე',
+                      preferredCamera: CameraDevice.rear,
+                      onSelected: (name) {
+                        setState(() {
+                          _uploadedIdFront = true;
+                          _idFrontFileName = name;
+                        });
+                      },
+                    ),
                   ),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: _buildUploadBox(
-                    label: 'უკანა მხარე',
+                    label: _idBackFileName != null ? 'უკანა მხარე ✓' : 'უკანა მხარე',
                     icon: LucideIcons.creditCard,
                     isDone: _uploadedIdBack,
-                    onTap: () => setState(() => _uploadedIdBack = !_uploadedIdBack),
+                    onTap: () => _pickPhotoOrDocument(
+                      label: 'პირადობის უკანა მხარე',
+                      preferredCamera: CameraDevice.rear,
+                      onSelected: (name) {
+                        setState(() {
+                          _uploadedIdBack = true;
+                          _idBackFileName = name;
+                        });
+                      },
+                    ),
                   ),
                 ),
               ],
@@ -929,7 +1216,7 @@ class _FarmerOnboardingScreenState extends ConsumerState<FarmerOnboardingScreen>
         ),
         const SizedBox(height: 8),
         Text(
-          'კოდი გაიგზავნა example@gmail.com',
+          'კოდი გაიგზავნა $_verificationEmail',
           style: AppTypography.bodyMedium.copyWith(
             fontSize: 14,
             color: const Color(0xFF64748B),
@@ -997,10 +1284,15 @@ class _FarmerOnboardingScreenState extends ConsumerState<FarmerOnboardingScreen>
         // Resend
         Center(
           child: GestureDetector(
-            onTap: () {
+            onTap: () async {
               setState(() => _secondsRemaining = 540);
               _startTimer();
-              AppToast.success(context, 'ახალი SMS კოდი გაიგზავნა.');
+              await ref.read(authStateProvider.notifier).sendEmailOtp(_verificationEmail);
+              if (!mounted) return;
+              AppToast.success(
+                context,
+                'ახალი კოდი გაიგზავნა $_verificationEmail-ზე.',
+              );
             },
             child: RichText(
               text: TextSpan(

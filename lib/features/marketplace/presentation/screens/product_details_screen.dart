@@ -369,18 +369,24 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                         ),
                         const SizedBox(height: 10),
                         Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Icon(
-                              LucideIcons.shieldCheck,
-                              size: 16,
-                              color: AppColors.primary,
+                            const Padding(
+                              padding: EdgeInsets.only(top: 1),
+                              child: Icon(
+                                LucideIcons.shieldCheck,
+                                size: 16,
+                                color: AppColors.primary,
+                              ),
                             ),
                             const SizedBox(width: 6),
-                            Text(
-                              '100% ნატურალური და ბიო-სუფთა პროდუქტი',
-                              style: AppTypography.caption.copyWith(
-                                color: AppColors.primaryDark,
-                                fontWeight: FontWeight.w600,
+                            Expanded(
+                              child: Text(
+                                '100% ნატურალური და ბიო-სუფთა პროდუქტი',
+                                style: AppTypography.caption.copyWith(
+                                  color: AppColors.primaryDark,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
                           ],

@@ -63,7 +63,7 @@ class _FarmerOrderDetailScreenState
       context: context,
       title: 'შეკვეთის გაუქმება',
       subtitle: 'შეკვეთა #${order.id} • გთხოვთ მიუთითოთ მიზეზი',
-      confirmButtonText: 'გაუქმების დადასტურება',
+      confirmButtonText: 'დადასტურება',
       confirmButtonColor: const Color(0xFFDC2626),
       icon: LucideIcons.alertTriangle,
       reasons: AppReasonBottomSheet.defaultOrderCancellationReasons,

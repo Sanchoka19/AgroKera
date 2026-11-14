@@ -20,6 +20,34 @@ enum OrderStatus {
     }
   }
 
+  String get apiValue {
+    switch (this) {
+      case OrderStatus.pending:
+        return 'PENDING';
+      case OrderStatus.inProgress:
+        return 'IN_PROGRESS';
+      case OrderStatus.completed:
+        return 'COMPLETED';
+      case OrderStatus.cancelled:
+        return 'CANCELLED';
+    }
+  }
+
+  static OrderStatus fromApi(String? raw) {
+    switch (raw?.toUpperCase()) {
+      case 'IN_PROGRESS':
+      case 'CONFIRMED':
+        return OrderStatus.inProgress;
+      case 'COMPLETED':
+        return OrderStatus.completed;
+      case 'CANCELLED':
+        return OrderStatus.cancelled;
+      case 'PENDING':
+      default:
+        return OrderStatus.pending;
+    }
+  }
+
   Color get color {
     switch (this) {
       case OrderStatus.pending:
@@ -58,9 +86,17 @@ class FarmerOrderItem {
     required this.quantityText,
     required this.price,
   });
+
+  factory FarmerOrderItem.fromJson(Map<String, dynamic> json) {
+    return FarmerOrderItem(
+      name: json['name'] as String? ?? 'პროდუქტი',
+      quantityText: json['quantityText'] as String? ?? '1კგ',
+      price: (json['price'] as num?)?.toDouble() ?? 0.0,
+    );
+  }
 }
 
-/// Rich domain model representing an incoming order for a farmer
+/// Rich domain model representing an order for both farmer & client views
 class FarmerOrder {
   final String id;
   final DateTime createdAt;
@@ -74,6 +110,7 @@ class FarmerOrder {
   final String? cancellationReason;
   final bool hasVat;
   final DateTime? cancellationDeadline;
+  final String? trackingNumber;
 
   const FarmerOrder({
     required this.id,
@@ -88,7 +125,33 @@ class FarmerOrder {
     this.cancellationReason,
     this.hasVat = false,
     this.cancellationDeadline,
+    this.trackingNumber,
   });
+
+  factory FarmerOrder.fromJson(Map<String, dynamic> json) {
+    final rawItems = (json['items'] as List<dynamic>?) ?? const [];
+    return FarmerOrder(
+      id: json['id'] as String? ?? '00000',
+      createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ??
+          DateTime.now(),
+      status: OrderStatus.fromApi(json['status'] as String?),
+      customerName: json['customerName'] as String? ?? 'მყიდველი',
+      contactPerson: json['contactPerson'] as String? ?? 'მყიდველი',
+      contactPhone: json['contactPhone'] as String? ?? '+995 599 12 34 56',
+      hasVat: json['hasVat'] as bool? ?? false,
+      deliveryTimeWindow: json['deliveryTimeWindow'] as String?,
+      deliveryAddress: json['deliveryAddress'] as String?,
+      cancellationReason: json['cancellationReason'] as String?,
+      cancellationDeadline: json['cancellationDeadline'] != null
+          ? DateTime.tryParse(json['cancellationDeadline'] as String)
+          : null,
+      trackingNumber: json['trackingNumber'] as String?,
+      items: rawItems
+          .whereType<Map<String, dynamic>>()
+          .map(FarmerOrderItem.fromJson)
+          .toList(),
+    );
+  }
 
   /// Subtotal (sum of item prices)
   double get subtotal => items.fold(0.0, (sum, item) => sum + item.price);
@@ -137,6 +200,7 @@ class FarmerOrder {
     String? cancellationReason,
     bool? hasVat,
     DateTime? cancellationDeadline,
+    String? trackingNumber,
   }) {
     return FarmerOrder(
       id: id ?? this.id,
@@ -151,7 +215,7 @@ class FarmerOrder {
       cancellationReason: cancellationReason ?? this.cancellationReason,
       hasVat: hasVat ?? this.hasVat,
       cancellationDeadline: cancellationDeadline ?? this.cancellationDeadline,
+      trackingNumber: trackingNumber ?? this.trackingNumber,
     );
   }
 }
-

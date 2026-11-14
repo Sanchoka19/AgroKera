@@ -27,7 +27,9 @@ enum VerificationStatus {
 
 enum OrderStatus {
   PENDING
+  IN_PROGRESS
   CONFIRMED
+  COMPLETED
   CANCELLED
 }
 
@@ -63,6 +65,9 @@ model FarmerProfile {
   userId             String             @unique
   user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   farmName           String
+  about              String?
+  avatarUrl          String?
+  coverUrl           String?
   idCardFrontUrl     String?
   idCardBackUrl      String?
   region             String
@@ -71,8 +76,11 @@ model FarmerProfile {
   latitude           Float?
   longitude          Float?
   isDeliveryEnabled  Boolean            @default(true)
+  isVatPayer         Boolean            @default(false)
   deliveryFee        Float              @default(0.0)
   rating             Float              @default(5.0)
+  reviewCount        Int                @default(0)
+  totalRatings       Int                @default(0)
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
 
@@ -87,9 +95,13 @@ model Product {
   description        String?
   category           String
   pricePerUnit       Float
+  discountPercent    Int                @default(0)
   unit               String             @default("კგ")
   stockQuantity      Float              @default(0.0)
+  stockStatus        String             @default("მარაგშია")
   minOrderQuantity   Float              @default(1.0)
+  rating             Float              @default(4.9)
+  reviewCount        Int                @default(0)
   imageUrl           String?
   isAvailable        Boolean            @default(true)
   createdAt          DateTime           @default(now())
@@ -99,19 +111,26 @@ model Product {
 }
 
 model Order {
-  id                 String             @id @default(cuid())
-  clientId           String
-  client             User               @relation(fields: [clientId], references: [id])
-  status             OrderStatus        @default(PENDING)
-  totalAmount        Float
-  fulfillmentType    FulfillmentType    @default(FARMER_DELIVERY)
-  deliveryAddress    String?
-  deliveryNotes      String?
-  createdAt          DateTime           @default(now())
-  updatedAt          DateTime           @updatedAt
+  id                   String             @id @default(cuid())
+  clientId             String
+  client               User               @relation(fields: [clientId], references: [id])
+  farmerId             String?
+  status               OrderStatus        @default(PENDING)
+  totalAmount          Float
+  hasVat               Boolean            @default(false)
+  fulfillmentType      FulfillmentType    @default(FARMER_DELIVERY)
+  contactPerson        String?
+  contactPhone         String?
+  deliveryTimeWindow   String?
+  deliveryAddress      String?
+  deliveryNotes        String?
+  cancellationReason   String?
+  cancellationDeadline DateTime?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
 
-  items              OrderItem[]
-  shipment           Shipment?
+  items                OrderItem[]
+  shipment             Shipment?
 }
 
 model OrderItem {

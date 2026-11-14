@@ -113,50 +113,13 @@ class _FarmerInventoryScreenState extends ConsumerState<FarmerInventoryScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            AppHeader(
+            const AppHeader(
               title: 'მარაგის მართვა',
               showBack: true,
+              centerTitle: true,
               showNotificationBell: false,
               showCart: false,
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
-              actions: [
-                InkWell(
-                  onTap: () => ProductFormSheet.show(context),
-                  borderRadius: BorderRadius.circular(12),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 7,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFE8F7EE),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: AppColors.primary.withValues(alpha: 0.25),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          LucideIcons.plus,
-                          size: 15,
-                          color: AppColors.primary,
-                        ),
-                        const SizedBox(width: 5),
-                        Text(
-                          'დამატება',
-                          style: GoogleFonts.notoSansGeorgian(
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.primary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
+              padding: EdgeInsets.fromLTRB(16, 12, 16, 8),
             ),
 
             // Filter Pills

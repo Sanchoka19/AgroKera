@@ -7,12 +7,13 @@ import '../../../../core/widgets/app_toast.dart';
 import '../../../../core/widgets/auth_required_bottom_sheet.dart';
 import '../../../../core/widgets/primary_button.dart';
 import '../../../../core/widgets/status_badge.dart';
-import '../../data/mock_data.dart';
+import '../../data/models/farmer_model.dart';
 import '../../data/models/product_model.dart';
 import '../../../cart_checkout/data/models/cart_item_model.dart';
 import '../../../cart_checkout/presentation/providers/cart_provider.dart';
 import '../../../cart_checkout/presentation/screens/cart_screen.dart';
 import '../providers/favorites_provider.dart';
+import '../providers/marketplace_provider.dart';
 import 'farmer_profile_screen.dart';
 
 /// Product Details Screen adhering to specification:
@@ -42,10 +43,27 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
     final gallery = product.galleryImages;
     final totalPrice = product.price * _quantity;
 
-    // Find farmer
-    final farmer = MockData.farmers.firstWhere(
+    // Find farmer strictly matching product.farmerId
+    final farmers = ref.watch(marketplaceProvider).farmers;
+    final farmer = farmers.firstWhere(
       (f) => f.id == product.farmerId,
-      orElse: () => MockData.farmers.first,
+      orElse: () => FarmerModel(
+        id: product.farmerId,
+        farmName: product.farmerName,
+        farmerName: product.farmerName,
+        location: 'კახეთი',
+        rating: product.rating,
+        reviewCount: product.reviewCount,
+        totalRatings: product.reviewCount,
+        isVerified: true,
+        isVatPayer: false,
+        avatarUrl:
+            'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80',
+        coverUrl:
+            'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=1000&auto=format&fit=crop&q=80',
+        about: 'ნატურალური ქართული აგრო-პროდუქცია პირდაპირ მეურნეობიდან.',
+        phone: '+995 599 11 22 33',
+      ),
     );
 
     return Scaffold(

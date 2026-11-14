@@ -147,6 +147,7 @@ class MarketplaceNotifier extends Notifier<MarketplaceState> {
           'title': title,
           'category': category,
           'farmerId': farmerId,
+          'farmerName': farmerName,
           'pricePerUnit': price,
           'discountPercent': discountPercent ?? 0,
           'unit': unit,
@@ -164,6 +165,7 @@ class MarketplaceNotifier extends Notifier<MarketplaceState> {
               .map((p) => p.id == tempId ? serverProduct : p)
               .toList(),
         );
+        unawaited(refreshFromBackend());
         return serverProduct;
       }
     } catch (_) {}

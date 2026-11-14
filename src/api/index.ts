@@ -275,38 +275,60 @@ export default {
           phone?: string;
           email?: string;
           name?: string;
+          farmName?: string;
           role?: string;
         };
 
         const roleEnum =
           body.role?.toUpperCase() === "FARMER" ? Role.FARMER : Role.CLIENT;
+        const normalizedEmail = body.email?.trim().toLowerCase();
 
-        let user = await prisma.user.findFirst({
-          where: {
-            OR: [
-              ...(body.phone ? [{ phoneNumber: body.phone }] : []),
-              ...(body.email ? [{ email: body.email }] : []),
-            ],
-          },
-          include: { farmerProfile: true },
-        });
+        // 1. Always look up by email first (strict account isolation)
+        let user = normalizedEmail
+          ? await prisma.user.findFirst({
+              where: {
+                email: {
+                  equals: normalizedEmail,
+                  mode: "insensitive",
+                },
+              },
+              include: { farmerProfile: true },
+            })
+          : null;
 
+        // 2. Only fall back to phone lookup if no email was provided
+        if (!user && !normalizedEmail && body.phone) {
+          user = await prisma.user.findFirst({
+            where: { phoneNumber: body.phone },
+            include: { farmerProfile: true },
+          });
+        }
+
+        // 3. If user does not exist yet, create a dedicated isolated User (& FarmerProfile if FARMER)
         if (!user) {
+          const slug = (normalizedEmail || `${Date.now()}`)
+            .replace(/[^a-z0-9]/g, "_");
           user = await prisma.user.create({
             data: {
-              fullName: body.name || (roleEnum === Role.FARMER ? "გიორგი ბერიძე" : "საბა ევგენიძე"),
-              phoneNumber: body.phone || `+995599${Math.floor(100000 + Math.random() * 900000)}`,
-              email: body.email || `user_${Date.now()}@agrokera.ge`,
+              id: roleEnum === Role.FARMER ? `user_farmer_${slug}` : `user_client_${slug}`,
+              fullName:
+                body.name ||
+                (roleEnum === Role.FARMER ? "გიორგი ბერიძე" : "საბა ევგენიძე"),
+              phoneNumber:
+                body.phone && body.phone !== "+995 599 12 34 56"
+                  ? body.phone
+                  : `+995599${Math.floor(100000 + Math.random() * 900000)}`,
+              email: normalizedEmail || `user_${Date.now()}@agrokera.ge`,
               role: roleEnum,
-              verificationStatus:
-                roleEnum === Role.FARMER
-                  ? VerificationStatus.VERIFIED
-                  : VerificationStatus.VERIFIED,
+              verificationStatus: VerificationStatus.VERIFIED,
               ...(roleEnum === Role.FARMER
                 ? {
                     farmerProfile: {
                       create: {
-                        farmName: `${body.name || "გიორგის"} ფერმა`,
+                        id: `farmer_${slug}`,
+                        farmName:
+                          body.farmName ||
+                          `${body.name || "ახალი ფერმერი"}-ის მეურნეობა`,
                         region: "კახეთი",
                         city: "თელავი",
                         address: "თელავი, კახეთი",
@@ -315,6 +337,24 @@ export default {
                   }
                 : {}),
             },
+            include: { farmerProfile: true },
+          });
+        } else if (roleEnum === Role.FARMER && !user.farmerProfile) {
+          // Ensure existing farmer user always has its own isolated FarmerProfile
+          const slug = (user.email || user.id).toLowerCase().replace(/[^a-z0-9]/g, "_");
+          await prisma.farmerProfile.create({
+            data: {
+              id: `farmer_${slug}`,
+              userId: user.id,
+              farmName: body.farmName || `${user.fullName}-ის მეურნეობა`,
+              region: "კახეთი",
+              city: "თელავი",
+              address: "თელავი, კახეთი",
+            },
+          });
+          user = await prisma.user.update({
+            where: { id: user.id },
+            data: { role: Role.FARMER },
             include: { farmerProfile: true },
           });
         }
@@ -340,40 +380,92 @@ export default {
 
         const roleEnum =
           body.role?.toUpperCase() === "FARMER" ? Role.FARMER : Role.CLIENT;
+        const normalizedEmail = body.email?.trim().toLowerCase();
+        const slug = (normalizedEmail || `${Date.now()}`)
+          .replace(/[^a-z0-9]/g, "_");
 
-        const user = await prisma.user.upsert({
-          where: {
-            phoneNumber: body.phoneNumber || `+995599${Math.floor(100000 + Math.random() * 900000)}`,
-          },
-          update: {
-            fullName: body.fullName,
-            role: roleEnum,
-          },
-          create: {
-            fullName: body.fullName || "ახალი მომხმარებელი",
-            phoneNumber: body.phoneNumber,
-            email: body.email,
-            role: roleEnum,
-            verificationStatus:
-              roleEnum === Role.FARMER
-                ? VerificationStatus.PENDING_REVIEW
-                : VerificationStatus.VERIFIED,
-            ...(roleEnum === Role.FARMER
-              ? {
-                  farmerProfile: {
-                    create: {
-                      farmName: body.farmName || `${body.fullName}-ის მეურნეობა`,
-                      region: body.region || "კახეთი",
-                      city: body.city || "თელავი",
-                      address: body.address || "თელავი, კახეთი",
-                      isVatPayer: body.isVatPayer ?? false,
+        let existingUser = normalizedEmail
+          ? await prisma.user.findFirst({
+              where: {
+                email: {
+                  equals: normalizedEmail,
+                  mode: "insensitive",
+                },
+              },
+              include: { farmerProfile: true },
+            })
+          : null;
+
+        let user;
+        if (existingUser) {
+          user = await prisma.user.update({
+            where: { id: existingUser.id },
+            data: {
+              fullName: body.fullName || existingUser.fullName,
+              role: roleEnum,
+              ...(roleEnum === Role.FARMER
+                ? {
+                    farmerProfile: existingUser.farmerProfile
+                      ? {
+                          update: {
+                            ...(body.farmName ? { farmName: body.farmName } : {}),
+                            ...(body.region ? { region: body.region } : {}),
+                            ...(body.city ? { city: body.city } : {}),
+                            ...(body.address ? { address: body.address } : {}),
+                            ...(body.isVatPayer !== undefined
+                                ? { isVatPayer: body.isVatPayer }
+                                : {}),
+                          },
+                        }
+                      : {
+                          create: {
+                            id: `farmer_${slug}`,
+                            farmName:
+                              body.farmName || `${body.fullName}-ის მეურნეობა`,
+                            region: body.region || "კახეთი",
+                            city: body.city || "თელავი",
+                            address: body.address || "თელავი, კახეთი",
+                            isVatPayer: body.isVatPayer ?? false,
+                          },
+                        },
+                  }
+                : {}),
+            },
+            include: { farmerProfile: true },
+          });
+        } else {
+          user = await prisma.user.create({
+            data: {
+              id: roleEnum === Role.FARMER ? `user_farmer_${slug}` : `user_client_${slug}`,
+              fullName: body.fullName || "ახალი მომხმარებელი",
+              phoneNumber:
+                body.phoneNumber &&
+                body.phoneNumber !== "+995 599 12 34 56" &&
+                body.phoneNumber !== "+995 599 00 00 00"
+                  ? body.phoneNumber
+                  : `+995599${Math.floor(100000 + Math.random() * 900000)}`,
+              email: normalizedEmail || `user_${Date.now()}@agrokera.ge`,
+              role: roleEnum,
+              verificationStatus: VerificationStatus.VERIFIED,
+              ...(roleEnum === Role.FARMER
+                ? {
+                    farmerProfile: {
+                      create: {
+                        id: `farmer_${slug}`,
+                        farmName:
+                          body.farmName || `${body.fullName}-ის მეურნეობა`,
+                        region: body.region || "კახეთი",
+                        city: body.city || "თელავი",
+                        address: body.address || "თელავი, კახეთი",
+                        isVatPayer: body.isVatPayer ?? false,
+                      },
                     },
-                  },
-                }
-              : {}),
-          },
-          include: { farmerProfile: true },
-        });
+                  }
+                : {}),
+            },
+            include: { farmerProfile: true },
+          });
+        }
 
         return jsonResponse(
           {
@@ -546,6 +638,7 @@ export default {
           title: string;
           category: string;
           farmerId?: string;
+          farmerName?: string;
           pricePerUnit: number;
           discountPercent?: number;
           unit?: string;
@@ -557,15 +650,45 @@ export default {
         };
 
         let targetFarmerId = body.farmerId || "farmer_2";
-        const existingFarmer = await prisma.farmerProfile.findUnique({
-          where: { id: targetFarmerId },
+        let existingFarmer = await prisma.farmerProfile.findFirst({
+          where: {
+            OR: [
+              { id: targetFarmerId },
+              { userId: targetFarmerId },
+              ...(body.farmerName ? [{ farmName: body.farmerName }] : []),
+            ],
+          },
         });
+
         if (!existingFarmer) {
-          const fallbackFarmer = await prisma.farmerProfile.findFirst();
-          if (fallbackFarmer) {
-            targetFarmerId = fallbackFarmer.id;
-          }
+          // Create a dedicated isolated FarmerProfile instead of falling back to another farmer!
+          const cleanId = targetFarmerId.startsWith("farmer_")
+            ? targetFarmerId
+            : `farmer_${targetFarmerId}`;
+          const cleanFarmName = body.farmerName || "ახალი მეურნეობა";
+          const ownerUser = await prisma.user.create({
+            data: {
+              id: `user_${cleanId}`,
+              fullName: cleanFarmName.replace(/-ის (ფერმა|მეურნეობა)$/, ""),
+              phoneNumber: `+995599${Math.floor(100000 + Math.random() * 900000)}`,
+              email: `${cleanId}@agrokera.ge`,
+              role: Role.FARMER,
+              verificationStatus: VerificationStatus.VERIFIED,
+              farmerProfile: {
+                create: {
+                  id: cleanId,
+                  farmName: cleanFarmName,
+                  region: "კახეთი",
+                  city: "თელავი",
+                  address: "თელავი, კახეთი",
+                },
+              },
+            },
+            include: { farmerProfile: true },
+          });
+          existingFarmer = ownerUser.farmerProfile;
         }
+        targetFarmerId = existingFarmer!.id;
 
         const stockQty = Number(body.stockQuantity ?? 50);
         const normalizedImages =
@@ -744,6 +867,8 @@ export default {
 
         const formatted = orders.map((o) => ({
           id: o.id,
+          farmerId: o.farmerId,
+          clientId: o.clientId,
           createdAt: o.createdAt.toISOString(),
           status: o.status,
           customerName: o.client.fullName,
@@ -906,6 +1031,8 @@ export default {
         return jsonResponse(
           {
             id: createdOrder.id,
+            farmerId: createdOrder.farmerId,
+            clientId: createdOrder.clientId,
             createdAt: createdOrder.createdAt.toISOString(),
             status: createdOrder.status,
             customerName: createdOrder.contactPerson || createdOrder.client.fullName,

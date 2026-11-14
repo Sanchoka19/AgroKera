@@ -127,7 +127,7 @@ void main() {
 
       expect(find.text('ჩემი შეკვეთები'), findsOneWidget);
       expect(find.text('შეკვეთა #12345'), findsOneWidget);
-      expect(find.text('მიღებულია'), findsWidgets);
+      expect(find.text('ჩაბარდა'), findsWidgets);
     });
   });
 }

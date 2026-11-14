@@ -99,6 +99,8 @@ class FarmerOrderItem {
 /// Rich domain model representing an order for both farmer & client views
 class FarmerOrder {
   final String id;
+  final String? farmerId;
+  final String? clientId;
   final DateTime createdAt;
   final OrderStatus status;
   final String customerName;
@@ -114,6 +116,8 @@ class FarmerOrder {
 
   const FarmerOrder({
     required this.id,
+    this.farmerId,
+    this.clientId,
     required this.createdAt,
     required this.status,
     required this.customerName,
@@ -132,6 +136,8 @@ class FarmerOrder {
     final rawItems = (json['items'] as List<dynamic>?) ?? const [];
     return FarmerOrder(
       id: json['id'] as String? ?? '00000',
+      farmerId: json['farmerId'] as String?,
+      clientId: json['clientId'] as String?,
       createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ??
           DateTime.now(),
       status: OrderStatus.fromApi(json['status'] as String?),
@@ -189,6 +195,8 @@ class FarmerOrder {
 
   FarmerOrder copyWith({
     String? id,
+    String? farmerId,
+    String? clientId,
     DateTime? createdAt,
     OrderStatus? status,
     String? customerName,
@@ -204,6 +212,8 @@ class FarmerOrder {
   }) {
     return FarmerOrder(
       id: id ?? this.id,
+      farmerId: farmerId ?? this.farmerId,
+      clientId: clientId ?? this.clientId,
       createdAt: createdAt ?? this.createdAt,
       status: status ?? this.status,
       customerName: customerName ?? this.customerName,

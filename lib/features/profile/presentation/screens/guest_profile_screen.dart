@@ -222,7 +222,7 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
                       const SizedBox(height: 4),
                       Text(
                         isFarmer
-                            ? 'ფერმერი • ID 3031223'
+                            ? 'ფერმერი • ${authState.farmName ?? "ID 3031223"}'
                             : (authState.userEmail ?? 'sabaevgenidze0919@gmail.com'),
                         style: GoogleFonts.notoSansGeorgian(
                           fontSize: 13.5,

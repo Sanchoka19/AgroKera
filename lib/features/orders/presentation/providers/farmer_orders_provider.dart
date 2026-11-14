@@ -181,22 +181,47 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
       ),
     ];
 
+    ref.listen(authStateProvider, (prev, next) {
+      if (prev?.userId != next.userId ||
+          prev?.farmerId != next.farmerId ||
+          prev?.role != next.role) {
+        unawaited(refreshFromBackend());
+      }
+    });
     unawaited(Future.microtask(refreshFromBackend));
     return FarmerOrdersState(orders: sampleOrders);
   }
 
-  /// Fetches live orders from Neon PostgreSQL backend so Farmer & Customer stay in sync
+  /// Fetches live orders from Neon PostgreSQL backend with strict Farmer/Customer isolation
   Future<void> refreshFromBackend() async {
     try {
+      final auth = ref.read(authStateProvider);
       final api = ref.read(apiClientProvider);
-      final response = await api.get<List<dynamic>>('/api/orders');
+
+      final queryParams = <String, dynamic>{};
+      if (auth.isAuthenticated) {
+        if (auth.role == UserRole.farmer && auth.farmerId != null) {
+          queryParams['farmerId'] = auth.farmerId;
+        } else if (auth.role == UserRole.customer && auth.userId != null) {
+          queryParams['clientId'] = auth.userId;
+        }
+      }
+
+      final response = await api.get<List<dynamic>>(
+        '/api/orders',
+        queryParameters: queryParams.isNotEmpty ? queryParams : null,
+      );
       final rawOrders = response.data;
-      if (rawOrders != null && rawOrders.isNotEmpty) {
+      if (rawOrders != null) {
         final fetched = rawOrders
             .whereType<Map<String, dynamic>>()
             .map(FarmerOrder.fromJson)
             .toList();
-        if (fetched.isNotEmpty) {
+
+        if (auth.isAuthenticated) {
+          // Strict isolation for real authenticated Farmer or Customer accounts
+          state = state.copyWith(orders: fetched);
+        } else if (fetched.isNotEmpty) {
           final fetchedIds = fetched.map((o) => o.id).toSet();
           final localRemaining = state.orders
               .where((o) => !fetchedIds.contains(o.id))
@@ -205,7 +230,7 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
         }
       }
     } catch (_) {
-      // Gracefully keep local state when offline
+      // Gracefully keep local state when offline or in widget tests
     }
   }
 
@@ -317,6 +342,7 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
         '/api/orders',
         data: {
           'clientId': auth.userId ?? 'user_client_1',
+          'clientEmail': ?auth.userEmail,
           'contactPerson': effectiveName,
           'contactPhone': effectivePhone,
           'deliveryAddress': deliveryAddress,
@@ -339,6 +365,7 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
               .map((o) => o.id == generatedId ? serverOrder : o)
               .toList(),
         );
+        unawaited(refreshFromBackend());
         return serverOrder;
       }
     } catch (_) {

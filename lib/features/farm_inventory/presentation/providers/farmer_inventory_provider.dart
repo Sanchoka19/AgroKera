@@ -86,8 +86,13 @@ class FarmerInventoryNotifier extends Notifier<FarmerInventoryState> {
   @override
   FarmerInventoryState build() {
     final marketplace = ref.watch(marketplaceProvider);
+    final auth = ref.watch(authStateProvider);
+    final activeFarmerId = auth.farmerId ?? 'farmer_2';
+    final ownedProducts = marketplace.products
+        .where((p) => p.farmerId == activeFarmerId)
+        .toList();
     return FarmerInventoryState(
-      allProducts: marketplace.products,
+      allProducts: ownedProducts,
     );
   }
 
@@ -234,16 +239,24 @@ class FarmerInventoryNotifier extends Notifier<FarmerInventoryState> {
         : [imageUrl];
 
     if (existing == null) {
+      final activeFarmerId = auth.farmerId ?? 'farmer_2';
+      final matchedFarmer = ref
+          .read(marketplaceProvider)
+          .farmers
+          .where((f) => f.id == activeFarmerId)
+          .firstOrNull;
+      final resolvedFarmName = auth.farmName ??
+          matchedFarmer?.farmName ??
+          (auth.userName != null ? '${auth.userName}-ის ფერმა' : 'გიორგის ფერმა');
+
       await notifier.addProduct(
         title: title.trim(),
         category: category,
         price: price,
         unit: unit,
         stockQuantity: stockQuantity,
-        farmerId: auth.farmerId ?? 'farmer_2',
-        farmerName: auth.userName != null
-            ? '${auth.userName}-ის ფერმა'
-            : 'გიორგის ფერმა',
+        farmerId: activeFarmerId,
+        farmerName: resolvedFarmName,
         description: description.trim(),
         imageUrl: normalizedImages.first,
         images: normalizedImages,

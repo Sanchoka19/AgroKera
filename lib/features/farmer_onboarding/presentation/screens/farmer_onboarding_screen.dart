@@ -410,12 +410,13 @@ class _FarmerOnboardingScreenState extends ConsumerState<FarmerOnboardingScreen>
   }
 
   void _onCompleteOnboarding() {
-    final currentAuth = ref.read(authStateProvider);
-    ref.read(authStateProvider.notifier).login(
-      role: UserRole.farmer,
-      name: currentAuth.userName ?? 'ფერმერი',
-      phone: currentAuth.userPhone ?? '+995 599 12 34 56',
-      email: currentAuth.userEmail ?? 'farmer@agrokera.ge',
+    ref.read(authStateProvider.notifier).completeFarmerOnboarding(
+      farmName: _farmNameController.text,
+      region: _selectedRegion,
+      city: _selectedCity,
+      address: _dynamicAddress.isNotEmpty
+          ? _dynamicAddress
+          : '$_selectedCity, $_selectedRegion',
     );
 
     Navigator.of(context).popUntil((route) => route.isFirst);

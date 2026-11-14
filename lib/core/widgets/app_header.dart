@@ -104,29 +104,8 @@ class AppHeader extends ConsumerWidget {
                             color: AppColors.primary,
                           ),
                           if (authState.isAuthenticated && unreadNotifs > 0)
-                            Positioned(
-                              top: -5,
-                              right: -4,
-                              child: Container(
-                                padding: const EdgeInsets.all(3),
-                                decoration: const BoxDecoration(
-                                  color: Color(0xFFEF4444),
-                                  shape: BoxShape.circle,
-                                ),
-                                constraints: const BoxConstraints(
-                                  minWidth: 16,
-                                  minHeight: 16,
-                                ),
-                                child: Text(
-                                  unreadNotifs > 9 ? '9+' : '$unreadNotifs',
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 9,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
+                            _buildCountBadge(
+                              unreadNotifs > 9 ? '9+' : '$unreadNotifs',
                             ),
                         ],
                       ),
@@ -158,24 +137,8 @@ class AppHeader extends ConsumerWidget {
                             color: AppColors.primary,
                           ),
                           if (authState.isAuthenticated && cartItems.isNotEmpty)
-                            Positioned(
-                              top: -4,
-                              right: -6,
-                              child: Container(
-                                padding: const EdgeInsets.all(4),
-                                decoration: const BoxDecoration(
-                                  color: AppColors.accentWarm,
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Text(
-                                  '${cartItems.length}',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
+                            _buildCountBadge(
+                              cartItems.length > 9 ? '9+' : '${cartItems.length}',
                             ),
                         ],
                       ),
@@ -191,6 +154,35 @@ class AppHeader extends ConsumerWidget {
             searchBar!,
           ],
         ],
+      ),
+    );
+  }
+
+  Widget _buildCountBadge(String text) {
+    return Positioned(
+      top: -5,
+      right: -4,
+      child: Container(
+        padding: const EdgeInsets.all(2),
+        constraints: const BoxConstraints(
+          minWidth: 17,
+          minHeight: 17,
+        ),
+        decoration: BoxDecoration(
+          color: const Color(0xFFEF4444),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          text,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 9.5,
+            fontWeight: FontWeight.w800,
+            height: 1.0,
+          ),
+        ),
       ),
     );
   }

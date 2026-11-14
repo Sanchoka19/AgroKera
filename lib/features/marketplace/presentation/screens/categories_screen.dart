@@ -152,7 +152,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                           crossAxisCount: 2,
                           crossAxisSpacing: 12,
                           mainAxisSpacing: 12,
-                          childAspectRatio: 1.28,
+                          childAspectRatio: 1.18,
                         ),
                         delegate: SliverChildBuilderDelegate(
                           (context, index) {
@@ -275,7 +275,7 @@ class _CategoryBentoCard extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final imgSize = (constraints.maxHeight * 0.82).clamp(80.0, 115.0);
+        final imgSize = (constraints.maxHeight * 0.88).clamp(88.0, 122.0);
 
         return InkWell(
           onTap: onTap,
@@ -313,22 +313,22 @@ class _CategoryBentoCard extends StatelessWidget {
               children: [
                 // Soft ambient circular glow behind floating illustration
                 Positioned(
-                  right: -15,
-                  bottom: -15,
+                  right: -20,
+                  bottom: -20,
                   child: Container(
-                    width: 110,
-                    height: 110,
+                    width: 120,
+                    height: 120,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: Colors.white.withValues(alpha: 0.45),
+                      color: Colors.white.withValues(alpha: 0.50),
                     ),
                   ),
                 ),
 
-                // Floating 3D Transparent Illustration (No square box/border)
+                // 3D Illustration: pushed into bottom-right corner, partially bleeding off edge
                 Positioned(
-                  right: -4,
-                  bottom: -4,
+                  right: -8,
+                  bottom: -8,
                   child: SizedBox(
                     width: imgSize,
                     height: imgSize,
@@ -350,105 +350,104 @@ class _CategoryBentoCard extends StatelessWidget {
                   ),
                 ),
 
-                // Left Column: Category Name, Count Chip, and Arrow CTA
-                Positioned(
-                  top: 12,
-                  left: 12,
-                  bottom: 12,
-                  right: imgSize * 0.75,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Category Title
-                      Text(
-                        category.name,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.notoSansGeorgian(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w800,
-                          color: const Color(0xFF0F172A),
-                          letterSpacing: -0.2,
-                          height: 1.15,
-                        ),
-                      ),
-                      const SizedBox(height: 5),
-
-                      // Count Dot Chip
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 7,
-                          vertical: 2.5,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.92),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: style.accentColor.withValues(alpha: 0.20),
-                            width: 0.8,
+                // Foreground Content: Category Name, Count Chip, and Arrow CTA
+                Positioned.fill(
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Category Title (full width available!)
+                        Text(
+                          category.name,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.notoSansGeorgian(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w800,
+                            color: const Color(0xFF0F172A),
+                            letterSpacing: -0.2,
+                            height: 1.15,
                           ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.02),
-                              blurRadius: 3,
-                              offset: const Offset(0, 1),
-                            ),
-                          ],
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              width: 4.5,
-                              height: 4.5,
-                              decoration: BoxDecoration(
-                                color: style.accentColor,
-                                shape: BoxShape.circle,
+                        const SizedBox(height: 5),
+
+                        // Count Dot Chip (with solid pill background for supreme legibility)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 7,
+                            vertical: 2.5,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.95),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: style.accentColor.withValues(alpha: 0.25),
+                              width: 0.8,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.03),
+                                blurRadius: 4,
+                                offset: const Offset(0, 1),
                               ),
-                            ),
-                            const SizedBox(width: 4.5),
-                            Text(
-                              '${category.productCount} პროდუქტი',
-                              style: GoogleFonts.notoSansGeorgian(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w700,
-                                color: style.accentColor,
+                            ],
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 4.5,
+                                height: 4.5,
+                                decoration: BoxDecoration(
+                                  color: style.accentColor,
+                                  shape: BoxShape.circle,
+                                ),
                               ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      const Spacer(),
-
-                      // Subtle tactile arrow CTA
-                      Container(
-                        width: 24,
-                        height: 24,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.95),
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: style.borderColor,
-                            width: 0.8,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.03),
-                              blurRadius: 3,
-                              offset: const Offset(0, 1),
-                            ),
-                          ],
-                        ),
-                        child: Center(
-                          child: Icon(
-                            LucideIcons.arrowUpRight,
-                            size: 12.5,
-                            color: style.accentColor,
+                              const SizedBox(width: 4.5),
+                              Text(
+                                '${category.productCount} პროდუქტი',
+                                style: GoogleFonts.notoSansGeorgian(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  color: style.accentColor,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                      ),
-                    ],
+
+                        const Spacer(),
+
+                        // Subtle tactile arrow CTA at bottom-left
+                        Container(
+                          width: 24,
+                          height: 24,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.95),
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: style.borderColor,
+                              width: 0.8,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.04),
+                                blurRadius: 4,
+                                offset: const Offset(0, 1),
+                              ),
+                            ],
+                          ),
+                          child: Center(
+                            child: Icon(
+                              LucideIcons.arrowUpRight,
+                              size: 12.5,
+                              color: style.accentColor,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],

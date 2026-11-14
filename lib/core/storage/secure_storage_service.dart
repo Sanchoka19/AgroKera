@@ -11,6 +11,8 @@ class SecureStorageService {
   static const _phoneKey = 'agrokera_user_phone';
   static const _emailKey = 'agrokera_user_email';
   static const _kycStatusKey = 'agrokera_kyc_status';
+  static const _cartJsonKey = 'agrokera_cart_json';
+  static const _favoritesJsonKey = 'agrokera_favorites_json';
 
   final FlutterSecureStorage _storage;
 
@@ -87,8 +89,45 @@ class SecureStorageService {
 
   Future<void> clearSession() async {
     try {
-      await _storage.deleteAll();
+      await Future.wait([
+        _storage.delete(key: _tokenKey),
+        _storage.delete(key: _userIdKey),
+        _storage.delete(key: _farmerIdKey),
+        _storage.delete(key: _roleKey),
+        _storage.delete(key: _nameKey),
+        _storage.delete(key: _phoneKey),
+        _storage.delete(key: _emailKey),
+        _storage.delete(key: _kycStatusKey),
+      ]);
     } catch (_) {}
+  }
+
+  Future<void> saveCartJson(String json) async {
+    try {
+      await _storage.write(key: _cartJsonKey, value: json);
+    } catch (_) {}
+  }
+
+  Future<String?> readCartJson() async {
+    try {
+      return await _storage.read(key: _cartJsonKey);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> saveFavoritesJson(String json) async {
+    try {
+      await _storage.write(key: _favoritesJsonKey, value: json);
+    } catch (_) {}
+  }
+
+  Future<String?> readFavoritesJson() async {
+    try {
+      return await _storage.read(key: _favoritesJsonKey);
+    } catch (_) {
+      return null;
+    }
   }
 }
 

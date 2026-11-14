@@ -47,5 +47,33 @@ class CartItemModel {
       weightKg: weightKg ?? this.weightKg,
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'packageText': packageText,
+      'farmerName': farmerName,
+      'pricePerUnit': pricePerUnit,
+      'unit': unit,
+      'imageUrl': imageUrl,
+      'quantity': quantity,
+      'weightKg': weightKg,
+    };
+  }
+
+  factory CartItemModel.fromJson(Map<String, dynamic> json) {
+    return CartItemModel(
+      id: json['id'] as String? ?? '',
+      title: json['title'] as String? ?? '',
+      packageText: json['packageText'] as String? ?? '',
+      farmerName: json['farmerName'] as String? ?? '',
+      pricePerUnit: (json['pricePerUnit'] as num?)?.toDouble() ?? 0.0,
+      unit: json['unit'] as String? ?? 'კგ',
+      imageUrl: json['imageUrl'] as String? ?? '',
+      quantity: (json['quantity'] as num?)?.toInt() ?? 1,
+      weightKg: (json['weightKg'] as num?)?.toDouble() ?? 1.0,
+    );
+  }
 }
 

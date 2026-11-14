@@ -1,10 +1,34 @@
+import 'dart:async';
+import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/storage/secure_storage_service.dart';
 import '../../data/models/cart_item_model.dart';
 
 class CartNotifier extends Notifier<List<CartItemModel>> {
   @override
   List<CartItemModel> build() {
+    unawaited(Future.microtask(restoreCart));
     return _sampleItems;
+  }
+
+  Future<void> restoreCart() async {
+    try {
+      final storage = ref.read(secureStorageProvider);
+      final raw = await storage.readCartJson();
+      if (raw == null) return;
+      final decoded = jsonDecode(raw);
+      if (decoded is List) {
+        state = decoded
+            .whereType<Map>()
+            .map((e) => CartItemModel.fromJson(Map<String, dynamic>.from(e)))
+            .toList();
+      }
+    } catch (_) {}
+  }
+
+  void _persistCart() {
+    final jsonStr = jsonEncode(state.map((e) => e.toJson()).toList());
+    unawaited(ref.read(secureStorageProvider).saveCartJson(jsonStr));
   }
 
   static const List<CartItemModel> _sampleItems = [
@@ -45,10 +69,12 @@ class CartNotifier extends Notifier<List<CartItemModel>> {
     } else {
       state = [...state, newItem];
     }
+    _persistCart();
   }
 
   void removeItem(String id) {
     state = state.where((item) => item.id != id).toList();
+    _persistCart();
   }
 
   void updateQuantity(String id, int quantity) {
@@ -62,6 +88,7 @@ class CartNotifier extends Notifier<List<CartItemModel>> {
       }
       return item;
     }).toList();
+    _persistCart();
   }
 
   void increment(String id) {
@@ -71,6 +98,7 @@ class CartNotifier extends Notifier<List<CartItemModel>> {
       }
       return item;
     }).toList();
+    _persistCart();
   }
 
   void decrement(String id) {
@@ -82,14 +110,17 @@ class CartNotifier extends Notifier<List<CartItemModel>> {
       }
       return item;
     }).whereType<CartItemModel>().toList();
+    _persistCart();
   }
 
   void clearCart() {
     state = [];
+    _persistCart();
   }
 
   void restoreSampleItems() {
     state = _sampleItems;
+    _persistCart();
   }
 }
 

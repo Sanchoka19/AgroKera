@@ -504,31 +504,39 @@ export default {
           orderBy: { createdAt: "desc" },
         });
 
-        const formatted = products.map((p) => ({
-          id: p.id,
-          title: p.title,
-          category: p.category,
-          farmerId: p.farmerId,
-          farmerName: p.farmer.farmName,
-          price: p.pricePerUnit,
-          unit: p.unit,
-          discountPercent: p.discountPercent,
-          rating: p.rating,
-          reviewCount: p.reviewCount,
-          isAvailable: p.isAvailable,
-          stockQuantity: p.stockQuantity,
-          stockStatus:
-            p.stockQuantity <= 0
-              ? "ამოწურულია"
-              : p.stockQuantity < 20
-              ? "იწურება"
-              : p.stockStatus || "მარაგშია",
-          imageUrl:
+        const formatted = products.map((p) => {
+          const primaryImage =
             p.imageUrl ||
-            "https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=600&auto=format&fit=crop&q=80",
-          description: p.description || "",
-          minOrderQuantity: p.minOrderQuantity,
-        }));
+            (p.images && p.images.length > 0 ? p.images[0] : null) ||
+            "https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=600&auto=format&fit=crop&q=80";
+          const imageList =
+            p.images && p.images.length > 0 ? p.images : [primaryImage];
+
+          return {
+            id: p.id,
+            title: p.title,
+            category: p.category,
+            farmerId: p.farmerId,
+            farmerName: p.farmer.farmName,
+            price: p.pricePerUnit,
+            unit: p.unit,
+            discountPercent: p.discountPercent,
+            rating: p.rating,
+            reviewCount: p.reviewCount,
+            isAvailable: p.isAvailable,
+            stockQuantity: p.stockQuantity,
+            stockStatus:
+              p.stockQuantity <= 0
+                ? "ამოწურულია"
+                : p.stockQuantity < 20
+                ? "იწურება"
+                : p.stockStatus || "მარაგშია",
+            imageUrl: primaryImage,
+            images: imageList,
+            description: p.description || "",
+            minOrderQuantity: p.minOrderQuantity,
+          };
+        });
 
         return jsonResponse(formatted);
       }
@@ -544,11 +552,21 @@ export default {
           stockQuantity?: number;
           minOrderQuantity?: number;
           imageUrl?: string;
+          images?: string[];
           description?: string;
         };
 
         const targetFarmerId = body.farmerId || "farmer_2";
         const stockQty = Number(body.stockQuantity ?? 50);
+        const normalizedImages =
+          Array.isArray(body.images) && body.images.length > 0
+            ? body.images.slice(0, 5)
+            : body.imageUrl
+            ? [body.imageUrl]
+            : [
+                "https://images.unsplash.com/photo-1542838132-92c53300491e?w=600&auto=format&fit=crop&q=80",
+              ];
+        const primaryImage = body.imageUrl || normalizedImages[0];
 
         const created = await prisma.product.create({
           data: {
@@ -561,9 +579,8 @@ export default {
             stockQuantity: stockQty,
             stockStatus: stockQty < 20 ? "იწურება" : "მარაგშია",
             minOrderQuantity: Number(body.minOrderQuantity ?? 1.0),
-            imageUrl:
-              body.imageUrl ||
-              "https://images.unsplash.com/photo-1542838132-92c53300491e?w=600&auto=format&fit=crop&q=80",
+            imageUrl: primaryImage,
+            images: normalizedImages,
             description:
               body.description ||
               `ახალი, ნატურალური ${body.title} პირდაპირ ფერმიდან.`,
@@ -587,6 +604,7 @@ export default {
             stockQuantity: created.stockQuantity,
             stockStatus: created.stockStatus,
             imageUrl: created.imageUrl,
+            images: created.images && created.images.length > 0 ? created.images : [created.imageUrl],
             description: created.description,
             minOrderQuantity: created.minOrderQuantity,
           },
@@ -609,10 +627,15 @@ export default {
             isAvailable?: boolean;
             description?: string;
             imageUrl?: string;
+            images?: string[];
           };
 
           const stockQty =
             body.stockQuantity !== undefined ? Number(body.stockQuantity) : undefined;
+          const normalizedImages =
+            Array.isArray(body.images) && body.images.length > 0
+              ? body.images.slice(0, 5)
+              : undefined;
 
           const updated = await prisma.product.update({
             where: { id: productId },
@@ -648,6 +671,14 @@ export default {
                 ? { description: body.description }
                 : {}),
               ...(body.imageUrl !== undefined ? { imageUrl: body.imageUrl } : {}),
+              ...(normalizedImages !== undefined
+                ? {
+                    images: normalizedImages,
+                    ...(body.imageUrl === undefined
+                      ? { imageUrl: normalizedImages[0] }
+                      : {}),
+                  }
+                : {}),
             },
             include: { farmer: true },
           });
@@ -667,6 +698,7 @@ export default {
             stockQuantity: updated.stockQuantity,
             stockStatus: updated.stockStatus,
             imageUrl: updated.imageUrl,
+            images: updated.images && updated.images.length > 0 ? updated.images : [updated.imageUrl],
             description: updated.description,
             minOrderQuantity: updated.minOrderQuantity,
           });

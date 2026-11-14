@@ -14,6 +14,7 @@ class ProductModel {
   final double stockQuantity;
   final String stockStatus; // 'მარაგშია', 'იწურება', 'ამოწურულია'
   final String imageUrl;
+  final List<String> images;
   final String description;
   final double minOrderQuantity;
 
@@ -33,9 +34,13 @@ class ProductModel {
     this.stockQuantity = 50.0,
     this.stockStatus = 'მარაგშია',
     required this.imageUrl,
+    this.images = const [],
     required this.description,
     this.minOrderQuantity = 1.0,
   });
+
+  /// Returns all product images (at least the primary imageUrl)
+  List<String> get galleryImages => images.isNotEmpty ? images : [imageUrl];
 
   /// Computes the initial/original price before discount
   double? get effectiveOriginalPrice {
@@ -48,6 +53,15 @@ class ProductModel {
 
   factory ProductModel.fromJson(Map<String, dynamic> json) {
     final stockQty = (json['stockQuantity'] as num?)?.toDouble() ?? 50.0;
+    final rawImages = (json['images'] as List<dynamic>?)
+            ?.whereType<String>()
+            .where((u) => u.isNotEmpty)
+            .toList() ??
+        const [];
+    final primaryUrl = json['imageUrl'] as String? ??
+        (rawImages.isNotEmpty
+            ? rawImages.first
+            : 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=600&auto=format&fit=crop&q=80');
     return ProductModel(
       id: json['id'] as String,
       title: json['title'] as String? ?? '',
@@ -67,8 +81,8 @@ class ProductModel {
               : stockQty < 20
                   ? 'იწურება'
                   : 'მარაგშია'),
-      imageUrl: json['imageUrl'] as String? ??
-          'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=600&auto=format&fit=crop&q=80',
+      imageUrl: primaryUrl,
+      images: rawImages.isNotEmpty ? rawImages : [primaryUrl],
       description: json['description'] as String? ?? '',
       minOrderQuantity: (json['minOrderQuantity'] as num?)?.toDouble() ?? 1.0,
     );
@@ -90,6 +104,7 @@ class ProductModel {
     double? stockQuantity,
     String? stockStatus,
     String? imageUrl,
+    List<String>? images,
     String? description,
     double? minOrderQuantity,
   }) {
@@ -109,6 +124,7 @@ class ProductModel {
       stockQuantity: stockQuantity ?? this.stockQuantity,
       stockStatus: stockStatus ?? this.stockStatus,
       imageUrl: imageUrl ?? this.imageUrl,
+      images: images ?? this.images,
       description: description ?? this.description,
       minOrderQuantity: minOrderQuantity ?? this.minOrderQuantity,
     );

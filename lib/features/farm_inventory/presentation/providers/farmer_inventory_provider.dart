@@ -77,6 +77,10 @@ class FarmerInventoryState {
 
 /// Business logic controller for Farmer Inventory & Product Management
 class FarmerInventoryNotifier extends Notifier<FarmerInventoryState> {
+  static const int maxProductPhotos = 5;
+  static const double compressedMaxDimension = 1280;
+  static const int compressedQuality = 82;
+
   final ImagePicker _imagePicker = ImagePicker();
 
   @override
@@ -93,14 +97,21 @@ class FarmerInventoryNotifier extends Notifier<FarmerInventoryState> {
 
   /// Validates product form fields and returns a Georgian error message if invalid, or `null` if valid.
   String? validateProductForm({
-    required String? imageUrl,
+    String? imageUrl,
+    List<String>? images,
     required String title,
     required String priceText,
     required String stockText,
     required String description,
   }) {
-    if (imageUrl == null || imageUrl.trim().isEmpty) {
-      return 'გთხოვთ დაამატოთ პროდუქტის ფოტო';
+    final hasAnyPhoto = (images != null &&
+            images.any((u) => u.trim().isNotEmpty)) ||
+        (imageUrl != null && imageUrl.trim().isNotEmpty);
+    if (!hasAnyPhoto) {
+      return 'გთხოვთ დაამატოთ მინიმუმ 1 პროდუქტის ფოტო';
+    }
+    if (images != null && images.length > maxProductPhotos) {
+      return 'მაქსიმუმ $maxProductPhotos ფოტოს ატვირთვაა შესაძლებელი';
     }
     if (title.trim().isEmpty) {
       return 'გთხოვთ შეავსოთ პროდუქტის დასახელება';
@@ -119,47 +130,50 @@ class FarmerInventoryNotifier extends Notifier<FarmerInventoryState> {
     return null;
   }
 
-  /// Captures or selects a product photo from Camera or Gallery and uploads it to Cloudflare R2
+  Future<PickedProductPhoto> _uploadCompressedXFile(XFile file) async {
+    final bytes = await file.readAsBytes();
+    String uploadedUrl =
+        'https://images.unsplash.com/photo-1542838132-92c53300491e?w=600&auto=format&fit=crop&q=80';
+    try {
+      final api = ref.read(apiClientProvider);
+      final response = await api.post<Map<String, dynamic>>(
+        '/api/upload',
+        data: {
+          'fileName': file.name,
+          'base64Data': base64Encode(bytes),
+          'contentType': 'image/jpeg',
+          'folder': 'products',
+        },
+      );
+      final remoteUrl = response.data?['url'] as String?;
+      if (remoteUrl != null && remoteUrl.isNotEmpty) {
+        uploadedUrl = remoteUrl;
+      }
+    } catch (_) {
+      if (file.path.startsWith('http') || file.path.startsWith('blob:')) {
+        uploadedUrl = file.path;
+      }
+    }
+
+    return PickedProductPhoto(
+      url: uploadedUrl,
+      name: file.name,
+      bytes: bytes,
+    );
+  }
+
+  /// Captures or selects a single product photo with smart HD compression (1280px, 82% quality)
   Future<PickedProductPhoto?> pickPhoto(ImageSource source) async {
     try {
       final XFile? file = await _imagePicker.pickImage(
         source: source,
         preferredCameraDevice: CameraDevice.rear,
-        maxWidth: 900,
-        maxHeight: 900,
-        imageQuality: 80,
+        maxWidth: compressedMaxDimension,
+        maxHeight: compressedMaxDimension,
+        imageQuality: compressedQuality,
       );
       if (file == null) return null;
-      final bytes = await file.readAsBytes();
-
-      String uploadedUrl =
-          'https://images.unsplash.com/photo-1542838132-92c53300491e?w=600&auto=format&fit=crop&q=80';
-      try {
-        final api = ref.read(apiClientProvider);
-        final response = await api.post<Map<String, dynamic>>(
-          '/api/upload',
-          data: {
-            'fileName': file.name,
-            'base64Data': base64Encode(bytes),
-            'contentType': 'image/jpeg',
-            'folder': 'products',
-          },
-        );
-        final remoteUrl = response.data?['url'] as String?;
-        if (remoteUrl != null && remoteUrl.isNotEmpty) {
-          uploadedUrl = remoteUrl;
-        }
-      } catch (_) {
-        if (file.path.startsWith('http') || file.path.startsWith('blob:')) {
-          uploadedUrl = file.path;
-        }
-      }
-
-      return PickedProductPhoto(
-        url: uploadedUrl,
-        name: file.name,
-        bytes: bytes,
-      );
+      return await _uploadCompressedXFile(file);
     } on PlatformException catch (e) {
       return PickedProductPhoto(
         errorMessage: source == ImageSource.camera
@@ -175,6 +189,32 @@ class FarmerInventoryNotifier extends Notifier<FarmerInventoryState> {
     }
   }
 
+  /// Picks multiple photos from Gallery (up to [remainingSlots]) with smart HD compression
+  Future<List<PickedProductPhoto>> pickGalleryPhotos({
+    required int remainingSlots,
+  }) async {
+    if (remainingSlots <= 0) return const [];
+    try {
+      final List<XFile> files = await _imagePicker.pickMultiImage(
+        maxWidth: compressedMaxDimension,
+        maxHeight: compressedMaxDimension,
+        imageQuality: compressedQuality,
+        limit: remainingSlots > 1 ? remainingSlots : null,
+      );
+      if (files.isEmpty) return const [];
+      final limited = files.take(remainingSlots).toList();
+      final uploaded = <PickedProductPhoto>[];
+      for (final file in limited) {
+        uploaded.add(await _uploadCompressedXFile(file));
+      }
+      return uploaded;
+    } catch (_) {
+      final single = await pickPhoto(ImageSource.gallery);
+      if (single == null) return const [];
+      return [single];
+    }
+  }
+
   /// Creates or updates a product in Marketplace & Neon DB
   Future<void> saveProduct({
     ProductModel? existing,
@@ -185,9 +225,13 @@ class FarmerInventoryNotifier extends Notifier<FarmerInventoryState> {
     required double stockQuantity,
     required String description,
     required String imageUrl,
+    List<String>? images,
   }) async {
     final auth = ref.read(authStateProvider);
     final notifier = ref.read(marketplaceProvider.notifier);
+    final normalizedImages = (images != null && images.isNotEmpty)
+        ? images.take(maxProductPhotos).toList()
+        : [imageUrl];
 
     if (existing == null) {
       await notifier.addProduct(
@@ -201,7 +245,8 @@ class FarmerInventoryNotifier extends Notifier<FarmerInventoryState> {
             ? '${auth.userName}-ის ფერმა'
             : 'გიორგის ფერმა',
         description: description.trim(),
-        imageUrl: imageUrl,
+        imageUrl: normalizedImages.first,
+        images: normalizedImages,
       );
     } else {
       await notifier.updateProduct(
@@ -212,7 +257,8 @@ class FarmerInventoryNotifier extends Notifier<FarmerInventoryState> {
         unit: unit,
         stockQuantity: stockQuantity,
         description: description.trim(),
-        imageUrl: imageUrl,
+        imageUrl: normalizedImages.first,
+        images: normalizedImages,
       );
     }
   }

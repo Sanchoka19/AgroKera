@@ -33,6 +33,16 @@ class ProductFormSheet extends ConsumerStatefulWidget {
   ConsumerState<ProductFormSheet> createState() => _ProductFormSheetState();
 }
 
+class _SelectedPhotoEntry {
+  final String url;
+  final Uint8List? bytes;
+
+  const _SelectedPhotoEntry({
+    required this.url,
+    this.bytes,
+  });
+}
+
 class _ProductFormSheetState extends ConsumerState<ProductFormSheet> {
   late final TextEditingController _titleCtrl;
   late final TextEditingController _priceCtrl;
@@ -40,8 +50,8 @@ class _ProductFormSheetState extends ConsumerState<ProductFormSheet> {
   late final TextEditingController _descCtrl;
   late String _selectedCategory;
   late String _selectedUnit;
-  String? _selectedImageUrl;
-  Uint8List? _selectedImageBytes;
+  final List<_SelectedPhotoEntry> _selectedPhotos = [];
+  bool _isUploadingPhoto = false;
 
   @override
   void initState() {
@@ -57,7 +67,15 @@ class _ProductFormSheetState extends ConsumerState<ProductFormSheet> {
     _descCtrl = TextEditingController(text: existing?.description ?? '');
     _selectedCategory = existing?.category ?? MockData.categories.first.name;
     _selectedUnit = existing?.unit ?? 'კგ';
-    _selectedImageUrl = existing?.imageUrl;
+    if (existing != null) {
+      for (final img in existing.galleryImages.take(
+        FarmerInventoryNotifier.maxProductPhotos,
+      )) {
+        if (img.trim().isNotEmpty) {
+          _selectedPhotos.add(_SelectedPhotoEntry(url: img));
+        }
+      }
+    }
   }
 
   @override
@@ -69,7 +87,18 @@ class _ProductFormSheetState extends ConsumerState<ProductFormSheet> {
     super.dispose();
   }
 
+  int get _remainingPhotoSlots =>
+      FarmerInventoryNotifier.maxProductPhotos - _selectedPhotos.length;
+
   Future<void> _openPhotoSourceSheet() async {
+    if (_remainingPhotoSlots <= 0) {
+      AppToast.info(
+        context,
+        'მაქსიმუმ ${FarmerInventoryNotifier.maxProductPhotos} ფოტოს დამატებაა შესაძლებელი',
+      );
+      return;
+    }
+
     await showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.white,
@@ -85,7 +114,7 @@ class _ProductFormSheetState extends ConsumerState<ProductFormSheet> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'პროდუქტის ფოტოს დამატება',
+                  'პროდუქტის ფოტოს დამატება (${_selectedPhotos.length}/${FarmerInventoryNotifier.maxProductPhotos})',
                   style: GoogleFonts.notoSansGeorgian(
                     fontSize: 16.5,
                     fontWeight: FontWeight.w800,
@@ -123,7 +152,7 @@ class _ProductFormSheetState extends ConsumerState<ProductFormSheet> {
                   ),
                   onTap: () async {
                     Navigator.pop(ctx);
-                    await _handlePickPhoto(ImageSource.camera);
+                    await _handlePickCameraPhoto();
                   },
                 ),
                 const Divider(height: 12, color: Color(0xFFF1F5F9)),
@@ -149,7 +178,7 @@ class _ProductFormSheetState extends ConsumerState<ProductFormSheet> {
                     ),
                   ),
                   subtitle: Text(
-                    'აირჩიეთ ფოტო მოწყობილობიდან',
+                    'აირჩიეთ 1 ან რამდენიმე ფოტო (დარჩენილია $_remainingPhotoSlots ადგილი)',
                     style: GoogleFonts.notoSansGeorgian(
                       fontSize: 12,
                       color: const Color(0xFF64748B),
@@ -157,7 +186,7 @@ class _ProductFormSheetState extends ConsumerState<ProductFormSheet> {
                   ),
                   onTap: () async {
                     Navigator.pop(ctx);
-                    await _handlePickPhoto(ImageSource.gallery);
+                    await _handlePickGalleryPhotos();
                   },
                 ),
               ],
@@ -168,24 +197,67 @@ class _ProductFormSheetState extends ConsumerState<ProductFormSheet> {
     );
   }
 
-  Future<void> _handlePickPhoto(ImageSource source) async {
-    final result =
-        await ref.read(farmerInventoryProvider.notifier).pickPhoto(source);
-    if (!mounted || result == null) return;
-    if (!result.isSuccess) {
-      AppToast.error(context, result.errorMessage ?? 'ფოტოს არჩევა ვერ მოხერხდა');
+  Future<void> _handlePickCameraPhoto() async {
+    if (_remainingPhotoSlots <= 0) return;
+    setState(() => _isUploadingPhoto = true);
+    final result = await ref
+        .read(farmerInventoryProvider.notifier)
+        .pickPhoto(ImageSource.camera);
+    if (!mounted) return;
+    setState(() => _isUploadingPhoto = false);
+    if (result == null) return;
+    if (!result.isSuccess || result.url == null) {
+      AppToast.error(
+        context,
+        result.errorMessage ?? 'ფოტოს გადაღება ვერ მოხერხდა',
+      );
       return;
     }
     setState(() {
-      _selectedImageUrl = result.url;
-      _selectedImageBytes = result.bytes;
+      _selectedPhotos.add(
+        _SelectedPhotoEntry(url: result.url!, bytes: result.bytes),
+      );
     });
-    AppToast.success(
-      context,
-      source == ImageSource.camera
-          ? 'ფოტო წარმატებით გადაღებულია!'
-          : 'ფოტო წარმატებით აიტვირთა!',
-    );
+    AppToast.success(context, 'ფოტო წარმატებით გადაღებულია და შეკუმშულია!');
+  }
+
+  Future<void> _handlePickGalleryPhotos() async {
+    if (_remainingPhotoSlots <= 0) return;
+    setState(() => _isUploadingPhoto = true);
+    final results = await ref
+        .read(farmerInventoryProvider.notifier)
+        .pickGalleryPhotos(remainingSlots: _remainingPhotoSlots);
+    if (!mounted) return;
+    setState(() => _isUploadingPhoto = false);
+    if (results.isEmpty) return;
+
+    int addedCount = 0;
+    String? firstError;
+    setState(() {
+      for (final res in results) {
+        if (res.isSuccess &&
+            res.url != null &&
+            _selectedPhotos.length < FarmerInventoryNotifier.maxProductPhotos) {
+          _selectedPhotos.add(
+            _SelectedPhotoEntry(url: res.url!, bytes: res.bytes),
+          );
+          addedCount++;
+        } else if (res.errorMessage != null) {
+          firstError ??= res.errorMessage;
+        }
+      }
+    });
+
+    if (addedCount > 0) {
+      AppToast.success(
+        context,
+        addedCount == 1
+            ? 'ფოტო წარმატებით აიტვირთა!'
+            : '$addedCount ფოტო წარმატებით აიტვირთა!',
+      );
+    } else if (firstError != null) {
+      AppToast.error(context, firstError!);
+    }
   }
 
   void _openCategorySelectionSheet() {
@@ -325,8 +397,10 @@ class _ProductFormSheetState extends ConsumerState<ProductFormSheet> {
 
   Future<void> _handleSave() async {
     final notifier = ref.read(farmerInventoryProvider.notifier);
+    final imageUrls = _selectedPhotos.map((p) => p.url).toList();
     final error = notifier.validateProductForm(
-      imageUrl: _selectedImageUrl,
+      imageUrl: imageUrls.firstOrNull,
+      images: imageUrls,
       title: _titleCtrl.text,
       priceText: _priceCtrl.text,
       stockText: _stockCtrl.text,
@@ -349,7 +423,8 @@ class _ProductFormSheetState extends ConsumerState<ProductFormSheet> {
       unit: _selectedUnit,
       stockQuantity: stock,
       description: _descCtrl.text.trim(),
-      imageUrl: _selectedImageUrl!,
+      imageUrl: imageUrls.first,
+      images: imageUrls,
     );
 
     if (!mounted) return;
@@ -404,95 +479,164 @@ class _ProductFormSheetState extends ConsumerState<ProductFormSheet> {
             ),
             const SizedBox(height: 16),
 
-            // Required Product Photo Upload Section (Rounded Square with + button)
-            Text(
-              'პროდუქტის ფოტო',
-              style: GoogleFonts.notoSansGeorgian(
-                fontSize: 13.5,
-                fontWeight: FontWeight.w600,
-                color: const Color(0xFF0F172A),
-              ),
+            // Multi-Photo Upload Section (Up to 5 Rounded Squares with + button)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'პროდუქტის ფოტოები',
+                  style: GoogleFonts.notoSansGeorgian(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF0F172A),
+                  ),
+                ),
+                Text(
+                  '${_selectedPhotos.length}/${FarmerInventoryNotifier.maxProductPhotos}',
+                  style: GoogleFonts.notoSansGeorgian(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w700,
+                    color: _selectedPhotos.isNotEmpty
+                        ? AppColors.primary
+                        : const Color(0xFF64748B),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 8),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: InkWell(
-                onTap: _openPhotoSourceSheet,
-                borderRadius: BorderRadius.circular(16),
-                child: Container(
-                  width: 84,
-                  height: 84,
-                  decoration: BoxDecoration(
-                    color: _selectedImageUrl != null
-                        ? const Color(0xFFE8F7EE)
-                        : const Color(0xFFF8FAFC),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: _selectedImageUrl != null
-                          ? AppColors.primary
-                          : const Color(0xFFCBD5E1),
-                      width: 1.5,
-                    ),
-                  ),
-                  clipBehavior: Clip.antiAlias,
-                  child: _selectedImageBytes != null
-                      ? Stack(
-                          fit: StackFit.expand,
-                          children: [
+            SizedBox(
+              height: 84,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                children: [
+                  for (int i = 0; i < _selectedPhotos.length; i++) ...[
+                    Container(
+                      width: 84,
+                      height: 84,
+                      margin: const EdgeInsets.only(right: 10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE8F7EE),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: i == 0
+                              ? AppColors.primary
+                              : const Color(0xFFCBD5E1),
+                          width: i == 0 ? 1.8 : 1.2,
+                        ),
+                      ),
+                      clipBehavior: Clip.antiAlias,
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          if (_selectedPhotos[i].bytes != null)
                             Image.memory(
-                              _selectedImageBytes!,
+                              _selectedPhotos[i].bytes!,
                               fit: BoxFit.cover,
-                            ),
-                            Container(
-                              color: Colors.black.withValues(alpha: 0.25),
-                              alignment: Alignment.center,
-                              child: const Icon(
-                                LucideIcons.camera,
-                                color: Colors.white,
-                                size: 22,
+                            )
+                          else if (_selectedPhotos[i].url.startsWith('assets/'))
+                            Image.asset(
+                              _selectedPhotos[i].url,
+                              fit: BoxFit.cover,
+                            )
+                          else
+                            Image.network(
+                              _selectedPhotos[i].url,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, _, _) => const Icon(
+                                LucideIcons.image,
+                                color: AppColors.primary,
                               ),
                             ),
-                          ],
-                        )
-                      : _selectedImageUrl != null
-                          ? Stack(
-                              fit: StackFit.expand,
-                              children: [
-                                Image.network(
-                                  _selectedImageUrl!,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (_, _, _) => const Icon(
-                                    LucideIcons.image,
-                                    color: AppColors.primary,
+                          if (i == 0)
+                            Positioned(
+                              left: 0,
+                              right: 0,
+                              bottom: 0,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(vertical: 2),
+                                color: AppColors.primary.withValues(alpha: 0.88),
+                                alignment: Alignment.center,
+                                child: Text(
+                                  'მთავარი',
+                                  style: GoogleFonts.notoSansGeorgian(
+                                    fontSize: 9.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.white,
                                   ),
                                 ),
-                                Container(
-                                  color: Colors.black.withValues(alpha: 0.25),
-                                  alignment: Alignment.center,
+                              ),
+                            ),
+                          Positioned(
+                            top: 4,
+                            right: 4,
+                            child: GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  _selectedPhotos.removeAt(i);
+                                });
+                              },
+                              child: Container(
+                                width: 22,
+                                height: 22,
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withValues(alpha: 0.65),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  LucideIcons.x,
+                                  size: 13,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  if (_selectedPhotos.length <
+                      FarmerInventoryNotifier.maxProductPhotos)
+                    InkWell(
+                      onTap: _isUploadingPhoto ? null : _openPhotoSourceSheet,
+                      borderRadius: BorderRadius.circular(16),
+                      child: Container(
+                        width: 84,
+                        height: 84,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF8FAFC),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: const Color(0xFFCBD5E1),
+                            width: 1.5,
+                          ),
+                        ),
+                        child: Center(
+                          child: _isUploadingPhoto
+                              ? const SizedBox(
+                                  width: 22,
+                                  height: 22,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2.2,
+                                    color: AppColors.primary,
+                                  ),
+                                )
+                              : Container(
+                                  width: 38,
+                                  height: 38,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFE8F7EE),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
                                   child: const Icon(
-                                    LucideIcons.camera,
-                                    color: Colors.white,
+                                    LucideIcons.plus,
+                                    color: AppColors.primary,
                                     size: 22,
                                   ),
                                 ),
-                              ],
-                            )
-                          : Center(
-                              child: Container(
-                                width: 38,
-                                height: 38,
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFE8F7EE),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: const Icon(
-                                  LucideIcons.plus,
-                                  color: AppColors.primary,
-                                  size: 22,
-                                ),
-                              ),
-                            ),
-                ),
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ),
             const SizedBox(height: 16),

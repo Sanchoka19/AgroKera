@@ -101,6 +101,7 @@ class MarketplaceNotifier extends Notifier<MarketplaceState> {
     String farmerName = 'გიორგის ფერმა',
     String? description,
     String? imageUrl,
+    List<String>? images,
   }) async {
     final tempId = 'prod_${DateTime.now().millisecondsSinceEpoch}';
     final stockStatus = stockQuantity <= 0
@@ -108,6 +109,14 @@ class MarketplaceNotifier extends Notifier<MarketplaceState> {
         : stockQuantity < 20
             ? 'იწურება'
             : 'მარაგშია';
+    final effectiveImages = (images != null && images.isNotEmpty)
+        ? images
+        : (imageUrl != null && imageUrl.isNotEmpty)
+            ? [imageUrl]
+            : const [
+                'https://images.unsplash.com/photo-1542838132-92c53300491e?w=600&auto=format&fit=crop&q=80',
+              ];
+    final effectivePrimaryImage = imageUrl ?? effectiveImages.first;
 
     final newProduct = ProductModel(
       id: tempId,
@@ -122,8 +131,8 @@ class MarketplaceNotifier extends Notifier<MarketplaceState> {
       stockStatus: stockStatus,
       isAvailable: stockQuantity > 0,
       minOrderQuantity: minOrderQuantity,
-      imageUrl: imageUrl ??
-          'https://images.unsplash.com/photo-1542838132-92c53300491e?w=600&auto=format&fit=crop&q=80',
+      imageUrl: effectivePrimaryImage,
+      images: effectiveImages,
       description:
           description ?? 'ახალი, ნატურალური $title პირდაპირ ფერმიდან.',
     );
@@ -144,7 +153,8 @@ class MarketplaceNotifier extends Notifier<MarketplaceState> {
           'stockQuantity': stockQuantity,
           'minOrderQuantity': minOrderQuantity,
           'description': ?description,
-          'imageUrl': ?imageUrl,
+          'imageUrl': effectivePrimaryImage,
+          'images': effectiveImages,
         },
       );
       if (response.data != null) {
@@ -172,6 +182,7 @@ class MarketplaceNotifier extends Notifier<MarketplaceState> {
     bool? isAvailable,
     String? description,
     String? imageUrl,
+    List<String>? images,
   }) async {
     state = state.copyWith(
       products: state.products.map((p) {
@@ -182,6 +193,9 @@ class MarketplaceNotifier extends Notifier<MarketplaceState> {
             : newStock < 20
                 ? 'იწურება'
                 : 'მარაგშია';
+        final nextImages = (images != null && images.isNotEmpty)
+            ? images
+            : (imageUrl != null ? [imageUrl] : p.images);
         return p.copyWith(
           title: title,
           category: category,
@@ -192,7 +206,8 @@ class MarketplaceNotifier extends Notifier<MarketplaceState> {
           stockStatus: newStatus,
           isAvailable: isAvailable ?? (newStock > 0 ? p.isAvailable : false),
           description: description,
-          imageUrl: imageUrl,
+          imageUrl: imageUrl ?? (nextImages.isNotEmpty ? nextImages.first : p.imageUrl),
+          images: nextImages,
         );
       }).toList(),
     );
@@ -211,6 +226,7 @@ class MarketplaceNotifier extends Notifier<MarketplaceState> {
           'isAvailable': ?isAvailable,
           'description': ?description,
           'imageUrl': ?imageUrl,
+          'images': ?images,
         },
       );
     } catch (_) {}

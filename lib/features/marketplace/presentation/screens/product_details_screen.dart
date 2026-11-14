@@ -34,10 +34,12 @@ class ProductDetailsScreen extends ConsumerStatefulWidget {
 
 class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
   int _quantity = 1;
+  int _currentPhotoIndex = 0;
 
   @override
   Widget build(BuildContext context) {
     final product = widget.product;
+    final gallery = product.galleryImages;
     final totalPrice = product.price * _quantity;
 
     // Find farmer
@@ -104,35 +106,68 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
               background: Stack(
                 fit: StackFit.expand,
                 children: [
-                  product.imageUrl.startsWith('assets/')
-                      ? Image.asset(
-                          product.imageUrl,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) =>
-                              Container(
-                                color: AppColors.surfaceInput,
-                                alignment: Alignment.center,
-                                child: const Icon(
-                                  LucideIcons.image,
-                                  color: AppColors.textSecondary,
-                                  size: 48,
-                                ),
-                              ),
-                        )
-                      : Image.network(
-                          product.imageUrl,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) =>
-                              Container(
-                                color: AppColors.surfaceInput,
-                                alignment: Alignment.center,
-                                child: const Icon(
-                                  LucideIcons.image,
-                                  color: AppColors.textSecondary,
-                                  size: 48,
-                                ),
-                              ),
-                        ),
+                  PageView.builder(
+                    itemCount: gallery.length,
+                    onPageChanged: (idx) {
+                      setState(() => _currentPhotoIndex = idx);
+                    },
+                    itemBuilder: (context, idx) {
+                      final imgUrl = gallery[idx];
+                      return imgUrl.startsWith('assets/')
+                          ? Image.asset(
+                              imgUrl,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  Container(
+                                    color: AppColors.surfaceInput,
+                                    alignment: Alignment.center,
+                                    child: const Icon(
+                                      LucideIcons.image,
+                                      color: AppColors.textSecondary,
+                                      size: 48,
+                                    ),
+                                  ),
+                            )
+                          : Image.network(
+                              imgUrl,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  Container(
+                                    color: AppColors.surfaceInput,
+                                    alignment: Alignment.center,
+                                    child: const Icon(
+                                      LucideIcons.image,
+                                      color: AppColors.textSecondary,
+                                      size: 48,
+                                    ),
+                                  ),
+                            );
+                    },
+                  ),
+                  if (gallery.length > 1)
+                    Positioned(
+                      bottom: 16,
+                      left: 0,
+                      right: 0,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: List.generate(gallery.length, (i) {
+                          final active = i == _currentPhotoIndex;
+                          return AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            margin: const EdgeInsets.symmetric(horizontal: 3),
+                            width: active ? 20 : 7,
+                            height: 7,
+                            decoration: BoxDecoration(
+                              color: active
+                                  ? AppColors.primary
+                                  : Colors.white.withValues(alpha: 0.75),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          );
+                        }),
+                      ),
+                    ),
                 ],
               ),
             ),

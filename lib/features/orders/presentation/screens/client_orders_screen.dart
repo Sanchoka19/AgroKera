@@ -144,7 +144,7 @@ class _ClientOrdersScreenState extends ConsumerState<ClientOrdersScreen> {
     final stepIndex = switch (order.status) {
       OrderStatus.pending => 1,
       OrderStatus.inProgress => 2,
-      OrderStatus.completed => 4,
+      OrderStatus.completed => 3,
       OrderStatus.cancelled => 0,
     };
 
@@ -227,20 +227,38 @@ class _ClientOrdersScreenState extends ConsumerState<ClientOrdersScreen> {
 
           const SizedBox(height: 14),
 
-          // Shipment Tracking Progress Stepper (when not cancelled)
+          // 3-Step Order Progress Stepper (when not cancelled)
           if (order.status != OrderStatus.cancelled) ...[
             Row(
               children: [
-                _buildTrackingStep('მიღებულია', stepIndex >= 1),
+                _buildTrackingStep('მოლოდინში', stepIndex >= 1),
                 _buildStepConnector(stepIndex >= 2),
-                _buildTrackingStep('მზადდება', stepIndex >= 2),
+                _buildTrackingStep('დადასტურდა', stepIndex >= 2),
                 _buildStepConnector(stepIndex >= 3),
-                _buildTrackingStep('გზაშია', stepIndex >= 2),
-                _buildStepConnector(stepIndex >= 4),
-                _buildTrackingStep('ჩაბარდა', stepIndex >= 4),
+                _buildTrackingStep('ჩაბარდა', stepIndex >= 3),
               ],
             ),
             const SizedBox(height: 14),
+          ] else if (order.cancellationReason != null &&
+              order.cancellationReason!.trim().isNotEmpty) ...[
+            Container(
+              width: double.infinity,
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFEF2F2),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFFFECACA)),
+              ),
+              child: Text(
+                'მიზეზი: ${order.cancellationReason}',
+                style: GoogleFonts.notoSansGeorgian(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFFDC2626),
+                ),
+              ),
+            ),
           ],
 
           // Items summary

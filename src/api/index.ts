@@ -1,7 +1,7 @@
 import prisma from "../lib/prisma.ts";
 import { OrderStatus, Role, ShipmentStatus, VerificationStatus, FulfillmentType } from "@prisma/client";
 import nodemailer from "nodemailer";
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, GetObjectCommand, CreateBucketCommand } from "@aws-sdk/client-s3";
 
 const otpStore = new Map<string, { code: string; expiresAt: number }>();
 
@@ -52,8 +52,50 @@ export default {
       }
 
       // ==========================================
-      // 1.5 CLOUDFLARE R2 IMAGE UPLOAD
+      // 1.5 CLOUDFLARE R2 IMAGE UPLOAD & SERVE
       // ==========================================
+      if ((method === "GET" || method === "HEAD") && path.startsWith("/api/assets/")) {
+        const objectKey = path.replace(/^\/api\/assets\//, "");
+        const r2Endpoint = (process.env.R2_ENDPOINT || "").trim();
+        const r2AccessKeyId = (process.env.R2_ACCESS_KEY_ID || "").trim();
+        const r2SecretAccessKey = (process.env.R2_SECRET_ACCESS_KEY || "").trim();
+        const r2Bucket = (process.env.R2_BUCKET_NAME || "agrokera-assets").trim();
+
+        if (!r2Endpoint || !r2AccessKeyId || !r2SecretAccessKey) {
+          return errorResponse("R2 not configured", 404);
+        }
+
+        const s3 = new S3Client({
+          region: "auto",
+          endpoint: r2Endpoint,
+          credentials: {
+            accessKeyId: r2AccessKeyId,
+            secretAccessKey: r2SecretAccessKey,
+          },
+        });
+
+        const obj = await s3.send(
+          new GetObjectCommand({
+            Bucket: r2Bucket,
+            Key: objectKey,
+          })
+        );
+
+        if (!obj.Body) {
+          return errorResponse("Asset not found", 404);
+        }
+
+        const byteArray = await obj.Body.transformToByteArray();
+        return new Response(byteArray, {
+          status: 200,
+          headers: {
+            "Access-Control-Allow-Origin": "*",
+            "Content-Type": obj.ContentType || "image/jpeg",
+            "Cache-Control": "public, max-age=31536000, immutable",
+          },
+        });
+      }
+
       if (method === "POST" && path === "/api/upload") {
         const body = (await request.json()) as {
           fileName?: string;
@@ -94,19 +136,43 @@ export default {
             },
           });
 
-          await s3.send(
-            new PutObjectCommand({
-              Bucket: r2Bucket,
-              Key: objectKey,
-              Body: buffer,
-              ContentType: contentType,
-              CacheControl: "public, max-age=31536000, immutable",
-            })
-          );
+          try {
+            await s3.send(
+              new PutObjectCommand({
+                Bucket: r2Bucket,
+                Key: objectKey,
+                Body: buffer,
+                ContentType: contentType,
+                CacheControl: "public, max-age=31536000, immutable",
+              })
+            );
+          } catch (uploadErr: unknown) {
+            // Auto-create bucket if NoSuchBucket
+            const errName = (uploadErr as { name?: string })?.name;
+            if (errName === "NoSuchBucket") {
+              await s3.send(new CreateBucketCommand({ Bucket: r2Bucket }));
+              await s3.send(
+                new PutObjectCommand({
+                  Bucket: r2Bucket,
+                  Key: objectKey,
+                  Body: buffer,
+                  ContentType: contentType,
+                  CacheControl: "public, max-age=31536000, immutable",
+                })
+              );
+            } else {
+              throw uploadErr;
+            }
+          }
 
-          const finalUrl = r2PublicUrl
+          const isPublicCustomOrR2Dev =
+            r2PublicUrl &&
+            !r2PublicUrl.includes("r2.cloudflarestorage.com") &&
+            !r2PublicUrl.includes("pub-xxxx");
+
+          const finalUrl = isPublicCustomOrR2Dev
             ? `${r2PublicUrl}/${objectKey}`
-            : `${r2Endpoint}/${r2Bucket}/${objectKey}`;
+            : `${url.origin}/api/assets/${objectKey}`;
 
           return jsonResponse({
             uploaded: true,

@@ -5,7 +5,11 @@ const PORT = Number(process.env.PORT || 3001);
 
 const server = http.createServer(async (req, res) => {
   try {
-    const protocol = "http";
+    const forwardedProto = req.headers["x-forwarded-proto"];
+    const protocol =
+      typeof forwardedProto === "string"
+        ? forwardedProto.split(",")[0].trim()
+        : "http";
     const host = req.headers.host || `localhost:${PORT}`;
     const url = `${protocol}://${host}${req.url || "/"}`;
 
@@ -37,8 +41,8 @@ const server = http.createServer(async (req, res) => {
       res.setHeader(key, val);
     });
 
-    const resText = await webRes.text();
-    res.end(resText);
+    const resBuffer = Buffer.from(await webRes.arrayBuffer());
+    res.end(resBuffer);
   } catch (err) {
     console.error("Server error:", err);
     res.statusCode = 500;

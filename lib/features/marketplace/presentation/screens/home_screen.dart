@@ -136,7 +136,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                     size: 24,
                                     color: AppColors.primary,
                                   ),
-                                  if (ref.watch(cartProvider).isNotEmpty)
+                                  if (authState.isAuthenticated && ref.watch(cartProvider).isNotEmpty)
                                     Positioned(
                                       top: -4,
                                       right: -4,

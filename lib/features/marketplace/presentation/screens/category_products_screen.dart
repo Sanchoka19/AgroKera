@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import '../../../../core/auth/auth_state_provider.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/auth_required_bottom_sheet.dart';
@@ -240,7 +241,7 @@ class _CategoryProductsScreenState
               size: 24,
             ),
           ),
-          if (ref.watch(cartProvider).isNotEmpty)
+          if (ref.watch(authStateProvider).isAuthenticated && ref.watch(cartProvider).isNotEmpty)
             Positioned(
               top: -2,
               right: -2,

@@ -148,8 +148,8 @@ class _MainNavScreenState extends ConsumerState<MainNavScreen> {
                             if (item.svgAsset != null)
                               SvgPicture.asset(
                                 item.svgAsset!,
-                                width: 21,
-                                height: 21,
+                                width: 24,
+                                height: 24,
                                 colorFilter: ColorFilter.mode(
                                   isSelected ? Colors.white : const Color(0xFF64748B),
                                   BlendMode.srcIn,

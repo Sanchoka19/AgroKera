@@ -1,545 +1,589 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import '../../../../core/auth/auth_state_provider.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/theme/app_typography.dart';
 import '../../../marketplace/presentation/screens/categories_screen.dart';
 
-/// Farmer Dashboard Tab: "ჩემი ფერმა"
-/// Displays real-time operational overview for verified farmers:
-/// - Farm Header with verified status badge
-/// - 2x2 Bento Metrics (შემოსავალი, შეკვეთები, მარაგები, რეიტინგი)
-/// - Quick Action shortcuts (პროდუქტის დამატება, მარაგები, ანალიტიკა)
-/// - Recent incoming orders preview
-class FarmerDashboardScreen extends ConsumerWidget {
+/// Model for a Farmer Cabinet Order
+class _FarmerCabinetOrder {
+  final String id;
+  final String itemsText;
+  final String priceText;
+  String status; // 'new', 'inProgress', 'cancelled'
+  final bool isAutoAccepted;
+
+  _FarmerCabinetOrder({
+    required this.id,
+    required this.itemsText,
+    required this.priceText,
+    required this.status,
+    this.isAutoAccepted = false,
+  });
+}
+
+/// Farmer Dashboard Tab: "ჩემი კაბინეტი"
+/// Rebuilt to match the clean, focused Figma design:
+/// 1. Centered Header: "ჩემი კაბინეტი"
+/// 2. "პროდუქტის მენეჯმენტი" (დაამატე ახალი პროდუქტი, მარაგის მართვა)
+/// 3. "შეკვეთები" (ახალი შეკვეთები: გაუქმება / დათანხმება, პროცესში მყოფი შეკვეთები)
+class FarmerDashboardScreen extends ConsumerStatefulWidget {
   const FarmerDashboardScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final authState = ref.watch(authStateProvider);
-    final farmName = authState.userName != null ? 'ფერმა „${authState.userName}“' : 'ჩემი ფერმა';
+  ConsumerState<FarmerDashboardScreen> createState() =>
+      _FarmerDashboardScreenState();
+}
 
+class _FarmerDashboardScreenState extends ConsumerState<FarmerDashboardScreen> {
+  // Live orders state
+  late List<_FarmerCabinetOrder> _orders;
+
+  @override
+  void initState() {
+    super.initState();
+    _orders = [
+      _FarmerCabinetOrder(
+        id: '12345',
+        itemsText: '3 პროდუქტი',
+        priceText: '₾140',
+        status: 'new',
+      ),
+      _FarmerCabinetOrder(
+        id: '12346',
+        itemsText: '3 პროდუქტი',
+        priceText: '₾140',
+        status: 'inProgress',
+        isAutoAccepted: true,
+      ),
+      _FarmerCabinetOrder(
+        id: '12347',
+        itemsText: '4 პროდუქტი',
+        priceText: '₾240',
+        status: 'inProgress',
+      ),
+    ];
+  }
+
+  void _onAcceptOrder(int index) {
+    HapticFeedback.lightImpact();
+    final order = _orders[index];
+    setState(() {
+      order.status = 'inProgress';
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('შეკვეთა #${order.id} დადასტურებულია და გადავიდა პროცესში!'),
+        backgroundColor: AppColors.primary,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  void _onCancelOrder(int index) {
+    HapticFeedback.selectionClick();
+    final order = _orders[index];
+    setState(() {
+      _orders.removeAt(index);
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('შეკვეთა #${order.id} გაუქმებულია'),
+        backgroundColor: const Color(0xFF64748B),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  void _openAddProductSheet() {
+    final titleController = TextEditingController();
+    final priceController = TextEditingController();
+    final stockController = TextEditingController();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Container(
+          padding: EdgeInsets.fromLTRB(
+            20,
+            16,
+            20,
+            MediaQuery.of(context).viewInsets.bottom + 24,
+          ),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFCBD5E1),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'დაამატე ახალი პროდუქტი',
+                style: GoogleFonts.notoSansGeorgian(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'შეავსეთ პროდუქტის ძირითადი პარამეტრები',
+                style: GoogleFonts.notoSansGeorgian(
+                  fontSize: 13,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: titleController,
+                decoration: InputDecoration(
+                  labelText: 'პროდუქტის დასახელება',
+                  hintText: 'მაგ: ნატურალური თაფლი',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: priceController,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: 'ფასი (₾)',
+                        hintText: '25.00',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: TextField(
+                      controller: stockController,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: 'მარაგი (კგ/ც)',
+                        hintText: '50',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 18),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('ახალი პროდუქტი წარმატებით დაემატა კატალოგში!'),
+                      backgroundColor: AppColors.primary,
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  minimumSize: const Size.fromHeight(50),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+                child: Text(
+                  'პროდუქტის შენახვა',
+                  style: GoogleFonts.notoSansGeorgian(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: const Color(0xFFF8FAFC),
         elevation: 0,
         scrolledUnderElevation: 0,
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(7),
-              decoration: BoxDecoration(
-                color: AppColors.primaryLight,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Icon(
-                LucideIcons.sprout,
-                size: 20,
-                color: AppColors.primary,
-              ),
-            ),
-            const SizedBox(width: 10),
-            Text(
-              'საფერმო პანელი',
-              style: AppTypography.titleMedium.copyWith(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: AppColors.textPrimary,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(LucideIcons.bell, size: 20, color: AppColors.textPrimary),
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('ახალი შეტყობინებები არ არის'),
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
-            },
+        centerTitle: true,
+        title: Text(
+          'ჩემი კაბინეტი',
+          style: GoogleFonts.notoSansGeorgian(
+            fontSize: 22,
+            fontWeight: FontWeight.w900,
+            color: const Color(0xFF0F172A),
+            letterSpacing: -0.3,
           ),
-          const SizedBox(width: 6),
-        ],
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Container(color: const Color(0xFFE2E8F0), height: 1),
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // ==========================================
-            // 1. HERO FARM PROFILE CARD
+            // SECTION 1: პროდუქტის მენეჯმენტი
             // ==========================================
-            Container(
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
-                gradient: const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Color(0xFF1B4332), // Deep Forest
-                    Color(0xFF2D6A4F), // Emerald Green
-                  ],
+            Padding(
+              padding: const EdgeInsets.only(left: 2, bottom: 12, top: 4),
+              child: Text(
+                'პროდუქტის მენეჯმენტი',
+                style: GoogleFonts.notoSansGeorgian(
+                  fontSize: 14.5,
+                  fontWeight: FontWeight.w800,
+                  color: const Color(0xFF1E293B),
+                  letterSpacing: -0.2,
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF1B4332).withValues(alpha: 0.18),
-                    blurRadius: 14,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        width: 48,
-                        height: 48,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white,
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.3),
-                            width: 2,
-                          ),
-                        ),
-                        child: const Icon(
-                          LucideIcons.sprout,
-                          color: AppColors.primary,
-                          size: 24,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              farmName,
-                              style: GoogleFonts.notoSansGeorgian(
-                                color: Colors.white,
-                                fontSize: 16.5,
-                                fontWeight: FontWeight.w800,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 3),
-                            Row(
-                              children: [
-                                const Icon(
-                                  LucideIcons.badgeCheck,
-                                  size: 14,
-                                  color: Color(0xFF68D391),
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  'ვერიფიცირებული პარტნიორი',
-                                  style: GoogleFonts.notoSansGeorgian(
-                                    color: const Color(0xFFE2E8F0),
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'მიმდინარე თვის ბრუნვა:',
-                          style: GoogleFonts.notoSansGeorgian(
-                            color: Colors.white.withValues(alpha: 0.9),
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        Text(
-                          '₾ 2,450.00',
-                          style: GoogleFonts.notoSansGeorgian(
-                            color: Colors.white,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
               ),
             ),
-            const SizedBox(height: 20),
 
-            // ==========================================
-            // 2. 2x2 BENTO METRICS GRID
-            // ==========================================
-            Row(
-              children: [
-                Expanded(
-                  child: _buildMetricCard(
-                    icon: LucideIcons.shoppingBag,
-                    iconColor: AppColors.primary,
-                    iconBg: const Color(0xFFEBF7EF),
-                    title: 'აქტიური შეკვეთა',
-                    value: '14',
-                    subtitle: '+3 ახალი დღეს',
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildMetricCard(
-                    icon: LucideIcons.packageCheck,
-                    iconColor: const Color(0xFFD97706),
-                    iconBg: const Color(0xFFFEF3C7),
-                    title: 'მარაგშია',
-                    value: '8 სახეობა',
-                    subtitle: 'ყველა ხელმისაწვდომია',
-                  ),
-                ),
-              ],
+            // Card 1: დაამატე ახალი პროდუქტი
+            _buildManagementCard(
+              icon: LucideIcons.shoppingBag,
+              title: 'დაამატე ახალი პროდუქტი',
+              subtitle: 'ახალი სიის შექმნა',
+              onTap: _openAddProductSheet,
             ),
             const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildMetricCard(
-                    icon: LucideIcons.trendingUp,
-                    iconColor: const Color(0xFF2563EB),
-                    iconBg: const Color(0xFFEFF6FF),
-                    title: 'ზრდის ტემპი',
-                    value: '+18.4%',
-                    subtitle: 'წინა თვესთან',
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildMetricCard(
-                    icon: LucideIcons.star,
-                    iconColor: const Color(0xFFEAB308),
-                    iconBg: const Color(0xFFFEF9C3),
-                    title: 'რეიტინგი',
-                    value: '4.9 ★',
-                    subtitle: '38 შეფასება',
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 22),
 
-            // ==========================================
-            // 3. QUICK ACTIONS
-            // ==========================================
-            Text(
-              'სწრაფი მოქმედებები',
-              style: AppTypography.titleMedium.copyWith(
-                fontSize: 16,
-                fontWeight: FontWeight.w800,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildActionButton(
-                    icon: LucideIcons.plus,
-                    label: 'პროდუქტის დამატება',
-                    onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('პროდუქტის დამატების ფორმა მალე გააქტიურდება'),
-                          behavior: SnackBarBehavior.floating,
-                        ),
-                      );
-                    },
+            // Card 2: მარაგის მართვა
+            _buildManagementCard(
+              icon: LucideIcons.clipboardCheck,
+              title: 'მარაგის მართვა',
+              subtitle: 'განაახლეთ ხელმისაწვდომობა და ფასი',
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const CategoriesScreen(),
                   ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: _buildActionButton(
-                    icon: LucideIcons.boxes,
-                    label: 'მარაგების მართვა',
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => const CategoriesScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ],
+                );
+              },
             ),
             const SizedBox(height: 24),
 
             // ==========================================
-            // 4. RECENT ORDERS PREVIEW
+            // SECTION 2: შეკვეთები
             // ==========================================
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'ბოლო შეკვეთები',
-                        style: AppTypography.titleMedium.copyWith(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: AppColors.primaryLight,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          'სულ 14',
-                          style: GoogleFonts.notoSansGeorgian(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.primary,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  const Divider(height: 1, color: Color(0xFFF1F5F9)),
-                  const SizedBox(height: 12),
-                  _buildOrderItem(
-                    orderId: '#AK-8921',
-                    customer: 'გიორგი მაისურაძე',
-                    items: 'ნატურალური თაფლი (2კგ), ყველი',
-                    amount: '₾ 64.00',
-                    status: 'მზადდება',
-                    statusColor: const Color(0xFFD97706),
-                  ),
-                  const SizedBox(height: 12),
-                  const Divider(height: 1, color: Color(0xFFF1F5F9)),
-                  const SizedBox(height: 12),
-                  _buildOrderItem(
-                    orderId: '#AK-8919',
-                    customer: 'ნინო დავითაშვილი',
-                    items: 'კახური მზესუმზირის ზეთი (1ლ)',
-                    amount: '₾ 18.00',
-                    status: 'გაგზავნილია',
-                    statusColor: AppColors.primary,
-                  ),
-                ],
+            Padding(
+              padding: const EdgeInsets.only(left: 2, bottom: 12),
+              child: Text(
+                'შეკვეთები',
+                style: GoogleFonts.notoSansGeorgian(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: const Color(0xFF1E293B),
+                  letterSpacing: -0.2,
+                ),
               ),
             ),
+
+            // Order Cards List
+            if (_orders.isEmpty)
+              Container(
+                padding: const EdgeInsets.all(28),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                alignment: Alignment.center,
+                child: Column(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFE8F7EE),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        LucideIcons.packageCheck,
+                        size: 28,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      'შეკვეთები არ არის',
+                      style: GoogleFonts.notoSansGeorgian(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            else
+              ...List.generate(_orders.length, (index) {
+                final order = _orders[index];
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: _buildOrderCard(order, index),
+                );
+              }),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildMetricCard({
+  /// Management Action Card (დაამატე ახალი პროდუქტი, მარაგის მართვა)
+  Widget _buildManagementCard({
     required IconData icon,
-    required Color iconColor,
-    required Color iconBg,
     required String title,
-    required String value,
     required String subtitle,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: iconBg,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, size: 18, color: iconColor),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            value,
-            style: GoogleFonts.notoSansGeorgian(
-              fontSize: 18,
-              fontWeight: FontWeight.w900,
-              color: AppColors.textPrimary,
-              letterSpacing: -0.3,
-            ),
-          ),
-          const SizedBox(height: 3),
-          Text(
-            title,
-            style: GoogleFonts.notoSansGeorgian(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            subtitle,
-            style: GoogleFonts.notoSansGeorgian(
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-              color: AppColors.textSecondary,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActionButton({
-    required IconData icon,
-    required String label,
     required VoidCallback onTap,
   }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
-      child: Container(
-        height: 48,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: const Color(0xFFCBD5E1), width: 1.2),
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 10),
-        alignment: Alignment.center,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 16, color: AppColors.primary),
-            const SizedBox(width: 6),
-            Flexible(
-              child: Text(
-                label,
-                style: GoogleFonts.notoSansGeorgian(
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(18),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(18),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.02),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
               ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildOrderItem({
-    required String orderId,
-    required String customer,
-    required String items,
-    required String amount,
-    required String status,
-    required Color statusColor,
-  }) {
-    return Row(
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            ],
+          ),
+          child: Row(
             children: [
-              Row(
-                children: [
-                  Text(
-                    orderId,
-                    style: GoogleFonts.notoSansGeorgian(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    '• $customer',
-                    style: GoogleFonts.notoSansGeorgian(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 3),
-              Text(
-                items,
-                style: GoogleFonts.notoSansGeorgian(
-                  fontSize: 11.5,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.textSecondary,
+              // Mint circular icon badge
+              Container(
+                width: 46,
+                height: 46,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFE8F7EE),
+                  shape: BoxShape.circle,
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+                child: Icon(
+                  icon,
+                  size: 22,
+                  color: AppColors.primary,
+                ),
+              ),
+              const SizedBox(width: 14),
+
+              // Title and Subtitle
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: GoogleFonts.notoSansGeorgian(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                        color: const Color(0xFF1E293B),
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      subtitle,
+                      style: GoogleFonts.notoSansGeorgian(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w500,
+                        color: const Color(0xFF64748B),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Right chevron arrow
+              const Icon(
+                LucideIcons.chevronRight,
+                size: 20,
+                color: Color(0xFF94A3B8),
               ),
             ],
           ),
         ),
-        const SizedBox(width: 12),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Text(
-              amount,
-              style: GoogleFonts.notoSansGeorgian(
-                fontSize: 13,
-                fontWeight: FontWeight.w800,
-                color: AppColors.textPrimary,
+      ),
+    );
+  }
+
+  /// Single Order Card
+  Widget _buildOrderCard(_FarmerCabinetOrder order, int index) {
+    final isNew = order.status == 'new';
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Row 1: Order ID & Status Badge
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'შეკვეთა #${order.id}',
+                style: GoogleFonts.notoSansGeorgian(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: const Color(0xFF0F172A),
+                ),
               ),
+              // Status Badge
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: isNew ? const Color(0xFFFEF3C7) : const Color(0xFFDBEAFE),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  isNew ? 'ახალი' : 'პროცესშია',
+                  style: GoogleFonts.notoSansGeorgian(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: isNew ? const Color(0xFFD97706) : const Color(0xFF2563EB),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+
+          // Row 2: Subtitle
+          Text(
+            '${order.itemsText} - ${order.priceText}',
+            style: GoogleFonts.notoSansGeorgian(
+              fontSize: 13.5,
+              fontWeight: FontWeight.w500,
+              color: const Color(0xFF64748B),
             ),
-            const SizedBox(height: 2),
-            Text(
-              status,
-              style: GoogleFonts.notoSansGeorgian(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: statusColor,
-              ),
+          ),
+
+          // Extra auto-accepted notice (matching screenshot)
+          if (order.isAutoAccepted) ...[
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                const Icon(
+                  LucideIcons.sparkles,
+                  size: 14,
+                  color: Color(0xFF059669),
+                ),
+                const SizedBox(width: 5),
+                Text(
+                  'ავტომატურად მიღებული',
+                  style: GoogleFonts.notoSansGeorgian(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF059669),
+                  ),
+                ),
+              ],
             ),
           ],
-        ),
-      ],
+
+          // Row 3: Action Buttons (Only for New orders)
+          if (isNew) ...[
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                // "გაუქმება" Button
+                Expanded(
+                  child: InkWell(
+                    onTap: () => _onCancelOrder(index),
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        'გაუქმება',
+                        style: GoogleFonts.notoSansGeorgian(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF1E293B),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+
+                // "დათანხმება" Button
+                Expanded(
+                  child: InkWell(
+                    onTap: () => _onAcceptOrder(index),
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: AppColors.primary,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        'დათანხმება',
+                        style: GoogleFonts.notoSansGeorgian(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
     );
   }
 }

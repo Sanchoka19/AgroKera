@@ -50,15 +50,15 @@ void main() {
     // Verify all 4 tabs are present
     expect(find.text('მთავარი'), findsOneWidget);
     expect(find.text('მარკეტი'), findsOneWidget);
-    expect(find.text('ჩემი ფერმა'), findsOneWidget);
+    expect(find.text('კაბინეტი'), findsOneWidget);
     expect(find.text('პროფილი'), findsOneWidget);
 
     // Tap on Farmer tab
-    await tester.tap(find.text('ჩემი ფერმა'));
+    await tester.tap(find.text('კაბინეტი'));
     await tester.pumpAndSettle();
 
-    // Verify Farmer Dashboard is active
-    expect(find.text('საფერმო პანელი'), findsOneWidget);
-    expect(find.text('ფერმა „ლანა მახარაძე“'), findsOneWidget);
+    // Verify Farmer Cabinet is active
+    expect(find.text('ჩემი კაბინეტი'), findsOneWidget);
+    expect(find.text('პროდუქტის მენეჯმენტი'), findsOneWidget);
   });
 }

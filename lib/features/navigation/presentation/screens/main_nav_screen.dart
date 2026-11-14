@@ -75,8 +75,8 @@ class _MainNavScreenState extends ConsumerState<MainNavScreen> {
       ),
       if (isFarmer)
         const _NavItemData(
-          icon: LucideIcons.sprout,
-          label: 'ჩემი ფერმა',
+          icon: LucideIcons.briefcase,
+          label: 'კაბინეტი',
         ),
       const _NavItemData(
         icon: LucideIcons.user,

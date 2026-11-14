@@ -7,12 +7,14 @@ import '../../../../core/widgets/primary_button.dart';
 class FilterBottomSheet extends StatefulWidget {
   final String? initialRegion;
   final String? initialCategory;
+  final bool showCategoryFilter;
   final Function(String? region, String? category) onApply;
 
   const FilterBottomSheet({
     super.key,
     this.initialRegion,
     this.initialCategory,
+    this.showCategoryFilter = true,
     required this.onApply,
   });
 
@@ -20,6 +22,7 @@ class FilterBottomSheet extends StatefulWidget {
     BuildContext context, {
     String? initialRegion,
     String? initialCategory,
+    bool showCategoryFilter = true,
     required Function(String? region, String? category) onApply,
   }) {
     return showModalBottomSheet(
@@ -29,6 +32,7 @@ class FilterBottomSheet extends StatefulWidget {
       builder: (ctx) => FilterBottomSheet(
         initialRegion: initialRegion,
         initialCategory: initialCategory,
+        showCategoryFilter: showCategoryFilter,
         onApply: onApply,
       ),
     );
@@ -149,40 +153,41 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
               );
             }).toList(),
           ),
-          const SizedBox(height: 18),
-
-          // Category Section
-          Text(
-            'კატეგორია',
-            style: AppTypography.titleMedium.copyWith(fontSize: 14),
-          ),
-          const SizedBox(height: 10),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: _categories.map((cat) {
-              final isSelected = _selectedCategory == cat;
-              return ChoiceChip(
-                label: Text(cat),
-                selected: isSelected,
-                selectedColor: AppColors.primaryLight,
-                backgroundColor: AppColors.surfaceInput,
-                labelStyle: AppTypography.caption.copyWith(
-                  color: isSelected ? AppColors.primary : AppColors.textPrimary,
-                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                ),
-                side: BorderSide(
-                  color: isSelected ? AppColors.primary : Colors.transparent,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                onSelected: (val) {
-                  setState(() => _selectedCategory = cat);
-                },
-              );
-            }).toList(),
-          ),
+          if (widget.showCategoryFilter) ...[
+            const SizedBox(height: 18),
+            // Category Section
+            Text(
+              'კატეგორია',
+              style: AppTypography.titleMedium.copyWith(fontSize: 14),
+            ),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _categories.map((cat) {
+                final isSelected = _selectedCategory == cat;
+                return ChoiceChip(
+                  label: Text(cat),
+                  selected: isSelected,
+                  selectedColor: AppColors.primaryLight,
+                  backgroundColor: AppColors.surfaceInput,
+                  labelStyle: AppTypography.caption.copyWith(
+                    color: isSelected ? AppColors.primary : AppColors.textPrimary,
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  ),
+                  side: BorderSide(
+                    color: isSelected ? AppColors.primary : Colors.transparent,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  onSelected: (val) {
+                    setState(() => _selectedCategory = cat);
+                  },
+                );
+              }).toList(),
+            ),
+          ],
           const SizedBox(height: 18),
 
           // Sort Section
@@ -230,7 +235,9 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                   onPressed: () {
                     setState(() {
                       _selectedRegion = 'ყველა';
-                      _selectedCategory = 'ყველა';
+                      _selectedCategory = widget.showCategoryFilter
+                          ? 'ყველა'
+                          : (widget.initialCategory ?? 'ყველა');
                     });
                   },
                 ),
@@ -241,9 +248,12 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                 child: PrimaryButton(
                   text: 'გაფილტვრა',
                   onPressed: () {
+                    final appliedCat = widget.showCategoryFilter
+                        ? (_selectedCategory == 'ყველა' ? null : _selectedCategory)
+                        : widget.initialCategory;
                     widget.onApply(
                       _selectedRegion == 'ყველა' ? null : _selectedRegion,
-                      _selectedCategory == 'ყველა' ? null : _selectedCategory,
+                      appliedCat,
                     );
                     Navigator.of(context).pop();
                   },

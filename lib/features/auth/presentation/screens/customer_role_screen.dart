@@ -125,6 +125,7 @@ class CustomerRoleScreen extends ConsumerWidget {
       body: SafeArea(
         top: false,
         child: SingleChildScrollView(
+          physics: const ClampingScrollPhysics(),
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,

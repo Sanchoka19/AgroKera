@@ -128,11 +128,12 @@ class _CategoryProductsScreenState
                       FilterBottomSheet.show(
                         context,
                         initialRegion: _selectedRegion,
-                        initialCategory: _selectedCategory,
+                        initialCategory: widget.category.name,
+                        showCategoryFilter: false,
                         onApply: (reg, cat) {
                           setState(() {
                             _selectedRegion = reg;
-                            _selectedCategory = cat;
+                            _selectedCategory = widget.category.name;
                           });
                         },
                       );

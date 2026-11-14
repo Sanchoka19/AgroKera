@@ -10,7 +10,9 @@ import 'package:agrokera/core/widgets/app_toast.dart';
 import 'package:agrokera/core/widgets/auth_required_bottom_sheet.dart';
 import 'package:agrokera/features/notifications/presentation/providers/notifications_provider.dart';
 import 'package:agrokera/features/notifications/presentation/screens/notifications_screen.dart';
+import 'package:agrokera/features/marketplace/data/mock_data.dart';
 import 'package:agrokera/features/marketplace/presentation/screens/categories_screen.dart';
+import 'package:agrokera/features/marketplace/presentation/screens/category_products_screen.dart';
 import 'package:agrokera/features/marketplace/presentation/widgets/global_search_dialog.dart';
 import 'test_helper.dart';
 
@@ -266,7 +268,7 @@ void main() {
     expect(find.text('ინფორმაცია განახლდა'), findsNothing);
   });
 
-  testWidgets('CategoriesScreen renders bento cards and filters by search',
+  testWidgets('CategoriesScreen renders clean bento cards and header without search bar',
       (WidgetTester tester) async {
     await tester.pumpWidget(
       const ProviderScope(
@@ -282,20 +284,36 @@ void main() {
     expect(find.text('100% ორგანული'), findsOneWidget);
     expect(find.text('ხილი'), findsOneWidget);
     expect(find.text('ციტრუსი'), findsOneWidget);
-
-    // Search for 'ბოსტ'
-    await tester.enterText(find.byType(TextField), 'ბოსტ');
-    await tester.pumpAndSettle();
-
     expect(find.text('ბოსტნეული'), findsOneWidget);
-    expect(find.text('ხილი'), findsNothing);
+    expect(find.text('კენკრა'), findsOneWidget);
 
-    // Clear search
-    await tester.tap(find.byIcon(LucideIcons.x));
+    // Verify search bar is omitted per UX design
+    expect(find.byType(TextField), findsNothing);
+  });
+
+  testWidgets('CategoryProductsScreen filter sheet hides category selection',
+      (WidgetTester tester) async {
+    final cat = MockData.categories.first; // e.g. fruit / vegetable
+
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          home: CategoryProductsScreen(category: cat),
+        ),
+      ),
+    );
     await tester.pumpAndSettle();
 
-    expect(find.text('ხილი'), findsOneWidget);
-    expect(find.text('ციტრუსი'), findsOneWidget);
+    // Tap filter button
+    await tester.tap(find.byIcon(LucideIcons.slidersHorizontal));
+    await tester.pumpAndSettle();
+
+    // Verify filter header and regions are shown
+    expect(find.text('ფილტრი'), findsOneWidget);
+    expect(find.text('რეგიონი'), findsOneWidget);
+
+    // Verify category section is NOT rendered
+    expect(find.text('კატეგორია'), findsNothing);
   });
 
   testWidgets(

@@ -53,7 +53,7 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
             ),
             Expanded(
               child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
+                physics: const ClampingScrollPhysics(),
                 padding: const EdgeInsets.fromLTRB(20, 4, 20, 32),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,

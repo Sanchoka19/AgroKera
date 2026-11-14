@@ -26,9 +26,10 @@ class EmptyOrdersView extends StatelessWidget {
         : 'კატეგორიაში „${filter!.label}“ ამჟამად აქტიური შეკვეთები არ არის';
 
     return Center(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 40),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             // Illustrated SVG empty state

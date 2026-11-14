@@ -127,7 +127,7 @@ class _MainNavScreenState extends ConsumerState<MainNavScreen> {
                     child: InkWell(
                       key: ValueKey('nav_tab_${item.label}'),
                       onTap: () => _onTabSelected(index),
-                      borderRadius: BorderRadius.circular(24),
+                      borderRadius: BorderRadius.circular(14),
                       splashColor: Colors.transparent,
                       highlightColor: Colors.transparent,
                       child: AnimatedContainer(
@@ -140,7 +140,7 @@ class _MainNavScreenState extends ConsumerState<MainNavScreen> {
                           color: isSelected
                               ? AppColors.primary // Lightened Emerald/Teal Pill (#0F766E)
                               : Colors.transparent,
-                          borderRadius: BorderRadius.circular(24),
+                          borderRadius: BorderRadius.circular(14),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,

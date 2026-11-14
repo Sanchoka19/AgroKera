@@ -117,69 +117,47 @@ class _MainNavScreenState extends ConsumerState<MainNavScreen> {
                 final isSelected = index == safeIndex;
 
                 return Expanded(
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: () => _onTabSelected(index),
-                      splashColor: AppColors.primary.withValues(alpha: 0.08),
-                      highlightColor: Colors.transparent,
-                      child: Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            // Active pill container around the icon
-                            AnimatedContainer(
-                              duration: const Duration(milliseconds: 220),
-                              curve: Curves.easeOutCubic,
-                              height: 32,
-                              padding: EdgeInsets.symmetric(
-                                horizontal: isSelected
-                                    ? (navItems.length > 3 ? 14 : 18)
-                                    : 8,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: isSelected
-                                    ? AppColors.primaryLight
-                                    : Colors.transparent,
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              child: Icon(
-                                item.icon,
-                                size: 22,
-                                color: isSelected
-                                    ? AppColors.primary
-                                    : const Color(0xFF64748B),
-                              ),
-                            ),
-                            const SizedBox(height: 3),
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () => _onTabSelected(index),
+                    child: Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            item.icon,
+                            size: 24,
+                            color: isSelected
+                                ? AppColors.primary
+                                : const Color(0xFF94A3B8),
+                          ),
+                          const SizedBox(height: 4),
 
-                            // Label text wrapped in FittedBox to guarantee single-line fit
-                            FittedBox(
-                              fit: BoxFit.scaleDown,
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 4),
-                                child: Text(
-                                  item.label,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: GoogleFonts.notoSansGeorgian(
-                                    fontSize: isSelected ? 11.5 : 11,
-                                    fontWeight: isSelected
-                                        ? FontWeight.w800
-                                        : FontWeight.w600,
-                                    color: isSelected
-                                        ? AppColors.primary
-                                        : const Color(0xFF64748B),
-                                    letterSpacing: -0.2,
-                                    height: 1.2,
-                                  ),
+                          // Label text wrapped in FittedBox to guarantee single-line fit
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 4),
+                              child: Text(
+                                item.label,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: GoogleFonts.notoSansGeorgian(
+                                  fontSize: 11.5,
+                                  fontWeight: isSelected
+                                      ? FontWeight.w700
+                                      : FontWeight.w500,
+                                  color: isSelected
+                                      ? AppColors.primary
+                                      : const Color(0xFF94A3B8),
+                                  letterSpacing: -0.2,
+                                  height: 1.2,
                                 ),
                               ),
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
                   ),

@@ -96,7 +96,7 @@ void main() {
     // Farmer Profile
     expect(find.text('რევაზ ბერიძე'), findsOneWidget);
     expect(find.text('საფერმო მაჩვენებლები და KPI'), findsOneWidget);
-    expect(find.text('ვერიფიცირებული'), findsOneWidget);
+    expect(find.byTooltip('ვერიფიცირებული ფერმერი'), findsOneWidget);
     expect(find.text('გამოსვლა'), findsOneWidget);
   });
 }

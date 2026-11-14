@@ -6,6 +6,7 @@ abstract final class AppAssets {
   static const String google = 'assets/icons/google.svg';
   static const String farmer = 'assets/icons/farmer.svg';
   static const String customer = 'assets/icons/customer.svg';
+  static const String verifiedBadge = 'assets/icons/verified_badge.svg';
 
   // Illustrations
   static const String requireSignIn = 'assets/illustrations/require_signin.svg';

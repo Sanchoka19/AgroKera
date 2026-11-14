@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:agrokera/core/auth/auth_state_provider.dart';
+import 'package:agrokera/core/constants/app_assets.dart';
 import 'package:agrokera/core/theme/app_colors.dart';
 import 'package:agrokera/core/widgets/auth_required_bottom_sheet.dart';
 import 'package:agrokera/features/marketplace/presentation/screens/favorites_screen.dart';
@@ -158,15 +160,31 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
                         ],
                       ),
                       const SizedBox(height: 12),
-                      Text(
-                        isFarmer
-                            ? (authState.userName ?? 'რევაზ ბერიძე')
-                            : (authState.userName ?? 'საბა ევგენიძე'),
-                        style: GoogleFonts.notoSansGeorgian(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w800,
-                          color: const Color(0xFF0F172A),
-                        ),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            isFarmer
+                                ? (authState.userName ?? 'რევაზ ბერიძე')
+                                : (authState.userName ?? 'საბა ევგენიძე'),
+                            style: GoogleFonts.notoSansGeorgian(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w800,
+                              color: const Color(0xFF0F172A),
+                            ),
+                          ),
+                          if (isFarmer) ...[
+                            const SizedBox(width: 6),
+                            Tooltip(
+                              message: 'ვერიფიცირებული ფერმერი',
+                              child: SvgPicture.asset(
+                                AppAssets.verifiedBadge,
+                                width: 22,
+                                height: 22,
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                       const SizedBox(height: 4),
                       Text(
@@ -256,58 +274,6 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
                               ),
                             ),
                           ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.02),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(LucideIcons.shieldCheck, color: Color(0xFF10B981), size: 20),
-                        const SizedBox(width: 10),
-                        Text(
-                          'თქვენი სტატუსი',
-                          style: GoogleFonts.notoSansGeorgian(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: const Color(0xFF0F172A),
-                          ),
-                        ),
-                        const Spacer(),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFE8F5E9),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(LucideIcons.check, size: 14, color: Color(0xFF10B981)),
-                              const SizedBox(width: 4),
-                              Text(
-                                'ვერიფიცირებული',
-                                style: GoogleFonts.notoSansGeorgian(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700,
-                                  color: const Color(0xFF10B981),
-                                ),
-                              ),
-                            ],
-                          ),
                         ),
                       ],
                     ),

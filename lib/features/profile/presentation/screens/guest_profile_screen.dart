@@ -12,6 +12,7 @@ import 'package:agrokera/core/widgets/app_toast.dart';
 import 'package:agrokera/core/widgets/auth_required_bottom_sheet.dart';
 import 'package:agrokera/features/marketplace/presentation/screens/favorites_screen.dart';
 import 'package:agrokera/features/marketplace/presentation/widgets/guest_promo_banner.dart';
+import 'package:agrokera/features/orders/presentation/screens/incoming_orders_screen.dart';
 import 'help_center_screen.dart';
 
 class GuestProfileScreen extends ConsumerStatefulWidget {
@@ -294,7 +295,11 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
                             title: 'შემოსული შეკვეთები',
                             subtitle: 'შეკვეთების მართვა და სტატუსი',
                             onTap: () {
-                              AppToast.info(context, 'შემოსული შეკვეთების სია აქტიურია ფერმის გვერდზე');
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) => const IncomingOrdersScreen(),
+                                ),
+                              );
                             },
                           ),
                           _buildRowDivider(),

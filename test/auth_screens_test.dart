@@ -29,13 +29,12 @@ void main() {
     await tester.pumpWidget(wrapWithScaffold(const LoginScreen()));
     await tester.pumpAndSettle();
 
-    expect(find.text('ავტორიზაცია'), findsOneWidget);
-    expect(find.text('შესვლა'), findsOneWidget);
-    expect(find.text('დაგავიწყდა პაროლი?'), findsOneWidget);
-    expect(find.text('Google'), findsOneWidget);
+    expect(find.text('სისტემაში შესვლა'), findsWidgets);
+    expect(find.text('დაგავიწყდათ პაროლი?'), findsOneWidget);
+    expect(find.text('Google-ით შესვლა'), findsOneWidget);
     expect(
       find.byWidgetPredicate(
-        (w) => w is RichText && w.text.toPlainText().contains('შექმენით'),
+        (w) => w is RichText && w.text.toPlainText().contains('რეგისტრაცია'),
       ),
       findsOneWidget,
     );

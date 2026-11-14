@@ -52,6 +52,7 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, "0.0.0.0", () => {
-  console.log(`🚀 AgroKera Neon API Server running on http://localhost:${PORT}`);
+  const publicUrl = process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
+  console.log(`🚀 AgroKera Neon API Server running on ${publicUrl} (port ${PORT})`);
 });
 

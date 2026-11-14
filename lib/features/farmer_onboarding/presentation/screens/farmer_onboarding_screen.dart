@@ -410,11 +410,12 @@ class _FarmerOnboardingScreenState extends ConsumerState<FarmerOnboardingScreen>
   }
 
   void _onCompleteOnboarding() {
+    final currentAuth = ref.read(authStateProvider);
     ref.read(authStateProvider.notifier).login(
       role: UserRole.farmer,
-      name: 'ლანა მახარაძე',
-      phone: '+995 599 12 34 56',
-      email: 'farmer@agrokera.ge',
+      name: currentAuth.userName ?? 'ფერმერი',
+      phone: currentAuth.userPhone ?? '+995 599 12 34 56',
+      email: currentAuth.userEmail ?? 'farmer@agrokera.ge',
     );
 
     Navigator.of(context).popUntil((route) => route.isFirst);
@@ -1082,7 +1083,10 @@ class _FarmerOnboardingScreenState extends ConsumerState<FarmerOnboardingScreen>
                 ],
               ),
               const SizedBox(height: 16),
-              _buildReviewRow('სრული სახელი:', 'ლანა მახარაძე'),
+              _buildReviewRow(
+                'სრული სახელი:',
+                ref.watch(authStateProvider).userName ?? 'ფერმერი',
+              ),
               _buildReviewRow('ფერმის სახელი:', _farmNameController.text.isNotEmpty ? _farmNameController.text : 'ოქროს ქვაფი'),
               _buildReviewRow(
                 'მისამართი:',

@@ -19,11 +19,12 @@ class CustomerRoleScreen extends ConsumerWidget {
   const CustomerRoleScreen({super.key});
 
   void _onRegister(BuildContext context, WidgetRef ref) {
+    final currentAuth = ref.read(authStateProvider);
     ref.read(authStateProvider.notifier).register(
       role: UserRole.customer,
-      name: 'გიორგი ბერიძე',
-      phone: '+995 599 12 34 56',
-      email: 'customer@agrokera.ge',
+      name: currentAuth.userName ?? 'მომხმარებელი',
+      phone: currentAuth.userPhone ?? '+995 599 12 34 56',
+      email: currentAuth.userEmail ?? 'customer@agrokera.ge',
     );
     Navigator.of(context).popUntil((route) => route.isFirst);
     AppToast.success(context, 'წარმატებით დარეგისტრირდით მომხმარებლად!');

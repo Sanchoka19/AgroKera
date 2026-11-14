@@ -48,11 +48,11 @@ void main() {
     expect(find.text('აგროკერა • ვერსია 1.0.0'), findsOneWidget);
   });
 
-  testWidgets('Authenticated Profile renders Hero Avatar, KPI card, and logout', (WidgetTester tester) async {
+  testWidgets('Authenticated Customer Profile renders Hero Avatar, NO KPI card, and logout', (WidgetTester tester) async {
     final container = ProviderContainer();
     container.read(authStateProvider.notifier).login(
-          name: 'საბა ევგენიძე',
-          email: 'sabaevgenidze0919@gmail.com',
+          name: 'გიორგი ბერიძე',
+          email: 'user@example.ge',
           role: UserRole.customer,
         );
 
@@ -67,9 +67,36 @@ void main() {
     await tester.pumpAndSettle();
 
     // Authenticated Hero Identity
-    expect(find.text('საბა ევგენიძე'), findsOneWidget);
-    expect(find.text('sabaevgenidze0919@gmail.com'), findsOneWidget);
-    expect(find.text('თვიური რეიტინგი და KPI'), findsOneWidget);
+    expect(find.text('გიორგი ბერიძე'), findsOneWidget);
+    expect(find.text('user@example.ge'), findsOneWidget);
+    // Regular customer does NOT need KPI card
+    expect(find.text('თვიური რეიტინგი და KPI'), findsNothing);
+    expect(find.text('საფერმო მაჩვენებლები და KPI'), findsNothing);
+    expect(find.text('გამოსვლა'), findsOneWidget);
+  });
+
+  testWidgets('Authenticated Farmer Profile renders Hero Avatar, KPI card, and verified badge', (WidgetTester tester) async {
+    final container = ProviderContainer();
+    container.read(authStateProvider.notifier).login(
+          name: 'რევაზ ბერიძე',
+          email: 'revaz@farm.ge',
+          role: UserRole.farmer,
+        );
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: const MaterialApp(
+          home: GuestProfileScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Farmer Profile
+    expect(find.text('რევაზ ბერიძე'), findsOneWidget);
+    expect(find.text('საფერმო მაჩვენებლები და KPI'), findsOneWidget);
+    expect(find.text('ვერიფიცირებული'), findsOneWidget);
     expect(find.text('გამოსვლა'), findsOneWidget);
   });
 }

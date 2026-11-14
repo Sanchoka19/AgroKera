@@ -181,95 +181,84 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 20),
-
-                // Emerald Gradient KPI Hero Card
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(22),
-                    gradient: const LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        Color(0xFF00A86B), // Vibrant Emerald
-                        Color(0xFF044E46), // Deep rich Teal
+                // Emerald Gradient KPI Hero Card & Verified Badge (ONLY for Farmer)
+                if (isFarmer) ...[
+                  const SizedBox(height: 20),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(22),
+                      gradient: const LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Color(0xFF00A86B), // Vibrant Emerald
+                          Color(0xFF044E46), // Deep rich Teal
+                        ],
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF044E46).withValues(alpha: 0.28),
+                          blurRadius: 16,
+                          offset: const Offset(0, 6),
+                        ),
                       ],
                     ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF044E46).withValues(alpha: 0.28),
-                        blurRadius: 16,
-                        offset: const Offset(0, 6),
-                      ),
-                    ],
+                    child: Column(
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.18),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                LucideIcons.trophy,
+                                color: Colors.white,
+                                size: 16,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              'საფერმო მაჩვენებლები და KPI',
+                              style: GoogleFonts.notoSansGeorgian(
+                                fontSize: 14.5,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildGradientMetricCol(
+                                value: '5000₾',
+                                label: 'ჯამური შემოსავალი',
+                              ),
+                            ),
+                            Container(width: 1, height: 38, color: Colors.white.withValues(alpha: 0.22)),
+                            Expanded(
+                              child: _buildGradientMetricCol(
+                                value: '100',
+                                label: 'შეკვეთების რაოდენობა',
+                              ),
+                            ),
+                            Container(width: 1, height: 38, color: Colors.white.withValues(alpha: 0.22)),
+                            Expanded(
+                              child: _buildGradientMetricCol(
+                                value: '4.5',
+                                label: 'საშუალო შეფასება',
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
-                  child: Column(
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(6),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.18),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              LucideIcons.trophy,
-                              color: Colors.white,
-                              size: 16,
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Text(
-                            isFarmer
-                                ? 'საფერმო მაჩვენებლები და KPI'
-                                : 'თვიური რეიტინგი და KPI',
-                            style: GoogleFonts.notoSansGeorgian(
-                              fontSize: 14.5,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _buildGradientMetricCol(
-                              value: isFarmer ? '5000₾' : '6',
-                              label: isFarmer
-                                  ? 'ჯამური შემოსავალი'
-                                  : 'შესრულებული',
-                            ),
-                          ),
-                          Container(width: 1, height: 38, color: Colors.white.withValues(alpha: 0.22)),
-                          Expanded(
-                            child: _buildGradientMetricCol(
-                              value: isFarmer ? '100' : '100%',
-                              label: isFarmer
-                                  ? 'შეკვეთების რაოდენობა'
-                                  : 'ხარისხის ქულა',
-                            ),
-                          ),
-                          Container(width: 1, height: 38, color: Colors.white.withValues(alpha: 0.22)),
-                          Expanded(
-                            child: _buildGradientMetricCol(
-                              value: isFarmer ? '4.5' : '3%',
-                              label: isFarmer
-                                  ? 'საშუალო შეფასება'
-                                  : 'გეგმის შესრულება',
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Farmer Status Pill (if Farmer)
-                if (isFarmer) ...[
                   const SizedBox(height: 14),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),

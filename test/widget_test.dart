@@ -20,9 +20,10 @@ void main() {
 
     // Verify AppLogo and Navigation Tabs are present
     expect(find.byType(AppLogo), findsOneWidget);
+    expect(find.byKey(const ValueKey('nav_tab_მთავარი')), findsOneWidget);
+    expect(find.byKey(const ValueKey('nav_tab_მარკეტი')), findsOneWidget);
+    expect(find.byKey(const ValueKey('nav_tab_პროფილი')), findsOneWidget);
     expect(find.text('მთავარი'), findsOneWidget);
-    expect(find.text('მარკეტი'), findsOneWidget);
-    expect(find.text('პროფილი'), findsOneWidget);
 
     // Verify Guest Promo Banner is shown on Home screen in Guest Mode
     expect(find.byType(GuestPromoBanner), findsOneWidget);
@@ -47,17 +48,19 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // Verify all 4 tabs are present
+    // Verify all 4 tabs are present by their keys
+    expect(find.byKey(const ValueKey('nav_tab_მთავარი')), findsOneWidget);
+    expect(find.byKey(const ValueKey('nav_tab_მარკეტი')), findsOneWidget);
+    expect(find.byKey(const ValueKey('nav_tab_კაბინეტი')), findsOneWidget);
+    expect(find.byKey(const ValueKey('nav_tab_პროფილი')), findsOneWidget);
     expect(find.text('მთავარი'), findsOneWidget);
-    expect(find.text('მარკეტი'), findsOneWidget);
-    expect(find.text('კაბინეტი'), findsOneWidget);
-    expect(find.text('პროფილი'), findsOneWidget);
 
     // Tap on Farmer tab
-    await tester.tap(find.text('კაბინეტი'));
+    await tester.tap(find.byKey(const ValueKey('nav_tab_კაბინეტი')));
     await tester.pumpAndSettle();
 
     // Verify Farmer Cabinet is active
+    expect(find.text('კაბინეტი'), findsOneWidget);
     expect(find.text('ჩემი კაბინეტი'), findsOneWidget);
     expect(find.text('პროდუქტის მენეჯმენტი'), findsOneWidget);
   });

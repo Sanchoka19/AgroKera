@@ -3,9 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import '../../../../core/auth/auth_state_provider.dart';
-import '../../../../core/theme/app_colors.dart';
-import '../../../farm_inventory/presentation/screens/farmer_dashboard_screen.dart';
+import 'package:agrokera/core/auth/auth_state_provider.dart';
+import 'package:agrokera/features/farm_inventory/presentation/screens/farmer_dashboard_screen.dart';
 import '../../../marketplace/presentation/screens/categories_screen.dart';
 import '../../../marketplace/presentation/screens/home_screen.dart';
 import '../../../profile/presentation/screens/guest_profile_screen.dart';
@@ -95,69 +94,82 @@ class _MainNavScreenState extends ConsumerState<MainNavScreen> {
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: Colors.white,
-          border: const Border(
-            top: BorderSide(color: Color(0xFFE2E8F0), width: 1),
-          ),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 16,
+              color: const Color(0xFF0F172A).withValues(alpha: 0.07),
+              blurRadius: 20,
               offset: const Offset(0, -4),
             ),
           ],
         ),
         child: SafeArea(
           top: false,
-          child: SizedBox(
-            height: 64,
+          child: Container(
+            height: 68,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: List.generate(navItems.length, (index) {
                 final item = navItems[index];
                 final isSelected = index == safeIndex;
 
-                return Expanded(
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: () => _onTabSelected(index),
-                    child: Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            item.icon,
-                            size: 24,
-                            color: isSelected
-                                ? AppColors.primary
-                                : const Color(0xFF94A3B8),
-                          ),
-                          const SizedBox(height: 4),
-
-                          // Label text wrapped in FittedBox to guarantee single-line fit
-                          FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 4),
-                              child: Text(
-                                item.label,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: GoogleFonts.notoSansGeorgian(
-                                  fontSize: 11.5,
-                                  fontWeight: isSelected
-                                      ? FontWeight.w700
-                                      : FontWeight.w500,
-                                  color: isSelected
-                                      ? AppColors.primary
-                                      : const Color(0xFF94A3B8),
-                                  letterSpacing: -0.2,
-                                  height: 1.2,
-                                ),
+                return Semantics(
+                  label: item.label,
+                  selected: isSelected,
+                  child: Tooltip(
+                    message: item.label,
+                    child: InkWell(
+                      key: ValueKey('nav_tab_${item.label}'),
+                      onTap: () => _onTabSelected(index),
+                      borderRadius: BorderRadius.circular(24),
+                      splashColor: Colors.transparent,
+                      highlightColor: Colors.transparent,
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 240),
+                        curve: Curves.easeInOutCubic,
+                        padding: isSelected
+                            ? const EdgeInsets.symmetric(horizontal: 18, vertical: 10)
+                            : const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? const Color(0xFF042F2E) // Deep Midnight-Teal Pill
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(24),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              item.icon,
+                              size: 21,
+                              color: isSelected ? Colors.white : const Color(0xFF64748B),
+                            ),
+                            ClipRect(
+                              child: AnimatedSize(
+                                duration: const Duration(milliseconds: 240),
+                                curve: Curves.easeInOutCubic,
+                                child: isSelected
+                                    ? Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            item.label,
+                                            style: GoogleFonts.notoSansGeorgian(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w700,
+                                              color: Colors.white,
+                                              letterSpacing: -0.2,
+                                            ),
+                                          ),
+                                        ],
+                                      )
+                                    : const SizedBox.shrink(),
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ),

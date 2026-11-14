@@ -368,12 +368,6 @@ class _FarmerOnboardingScreenState extends ConsumerState<FarmerOnboardingScreen>
 
   Future<void> _onNext() async {
     HapticFeedback.lightImpact();
-    final validationError = _validateCurrentStep();
-    if (validationError != null) {
-      AppToast.error(context, validationError);
-      return;
-    }
-
     if (_currentStep < 5) {
       final nextStep = _currentStep + 1;
       setState(() => _currentStep = nextStep);

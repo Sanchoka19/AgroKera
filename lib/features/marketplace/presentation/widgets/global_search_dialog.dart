@@ -567,7 +567,7 @@ class _GlobalSearchDialogState extends ConsumerState<GlobalSearchDialog> {
                     ],
                   ],
                 ),
-                if (product.discountPercent != null) ...[
+                if (product.hasDiscount) ...[
                   const SizedBox(height: 2),
                   Container(
                     padding: const EdgeInsets.symmetric(

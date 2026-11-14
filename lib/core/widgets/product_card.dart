@@ -72,7 +72,7 @@ class ProductCard extends StatelessWidget {
                                 ),
                               ),
                         ),
-                  if (product.discountPercent != null)
+                  if (product.hasDiscount)
                   Positioned(
                     top: 6,
                     right: 6,

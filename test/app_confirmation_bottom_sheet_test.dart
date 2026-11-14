@@ -100,7 +100,7 @@ void main() {
       expect(find.text('შეკვეთის დასრულება'), findsWidgets);
       expect(find.textContaining('#12345'), findsOneWidget);
 
-      await tester.tap(find.widgetWithText(ElevatedButton, 'შეკვეთის დასრულება'));
+      await tester.tap(find.widgetWithText(ElevatedButton, 'დასრულება'));
       await tester.pumpAndSettle();
 
       expect(confirmedResult, isTrue);

@@ -42,10 +42,13 @@ class ProductModel {
   /// Returns all product images (at least the primary imageUrl)
   List<String> get galleryImages => images.isNotEmpty ? images : [imageUrl];
 
+  /// Whether the product has an active discount > 0%
+  bool get hasDiscount => discountPercent != null && discountPercent! > 0;
+
   /// Computes the initial/original price before discount
   double? get effectiveOriginalPrice {
     if (originalPrice != null) return originalPrice;
-    if (discountPercent != null && discountPercent! > 0) {
+    if (hasDiscount) {
       return price / (1.0 - (discountPercent! / 100.0));
     }
     return null;
@@ -62,6 +65,8 @@ class ProductModel {
         (rawImages.isNotEmpty
             ? rawImages.first
             : 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=600&auto=format&fit=crop&q=80');
+    final rawDiscount = (json['discountPercent'] as num?)?.toInt();
+    final validDiscount = (rawDiscount != null && rawDiscount > 0) ? rawDiscount : null;
     return ProductModel(
       id: json['id'] as String,
       title: json['title'] as String? ?? '',
@@ -70,7 +75,7 @@ class ProductModel {
       farmerName: json['farmerName'] as String? ?? 'გიორგის ფერმა',
       price: ((json['price'] ?? json['pricePerUnit']) as num?)?.toDouble() ?? 0.0,
       unit: json['unit'] as String? ?? 'კგ',
-      discountPercent: (json['discountPercent'] as num?)?.toInt(),
+      discountPercent: validDiscount,
       rating: (json['rating'] as num?)?.toDouble() ?? 4.9,
       reviewCount: (json['reviewCount'] as num?)?.toInt() ?? 0,
       isAvailable: json['isAvailable'] as bool? ?? true,

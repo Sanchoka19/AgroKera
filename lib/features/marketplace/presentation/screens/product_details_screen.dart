@@ -592,7 +592,7 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
           ),
 
           // Overlapping Discount Badge: half outside top border, half inside above button
-          if (product.discountPercent != null)
+          if (product.hasDiscount)
             Positioned(
               top: -12,
               right: 24,

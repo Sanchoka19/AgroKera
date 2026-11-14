@@ -223,7 +223,6 @@ abstract final class MockData {
       farmerId: 'farmer_1',
       farmerName: 'მწვანე ველი',
       price: 28.0,
-      discountPercent: 0,
       rating: 5.0,
       reviewCount: 42,
       stockStatus: 'მარაგშია',

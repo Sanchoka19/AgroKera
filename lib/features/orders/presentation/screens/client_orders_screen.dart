@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_header.dart';
+import '../../../../core/widgets/app_reason_bottom_sheet.dart';
 import '../../../../core/widgets/app_toast.dart';
 import '../../domain/models/farmer_order_model.dart';
 import '../providers/farmer_orders_provider.dart';
@@ -18,6 +20,16 @@ class ClientOrdersScreen extends ConsumerStatefulWidget {
 
 class _ClientOrdersScreenState extends ConsumerState<ClientOrdersScreen> {
   bool _showActiveOnly = false;
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(
+      Future.microtask(
+        () => ref.read(farmerOrdersProvider.notifier).refreshFromBackend(),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -67,25 +79,29 @@ class _ClientOrdersScreenState extends ConsumerState<ClientOrdersScreen> {
             ),
 
             Expanded(
-              child: orders.isEmpty
-                  ? Center(
-                      child: Text(
-                        'შეკვეთები არ მოიძებნა',
-                        style: GoogleFonts.notoSansGeorgian(
-                          fontSize: 14,
-                          color: const Color(0xFF64748B),
+              child: RefreshIndicator(
+                onRefresh: () =>
+                    ref.read(farmerOrdersProvider.notifier).refreshFromBackend(),
+                child: orders.isEmpty
+                    ? Center(
+                        child: Text(
+                          'შეკვეთები არ მოიძებნა',
+                          style: GoogleFonts.notoSansGeorgian(
+                            fontSize: 14,
+                            color: const Color(0xFF64748B),
+                          ),
                         ),
+                      )
+                    : ListView.separated(
+                        padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+                        itemCount: orders.length,
+                        separatorBuilder: (_, _) => const SizedBox(height: 14),
+                        itemBuilder: (context, index) {
+                          final order = orders[index];
+                          return _buildClientOrderCard(order);
+                        },
                       ),
-                    )
-                  : ListView.separated(
-                      padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
-                      itemCount: orders.length,
-                      separatorBuilder: (_, _) => const SizedBox(height: 14),
-                      itemBuilder: (context, index) {
-                        final order = orders[index];
-                        return _buildClientOrderCard(order);
-                      },
-                    ),
+              ),
             ),
           ],
         ),
@@ -332,6 +348,57 @@ class _ClientOrdersScreenState extends ConsumerState<ClientOrdersScreen> {
                 icon: const Icon(LucideIcons.circleCheck, size: 16),
                 label: Text(
                   'შეკვეთის ჩაბარების დადასტურება',
+                  style: GoogleFonts.notoSansGeorgian(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
+          ],
+
+          if (order.status == OrderStatus.pending ||
+              order.canDirectlyCancel) ...[
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              height: 40,
+              child: TextButton.icon(
+                onPressed: () async {
+                  final reason = await AppReasonBottomSheet.show(
+                    context: context,
+                    title: 'შეკვეთის გაუქმება',
+                    subtitle:
+                        'შეკვეთა #${order.id} • გთხოვთ აირჩიოთ გაუქმების მიზეზი',
+                    confirmButtonText: 'გაუქმება',
+                    confirmButtonColor: const Color(0xFFDC2626),
+                    icon: LucideIcons.alertTriangle,
+                    reasons: const [
+                      'შემთხვევით გავაფორმე შეკვეთა',
+                      'მიწოდების დრო აღარ მაწყობს',
+                      'მისამართის შეცვლა მსურს',
+                      'სხვა პროდუქტის არჩევა მსურს',
+                    ],
+                  );
+                  if (reason != null && mounted) {
+                    ref
+                        .read(farmerOrdersProvider.notifier)
+                        .cancelOrder(order.id, reason: reason);
+                    AppToast.info(
+                      context,
+                      'შეკვეთა #${order.id} გაუქმებულია ($reason)',
+                    );
+                  }
+                },
+                style: TextButton.styleFrom(
+                  foregroundColor: const Color(0xFFDC2626),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                icon: const Icon(LucideIcons.x, size: 15),
+                label: Text(
+                  'შეკვეთის გაუქმება',
                   style: GoogleFonts.notoSansGeorgian(
                     fontSize: 12,
                     fontWeight: FontWeight.w700,

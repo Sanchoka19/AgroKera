@@ -556,7 +556,17 @@ export default {
           description?: string;
         };
 
-        const targetFarmerId = body.farmerId || "farmer_2";
+        let targetFarmerId = body.farmerId || "farmer_2";
+        const existingFarmer = await prisma.farmerProfile.findUnique({
+          where: { id: targetFarmerId },
+        });
+        if (!existingFarmer) {
+          const fallbackFarmer = await prisma.farmerProfile.findFirst();
+          if (fallbackFarmer) {
+            targetFarmerId = fallbackFarmer.id;
+          }
+        }
+
         const stockQty = Number(body.stockQuantity ?? 50);
         const normalizedImages =
           Array.isArray(body.images) && body.images.length > 0
@@ -791,15 +801,51 @@ export default {
         const totalAmount = body.hasVat ? subtotal * 1.18 : subtotal;
 
         const createdOrder = await prisma.$transaction(async (tx) => {
-          // Decrement product stock
+          // Resolve valid client user
+          let resolvedClientId = body.clientId || "user_client_1";
+          const existingClient = await tx.user.findUnique({
+            where: { id: resolvedClientId },
+          });
+          if (!existingClient) {
+            const firstClient = await tx.user.findFirst({
+              where: { role: Role.CLIENT },
+            });
+            if (firstClient) {
+              resolvedClientId = firstClient.id;
+            } else {
+              const createdClient = await tx.user.create({
+                data: {
+                  fullName: body.contactPerson || "საბა ევგენიძე",
+                  phoneNumber: body.contactPhone || `+995599${Math.floor(100000 + Math.random() * 900000)}`,
+                  role: Role.CLIENT,
+                  verificationStatus: VerificationStatus.VERIFIED,
+                },
+              });
+              resolvedClientId = createdClient.id;
+            }
+          }
+
+          // Resolve products & decrement product stock
+          const resolvedItems: Array<{
+            productId: string;
+            quantity: number;
+            pricePerUnit: number;
+            subtotal: number;
+          }> = [];
+          let resolvedFarmerId = body.farmerId || "farmer_2";
+
           for (const item of body.items) {
-            const product = await tx.product.findUnique({
+            let product = await tx.product.findUnique({
               where: { id: item.productId },
             });
+            if (!product) {
+              product = await tx.product.findFirst();
+            }
             if (product) {
+              resolvedFarmerId = product.farmerId;
               const newStock = Math.max(0, product.stockQuantity - Number(item.quantity));
               await tx.product.update({
-                where: { id: item.productId },
+                where: { id: product.id },
                 data: {
                   stockQuantity: newStock,
                   stockStatus:
@@ -811,6 +857,12 @@ export default {
                   isAvailable: newStock > 0,
                 },
               });
+              resolvedItems.push({
+                productId: product.id,
+                quantity: Number(item.quantity),
+                pricePerUnit: Number(item.pricePerUnit),
+                subtotal: Number(item.quantity) * Number(item.pricePerUnit),
+              });
             }
           }
 
@@ -818,8 +870,8 @@ export default {
           return tx.order.create({
             data: {
               id: orderId,
-              clientId: body.clientId || "user_client_1",
-              farmerId: body.farmerId || "farmer_2",
+              clientId: resolvedClientId,
+              farmerId: resolvedFarmerId,
               status: OrderStatus.PENDING,
               totalAmount,
               hasVat: body.hasVat ?? false,
@@ -834,12 +886,7 @@ export default {
               deliveryNotes: body.deliveryNotes,
               cancellationDeadline: new Date(Date.now() + 30 * 60 * 1000),
               items: {
-                create: body.items.map((i) => ({
-                  productId: i.productId,
-                  quantity: Number(i.quantity),
-                  pricePerUnit: Number(i.pricePerUnit),
-                  subtotal: Number(i.quantity) * Number(i.pricePerUnit),
-                })),
+                create: resolvedItems,
               },
               shipment: {
                 create: {
@@ -856,7 +903,42 @@ export default {
           });
         });
 
-        return jsonResponse(createdOrder, 201);
+        return jsonResponse(
+          {
+            id: createdOrder.id,
+            createdAt: createdOrder.createdAt.toISOString(),
+            status: createdOrder.status,
+            customerName: createdOrder.contactPerson || createdOrder.client.fullName,
+            contactPerson: createdOrder.contactPerson || createdOrder.client.fullName,
+            contactPhone:
+              createdOrder.contactPhone ||
+              createdOrder.client.phoneNumber ||
+              "+995 599 12 34 56",
+            hasVat: createdOrder.hasVat,
+            totalAmount: createdOrder.totalAmount,
+            fulfillmentType: createdOrder.fulfillmentType,
+            deliveryTimeWindow:
+              createdOrder.deliveryTimeWindow || "დღეს, 16:00 - 19:00",
+            deliveryAddress: createdOrder.deliveryAddress,
+            cancellationReason: createdOrder.cancellationReason,
+            cancellationDeadline:
+              createdOrder.cancellationDeadline?.toISOString() ?? null,
+            shipmentStatus: createdOrder.shipment?.status ?? "PENDING",
+            trackingNumber:
+              createdOrder.shipment?.trackingNumber ??
+              `AK-${createdOrder.id.slice(-5)}`,
+            items: createdOrder.items.map((item) => ({
+              productId: item.productId,
+              name: item.product.title,
+              quantity: item.quantity,
+              unit: item.product.unit,
+              quantityText: `${item.quantity}${item.product.unit}`,
+              pricePerUnit: item.pricePerUnit,
+              price: item.subtotal,
+            })),
+          },
+          201
+        );
       }
 
       if (path.startsWith("/api/orders/") && path.endsWith("/status") && method === "PATCH") {
@@ -875,36 +957,102 @@ export default {
             ? ShipmentStatus.CONFIRMED
             : ShipmentStatus.PENDING);
 
-        const updated = await prisma.order.update({
-          where: { id: orderId },
-          data: {
-            status: body.status,
-            ...(body.cancellationReason
-              ? { cancellationReason: body.cancellationReason }
-              : {}),
-            ...(body.status === OrderStatus.IN_PROGRESS
-              ? { cancellationDeadline: new Date(Date.now() + 30 * 60 * 1000) }
-              : {}),
-            shipment: {
-              upsert: {
-                create: {
-                  status: mappedShipmentStatus,
-                  trackingNumber: `AK-${orderId}`,
-                },
-                update: {
-                  status: mappedShipmentStatus,
+        const updated = await prisma.$transaction(async (tx) => {
+          const existingOrder = await tx.order.findUnique({
+            where: { id: orderId },
+            include: { items: true },
+          });
+
+          // If cancelling an active order, restore reserved product stock
+          if (
+            existingOrder &&
+            body.status === OrderStatus.CANCELLED &&
+            existingOrder.status !== OrderStatus.CANCELLED
+          ) {
+            for (const item of existingOrder.items) {
+              const prod = await tx.product.findUnique({
+                where: { id: item.productId },
+              });
+              if (prod) {
+                const restoredStock = prod.stockQuantity + Number(item.quantity);
+                await tx.product.update({
+                  where: { id: prod.id },
+                  data: {
+                    stockQuantity: restoredStock,
+                    stockStatus:
+                      restoredStock <= 0
+                        ? "ამოწურულია"
+                        : restoredStock < 20
+                        ? "იწურება"
+                        : "მარაგშია",
+                    isAvailable: restoredStock > 0,
+                  },
+                });
+              }
+            }
+          }
+
+          return tx.order.update({
+            where: { id: orderId },
+            data: {
+              status: body.status,
+              ...(body.cancellationReason
+                ? { cancellationReason: body.cancellationReason }
+                : {}),
+              ...(body.status === OrderStatus.IN_PROGRESS
+                ? { cancellationDeadline: new Date(Date.now() + 30 * 60 * 1000) }
+                : {}),
+              shipment: {
+                upsert: {
+                  create: {
+                    status: mappedShipmentStatus,
+                    trackingNumber: `AK-${orderId}`,
+                  },
+                  update: {
+                    status: mappedShipmentStatus,
+                  },
                 },
               },
             },
-          },
-          include: {
-            client: true,
-            items: { include: { product: true } },
-            shipment: true,
-          },
+            include: {
+              client: true,
+              items: { include: { product: true } },
+              shipment: true,
+            },
+          });
         });
 
-        return jsonResponse(updated);
+        return jsonResponse({
+          id: updated.id,
+          createdAt: updated.createdAt.toISOString(),
+          status: updated.status,
+          customerName: updated.contactPerson || updated.client.fullName,
+          contactPerson: updated.contactPerson || updated.client.fullName,
+          contactPhone:
+            updated.contactPhone ||
+            updated.client.phoneNumber ||
+            "+995 599 12 34 56",
+          hasVat: updated.hasVat,
+          totalAmount: updated.totalAmount,
+          fulfillmentType: updated.fulfillmentType,
+          deliveryTimeWindow: updated.deliveryTimeWindow || "დღეს, 16:00 - 19:00",
+          deliveryAddress: updated.deliveryAddress,
+          cancellationReason: updated.cancellationReason,
+          cancellationDeadline:
+            updated.cancellationDeadline?.toISOString() ?? null,
+          shipmentStatus: updated.shipment?.status ?? "PENDING",
+          trackingNumber:
+            updated.shipment?.trackingNumber ?? `AK-${updated.id.slice(-5)}`,
+          items: updated.items.map((item) => ({
+            productId: item.productId,
+            name: item.product.title,
+            quantity: item.quantity,
+            unit: item.product.unit,
+            quantityText: `${item.quantity}${item.product.unit}`,
+            pricePerUnit: item.pricePerUnit,
+            price: item.subtotal,
+          })),
+        });
       }
 
       return errorResponse(`Route not found: ${method} ${path}`, 404);

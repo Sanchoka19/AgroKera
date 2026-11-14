@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/auth/auth_state_provider.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../cart_checkout/data/models/cart_item_model.dart';
 import '../../../marketplace/presentation/providers/marketplace_provider.dart';
@@ -180,7 +181,32 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
       ),
     ];
 
+    unawaited(Future.microtask(refreshFromBackend));
     return FarmerOrdersState(orders: sampleOrders);
+  }
+
+  /// Fetches live orders from Neon PostgreSQL backend so Farmer & Customer stay in sync
+  Future<void> refreshFromBackend() async {
+    try {
+      final api = ref.read(apiClientProvider);
+      final response = await api.get<List<dynamic>>('/api/orders');
+      final rawOrders = response.data;
+      if (rawOrders != null && rawOrders.isNotEmpty) {
+        final fetched = rawOrders
+            .whereType<Map<String, dynamic>>()
+            .map(FarmerOrder.fromJson)
+            .toList();
+        if (fetched.isNotEmpty) {
+          final fetchedIds = fetched.map((o) => o.id).toSet();
+          final localRemaining = state.orders
+              .where((o) => !fetchedIds.contains(o.id))
+              .toList();
+          state = state.copyWith(orders: [...fetched, ...localRemaining]);
+        }
+      }
+    } catch (_) {
+      // Gracefully keep local state when offline
+    }
   }
 
   void setFilter(OrderStatus? filter) {
@@ -240,9 +266,19 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
     required List<CartItemModel> cartItems,
     required String deliveryAddress,
     required String deliveryTimeWindow,
-    String customerName = 'საბა ევგენიძე',
-    String contactPhone = '+995 599 12 34 56',
+    String? customerName,
+    String? contactPhone,
   }) async {
+    final auth = ref.read(authStateProvider);
+    final effectiveName =
+        (customerName != null && customerName.trim().isNotEmpty)
+            ? customerName.trim()
+            : (auth.userName ?? 'საბა ევგენიძე');
+    final effectivePhone =
+        (contactPhone != null && contactPhone.trim().isNotEmpty)
+            ? contactPhone.trim()
+            : (auth.userPhone ?? '+995 599 12 34 56');
+
     final now = DateTime.now();
     final generatedId = '${38100 + Random().nextInt(899)}';
 
@@ -260,9 +296,9 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
       id: generatedId,
       createdAt: now,
       status: OrderStatus.pending,
-      customerName: customerName,
-      contactPerson: customerName,
-      contactPhone: contactPhone,
+      customerName: effectiveName,
+      contactPerson: effectiveName,
+      contactPhone: effectivePhone,
       deliveryAddress: deliveryAddress,
       deliveryTimeWindow: deliveryTimeWindow,
       cancellationDeadline: now.add(const Duration(minutes: 30)),
@@ -277,11 +313,12 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
 
     try {
       final api = ref.read(apiClientProvider);
-      await api.post(
+      final response = await api.post<Map<String, dynamic>>(
         '/api/orders',
         data: {
-          'contactPerson': customerName,
-          'contactPhone': contactPhone,
+          'clientId': auth.userId ?? 'user_client_1',
+          'contactPerson': effectiveName,
+          'contactPhone': effectivePhone,
           'deliveryAddress': deliveryAddress,
           'deliveryTimeWindow': deliveryTimeWindow,
           'items': cartItems
@@ -295,6 +332,15 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
               .toList(),
         },
       );
+      if (response.data != null) {
+        final serverOrder = FarmerOrder.fromJson(response.data!);
+        state = state.copyWith(
+          orders: state.orders
+              .map((o) => o.id == generatedId ? serverOrder : o)
+              .toList(),
+        );
+        return serverOrder;
+      }
     } catch (_) {
       // Offline resilient fallback
     }
@@ -316,6 +362,9 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
           'cancellationReason': ?reason,
         },
       );
+      if (status == OrderStatus.cancelled) {
+        await ref.read(marketplaceProvider.notifier).refreshFromBackend();
+      }
     } catch (_) {}
   }
 }

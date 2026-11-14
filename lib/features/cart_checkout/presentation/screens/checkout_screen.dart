@@ -137,15 +137,20 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     );
   }
 
-  void _showSuccessDialog(double total) {
+  Future<void> _showSuccessDialog(double total) async {
     final cartItems = ref.read(cartProvider);
+    String orderNumber = '38195';
     if (cartItems.isNotEmpty) {
-      ref.read(farmerOrdersProvider.notifier).createOrderFromCart(
+      final created = await ref
+          .read(farmerOrdersProvider.notifier)
+          .createOrderFromCart(
             cartItems: cartItems,
             deliveryAddress: _address,
             deliveryTimeWindow: _deliverySlot,
           );
+      orderNumber = created.id;
     }
+    if (!mounted) return;
 
     showDialog(
       context: context,
@@ -181,7 +186,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                'თქვენი შეკვეთა #38195 გადაეცა ფერმერს მოსამზადებლად. სრული ღირებულება: ${total.toStringAsFixed(0)} ₾',
+                'თქვენი შეკვეთა #$orderNumber გადაეცა ფერმერს მოსამზადებლად. სრული ღირებულება: ${total.toStringAsFixed(0)} ₾',
                 textAlign: TextAlign.center,
                 style: AppTypography.bodyMedium.copyWith(
                   color: AppColors.textSecondary,

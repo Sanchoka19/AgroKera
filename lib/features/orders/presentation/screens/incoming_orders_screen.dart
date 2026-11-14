@@ -92,37 +92,40 @@ class IncomingOrdersScreen extends ConsumerWidget {
           ),
         ),
       ),
-      body: filteredOrders.isEmpty
-          ? EmptyOrdersView(
-              filter: ordersState.selectedFilter,
-              onResetFilter: () => ordersNotifier.setFilter(null),
-            )
-          : ListView.separated(
-              padding: const EdgeInsets.fromLTRB(14, 10, 14, 24),
-              itemCount: filteredOrders.length,
-              separatorBuilder: (context, index) => const SizedBox(height: 10),
-              itemBuilder: (context, index) {
-                final order = filteredOrders[index];
-                return FarmerOrderCard(
-                  key: ValueKey('farmer_order_${order.id}'),
-                  order: order,
-                  onAccept: () {
-                    ordersNotifier.acceptOrder(order.id);
-                    AppToast.success(
-                      context,
-                      'შეკვეთა #${order.id} დადასტურებულია და გადავიდა მიმდინარეში!',
-                    );
-                  },
-                  onCancel: (reason) {
-                    ordersNotifier.cancelOrder(order.id, reason: reason);
-                    AppToast.info(
-                      context,
-                      'შეკვეთა #${order.id} გაუქმებულია ($reason)',
-                    );
-                  },
-                );
-              },
-            ),
+      body: RefreshIndicator(
+        onRefresh: () => ordersNotifier.refreshFromBackend(),
+        child: filteredOrders.isEmpty
+            ? EmptyOrdersView(
+                filter: ordersState.selectedFilter,
+                onResetFilter: () => ordersNotifier.setFilter(null),
+              )
+            : ListView.separated(
+                padding: const EdgeInsets.fromLTRB(14, 10, 14, 24),
+                itemCount: filteredOrders.length,
+                separatorBuilder: (context, index) => const SizedBox(height: 10),
+                itemBuilder: (context, index) {
+                  final order = filteredOrders[index];
+                  return FarmerOrderCard(
+                    key: ValueKey('farmer_order_${order.id}'),
+                    order: order,
+                    onAccept: () {
+                      ordersNotifier.acceptOrder(order.id);
+                      AppToast.success(
+                        context,
+                        'შეკვეთა #${order.id} დადასტურებულია და გადავიდა მიმდინარეში!',
+                      );
+                    },
+                    onCancel: (reason) {
+                      ordersNotifier.cancelOrder(order.id, reason: reason);
+                      AppToast.info(
+                        context,
+                        'შეკვეთა #${order.id} გაუქმებულია ($reason)',
+                      );
+                    },
+                  );
+                },
+              ),
+      ),
     );
   }
 

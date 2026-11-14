@@ -6,6 +6,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:agrokera/core/auth/auth_state_provider.dart';
 import 'package:agrokera/core/widgets/auth_required_bottom_sheet.dart';
 import 'package:agrokera/features/marketplace/presentation/screens/favorites_screen.dart';
+import 'package:agrokera/features/marketplace/presentation/widgets/guest_promo_banner.dart';
 import 'help_center_screen.dart';
 
 class GuestProfileScreen extends ConsumerStatefulWidget {
@@ -34,7 +35,6 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
   Widget build(BuildContext context) {
     final authState = ref.watch(authStateProvider);
     final isFarmer = authState.role == UserRole.farmer;
-    final isCustomer = authState.isAuthenticated && !isFarmer;
     final isGuest = !authState.isAuthenticated;
 
     return Scaffold(
@@ -47,36 +47,35 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // ==========================================
-              // 1. TOP UTILITY ROW (No redundant "პროფილი" title!)
+              // GUEST: Official Previous Version Illustration Promo Banner
+              // AUTHENTICATED: Modern Hero Avatar + Gradient KPI Card
               // ==========================================
-              Align(
-                alignment: Alignment.centerRight,
-                child: Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    IconButton(
-                      icon: const Icon(
-                        LucideIcons.bell,
-                        color: Color(0xFF0F172A),
-                        size: 24,
+              if (isGuest) ...[
+                const GuestPromoBanner(showCloseButton: false),
+                const SizedBox(height: 24),
+              ] else ...[
+                // Top utility row for authenticated user
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      IconButton(
+                        icon: const Icon(
+                          LucideIcons.bell,
+                          color: Color(0xFF0F172A),
+                          size: 24,
+                        ),
+                        onPressed: () {
+                          HapticFeedback.lightImpact();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('ახალი შეტყობინებები არ არის.'),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        },
                       ),
-                      onPressed: () {
-                        HapticFeedback.lightImpact();
-                        requireAuth(
-                          context,
-                          ref: ref,
-                          onAuthenticated: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('ახალი შეტყობინებები არ არის.'),
-                                behavior: SnackBarBehavior.floating,
-                              ),
-                            );
-                          },
-                        );
-                      },
-                    ),
-                    if (isFarmer || isCustomer)
                       Positioned(
                         top: 10,
                         right: 10,
@@ -89,298 +88,243 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
                           ),
                         ),
                       ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
 
-              // ==========================================
-              // 2. HERO IDENTITY (Centered Avatar with Camera Badge, Name, Subtitle)
-              // ==========================================
-              Center(
-                child: Column(
-                  children: [
-                    Stack(
-                      children: [
-                        // Avatar Circle with white border ring
-                        Container(
-                          width: 88,
-                          height: 88,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white, width: 3),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.08),
-                                blurRadius: 14,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
+                // Hero Identity (Centered Avatar with Camera Badge, Name, Subtitle)
+                Center(
+                  child: Column(
+                    children: [
+                      Stack(
+                        children: [
+                          Container(
+                            width: 88,
+                            height: 88,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white, width: 3),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.08),
+                                  blurRadius: 14,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: ClipOval(
+                              child: isFarmer
+                                  ? Image.network(
+                                      'https://images.unsplash.com/photo-1595273670150-bd0c3c392e46?w=400&auto=format&fit=crop&q=80',
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (context, error, stackTrace) => _buildPlaceholderAvatar(),
+                                    )
+                                  : Image.network(
+                                      'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80',
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (context, error, stackTrace) => _buildPlaceholderAvatar(),
+                                    ),
+                            ),
                           ),
-                          child: ClipOval(
-                            child: isFarmer
-                                ? Image.network(
-                                    'https://images.unsplash.com/photo-1595273670150-bd0c3c392e46?w=400&auto=format&fit=crop&q=80',
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) => _buildPlaceholderAvatar(),
-                                  )
-                                : isCustomer
-                                    ? Image.network(
-                                        'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80',
-                                        fit: BoxFit.cover,
-                                        errorBuilder: (context, error, stackTrace) => _buildPlaceholderAvatar(),
-                                      )
-                                    : _buildPlaceholderAvatar(),
-                          ),
-                        ),
-
-                        // Camera Button Badge
-                        Positioned(
-                          bottom: 0,
-                          right: 0,
-                          child: GestureDetector(
-                            onTap: () {
-                              if (isGuest) {
-                                AuthRequiredBottomSheet.show(context);
-                              } else {
-                                _showImagePickerNotice();
-                              }
-                            },
-                            child: Container(
-                              width: 28,
-                              height: 28,
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF0F766E),
-                                shape: BoxShape.circle,
-                                border: Border.all(color: Colors.white, width: 2),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.15),
-                                    blurRadius: 4,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: const Icon(
-                                LucideIcons.camera,
-                                color: Colors.white,
-                                size: 14,
+                          Positioned(
+                            bottom: 0,
+                            right: 0,
+                            child: GestureDetector(
+                              onTap: _showImagePickerNotice,
+                              child: Container(
+                                width: 28,
+                                height: 28,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF0F766E),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: Colors.white, width: 2),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(alpha: 0.15),
+                                      blurRadius: 4,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: const Icon(
+                                  LucideIcons.camera,
+                                  color: Colors.white,
+                                  size: 14,
+                                ),
                               ),
                             ),
                           ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        isFarmer
+                            ? (authState.userName ?? 'რევაზ ბერიძე')
+                            : (authState.userName ?? 'საბა ევგენიძე'),
+                        style: GoogleFonts.notoSansGeorgian(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                          color: const Color(0xFF0F172A),
                         ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        isFarmer
+                            ? 'ფერმერი • ID 3031223'
+                            : (authState.userEmail ?? 'sabaevgenidze0919@gmail.com'),
+                        style: GoogleFonts.notoSansGeorgian(
+                          fontSize: 13.5,
+                          color: const Color(0xFF64748B),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // Emerald Gradient KPI Hero Card
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(22),
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Color(0xFF00A86B), // Vibrant Emerald
+                        Color(0xFF044E46), // Deep rich Teal
                       ],
                     ),
-                    const SizedBox(height: 12),
-
-                    // User Name
-                    Text(
-                      isFarmer
-                          ? (authState.userName ?? 'რევაზ ბერიძე')
-                          : isCustomer
-                              ? (authState.userName ?? 'საბა ევგენიძე')
-                              : 'სტუმარი',
-                      style: GoogleFonts.notoSansGeorgian(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w800,
-                        color: const Color(0xFF0F172A),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF044E46).withValues(alpha: 0.28),
+                        blurRadius: 16,
+                        offset: const Offset(0, 6),
                       ),
-                    ),
-                    const SizedBox(height: 4),
-
-                    // Subtitle / Email / Phone
-                    Text(
-                      isFarmer
-                          ? 'ფერმერი • ID 3031223'
-                          : isCustomer
-                              ? (authState.userEmail ?? 'sabaevgenidze0919@gmail.com')
-                              : 'გაიარეთ ავტორიზაცია სრული ფუნქციონალისთვის',
-                      style: GoogleFonts.notoSansGeorgian(
-                        fontSize: 13.5,
-                        color: const Color(0xFF64748B),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-
-                    // Guest Login / Register CTA Button
-                    if (isGuest) ...[
-                      const SizedBox(height: 16),
-                      SizedBox(
-                        width: double.infinity,
-                        height: 50,
-                        child: ElevatedButton.icon(
-                          onPressed: () => AuthRequiredBottomSheet.show(context),
-                          icon: const Icon(LucideIcons.logIn, size: 18, color: Colors.white),
-                          label: Text(
-                            'სისტემაში შესვლა / რეგისტრაცია',
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.18),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              LucideIcons.trophy,
+                              color: Colors.white,
+                              size: 16,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Text(
+                            isFarmer
+                                ? 'საფერმო მაჩვენებლები და KPI'
+                                : 'თვიური რეიტინგი და KPI',
                             style: GoogleFonts.notoSansGeorgian(
-                              fontSize: 15,
+                              fontSize: 14.5,
                               fontWeight: FontWeight.w700,
                               color: Colors.white,
                             ),
                           ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF064E3B),
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildGradientMetricCol(
+                              value: isFarmer ? '5000₾' : '6',
+                              label: isFarmer
+                                  ? 'ჯამური შემოსავალი'
+                                  : 'შესრულებული',
                             ),
                           ),
-                        ),
+                          Container(width: 1, height: 38, color: Colors.white.withValues(alpha: 0.22)),
+                          Expanded(
+                            child: _buildGradientMetricCol(
+                              value: isFarmer ? '100' : '100%',
+                              label: isFarmer
+                                  ? 'შეკვეთების რაოდენობა'
+                                  : 'ხარისხის ქულა',
+                            ),
+                          ),
+                          Container(width: 1, height: 38, color: Colors.white.withValues(alpha: 0.22)),
+                          Expanded(
+                            child: _buildGradientMetricCol(
+                              value: isFarmer ? '4.5' : '3%',
+                              label: isFarmer
+                                  ? 'საშუალო შეფასება'
+                                  : 'გეგმის შესრულება',
+                            ),
+                          ),
+                        ],
                       ),
                     ],
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // ==========================================
-              // 3. EMERALD GRADIENT KPI HERO CARD
-              // ==========================================
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(22),
-                  gradient: const LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      Color(0xFF00A86B), // Vibrant Emerald
-                      Color(0xFF044E46), // Deep rich Teal
-                    ],
                   ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF044E46).withValues(alpha: 0.28),
-                      blurRadius: 16,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
                 ),
-                child: Column(
-                  children: [
-                    // Top Row with Trophy
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(6),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.18),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            LucideIcons.trophy,
-                            color: Colors.white,
-                            size: 16,
-                          ),
+
+                // Farmer Status Pill (if Farmer)
+                if (isFarmer) ...[
+                  const SizedBox(height: 14),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.02),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
                         ),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(LucideIcons.shieldCheck, color: Color(0xFF10B981), size: 20),
                         const SizedBox(width: 10),
                         Text(
-                          isFarmer
-                              ? 'საფერმო მაჩვენებლები და KPI'
-                              : isCustomer
-                                  ? 'თვიური რეიტინგი და KPI'
-                                  : 'გახდი აგროკერას წევრი',
+                          'თქვენი სტატუსი',
                           style: GoogleFonts.notoSansGeorgian(
-                            fontSize: 14.5,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFF0F172A),
                           ),
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-
-                    // 3 Metric Columns with translucent dividers
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _buildGradientMetricCol(
-                            value: isFarmer ? '5000₾' : (isCustomer ? '6' : '100+'),
-                            label: isFarmer
-                                ? 'ჯამური შემოსავალი'
-                                : (isCustomer ? 'შესრულებული' : 'ნატურალური პროდუქტი'),
+                        const Spacer(),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFE8F5E9),
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                        ),
-                        Container(width: 1, height: 38, color: Colors.white.withValues(alpha: 0.22)),
-                        Expanded(
-                          child: _buildGradientMetricCol(
-                            value: isFarmer ? '100' : (isCustomer ? '100%' : '0%'),
-                            label: isFarmer
-                                ? 'შეკვეთების რაოდენობა'
-                                : (isCustomer ? 'ხარისხის ქულა' : 'საკომისიო'),
-                          ),
-                        ),
-                        Container(width: 1, height: 38, color: Colors.white.withValues(alpha: 0.22)),
-                        Expanded(
-                          child: _buildGradientMetricCol(
-                            value: isFarmer ? '4.5' : (isCustomer ? '3%' : 'უფასო'),
-                            label: isFarmer
-                                ? 'საშუალო შეფასება'
-                                : (isCustomer ? 'ბონუსი & დაზოგილი' : 'პირველი მიტანა'),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-
-              // Farmer Status Pill (if Farmer)
-              if (isFarmer) ...[
-                const SizedBox(height: 14),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.02),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(LucideIcons.shieldCheck, color: Color(0xFF10B981), size: 20),
-                      const SizedBox(width: 10),
-                      Text(
-                        'თქვენი სტატუსი',
-                        style: GoogleFonts.notoSansGeorgian(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: const Color(0xFF0F172A),
-                        ),
-                      ),
-                      const Spacer(),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFE8F5E9),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(LucideIcons.check, size: 14, color: Color(0xFF10B981)),
-                            const SizedBox(width: 4),
-                            Text(
-                              'ვერიფიცირებული',
-                              style: GoogleFonts.notoSansGeorgian(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
-                                color: const Color(0xFF10B981),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(LucideIcons.check, size: 14, color: Color(0xFF10B981)),
+                              const SizedBox(width: 4),
+                              Text(
+                                'ვერიფიცირებული',
+                                style: GoogleFonts.notoSansGeorgian(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: const Color(0xFF10B981),
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
+                ],
+                const SizedBox(height: 24),
               ],
-              const SizedBox(height: 24),
 
               // ==========================================
               // 4. GROUPED SECTION 1: ინსტრუმენტები და სერვისები / ანგარიშის მართვა

@@ -134,18 +134,20 @@ class FarmerRoleScreen extends ConsumerWidget {
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(24),
-                  gradient: const LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+                  gradient: const RadialGradient(
+                    center: Alignment(0.85, -0.2),
+                    radius: 1.25,
                     colors: [
-                      Color(0xFF1B4332), // Deep Forest Green
-                      Color(0xFF2D6A4F), // Emerald Green
+                      Color(0xFF10B981), // Radiant Emerald spotlight behind character
                       Color(0xFF0F766E), // Vibrant Brand Deep Teal
+                      Color(0xFF134E4A), // Rich Deep Teal
+                      Color(0xFF062824), // Dark Pine for high-contrast text backing
                     ],
+                    stops: [0.0, 0.35, 0.70, 1.0],
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF1B4332).withValues(alpha: 0.22),
+                      color: const Color(0xFF062824).withValues(alpha: 0.28),
                       blurRadius: 18,
                       offset: const Offset(0, 8),
                     ),

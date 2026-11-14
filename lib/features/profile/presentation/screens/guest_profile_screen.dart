@@ -179,13 +179,15 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(22),
-                      gradient: const LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
+                      gradient: const RadialGradient(
+                        center: Alignment(-0.85, -0.75),
+                        radius: 1.35,
                         colors: [
-                          Color(0xFF00A86B), // Vibrant Emerald
-                          Color(0xFF044E46), // Deep rich Teal
+                          Color(0xFF059669), // Vibrant Radiant Emerald around trophy
+                          Color(0xFF0D7A68), // Rich Teal
+                          Color(0xFF044E46), // Deep Forest Teal at bottom-right
                         ],
+                        stops: [0.0, 0.45, 1.0],
                       ),
                       boxShadow: [
                         BoxShadow(

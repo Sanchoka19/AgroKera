@@ -358,12 +358,7 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
                                 context,
                                 ref: ref,
                                 onAuthenticated: () {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('ჭავჭავაძე - თბილისი'),
-                                      behavior: SnackBarBehavior.floating,
-                                    ),
-                                  );
+                                  AppToast.info(context, 'ჭავჭავაძე - თბილისი');
                                 },
                               );
                             },
@@ -378,12 +373,8 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
                                 context,
                                 ref: ref,
                                 onAuthenticated: () {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('საბანკო ბარათები & ანგარიშები.'),
-                                      behavior: SnackBarBehavior.floating,
-                                    ),
-                                  );
+                                  AppToast.info(
+                                      context, 'საბანკო ბარათები & ანგარიშები.');
                                 },
                               );
                             },

@@ -183,5 +183,44 @@ void main() {
 
     expect(actionTapped, isTrue);
   });
+
+  testWidgets('AppToast handles error, warning, info and dismisses cleanly',
+      (WidgetTester tester) async {
+    BuildContext? testContext;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Builder(
+            builder: (context) {
+              testContext = context;
+              return const SizedBox();
+            },
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // 1. Error toast
+    AppToast.error(testContext!, 'შეცდომა დაფიქსირდა');
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('შეცდომა დაფიქსირდა'), findsOneWidget);
+    expect(find.byIcon(LucideIcons.x), findsOneWidget);
+
+    // 2. Info toast replaces previous
+    AppToast.info(testContext!, 'ინფორმაცია განახლდა');
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('შეცდომა დაფიქსირდა'), findsNothing);
+    expect(find.text('ინფორმაცია განახლდა'), findsOneWidget);
+    expect(find.byIcon(LucideIcons.info), findsOneWidget);
+
+    // 3. Manual dismiss
+    AppToast.dismiss();
+    await tester.pumpAndSettle();
+    expect(find.text('ინფორმაცია განახლდა'), findsNothing);
+  });
 }
 

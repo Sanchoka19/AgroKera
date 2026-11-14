@@ -2,32 +2,65 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/app_header.dart';
+import '../../../../core/widgets/app_search_bar.dart';
 import '../../data/mock_data.dart';
 import '../../data/models/category_model.dart';
 import 'category_products_screen.dart';
 
 /// Categories & Agro-Market screen (Modern Fresh Bento):
-/// - Unified AppHeader with title "აგრო მარკეტი", notifications & cart (search omitted as categories are few and clear)
-/// - Bento style category cards fitting gracefully on screen without scrolling
-class CategoriesScreen extends StatelessWidget {
+/// - Unified AppHeader with title "აგრო მარკეტი", search bar, notifications & cart
+/// - Bento style category cards with delicious proportions filling the screen naturally
+class CategoriesScreen extends StatefulWidget {
   const CategoriesScreen({super.key});
 
   @override
+  State<CategoriesScreen> createState() => _CategoriesScreenState();
+}
+
+class _CategoriesScreenState extends State<CategoriesScreen> {
+  late final TextEditingController _searchController;
+  String _searchQuery = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final categories = MockData.categories;
+    final filteredCategories = MockData.categories.where((c) {
+      return c.name.toLowerCase().contains(_searchQuery.toLowerCase());
+    }).toList();
 
     return Scaffold(
       backgroundColor: AppColors.bgPrimary,
       body: SafeArea(
         child: Column(
           children: [
-            // Unified App Header (Title, Notifications & Cart)
-            const AppHeader(
+            // Unified App Header (Title, Search Bar, Notifications & Cart)
+            AppHeader(
               title: 'აგრო მარკეტი',
               showNotificationBell: true,
               showCart: true,
-              padding: EdgeInsets.fromLTRB(16, 10, 16, 10),
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+              searchBar: AppSearchBar(
+                controller: _searchController,
+                hintText: 'მოძებნე პროდუქტი ან მეურნეობა...',
+                onChanged: (val) => setState(() => _searchQuery = val),
+                onClear: () {
+                  _searchController.clear();
+                  setState(() => _searchQuery = '');
+                },
+              ),
             ),
 
             Expanded(
@@ -35,84 +68,111 @@ class CategoriesScreen extends StatelessWidget {
                 physics: const ClampingScrollPhysics(),
                 slivers: [
                   // Subheader Info Row
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 2, 16, 10),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'კატეგორიები (${categories.length})',
-                            style: GoogleFonts.notoSansGeorgian(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.textSecondary,
+                  if (filteredCategories.isNotEmpty)
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'კატეგორიები (${filteredCategories.length})',
+                              style: GoogleFonts.notoSansGeorgian(
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.textSecondary,
+                              ),
                             ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 3.5,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary.withValues(alpha: 0.10),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(
-                                  LucideIcons.sparkles,
-                                  size: 12,
-                                  color: AppColors.primary,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  '100% ორგანული',
-                                  style: GoogleFonts.notoSansGeorgian(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w700,
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 9,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withValues(alpha: 0.10),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    LucideIcons.sparkles,
+                                    size: 13,
                                     color: AppColors.primary,
                                   ),
-                                ),
-                              ],
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    '100% ორგანული',
+                                    style: GoogleFonts.notoSansGeorgian(
+                                      fontSize: 11.5,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.primary,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
-                  ),
 
-                  // Categories Bento Grid
-                  SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                    sliver: SliverGrid(
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        crossAxisSpacing: 10,
-                        mainAxisSpacing: 10,
-                        childAspectRatio: 1.26,
-                      ),
-                      delegate: SliverChildBuilderDelegate(
-                        (context, index) {
-                          final cat = categories[index];
-                          return _CategoryBentoCard(
-                            category: cat,
-                            onTap: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      CategoryProductsScreen(category: cat),
+                  // Categories Bento Grid or Empty Search State
+                  if (filteredCategories.isEmpty)
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 60),
+                        child: Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                LucideIcons.searchX,
+                                size: 44,
+                                color: AppColors.textSecondary,
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                'კატეგორია ვერ მოიძებნა',
+                                style: AppTypography.titleMedium.copyWith(
+                                  color: AppColors.textSecondary,
                                 ),
-                              );
-                            },
-                          );
-                        },
-                        childCount: categories.length,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    )
+                  else
+                    SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                      sliver: SliverGrid(
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                          childAspectRatio: 1.15,
+                        ),
+                        delegate: SliverChildBuilderDelegate(
+                          (context, index) {
+                            final cat = filteredCategories[index];
+                            return _CategoryBentoCard(
+                              category: cat,
+                              onTap: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        CategoryProductsScreen(category: cat),
+                                  ),
+                                );
+                              },
+                            );
+                          },
+                          childCount: filteredCategories.length,
+                        ),
                       ),
                     ),
-                  ),
                 ],
               ),
             ),

@@ -268,7 +268,7 @@ void main() {
     expect(find.text('ინფორმაცია განახლდა'), findsNothing);
   });
 
-  testWidgets('CategoriesScreen renders clean bento cards and header without search bar',
+  testWidgets('CategoriesScreen renders bento cards and filters by search',
       (WidgetTester tester) async {
     await tester.pumpWidget(
       const ProviderScope(
@@ -287,8 +287,21 @@ void main() {
     expect(find.text('ბოსტნეული'), findsOneWidget);
     expect(find.text('კენკრა'), findsOneWidget);
 
-    // Verify search bar is omitted per UX design
-    expect(find.byType(TextField), findsNothing);
+    // Verify search bar is present
+    expect(find.byType(TextField), findsOneWidget);
+
+    // Filter by 'ბოსტ'
+    await tester.enterText(find.byType(TextField), 'ბოსტ');
+    await tester.pumpAndSettle();
+
+    expect(find.text('ბოსტნეული'), findsOneWidget);
+    expect(find.text('ხილი'), findsNothing);
+
+    // Clear search
+    await tester.tap(find.byIcon(LucideIcons.x));
+    await tester.pumpAndSettle();
+
+    expect(find.text('ხილი'), findsOneWidget);
   });
 
   testWidgets('CategoryProductsScreen filter sheet hides category selection',

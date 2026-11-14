@@ -59,7 +59,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       email: email,
       role: isFarmerEmail ? UserRole.farmer : UserRole.customer,
     );
-    Navigator.of(context).pop();
+    Navigator.of(context).popUntil((route) => route.isFirst);
     AppToast.success(context, 'წარმატებით გაიარეთ ავტორიზაცია!');
   }
 
@@ -75,7 +75,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     );
 
     if (mounted) {
-      Navigator.of(context).pop();
+      Navigator.of(context).popUntil((route) => route.isFirst);
       AppToast.success(context, 'მოგესალმებით, ${account.name}!');
     }
   }

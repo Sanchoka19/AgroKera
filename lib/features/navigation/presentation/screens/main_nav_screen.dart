@@ -57,6 +57,15 @@ class _MainNavScreenState extends ConsumerState<MainNavScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Automatically switch to Home ('მთავარი', index 0) upon login or registration
+    ref.listen<AuthState>(authStateProvider, (previous, next) {
+      final loggedInNow = !(previous?.isAuthenticated ?? false) && next.isAuthenticated;
+      final roleChanged = previous?.role != next.role && next.isAuthenticated;
+      if ((loggedInNow || roleChanged) && _currentIndex != 0) {
+        setState(() => _currentIndex = 0);
+      }
+    });
+
     final authState = ref.watch(authStateProvider);
     final isFarmer = authState.role == UserRole.farmer;
 

@@ -8,13 +8,7 @@ import '../storage/secure_storage_service.dart';
 String resolveDefaultApiBaseUrl() {
   const envUrl = String.fromEnvironment('AGROKERA_API_URL');
   if (envUrl.isNotEmpty) return envUrl;
-  if (kIsWeb) return 'http://localhost:3001';
-  try {
-    if (Platform.isAndroid) {
-      return 'http://10.0.2.2:3001';
-    }
-  } catch (_) {}
-  return 'http://localhost:3001';
+  return 'https://agrokera.onrender.com';
 }
 
 bool get _isFlutterTestEnv {
@@ -40,8 +34,8 @@ class ApiClient {
             Dio(
               BaseOptions(
                 baseUrl: resolveDefaultApiBaseUrl(),
-                connectTimeout: const Duration(seconds: 6),
-                receiveTimeout: const Duration(seconds: 8),
+                connectTimeout: const Duration(seconds: 15),
+                receiveTimeout: const Duration(seconds: 15),
                 headers: const {
                   'Content-Type': 'application/json',
                   'Accept': 'application/json',

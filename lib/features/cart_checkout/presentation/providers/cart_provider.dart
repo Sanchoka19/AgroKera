@@ -108,3 +108,4 @@ extension CartListX on List<CartItemModel> {
   double get platformFee => isEmpty ? 0.0 : 10.0;
   double get grandTotal => subtotal + deliveryFee + heavyFee + platformFee;
 }
+

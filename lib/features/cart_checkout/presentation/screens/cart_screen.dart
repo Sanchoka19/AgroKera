@@ -6,17 +6,24 @@ import '../../../../core/constants/app_assets.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../providers/cart_provider.dart';
-import '../widgets/order_details_sheet.dart';
 import 'checkout_screen.dart';
 
-class CartScreen extends ConsumerWidget {
+class CartScreen extends ConsumerStatefulWidget {
   const CartScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<CartScreen> createState() => _CartScreenState();
+}
+
+class _CartScreenState extends ConsumerState<CartScreen> {
+  bool _isDetailsExpanded = false;
+
+  @override
+  Widget build(BuildContext context) {
     final cartItems = ref.watch(cartProvider);
     final isEmpty = cartItems.isEmpty;
     final subtotal = cartItems.subtotal;
+    final totalWeight = cartItems.totalWeight;
     final isMinimumMet = cartItems.isMinimumMet;
 
     if (isEmpty) {
@@ -80,7 +87,7 @@ class CartScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 32),
 
-                  // Button to fill cart (or restore sample items)
+                  // Button to fill cart (restore sample items)
                   OutlinedButton(
                     onPressed: () {
                       ref.read(cartProvider.notifier).restoreSampleItems();
@@ -144,6 +151,7 @@ class CartScreen extends ConsumerWidget {
                     ),
                     TextButton(
                       onPressed: () {
+                        setState(() => _isDetailsExpanded = false);
                         ref.read(cartProvider.notifier).clearCart();
                         Navigator.pop(ctx);
                       },
@@ -159,150 +167,71 @@ class CartScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: ListView.separated(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
-        physics: const BouncingScrollPhysics(),
-        itemCount: cartItems.length,
-        separatorBuilder: (context, index) => const SizedBox(height: 12),
-        itemBuilder: (context, index) {
-          final item = cartItems[index];
-          return Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFF3F4F6)),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.02),
-                  blurRadius: 6,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Product Thumbnail
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Container(
-                    width: 84,
-                    height: 84,
-                    color: const Color(0xFFF3F4F6),
-                    child: Image.network(
-                      item.imageUrl,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => const Center(
-                        child: Icon(LucideIcons.image, color: AppColors.textSecondary),
+      body: Stack(
+        children: [
+          // 1. Scrollable List of Cart Items
+          Positioned.fill(
+            child: ListView.separated(
+              padding: EdgeInsets.fromLTRB(
+                16,
+                12,
+                16,
+                _isDetailsExpanded ? 380 : 110,
+              ),
+              physics: const BouncingScrollPhysics(),
+              itemCount: cartItems.length,
+              separatorBuilder: (context, index) => const SizedBox(height: 12),
+              itemBuilder: (context, index) {
+                final item = cartItems[index];
+                return Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xFFF3F4F6)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.02),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
                       ),
-                    ),
+                    ],
                   ),
-                ),
-                const SizedBox(width: 12),
-
-                // Product details & Stepper
-                Expanded(
-                  child: Column(
+                  child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Title + Red Trash Icon
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: Text(
-                              item.title,
-                              style: AppTypography.bodyMedium.copyWith(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.textPrimary,
-                              ),
+                      // Product Thumbnail
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          width: 84,
+                          height: 84,
+                          color: const Color(0xFFF3F4F6),
+                          child: Image.network(
+                            item.imageUrl,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) => const Center(
+                              child: Icon(LucideIcons.image, color: AppColors.textSecondary),
                             ),
-                          ),
-                          GestureDetector(
-                            onTap: () {
-                              ref.read(cartProvider.notifier).removeItem(item.id);
-                            },
-                            child: const Padding(
-                              padding: EdgeInsets.all(2.0),
-                              child: Icon(
-                                LucideIcons.trash2,
-                                color: Color(0xFFEF4444),
-                                size: 18,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 2),
-
-                      // Package Text
-                      if (item.packageText.isNotEmpty)
-                        Text(
-                          item.packageText,
-                          style: AppTypography.caption.copyWith(
-                            fontSize: 13,
-                            color: AppColors.textSecondary,
                           ),
                         ),
-                      const SizedBox(height: 2),
-
-                      // Farmer Name
-                      Text(
-                        item.farmerName,
-                        style: AppTypography.caption.copyWith(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: const Color(0xFF10B981),
-                        ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(width: 12),
 
-                      // Price and Quantity Stepper
-                      Row(
-                        children: [
-                          Text(
-                            '₾${item.pricePerUnit.toStringAsFixed(2)}/${item.unit}',
-                            style: AppTypography.bodyMedium.copyWith(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                          const Spacer(),
-
-                          // Stepper: [-] qty [+]
-                          Container(
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF3F4F6),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
+                      // Product details & Stepper
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Title + Red Trash Icon
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                GestureDetector(
-                                  onTap: () {
-                                    ref.read(cartProvider.notifier).decrement(item.id);
-                                  },
-                                  child: const Padding(
-                                    padding: EdgeInsets.symmetric(horizontal: 6),
-                                    child: Icon(
-                                      LucideIcons.minus,
-                                      size: 16,
-                                      color: AppColors.textPrimary,
-                                    ),
-                                  ),
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                                Expanded(
                                   child: Text(
-                                    item.quantity >= 10
-                                        ? '${item.quantity} ${item.unit}'
-                                        : '${item.quantity}',
+                                    item.title,
                                     style: AppTypography.bodyMedium.copyWith(
-                                      fontSize: 14,
+                                      fontSize: 16,
                                       fontWeight: FontWeight.w700,
                                       color: AppColors.textPrimary,
                                     ),
@@ -310,122 +239,454 @@ class CartScreen extends ConsumerWidget {
                                 ),
                                 GestureDetector(
                                   onTap: () {
-                                    ref.read(cartProvider.notifier).increment(item.id);
+                                    ref.read(cartProvider.notifier).removeItem(item.id);
                                   },
                                   child: const Padding(
-                                    padding: EdgeInsets.symmetric(horizontal: 6),
+                                    padding: EdgeInsets.all(2.0),
                                     child: Icon(
-                                      LucideIcons.plus,
-                                      size: 16,
-                                      color: AppColors.textPrimary,
+                                      LucideIcons.trash2,
+                                      color: Color(0xFFEF4444),
+                                      size: 18,
                                     ),
                                   ),
                                 ),
                               ],
                             ),
-                          ),
+                            const SizedBox(height: 2),
 
-                          // If item has overall price tag (like in image 2 for potato: 15.00₾)
-                          if (item.quantity >= 10) ...[
-                            const SizedBox(width: 8),
+                            // Package Text
+                            if (item.packageText.isNotEmpty)
+                              Text(
+                                item.packageText,
+                                style: AppTypography.caption.copyWith(
+                                  fontSize: 13,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                            const SizedBox(height: 2),
+
+                            // Farmer Name
                             Text(
-                              '${item.totalPrice.toStringAsFixed(2)}₾',
+                              item.farmerName,
+                              style: AppTypography.caption.copyWith(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: const Color(0xFF10B981),
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+
+                            // Price Column (Left) and Stepper (Right)
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                // Total Price & Unit Price cleanly arranged vertically
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      '${item.totalPrice.toStringAsFixed(2)} ₾',
+                                      style: AppTypography.bodyMedium.copyWith(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w800,
+                                        color: AppColors.textPrimary,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 1),
+                                    Text(
+                                      '${item.pricePerUnit.toStringAsFixed(2)} ₾/${item.unit}',
+                                      style: AppTypography.caption.copyWith(
+                                        fontSize: 12,
+                                        color: AppColors.textSecondary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const Spacer(),
+
+                                // Stepper: [-] qty [+]
+                                Container(
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFF3F4F6),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      GestureDetector(
+                                        onTap: () {
+                                          ref.read(cartProvider.notifier).decrement(item.id);
+                                        },
+                                        child: const Padding(
+                                          padding: EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                          child: Icon(
+                                            LucideIcons.minus,
+                                            size: 16,
+                                            color: AppColors.textPrimary,
+                                          ),
+                                        ),
+                                      ),
+                                      Padding(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6),
+                                        child: Text(
+                                          '${item.quantity}',
+                                          style: AppTypography.bodyMedium.copyWith(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w700,
+                                            color: AppColors.textPrimary,
+                                          ),
+                                        ),
+                                      ),
+                                      GestureDetector(
+                                        onTap: () {
+                                          ref.read(cartProvider.notifier).increment(item.id);
+                                        },
+                                        child: const Padding(
+                                          padding: EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                          child: Icon(
+                                            LucideIcons.plus,
+                                            size: 16,
+                                            color: AppColors.textPrimary,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+
+          // 2. Translucent Backdrop when expanded (tapping collapses it)
+          if (_isDetailsExpanded)
+            Positioned.fill(
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () {
+                  setState(() {
+                    _isDetailsExpanded = false;
+                  });
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 250),
+                  color: Colors.black.withValues(alpha: 0.25),
+                ),
+              ),
+            ),
+
+          // 3. Expandable Bottom Container (Smooth in-place expansion)
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOutCubic,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: _isDetailsExpanded
+                    ? const BorderRadius.vertical(top: Radius.circular(24))
+                    : BorderRadius.zero,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: _isDetailsExpanded ? 0.12 : 0.06),
+                    blurRadius: _isDetailsExpanded ? 16 : 8,
+                    offset: const Offset(0, -4),
+                  ),
+                ],
+              ),
+              child: SafeArea(
+                top: false,
+                child: AnimatedSize(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeOutCubic,
+                  alignment: Alignment.bottomCenter,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Smooth In-Place Expanded Details Section
+                      if (_isDetailsExpanded) ...[
+                        // Drag Handle
+                        Center(
+                          child: Container(
+                            width: 36,
+                            height: 4,
+                            margin: const EdgeInsets.only(top: 10, bottom: 6),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFE5E7EB),
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                        ),
+
+                        // Header: Title & Close Button
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              Center(
+                                child: Text(
+                                  'შეკვეთის დეტალები',
+                                  style: AppTypography.h1.copyWith(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                              ),
+                              Align(
+                                alignment: Alignment.centerRight,
+                                child: IconButton(
+                                  icon: const Icon(LucideIcons.x, size: 20, color: AppColors.textPrimary),
+                                  onPressed: () {
+                                    setState(() {
+                                      _isDetailsExpanded = false;
+                                    });
+                                  },
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        // Cart item count label
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              'კალათი(${cartItems.length})',
                               style: AppTypography.bodyMedium.copyWith(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w800,
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
                                 color: AppColors.textPrimary,
                               ),
                             ),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+
+                        // Horizontal Product Thumbnails
+                        SizedBox(
+                          height: 100,
+                          child: ListView.separated(
+                            scrollDirection: Axis.horizontal,
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            physics: const BouncingScrollPhysics(),
+                            itemCount: cartItems.length,
+                            separatorBuilder: (context, index) => const SizedBox(width: 14),
+                            itemBuilder: (context, index) {
+                              final item = cartItems[index];
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(10),
+                                    child: Container(
+                                      width: 60,
+                                      height: 60,
+                                      color: const Color(0xFFF3F4F6),
+                                      child: Image.network(
+                                        item.imageUrl,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (context, error, stackTrace) => const Icon(
+                                          LucideIcons.shoppingBag,
+                                          color: AppColors.textSecondary,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        '${item.totalPrice.toStringAsFixed(2)}₾',
+                                        style: AppTypography.caption.copyWith(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w700,
+                                          color: AppColors.textPrimary,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        '${item.totalWeight.toStringAsFixed(1)}კგ',
+                                        style: AppTypography.caption.copyWith(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w600,
+                                          color: const Color(0xFF10B981),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              );
+                            },
+                          ),
+                        ),
+
+                        const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 20),
+                          child: Divider(color: Color(0xFFF3F4F6), height: 16),
+                        ),
+
+                        // Total Weight Row
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 3),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'ჯამური წონა:',
+                                style: AppTypography.bodyMedium.copyWith(
+                                  fontSize: 15,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                              Text(
+                                '${totalWeight.toStringAsFixed(1)} კგ',
+                                style: AppTypography.bodyMedium.copyWith(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        // Products Value Row
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 3),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'პროდუქტების ღირებულება:',
+                                style: AppTypography.bodyMedium.copyWith(
+                                  fontSize: 15,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                              Text(
+                                '${subtotal.toStringAsFixed(2)} ₾',
+                                style: AppTypography.h1.copyWith(
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(height: 10),
+                      ],
+
+                      // Always-Visible Bottom Bar
+                      Container(
+                        padding: const EdgeInsets.fromLTRB(20, 12, 20, 14),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          border: _isDetailsExpanded
+                              ? const Border(top: BorderSide(color: Color(0xFFF3F4F6)))
+                              : null,
+                        ),
+                        child: Row(
+                          children: [
+                            // Total price with animated rotating chevron
+                            GestureDetector(
+                              behavior: HitTestBehavior.opaque,
+                              onTap: () {
+                                setState(() {
+                                  _isDetailsExpanded = !_isDetailsExpanded;
+                                });
+                              },
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 4),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      '${subtotal.toStringAsFixed(2)}₾',
+                                      style: AppTypography.h1.copyWith(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w800,
+                                        color: AppColors.textPrimary,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    AnimatedRotation(
+                                      turns: _isDetailsExpanded ? 0.5 : 0.0,
+                                      duration: const Duration(milliseconds: 300),
+                                      curve: Curves.easeOutCubic,
+                                      child: const Icon(
+                                        LucideIcons.chevronUp,
+                                        size: 20,
+                                        color: AppColors.textPrimary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 20),
+
+                            // Checkout CTA Button
+                            Expanded(
+                              child: SizedBox(
+                                height: 48,
+                                child: ElevatedButton(
+                                  onPressed: () {
+                                    Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (_) => const CheckoutScreen(),
+                                      ),
+                                    );
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFF4EA668),
+                                    foregroundColor: Colors.white,
+                                    elevation: 0,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    isMinimumMet ? 'გაგრძელება' : '30₾ მინ.გადასახადი',
+                                    style: AppTypography.button.copyWith(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w700,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
                           ],
-                        ],
+                        ),
                       ),
                     ],
                   ),
                 ),
-              ],
-            ),
-          );
-        },
-      ),
-
-      // Sticky Bottom Bar: 25.50₾ ^ and [30₾ მინ.გადასახადი] / [გაგრძელება]
-      bottomSheet: Container(
-        padding: EdgeInsets.fromLTRB(
-          20,
-          14,
-          20,
-          MediaQuery.of(context).padding.bottom + 12,
-        ),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 10,
-              offset: const Offset(0, -4),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            // Total Price with Chevron Up icon (opens OrderDetailsSheet)
-            GestureDetector(
-              onTap: () => OrderDetailsSheet.show(context),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    '${subtotal.toStringAsFixed(2)}₾',
-                    style: AppTypography.h1.copyWith(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  const Icon(
-                    LucideIcons.chevronUp,
-                    size: 20,
-                    color: AppColors.textPrimary,
-                  ),
-                ],
               ),
             ),
-            const SizedBox(width: 20),
-
-            // Checkout CTA Button
-            Expanded(
-              child: SizedBox(
-                height: 48,
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const CheckoutScreen(),
-                      ),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF4EA668),
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: Text(
-                    isMinimumMet ? 'გაგრძელება' : '30₾ მინ.გადასახადი',
-                    style: AppTypography.button.copyWith(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

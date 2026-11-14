@@ -349,7 +349,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 child: ElevatedButton(
                                   onPressed: _onSignIn,
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFF064E3B),
+                                    backgroundColor: AppColors.primary,
                                     foregroundColor: Colors.white,
                                     elevation: 0,
                                     shape: RoundedRectangleBorder(
@@ -426,7 +426,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                           text: 'რეგისტრაცია',
                                           style: GoogleFonts.notoSansGeorgian(
                                             fontWeight: FontWeight.w700,
-                                            color: const Color(0xFF0F766E),
+                                            color: AppColors.primary,
                                           ),
                                         ),
                                       ],

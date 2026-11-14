@@ -140,7 +140,7 @@ class FarmerRoleScreen extends ConsumerWidget {
                     colors: [
                       Color(0xFF1B4332), // Deep Forest Green
                       Color(0xFF2D6A4F), // Emerald Green
-                      Color(0xFF53B175), // Vibrant Brand Green
+                      Color(0xFF0F766E), // Vibrant Brand Deep Teal
                     ],
                   ),
                   boxShadow: [

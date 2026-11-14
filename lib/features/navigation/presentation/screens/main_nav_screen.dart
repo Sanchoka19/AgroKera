@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:agrokera/core/auth/auth_state_provider.dart';
+import 'package:agrokera/core/theme/app_colors.dart';
 import 'package:agrokera/features/farm_inventory/presentation/screens/farmer_dashboard_screen.dart';
 import '../../../marketplace/presentation/screens/categories_screen.dart';
 import '../../../marketplace/presentation/screens/home_screen.dart';
@@ -133,7 +134,7 @@ class _MainNavScreenState extends ConsumerState<MainNavScreen> {
                             : const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                         decoration: BoxDecoration(
                           color: isSelected
-                              ? const Color(0xFF042F2E) // Deep Midnight-Teal Pill
+                              ? AppColors.primary // Lightened Emerald/Teal Pill (#0F766E)
                               : Colors.transparent,
                           borderRadius: BorderRadius.circular(24),
                         ),

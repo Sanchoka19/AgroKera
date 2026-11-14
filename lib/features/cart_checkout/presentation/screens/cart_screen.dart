@@ -124,13 +124,13 @@ class _CartScreenState extends ConsumerState<CartScreen>
                   width: 90,
                   height: 90,
                   decoration: const BoxDecoration(
-                    color: Color(0xFFE8F5E9),
+                    color: AppColors.primaryLight,
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
                     LucideIcons.lock,
                     size: 42,
-                    color: Color(0xFF4EA668),
+                    color: AppColors.primary,
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -160,7 +160,7 @@ class _CartScreenState extends ConsumerState<CartScreen>
                   child: ElevatedButton(
                     onPressed: () => AuthRequiredBottomSheet.show(context),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF4EA668),
+                      backgroundColor: AppColors.primary,
                       elevation: 0,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -813,7 +813,7 @@ class _CartScreenState extends ConsumerState<CartScreen>
                                   );
                                 },
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF4EA668),
+                                  backgroundColor: AppColors.primary,
                                   foregroundColor: Colors.white,
                                   elevation: 0,
                                   shape: RoundedRectangleBorder(

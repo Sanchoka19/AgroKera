@@ -29,8 +29,8 @@ abstract final class AppColors {
   /// Secondary muted text for descriptions, units, location (#7C7C7C)
   static const Color textSecondary = Color(0xFF7C7C7C);
 
-  /// Soft leaf tint for category backgrounds & active filters (#EBF7EF)
-  static const Color primaryLight = Color(0xFFEBF7EF);
+  /// Soft leaf tint for category backgrounds & active filters (#E6F4F1)
+  static const Color primaryLight = Color(0xFFE6F4F1);
 
   /// Verification & Trust Blue badge for farmers (#2D9CDB)
   static const Color info = Color(0xFF2D9CDB);
@@ -39,11 +39,11 @@ abstract final class AppColors {
   // 10% ACCENT (Primary Brand Color & CTAs)
   // ==========================================
 
-  /// Primary Brand Green: primary buttons, active tabs, prices (#53B175)
-  static const Color primary = Color(0xFF53B175);
+  /// Primary Brand Deep Emerald Teal: primary buttons, active tabs, prices (#0F766E)
+  static const Color primary = Color(0xFF0F766E);
 
-  /// Darkened primary for pressed / hover states (#439660)
-  static const Color primaryDark = Color(0xFF439660);
+  /// Darkened primary for pressed / hover states (#0A564F)
+  static const Color primaryDark = Color(0xFF0A564F);
 
   /// Text on primary buttons and high-contrast badges (#FFFFFF)
   static const Color textOnPrimary = Color(0xFFFFFFFF);

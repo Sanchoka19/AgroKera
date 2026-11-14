@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:agrokera/core/auth/auth_state_provider.dart';
+import 'package:agrokera/core/theme/app_colors.dart';
 import 'package:agrokera/core/widgets/auth_required_bottom_sheet.dart';
 import 'package:agrokera/features/marketplace/presentation/screens/favorites_screen.dart';
 import 'package:agrokera/features/marketplace/presentation/widgets/guest_promo_banner.dart';
@@ -135,7 +136,7 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
                                 width: 28,
                                 height: 28,
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF0F766E),
+                                  color: AppColors.primary,
                                   shape: BoxShape.circle,
                                   border: Border.all(color: Colors.white, width: 2),
                                   boxShadow: [
@@ -505,7 +506,7 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
                       subtitle: 'ღამის რეჟიმის ჩართვა/გამორთვა',
                       trailing: Switch.adaptive(
                         value: _darkThemeEnabled,
-                        activeTrackColor: const Color(0xFF0F766E),
+                        activeTrackColor: AppColors.primary,
                         onChanged: (val) {
                           HapticFeedback.lightImpact();
                           setState(() => _darkThemeEnabled = val);
@@ -552,7 +553,7 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
                       subtitle: 'შეტყობინებების მიღება და სიახლეები',
                       trailing: Switch.adaptive(
                         value: _notificationsEnabled,
-                        activeTrackColor: const Color(0xFF0F766E),
+                        activeTrackColor: AppColors.primary,
                         onChanged: (val) {
                           HapticFeedback.lightImpact();
                           setState(() => _notificationsEnabled = val);
@@ -657,8 +658,8 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
     required IconData icon,
     required String title,
     required String subtitle,
-    Color iconColor = const Color(0xFF0F766E),
-    Color tileColor = const Color(0xFFE8F5E9),
+    Color iconColor = AppColors.primary,
+    Color tileColor = AppColors.primaryLight,
     Widget? trailing,
     required VoidCallback onTap,
   }) {
@@ -771,7 +772,7 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF0F766E) : Colors.transparent,
+          color: isSelected ? AppColors.primary : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
         ),
         child: Text(
@@ -788,12 +789,12 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
 
   Widget _buildPlaceholderAvatar() {
     return Container(
-      color: const Color(0xFFE8F5E9),
+      color: AppColors.primaryLight,
       alignment: Alignment.center,
       child: const Icon(
         LucideIcons.user,
         size: 42,
-        color: Color(0xFF0F766E),
+        color: AppColors.primary,
       ),
     );
   }

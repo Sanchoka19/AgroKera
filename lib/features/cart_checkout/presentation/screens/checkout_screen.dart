@@ -43,7 +43,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               }
               Navigator.pop(ctx);
             },
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF4EA668)),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
             child: const Text('შენახვა', style: TextStyle(color: Colors.white)),
           ),
         ],
@@ -79,7 +79,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               (s) => ListTile(
                 title: Text(s, style: const TextStyle(fontWeight: FontWeight.w600)),
                 trailing: _deliverySlot == s
-                    ? const Icon(LucideIcons.check, color: Color(0xFF4EA668))
+                    ? const Icon(LucideIcons.check, color: AppColors.primary)
                     : null,
                 onTap: () {
                   setState(() => _deliverySlot = s);
@@ -108,12 +108,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 width: 72,
                 height: 72,
                 decoration: const BoxDecoration(
-                  color: Color(0xFFE8F5E9),
+                  color: AppColors.primaryLight,
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
                   LucideIcons.checkCheck,
-                  color: Color(0xFF4EA668),
+                  color: AppColors.primary,
                   size: 40,
                 ),
               ),
@@ -147,7 +147,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     Navigator.of(context).pop(); // cart -> returns to home
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF4EA668),
+                    backgroundColor: AppColors.primary,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -217,7 +217,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   const Icon(
                     LucideIcons.gift,
                     size: 32,
-                    color: Color(0xFF2E7D32),
+                    color: AppColors.primary,
                   ),
                   const SizedBox(width: 14),
                   Expanded(
@@ -241,7 +241,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                             style: AppTypography.bodyMedium.copyWith(
                               fontSize: 14,
                               fontWeight: FontWeight.w700,
-                              color: const Color(0xFF2E7D32),
+                              color: AppColors.primary,
                             ),
                           ),
                         ),
@@ -289,7 +289,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                           style: AppTypography.bodyMedium.copyWith(
                             fontSize: 15,
                             fontWeight: FontWeight.w700,
-                            color: const Color(0xFF2E7D32),
+                            color: AppColors.primary,
                           ),
                         ),
                       ),
@@ -344,7 +344,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                           style: AppTypography.bodyMedium.copyWith(
                             fontSize: 15,
                             fontWeight: FontWeight.w700,
-                            color: const Color(0xFF2E7D32),
+                            color: AppColors.primary,
                           ),
                         ),
                       ),
@@ -449,7 +449,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                       style: AppTypography.bodyMedium.copyWith(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
-                        color: const Color(0xFF2E7D32),
+                        color: AppColors.primary,
                       ),
                     ),
                   ),
@@ -610,7 +610,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               child: ElevatedButton(
                 onPressed: () => _showSuccessDialog(grandTotal),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF4EA668),
+                  backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
                   elevation: 0,
                   shape: RoundedRectangleBorder(

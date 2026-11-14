@@ -1429,24 +1429,33 @@ class _FarmerOnboardingScreenState extends ConsumerState<FarmerOnboardingScreen>
       child: Column(
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 title,
-                style: const TextStyle(fontSize: 14, color: Color(0xFF64748B)),
-              ),
-              Text(
-                value,
                 style: const TextStyle(
                   fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
+                  color: Color(0xFF64748B),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Text(
+                  value,
+                  textAlign: TextAlign.end,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                    height: 1.35,
+                  ),
                 ),
               ),
             ],
           ),
           if (!isLast) ...[
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
             const Divider(color: Color(0xFFF1F5F9), height: 1),
           ],
         ],

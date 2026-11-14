@@ -56,6 +56,7 @@ void main() {
     // Step 4: Review & Terms
     expect(find.text('4/5'), findsOneWidget);
     expect(find.text('დეტალები'), findsOneWidget);
+    expect(find.text('მისამართი:'), findsOneWidget);
     expect(find.text('წესები და პირობები'), findsOneWidget);
 
     // Tap Next -> Step 5

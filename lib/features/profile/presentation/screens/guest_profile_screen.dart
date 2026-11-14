@@ -7,6 +7,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:agrokera/core/auth/auth_state_provider.dart';
 import 'package:agrokera/core/constants/app_assets.dart';
 import 'package:agrokera/core/theme/app_colors.dart';
+import 'package:agrokera/core/widgets/app_confirmation_bottom_sheet.dart';
 import 'package:agrokera/core/widgets/app_header.dart';
 import 'package:agrokera/core/widgets/app_toast.dart';
 import 'package:agrokera/core/widgets/auth_required_bottom_sheet.dart';
@@ -519,9 +520,17 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
                         tileColor: const Color(0xFFFEF2F2),
                         title: 'გამოსვლა',
                         subtitle: 'ანგარიშიდან გამოსვლა',
-                        onTap: () {
+                        onTap: () async {
                           HapticFeedback.lightImpact();
-                          ref.read(authStateProvider.notifier).logout();
+                          final confirmed = await AppConfirmationBottomSheet.showLogout(
+                            context: context,
+                          );
+                          if (confirmed) {
+                            ref.read(authStateProvider.notifier).logout();
+                            if (context.mounted) {
+                              AppToast.info(context, 'თქვენ გამოხვედით ანგარიშიდან');
+                            }
+                          }
                         },
                       ),
                     ],

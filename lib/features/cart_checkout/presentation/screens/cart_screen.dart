@@ -7,6 +7,7 @@ import '../../../../core/auth/auth_state_provider.dart';
 import '../../../../core/constants/app_assets.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../core/widgets/app_confirmation_bottom_sheet.dart';
 import '../../../../core/widgets/auth_required_bottom_sheet.dart';
 import '../providers/cart_provider.dart';
 import 'checkout_screen.dart';
@@ -64,31 +65,15 @@ class _CartScreenState extends ConsumerState<CartScreen>
     }
   }
 
-  void _showClearDialog() {
-    showDialog(
+  Future<void> _showClearDialog() async {
+    final confirmed = await AppConfirmationBottomSheet.showClearCart(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('კალათის გასუფთავება'),
-        content: const Text('ნამდვილად გსურთ კალათიდან ყველა პროდუქტის წაშლა?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('გაუქმება'),
-          ),
-          TextButton(
-            onPressed: () {
-              _collapseDetails();
-              ref.read(cartProvider.notifier).clearCart();
-              Navigator.pop(ctx);
-            },
-            child: const Text(
-              'გასუფთავება',
-              style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
-            ),
-          ),
-        ],
-      ),
     );
+
+    if (confirmed && mounted) {
+      _collapseDetails();
+      ref.read(cartProvider.notifier).clearCart();
+    }
   }
 
   @override

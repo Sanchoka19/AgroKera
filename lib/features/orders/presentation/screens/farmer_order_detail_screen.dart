@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/app_confirmation_bottom_sheet.dart';
 import '../../../../core/widgets/app_reason_bottom_sheet.dart';
 import '../../../../core/widgets/app_toast.dart';
 import '../../domain/models/farmer_order_model.dart';
@@ -42,12 +43,19 @@ class _FarmerOrderDetailScreenState
     super.dispose();
   }
 
-  void _onCompleteOrder(FarmerOrder order) {
-    ref.read(farmerOrdersProvider.notifier).completeOrder(order.id);
-    AppToast.success(
-      context,
-      'შეკვეთა #${order.id} წარმატებით დასრულდა!',
+  Future<void> _onCompleteOrder(FarmerOrder order) async {
+    final confirmed = await AppConfirmationBottomSheet.showCompleteOrder(
+      context: context,
+      orderId: order.id,
     );
+
+    if (confirmed && mounted) {
+      ref.read(farmerOrdersProvider.notifier).completeOrder(order.id);
+      AppToast.success(
+        context,
+        'შეკვეთა #${order.id} წარმატებით დასრულდა!',
+      );
+    }
   }
 
   Future<void> _onCancelOrder(FarmerOrder order) async {

@@ -20,6 +20,7 @@ class ClientOrdersScreen extends ConsumerStatefulWidget {
 
 class _ClientOrdersScreenState extends ConsumerState<ClientOrdersScreen> {
   bool _showActiveOnly = false;
+  Timer? _liveSyncTimer;
 
   @override
   void initState() {
@@ -29,6 +30,17 @@ class _ClientOrdersScreenState extends ConsumerState<ClientOrdersScreen> {
         () => ref.read(farmerOrdersProvider.notifier).refreshFromBackend(),
       ),
     );
+    _liveSyncTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      if (mounted) {
+        unawaited(ref.read(farmerOrdersProvider.notifier).refreshFromBackend());
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _liveSyncTimer?.cancel();
+    super.dispose();
   }
 
   @override

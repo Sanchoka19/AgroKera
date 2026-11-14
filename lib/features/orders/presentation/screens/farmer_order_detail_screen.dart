@@ -27,13 +27,19 @@ class FarmerOrderDetailScreen extends ConsumerStatefulWidget {
 class _FarmerOrderDetailScreenState
     extends ConsumerState<FarmerOrderDetailScreen> {
   Timer? _ticker;
+  int _tickCount = 0;
 
   @override
   void initState() {
     super.initState();
-    // Run 1-second ticker for live countdown if cancellation timer is active
+    // Run 1-second ticker for live countdown and 5-second live backend sync
     _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (mounted) setState(() {});
+      if (!mounted) return;
+      _tickCount++;
+      if (_tickCount % 5 == 0) {
+        unawaited(ref.read(farmerOrdersProvider.notifier).refreshFromBackend());
+      }
+      setState(() {});
     });
   }
 

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -9,11 +10,40 @@ import '../widgets/empty_orders_view.dart';
 import '../widgets/farmer_order_card.dart';
 
 /// Incoming Orders Screen for Farmers ("შემოსული შეკვეთები")
-class IncomingOrdersScreen extends ConsumerWidget {
+class IncomingOrdersScreen extends ConsumerStatefulWidget {
   const IncomingOrdersScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<IncomingOrdersScreen> createState() =>
+      _IncomingOrdersScreenState();
+}
+
+class _IncomingOrdersScreenState extends ConsumerState<IncomingOrdersScreen> {
+  Timer? _liveSyncTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(
+      Future.microtask(
+        () => ref.read(farmerOrdersProvider.notifier).refreshFromBackend(),
+      ),
+    );
+    _liveSyncTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      if (mounted) {
+        unawaited(ref.read(farmerOrdersProvider.notifier).refreshFromBackend());
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _liveSyncTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final ordersState = ref.watch(farmerOrdersProvider);
     final ordersNotifier = ref.read(farmerOrdersProvider.notifier);
     final filteredOrders = ordersState.filteredOrders;

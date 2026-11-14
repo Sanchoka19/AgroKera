@@ -4,6 +4,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../core/constants/app_assets.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../core/widgets/app_toast.dart';
 import '../../../../core/widgets/primary_button.dart';
 
 /// Screen 3: პაროლის აღდგენა (Password Reset / Update Screen)
@@ -38,25 +39,13 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     final p2 = _confirmPasswordController.text;
 
     if (p1.isNotEmpty && p2.isNotEmpty && p1 != p2) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('პაროლები ერთმანეთს არ ემთხვევა.'),
-          backgroundColor: AppColors.accentWarm,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      AppToast.error(context, 'პაროლები ერთმანეთს არ ემთხვევა.');
       return;
     }
 
     // Success: return to login screen
     Navigator.of(context).popUntil((route) => route.isFirst || route.settings.name == '/login');
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('პაროლი წარმატებით განახლდა! გაიარეთ ავტორიზაცია.'),
-        backgroundColor: AppColors.primary,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    AppToast.success(context, 'პაროლი წარმატებით განახლდა! გაიარეთ ავტორიზაცია.');
   }
 
   @override

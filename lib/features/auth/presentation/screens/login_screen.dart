@@ -8,6 +8,7 @@ import '../../../../core/auth/auth_state_provider.dart';
 import '../../../../core/constants/app_assets.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../core/widgets/app_toast.dart';
 import '../widgets/forgot_password_sheet.dart';
 import '../widgets/google_sign_in_sheet.dart';
 import 'register_screen.dart';
@@ -40,13 +41,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       role: UserRole.customer,
     );
     Navigator.of(context).pop();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('წარმატებით გაიარეთ ავტორიზაცია!'),
-        backgroundColor: AppColors.primary,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    AppToast.success(context, 'წარმატებით გაიარეთ ავტორიზაცია!');
   }
 
   Future<void> _onGoogleSignIn() async {
@@ -62,13 +57,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     if (mounted) {
       Navigator.of(context).pop();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('მოგესალმებით, ${account.name}!'),
-          backgroundColor: AppColors.primary,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      AppToast.success(context, 'მოგესალმებით, ${account.name}!');
     }
   }
 

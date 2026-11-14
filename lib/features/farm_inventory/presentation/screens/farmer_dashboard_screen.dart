@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_header.dart';
+import '../../../../core/widgets/app_toast.dart';
 import '../../../marketplace/presentation/screens/categories_screen.dart';
 
 /// Model for a Farmer Cabinet Order
@@ -68,32 +68,24 @@ class _FarmerDashboardScreenState extends ConsumerState<FarmerDashboardScreen> {
   }
 
   void _onAcceptOrder(int index) {
-    HapticFeedback.lightImpact();
     final order = _orders[index];
     setState(() {
       order.status = 'inProgress';
     });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('შეკვეთა #${order.id} დადასტურებულია და გადავიდა პროცესში!'),
-        backgroundColor: AppColors.primary,
-        behavior: SnackBarBehavior.floating,
-      ),
+    AppToast.success(
+      context,
+      'შეკვეთა #${order.id} დადასტურებულია და გადავიდა პროცესში!',
     );
   }
 
   void _onCancelOrder(int index) {
-    HapticFeedback.selectionClick();
     final order = _orders[index];
     setState(() {
       _orders.removeAt(index);
     });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('შეკვეთა #${order.id} გაუქმებულია'),
-        backgroundColor: const Color(0xFF64748B),
-        behavior: SnackBarBehavior.floating,
-      ),
+    AppToast.info(
+      context,
+      'შეკვეთა #${order.id} გაუქმებულია',
     );
   }
 
@@ -196,12 +188,9 @@ class _FarmerDashboardScreenState extends ConsumerState<FarmerDashboardScreen> {
               ElevatedButton(
                 onPressed: () {
                   Navigator.of(context).pop();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('ახალი პროდუქტი წარმატებით დაემატა კატალოგში!'),
-                      backgroundColor: AppColors.primary,
-                      behavior: SnackBarBehavior.floating,
-                    ),
+                  AppToast.success(
+                    context,
+                    'ახალი პროდუქტი წარმატებით დაემატა კატალოგში!',
                   );
                 },
                 style: ElevatedButton.styleFrom(

@@ -6,6 +6,7 @@ import '../../../../core/auth/auth_state_provider.dart';
 import '../../../../core/constants/app_assets.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../core/widgets/app_toast.dart';
 import '../../../../core/widgets/primary_button.dart';
 
 /// Screen: მომხმარებელი (Customer Role Modern Overview Screen)
@@ -25,13 +26,7 @@ class CustomerRoleScreen extends ConsumerWidget {
       email: 'customer@agrokera.ge',
     );
     Navigator.of(context).popUntil((route) => route.isFirst);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('წარმატებით დარეგისტრირდით მომხმარებლად!'),
-        backgroundColor: AppColors.primary,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    AppToast.success(context, 'წარმატებით დარეგისტრირდით მომხმარებლად!');
   }
 
   @override

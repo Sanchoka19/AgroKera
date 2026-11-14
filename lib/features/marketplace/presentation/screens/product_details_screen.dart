@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../core/widgets/app_toast.dart';
 import '../../../../core/widgets/auth_required_bottom_sheet.dart';
 import '../../../../core/widgets/primary_button.dart';
 import '../../../../core/widgets/status_badge.dart';
@@ -504,30 +505,23 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                                 ),
                               );
 
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                '$_quantity ${product.unit} ${product.title} დამატებულია კალათაში!',
-                              ),
-                              backgroundColor: AppColors.primary,
-                              action: SnackBarAction(
-                                label: 'კალათის ნახვა',
-                                textColor: Colors.white,
-                                onPressed: () {
-                                  requireAuth(
-                                    context,
-                                    ref: ref,
-                                    onAuthenticated: () {
-                                      Navigator.of(context).push(
-                                        MaterialPageRoute(
-                                          builder: (_) => const CartScreen(),
-                                        ),
-                                      );
-                                    },
+                          AppToast.success(
+                            context,
+                            '$_quantity ${product.unit} ${product.title} დამატებულია კალათაში!',
+                            actionLabel: 'კალათა',
+                            onAction: () {
+                              requireAuth(
+                                context,
+                                ref: ref,
+                                onAuthenticated: () {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (_) => const CartScreen(),
+                                    ),
                                   );
                                 },
-                              ),
-                            ),
+                              );
+                            },
                           );
                         },
                       );

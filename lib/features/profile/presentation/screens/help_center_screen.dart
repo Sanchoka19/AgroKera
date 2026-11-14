@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../core/widgets/app_toast.dart';
 import 'faq_details_screen.dart';
 
 /// Help Center Screen adhering to Screenshot 8:
@@ -109,11 +110,7 @@ class HelpCenterScreen extends StatelessWidget {
                 title: 'ელ.ფოსტა',
                 subtitle: 'agrokera@agro.com',
                 onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('გადამისამართება: agrokera@agro.com'),
-                    ),
-                  );
+                  AppToast.info(context, 'გადამისამართება: agrokera@agro.com');
                 },
               ),
               const SizedBox(height: 12),
@@ -124,9 +121,7 @@ class HelpCenterScreen extends StatelessWidget {
                 title: 'დაგვიკავშირდით',
                 subtitle: '+(995) 599 123 789',
                 onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('ზარი: +995 599 123 789')),
-                  );
+                  AppToast.info(context, 'ზარი: +995 599 123 789');
                 },
               ),
               const SizedBox(height: 20),

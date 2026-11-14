@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:agrokera/core/widgets/app_header.dart';
 import 'package:agrokera/core/widgets/app_search_bar.dart';
+import 'package:agrokera/core/widgets/app_toast.dart';
 import 'package:agrokera/features/notifications/presentation/providers/notifications_provider.dart';
 import 'package:agrokera/features/notifications/presentation/screens/notifications_screen.dart';
 import 'test_helper.dart';
@@ -139,6 +140,48 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(tapped, isTrue);
+  });
+
+  testWidgets('AppToast displays floating pill with icon and action callback',
+      (WidgetTester tester) async {
+    bool actionTapped = false;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => ElevatedButton(
+              onPressed: () {
+                AppToast.success(
+                  context,
+                  'ბულგარული წიწაკა დამატებულია კალათაში!',
+                  actionLabel: 'კალათა',
+                  onAction: () => actionTapped = true,
+                );
+              },
+              child: const Text('Show Toast'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Trigger toast
+    await tester.tap(find.text('Show Toast'));
+    await tester.pump(); // Start animation
+    await tester.pump(const Duration(milliseconds: 300));
+
+    // Verify toast contents
+    expect(find.text('ბულგარული წიწაკა დამატებულია კალათაში!'), findsOneWidget);
+    expect(find.text('კალათა'), findsOneWidget);
+    expect(find.byIcon(LucideIcons.check), findsOneWidget);
+
+    // Tap action
+    await tester.tap(find.text('კალათა'));
+    await tester.pumpAndSettle();
+
+    expect(actionTapped, isTrue);
   });
 }
 

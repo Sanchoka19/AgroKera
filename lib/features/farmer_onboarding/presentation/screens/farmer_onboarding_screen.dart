@@ -10,6 +10,7 @@ import '../../../../core/auth/auth_state_provider.dart';
 import '../../../../core/constants/app_assets.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../core/widgets/app_toast.dart';
 import '../../../../core/widgets/primary_button.dart';
 import '../widgets/farmer_map_widget.dart';
 
@@ -175,12 +176,9 @@ class _FarmerOnboardingScreenState extends ConsumerState<FarmerOnboardingScreen>
     );
 
     Navigator.of(context).popUntil((route) => route.isFirst);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('ფერმერის პროფილი წარმატებით შეიქმნა და ვერიფიცირდა!'),
-        backgroundColor: AppColors.primary,
-        behavior: SnackBarBehavior.floating,
-      ),
+    AppToast.success(
+      context,
+      'ფერმერის პროფილი წარმატებით შეიქმნა და ვერიფიცირდა!',
     );
   }
 
@@ -370,13 +368,11 @@ class _FarmerOnboardingScreenState extends ConsumerState<FarmerOnboardingScreen>
             InkWell(
               onTap: () {
                 setState(() => _hasFarmPhoto = !_hasFarmPhoto);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(_hasFarmPhoto ? 'ფოტო წარმატებით აიტვირთა!' : 'ფოტო წაიშალა'),
-                    duration: const Duration(seconds: 1),
-                    backgroundColor: AppColors.primary,
-                  ),
-                );
+                if (_hasFarmPhoto) {
+                  AppToast.success(context, 'ფოტო წარმატებით აიტვირთა!');
+                } else {
+                  AppToast.info(context, 'ფოტო წაიშალა');
+                }
               },
               borderRadius: BorderRadius.circular(12),
               child: Container(
@@ -995,13 +991,7 @@ class _FarmerOnboardingScreenState extends ConsumerState<FarmerOnboardingScreen>
             onTap: () {
               setState(() => _secondsRemaining = 540);
               _startTimer();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('ახალი SMS კოდი გაიგზავნა.'),
-                  behavior: SnackBarBehavior.floating,
-                  backgroundColor: AppColors.primary,
-                ),
-              );
+              AppToast.success(context, 'ახალი SMS კოდი გაიგზავნა.');
             },
             child: RichText(
               text: TextSpan(

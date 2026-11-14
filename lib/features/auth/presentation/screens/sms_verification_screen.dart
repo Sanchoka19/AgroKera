@@ -6,6 +6,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../core/constants/app_assets.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../core/widgets/app_toast.dart';
 import '../../../../core/widgets/primary_button.dart';
 import 'reset_password_screen.dart';
 
@@ -209,13 +210,7 @@ class _SmsVerificationScreenState extends State<SmsVerificationScreen> {
                   onTap: () {
                     setState(() => _secondsRemaining = 540);
                     _startTimer();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('ახალი SMS კოდი გაიგზავნა.'),
-                        behavior: SnackBarBehavior.floating,
-                        backgroundColor: AppColors.primary,
-                      ),
-                    );
+                    AppToast.success(context, 'ახალი SMS კოდი გაიგზავნა.');
                   },
                   child: RichText(
                     text: TextSpan(

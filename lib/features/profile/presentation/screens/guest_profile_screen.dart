@@ -8,6 +8,7 @@ import 'package:agrokera/core/auth/auth_state_provider.dart';
 import 'package:agrokera/core/constants/app_assets.dart';
 import 'package:agrokera/core/theme/app_colors.dart';
 import 'package:agrokera/core/widgets/app_header.dart';
+import 'package:agrokera/core/widgets/app_toast.dart';
 import 'package:agrokera/core/widgets/auth_required_bottom_sheet.dart';
 import 'package:agrokera/features/marketplace/presentation/screens/favorites_screen.dart';
 import 'package:agrokera/features/marketplace/presentation/widgets/guest_promo_banner.dart';
@@ -26,12 +27,9 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
   String _selectedLanguage = 'KA'; // 'KA' or 'EN'
 
   void _showImagePickerNotice() {
-    HapticFeedback.lightImpact();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('პროფილის ფოტოს განახლების ფუნქცია მალე დაემატება!'),
-        behavior: SnackBarBehavior.floating,
-      ),
+    AppToast.info(
+      context,
+      'პროფილის ფოტოს განახლების ფუნქცია მალე დაემატება!',
     );
   }
 
@@ -285,12 +283,7 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
                             title: 'ჩემი პროდუქტები',
                             subtitle: 'პროდუქტების სია და ფასები',
                             onTap: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('გადადით კაბინეტში პროდუქტების სამართავად'),
-                                  behavior: SnackBarBehavior.floating,
-                                ),
-                              );
+                              AppToast.info(context, 'გადადით კაბინეტში პროდუქტების სამართავად');
                             },
                           ),
                           _buildRowDivider(),
@@ -299,12 +292,7 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
                             title: 'შემოსული შეკვეთები',
                             subtitle: 'შეკვეთების მართვა და სტატუსი',
                             onTap: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('შემოსული შეკვეთების სია აქტიურია კაბინეტში'),
-                                  behavior: SnackBarBehavior.floating,
-                                ),
-                              );
+                              AppToast.info(context, 'შემოსული შეკვეთების სია აქტიურია კაბინეტში');
                             },
                           ),
                           _buildRowDivider(),
@@ -313,12 +301,7 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
                             title: 'ანგარიშსწორება',
                             subtitle: 'საბანკო რეკვიზიტები და გადარიცხვები',
                             onTap: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('ანგარიშსწორების გვერდი მზადდება.'),
-                                  behavior: SnackBarBehavior.floating,
-                                ),
-                              );
+                              AppToast.info(context, 'ანგარიშსწორების გვერდი მზადდება.');
                             },
                           ),
                           _buildRowDivider(),
@@ -327,12 +310,7 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
                             title: 'ჩემი მისამართი',
                             subtitle: 'ფერმის ლოკაცია და რუკა',
                             onTap: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('ფერმის ლოკაცია მონიშნულია რუკაზე.'),
-                                  behavior: SnackBarBehavior.floating,
-                                ),
-                              );
+                              AppToast.info(context, 'ფერმის ლოკაცია მონიშნულია რუკაზე.');
                             },
                           ),
                         ]
@@ -346,12 +324,7 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
                                 context,
                                 ref: ref,
                                 onAuthenticated: () {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('შეკვეთების ისტორია ცარიელია.'),
-                                      behavior: SnackBarBehavior.floating,
-                                    ),
-                                  );
+                                  AppToast.info(context, 'შეკვეთების ისტორია ცარიელია.');
                                 },
                               );
                             },

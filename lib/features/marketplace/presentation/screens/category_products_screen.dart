@@ -4,6 +4,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../core/auth/auth_state_provider.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../core/widgets/app_toast.dart';
 import '../../../../core/widgets/auth_required_bottom_sheet.dart';
 import '../../../../core/widgets/product_card.dart';
 import '../../data/mock_data.dart';
@@ -195,13 +196,17 @@ class _CategoryProductsScreenState
                                 context,
                                 ref: ref,
                                 onAuthenticated: () {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        '${product.title} დამატებულია კალათაში!',
-                                      ),
-                                      backgroundColor: AppColors.primary,
-                                    ),
+                                  AppToast.success(
+                                    context,
+                                    '${product.title} დამატებულია კალათაში!',
+                                    actionLabel: 'კალათა',
+                                    onAction: () {
+                                      Navigator.of(context).push(
+                                        MaterialPageRoute(
+                                          builder: (_) => const CartScreen(),
+                                        ),
+                                      );
+                                    },
                                   );
                                 },
                               );

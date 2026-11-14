@@ -13,6 +13,7 @@ abstract final class AppAssets {
   static const String verification = 'assets/illustrations/verification.svg';
   static const String farmerRole = 'assets/illustrations/farmer_role.svg';
   static const String customerRole = 'assets/illustrations/customer_role.png';
+  static const String emptyCart = 'assets/illustrations/empty_cart.svg';
 
   // Categories
   static const String categoryBean =

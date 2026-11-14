@@ -8,6 +8,9 @@ import '../../../../core/widgets/primary_button.dart';
 import '../../../../core/widgets/status_badge.dart';
 import '../../data/mock_data.dart';
 import '../../data/models/product_model.dart';
+import '../../../cart_checkout/data/models/cart_item_model.dart';
+import '../../../cart_checkout/presentation/providers/cart_provider.dart';
+import '../../../cart_checkout/presentation/screens/cart_screen.dart';
 import 'farmer_profile_screen.dart';
 
 /// Product Details Screen adhering to specification:
@@ -482,12 +485,37 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                         context,
                         ref: ref,
                         onAuthenticated: () {
+                          ref.read(cartProvider.notifier).addItem(
+                                CartItemModel(
+                                  id: product.id,
+                                  title: product.title,
+                                  packageText: '${product.unit} შეფუთვა',
+                                  farmerName: product.farmerName,
+                                  pricePerUnit: product.price,
+                                  unit: product.unit,
+                                  imageUrl: product.imageUrl,
+                                  quantity: _quantity,
+                                  weightKg: _quantity.toDouble(),
+                                ),
+                              );
+
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Text(
                                 '$_quantity ${product.unit} ${product.title} დამატებულია კალათაში!',
                               ),
                               backgroundColor: AppColors.primary,
+                              action: SnackBarAction(
+                                label: 'კალათის ნახვა',
+                                textColor: Colors.white,
+                                onPressed: () {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (_) => const CartScreen(),
+                                    ),
+                                  );
+                                },
+                              ),
                             ),
                           );
                         },

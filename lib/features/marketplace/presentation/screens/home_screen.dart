@@ -10,6 +10,8 @@ import '../../../../core/widgets/app_logo.dart';
 import '../../../../core/widgets/auth_required_bottom_sheet.dart';
 import '../../../../core/widgets/product_card.dart';
 import '../../data/mock_data.dart';
+import '../../../cart_checkout/presentation/providers/cart_provider.dart';
+import '../../../cart_checkout/presentation/screens/cart_screen.dart';
 import '../widgets/global_search_dialog.dart';
 import '../widgets/guest_promo_banner.dart';
 import 'farmer_profile_screen.dart';
@@ -113,22 +115,47 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             ),
                             IconButton(
                               onPressed: () {
-                                requireAuth(
-                                  context,
-                                  ref: ref,
-                                  onAuthenticated: () {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text('კალათა გახსნილია'),
-                                      ),
-                                    );
-                                  },
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) => const CartScreen(),
+                                  ),
                                 );
                               },
-                              icon: const Icon(
-                                LucideIcons.shoppingCart,
-                                size: 24,
-                                color: AppColors.primary,
+                              icon: Stack(
+                                clipBehavior: Clip.none,
+                                children: [
+                                  const Icon(
+                                    LucideIcons.shoppingCart,
+                                    size: 24,
+                                    color: AppColors.primary,
+                                  ),
+                                  if (ref.watch(cartProvider).isNotEmpty)
+                                    Positioned(
+                                      top: -4,
+                                      right: -4,
+                                      child: Container(
+                                        padding: const EdgeInsets.all(4),
+                                        decoration: const BoxDecoration(
+                                          color: AppColors.accentWarm,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        constraints: const BoxConstraints(
+                                          minWidth: 16,
+                                          minHeight: 16,
+                                        ),
+                                        child: Text(
+                                          '${ref.watch(cartProvider).length}',
+                                          textAlign: TextAlign.center,
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.bold,
+                                            height: 1,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                ],
                               ),
                             ),
                           ],

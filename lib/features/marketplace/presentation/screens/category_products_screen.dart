@@ -8,6 +8,8 @@ import '../../../../core/widgets/product_card.dart';
 import '../../data/mock_data.dart';
 import '../../data/models/category_model.dart';
 import '../../data/models/product_model.dart';
+import '../../../cart_checkout/presentation/providers/cart_provider.dart';
+import '../../../cart_checkout/presentation/screens/cart_screen.dart';
 import '../widgets/filter_bottom_sheet.dart';
 import 'product_details_screen.dart';
 
@@ -220,17 +222,10 @@ class _CategoryProductsScreenState
             elevation: 4,
             shape: const CircleBorder(),
             onPressed: () {
-              requireAuth(
-                context,
-                ref: ref,
-                onAuthenticated: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('კალათა გახსნილია!'),
-                      backgroundColor: AppColors.primary,
-                    ),
-                  );
-                },
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const CartScreen(),
+                ),
               );
             },
             child: const Icon(
@@ -239,25 +234,32 @@ class _CategoryProductsScreenState
               size: 24,
             ),
           ),
-          Positioned(
-            top: -2,
-            right: -2,
-            child: Container(
-              padding: const EdgeInsets.all(5),
-              decoration: const BoxDecoration(
-                color: AppColors.accentWarm,
-                shape: BoxShape.circle,
-              ),
-              child: Text(
-                '3',
-                style: AppTypography.caption.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 10,
+          if (ref.watch(cartProvider).isNotEmpty)
+            Positioned(
+              top: -2,
+              right: -2,
+              child: Container(
+                padding: const EdgeInsets.all(5),
+                decoration: const BoxDecoration(
+                  color: AppColors.accentWarm,
+                  shape: BoxShape.circle,
+                ),
+                constraints: const BoxConstraints(
+                  minWidth: 18,
+                  minHeight: 18,
+                ),
+                child: Text(
+                  '${ref.watch(cartProvider).length}',
+                  textAlign: TextAlign.center,
+                  style: AppTypography.caption.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 10,
+                    height: 1,
+                  ),
                 ),
               ),
             ),
-          ),
         ],
       ),
     );

@@ -85,6 +85,33 @@ void main() {
     expect(find.text('შეეხეთ რუკას მოსანიშნად'), findsOneWidget);
   });
 
+  testWidgets('FarmerMapWidget opens full address bottom sheet on tapping address pill', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      wrapWithScaffold(
+        const FarmerMapWidget(
+          locationText: 'კახეთი, გურჯაანის მუნიციპალიტეტი, სოფელი ვაჩნაძიანი',
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Tap on address indicator chip
+    await tester.tap(find.text('მონიშნეთ რუკაზე'));
+    await tester.pumpAndSettle();
+
+    // Verify modal bottom sheet opens with full address details
+    expect(find.text('სრული მისამართი'), findsOneWidget);
+    expect(find.text('კახეთი, გურჯაანის მუნიციპალიტეტი, სოფელი ვაჩნაძიანი'), findsOneWidget);
+    expect(find.text('კოპირება'), findsOneWidget);
+    expect(find.text('გასაგებია'), findsOneWidget);
+
+    // Close bottom sheet
+    await tester.tap(find.text('გასაგებია'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('სრული მისამართი'), findsNothing);
+  });
+
   testWidgets('GeorgianGeoLookup dynamically resolves addresses accurately', (WidgetTester tester) async {
     final gurjaani = GeorgianGeoLookup.resolveInstantAddress(const LatLng(41.7456, 45.7983));
     expect(gurjaani, contains('გურჯაანი'));

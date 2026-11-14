@@ -6,6 +6,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart' hide Path;
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/app_toast.dart';
 
 /// Predefined coordinates and metadata for Georgian settlements and municipalities
 class GeorgianGeoEntry {
@@ -391,10 +392,12 @@ class AgroKeraBarnPinPainter extends CustomPainter {
 /// Custom Farm Pin Widget with Dynamic Address Pill & 1:1 Vector Barn Pin
 class CustomFarmPinWidget extends StatelessWidget {
   final String label;
+  final VoidCallback? onTap;
 
   const CustomFarmPinWidget({
     super.key,
     required this.label,
+    this.onTap,
   });
 
   @override
@@ -402,39 +405,48 @@ class CustomFarmPinWidget extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Dynamic Address Tooltip Bubble above Pin
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: AppColors.primary, width: 1.4),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.18),
-                blurRadius: 8,
-                offset: const Offset(0, 3),
-              ),
-            ],
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(LucideIcons.navigation, size: 12, color: AppColors.primary),
-              const SizedBox(width: 5),
-              Flexible(
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
+        // Dynamic Address Tooltip Bubble above Pin (tappable to view full address)
+        GestureDetector(
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: AppColors.primary, width: 1.4),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.18),
+                  blurRadius: 8,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(LucideIcons.navigation, size: 12, color: AppColors.primary),
+                const SizedBox(width: 5),
+                Flexible(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                    ),
                   ),
                 ),
-              ),
-            ],
+                const SizedBox(width: 4),
+                const Icon(
+                  LucideIcons.chevronRight,
+                  size: 11,
+                  color: Color(0xFF64748B),
+                ),
+              ],
+            ),
           ),
         ),
         const SizedBox(height: 3),
@@ -583,6 +595,175 @@ class _FarmerMapWidgetState extends State<FarmerMapWidget> {
     _mapController.move(target, 13.0);
   }
 
+  /// Show Full Address Modal Bottom Sheet when address pill or pin is tapped
+  void _showAddressBottomSheet() {
+    HapticFeedback.mediumImpact();
+    final point = _pinnedLocation ?? widget.initialLocation ?? _mapCenter;
+    final latStr = point.latitude.toStringAsFixed(4);
+    final lngStr = point.longitude.toStringAsFixed(4);
+    final addressText = _pinnedLocation != null
+        ? _currentAddress
+        : widget.locationText.isNotEmpty
+            ? widget.locationText
+            : 'კახეთი, გურჯაანი';
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
+          child: SafeArea(
+            top: false,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Drag handle
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4.5,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFCBD5E1),
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 18),
+
+                // Title row with Pin icon
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: const BoxDecoration(
+                        color: AppColors.primaryLight,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        LucideIcons.mapPinCheck,
+                        size: 22,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'სრული მისამართი',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF64748B),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            addressText,
+                            style: const TextStyle(
+                              fontSize: 16.5,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.textPrimary,
+                              height: 1.35,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                // GPS Coordinates info card
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(LucideIcons.navigation, size: 15, color: Color(0xFF64748B)),
+                      const SizedBox(width: 8),
+                      Text(
+                        'GPS კოორდინატები: $latStr° N, $lngStr° E',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF475569),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // Action buttons: Copy & Close
+                Row(
+                  children: [
+                    // Copy button
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          Clipboard.setData(ClipboardData(text: addressText));
+                          Navigator.of(ctx).pop();
+                          AppToast.success(context, 'მისამართი დაკოპირდა!');
+                        },
+                        icon: const Icon(LucideIcons.copy, size: 16),
+                        label: const Text('კოპირება'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.textPrimary,
+                          side: const BorderSide(color: Color(0xFFCBD5E1), width: 1.2),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    // Close button
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.of(ctx).pop(),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: const Text(
+                          'გასაგებია',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final mapWidget = FlutterMap(
@@ -610,11 +791,12 @@ class _FarmerMapWidgetState extends State<FarmerMapWidget> {
             markers: [
               Marker(
                 point: _pinnedLocation!,
-                width: 170,
-                height: 84,
+                width: 190,
+                height: 88,
                 alignment: Alignment.topCenter,
                 child: CustomFarmPinWidget(
                   label: _currentAddress,
+                  onTap: _showAddressBottomSheet,
                 ),
               ),
             ],
@@ -721,49 +903,64 @@ class _FarmerMapWidgetState extends State<FarmerMapWidget> {
                           ),
                         ),
 
-                        // Dynamic Address indicator chip on top
+                        // Dynamic Address indicator chip on top (tap to view full address)
                         Flexible(
                           child: Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 8),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
+                            child: Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                onTap: _showAddressBottomSheet,
                                 borderRadius: BorderRadius.circular(20),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.15),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    _pinnedLocation != null
-                                        ? LucideIcons.mapPinCheck
-                                        : LucideIcons.mapPin,
-                                    size: 16,
-                                    color: AppColors.primary,
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Flexible(
-                                    child: Text(
-                                      _pinnedLocation != null
-                                          ? _currentAddress
-                                          : 'შეეხეთ რუკას მოსანიშნად',
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w700,
-                                        color: AppColors.textPrimary,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(20),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withValues(alpha: 0.15),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 2),
                                       ),
-                                    ),
+                                    ],
                                   ),
-                                ],
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        _pinnedLocation != null
+                                            ? LucideIcons.mapPinCheck
+                                            : LucideIcons.mapPin,
+                                        size: 16,
+                                        color: AppColors.primary,
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Flexible(
+                                        child: Text(
+                                          _pinnedLocation != null
+                                              ? _currentAddress
+                                              : 'შეეხეთ რუკას მოსანიშნად',
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w700,
+                                            color: AppColors.textPrimary,
+                                          ),
+                                        ),
+                                      ),
+                                      if (_pinnedLocation != null) ...[
+                                        const SizedBox(width: 4),
+                                        const Icon(
+                                          LucideIcons.chevronDown,
+                                          size: 13,
+                                          color: Color(0xFF64748B),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                ),
                               ),
                             ),
                           ),
@@ -916,45 +1113,60 @@ class _FarmerMapWidgetState extends State<FarmerMapWidget> {
             children: [
               Positioned.fill(child: mapWidget),
 
-              // Dynamic Status Chip (top left)
+              // Dynamic Status Chip (top left - tap to view full address)
               Positioned(
                 top: 8,
                 left: 8,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: _showAddressBottomSheet,
                     borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.12),
-                        blurRadius: 4,
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        _pinnedLocation != null ? LucideIcons.mapPinCheck : LucideIcons.mapPin,
-                        size: 13,
-                        color: AppColors.primary,
-                      ),
-                      const SizedBox(width: 5),
-                      ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 160),
-                        child: Text(
-                          _pinnedLocation != null ? _currentAddress : 'მონიშნეთ რუკაზე',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.textPrimary,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.12),
+                            blurRadius: 4,
                           ),
-                        ),
+                        ],
                       ),
-                    ],
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            _pinnedLocation != null ? LucideIcons.mapPinCheck : LucideIcons.mapPin,
+                            size: 13,
+                            color: AppColors.primary,
+                          ),
+                          const SizedBox(width: 5),
+                          ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 160),
+                            child: Text(
+                              _pinnedLocation != null ? _currentAddress : 'მონიშნეთ რუკაზე',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                          ),
+                          if (_pinnedLocation != null) ...[
+                            const SizedBox(width: 3),
+                            const Icon(
+                              LucideIcons.chevronRight,
+                              size: 11,
+                              color: Color(0xFF64748B),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
                   ),
                 ),
               ),

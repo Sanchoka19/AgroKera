@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/app_header.dart';
 import '../../../marketplace/presentation/screens/categories_screen.dart';
 
 /// Model for a Farmer Cabinet Order
@@ -231,32 +232,28 @@ class _FarmerDashboardScreenState extends ConsumerState<FarmerDashboardScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFF8FAFC),
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        centerTitle: true,
-        title: Text(
-          'ჩემი კაბინეტი',
-          style: GoogleFonts.notoSansGeorgian(
-            fontSize: 22,
-            fontWeight: FontWeight.w900,
-            color: const Color(0xFF0F172A),
-            letterSpacing: -0.3,
-          ),
-        ),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+      body: SafeArea(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // ==========================================
-            // SECTION 1: პროდუქტის მენეჯმენტი
-            // ==========================================
-            Padding(
-              padding: const EdgeInsets.only(left: 2, bottom: 12, top: 4),
-              child: Text(
+            // Unified App Header (Title & Notifications Bell)
+            const AppHeader(
+              title: 'ჩემი კაბინეტი',
+              showNotificationBell: true,
+              showCart: false,
+              padding: EdgeInsets.fromLTRB(20, 12, 20, 12),
+            ),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(20, 4, 20, 32),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // ==========================================
+                    // SECTION 1: პროდუქტის მენეჯმენტი
+                    // ==========================================
+                    Padding(
+                      padding: const EdgeInsets.only(left: 2, bottom: 12, top: 4),
+                      child: Text(
                 'პროდუქტის მენეჯმენტი',
                 style: GoogleFonts.notoSansGeorgian(
                   fontSize: 14.5,
@@ -357,6 +354,10 @@ class _FarmerDashboardScreenState extends ConsumerState<FarmerDashboardScreen> {
                   child: _buildOrderCard(order, index),
                 );
               }),
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
       ),

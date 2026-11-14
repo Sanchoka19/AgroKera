@@ -7,6 +7,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:agrokera/core/auth/auth_state_provider.dart';
 import 'package:agrokera/core/constants/app_assets.dart';
 import 'package:agrokera/core/theme/app_colors.dart';
+import 'package:agrokera/core/widgets/app_header.dart';
 import 'package:agrokera/core/widgets/auth_required_bottom_sheet.dart';
 import 'package:agrokera/features/marketplace/presentation/screens/favorites_screen.dart';
 import 'package:agrokera/features/marketplace/presentation/widgets/guest_promo_banner.dart';
@@ -43,60 +44,33 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       body: SafeArea(
-        child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // ==========================================
-              // GUEST: Official Previous Version Illustration Promo Banner
-              // AUTHENTICATED: Modern Hero Avatar + Gradient KPI Card
-              // ==========================================
-              if (isGuest) ...[
-                const GuestPromoBanner(showCloseButton: false),
-                const SizedBox(height: 24),
-              ] else ...[
-                // Top utility row for authenticated user
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      IconButton(
-                        icon: const Icon(
-                          LucideIcons.bell,
-                          color: Color(0xFF0F172A),
-                          size: 24,
-                        ),
-                        onPressed: () {
-                          HapticFeedback.lightImpact();
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('ახალი შეტყობინებები არ არის.'),
-                              behavior: SnackBarBehavior.floating,
-                            ),
-                          );
-                        },
-                      ),
-                      Positioned(
-                        top: 10,
-                        right: 10,
-                        child: Container(
-                          width: 8,
-                          height: 8,
-                          decoration: const BoxDecoration(
-                            color: Color(0xFFEF4444),
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Hero Identity (Centered Avatar with Camera Badge, Name, Subtitle)
-                Center(
+        child: Column(
+          children: [
+            // Unified App Header (Title & Notifications Bell)
+            const AppHeader(
+              title: 'ჩემი პროფილი',
+              showNotificationBell: true,
+              showCart: false,
+              padding: EdgeInsets.fromLTRB(20, 12, 20, 8),
+            ),
+            Expanded(
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(20, 4, 20, 32),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // ==========================================
+                    // GUEST: Official Previous Version Illustration Promo Banner
+                    // AUTHENTICATED: Modern Hero Avatar + Gradient KPI Card
+                    // ==========================================
+                    if (isGuest) ...[
+                      const GuestPromoBanner(showCloseButton: false),
+                      const SizedBox(height: 24),
+                    ] else ...[
+                      // Hero Identity (Centered Avatar with Camera Badge, Name, Subtitle)
+                      const SizedBox(height: 8),
+                      Center(
                   child: Column(
                     children: [
                       Stack(
@@ -596,8 +570,11 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
                   ),
                 ),
               ),
-            ],
-          ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

@@ -6,12 +6,11 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../core/auth/auth_state_provider.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
-import '../../../../core/widgets/app_logo.dart';
+import '../../../../core/widgets/app_header.dart';
+import '../../../../core/widgets/app_search_bar.dart';
 import '../../../../core/widgets/auth_required_bottom_sheet.dart';
 import '../../../../core/widgets/product_card.dart';
 import '../../data/mock_data.dart';
-import '../../../cart_checkout/presentation/providers/cart_provider.dart';
-import '../../../cart_checkout/presentation/screens/cart_screen.dart';
 import '../widgets/global_search_dialog.dart';
 import '../widgets/guest_promo_banner.dart';
 import 'favorites_screen.dart';
@@ -72,105 +71,47 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Unified App Header (Logo, Search Bar, Notifications & Cart)
+              AppHeader(
+                showLogo: true,
+                showNotificationBell: true,
+                showCart: true,
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                searchBar: AppSearchBar(
+                  onTap: widget.onSearchTap ??
+                      () => GlobalSearchDialog.show(context),
+                  hintText: 'მოძებნე პროდუქტი, ფერმა ან კატეგორია...',
+                ),
+                actions: [
+                  IconButton(
+                    tooltip: 'რჩეულები',
+                    onPressed: () {
+                      requireAuth(
+                        context,
+                        ref: ref,
+                        onAuthenticated: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const FavoritesScreen(),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                    icon: const Icon(
+                      LucideIcons.heart,
+                      size: 24,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                ],
+              ),
+
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const SizedBox(height: 12),
-                    // App Bar: Logo + Search, Wishlist & Cart Icons
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const AppLogo(),
-                        Row(
-                          children: [
-                            IconButton(
-                              onPressed: widget.onSearchTap ??
-                                  () => GlobalSearchDialog.show(context),
-                              icon: const Icon(
-                                LucideIcons.search,
-                                size: 24,
-                                color: AppColors.primary,
-                              ),
-                            ),
-                            IconButton(
-                              onPressed: () {
-                                requireAuth(
-                                  context,
-                                  ref: ref,
-                                  onAuthenticated: () {
-                                    Navigator.of(context).push(
-                                      MaterialPageRoute(
-                                        builder: (_) => const FavoritesScreen(),
-                                      ),
-                                    );
-                                  },
-                                );
-                              },
-                              icon: const Icon(
-                                LucideIcons.heart,
-                                size: 24,
-                                color: AppColors.primary,
-                              ),
-                            ),
-                            IconButton(
-                              onPressed: () {
-                                requireAuth(
-                                  context,
-                                  ref: ref,
-                                  onAuthenticated: () {
-                                    Navigator.of(context).push(
-                                      MaterialPageRoute(
-                                        builder: (_) => const CartScreen(),
-                                      ),
-                                    );
-                                  },
-                                );
-                              },
-                              icon: Stack(
-                                clipBehavior: Clip.none,
-                                children: [
-                                  const Icon(
-                                    LucideIcons.shoppingCart,
-                                    size: 24,
-                                    color: AppColors.primary,
-                                  ),
-                                  if (authState.isAuthenticated && ref.watch(cartProvider).isNotEmpty)
-                                    Positioned(
-                                      top: -4,
-                                      right: -4,
-                                      child: Container(
-                                        padding: const EdgeInsets.all(4),
-                                        decoration: const BoxDecoration(
-                                          color: AppColors.accentWarm,
-                                          shape: BoxShape.circle,
-                                        ),
-                                        constraints: const BoxConstraints(
-                                          minWidth: 16,
-                                          minHeight: 16,
-                                        ),
-                                        child: Text(
-                                          '${ref.watch(cartProvider).length}',
-                                          textAlign: TextAlign.center,
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 10,
-                                            fontWeight: FontWeight.bold,
-                                            height: 1,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-
                     // Guest Promo Banner (if unauthenticated)
                     if (!authState.isAuthenticated) ...[
                       const GuestPromoBanner(),

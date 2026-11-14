@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../core/widgets/app_header.dart';
+import '../../../../core/widgets/app_search_bar.dart';
 import '../../data/mock_data.dart';
 import '../../data/models/category_model.dart';
 import 'category_products_screen.dart';
@@ -44,86 +46,30 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
     return Scaffold(
       backgroundColor: AppColors.bgPrimary,
       body: SafeArea(
-        child: CustomScrollView(
-          slivers: [
-            // 1. Collapsible Title "აგრო მარკეტი": scrolls away on scroll down
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.only(top: 14, bottom: 8),
-                child: Center(
-                  child: Text(
-                    'აგრო მარკეტი',
-                    style: AppTypography.h1.copyWith(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                ),
+        child: Column(
+          children: [
+            // Unified App Header (Title, Search Bar, Notifications & Cart)
+            AppHeader(
+              title: 'აგრო მარკეტი',
+              showNotificationBell: true,
+              showCart: true,
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+              searchBar: AppSearchBar(
+                controller: _searchController,
+                hintText: 'მოძებნე კატეგორია ან პროდუქტი...',
+                onChanged: (val) => setState(() => _searchQuery = val),
+                onClear: () {
+                  _searchController.clear();
+                  setState(() => _searchQuery = '');
+                },
               ),
             ),
 
-            // 2. Sticky Search Bar: sticks to the top (top: 0) while scrolling
-            SliverPersistentHeader(
-              pinned: true,
-              delegate: _StickySearchBarDelegate(
-                child: Container(
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: AppColors.border, width: 1),
-                  ),
-                  padding: const EdgeInsets.symmetric(horizontal: 14),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        LucideIcons.search,
-                        size: 20,
-                        color: AppColors.textSecondary,
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: TextField(
-                          key: const ValueKey('categories_search_input'),
-                          controller: _searchController,
-                          onChanged: (val) =>
-                              setState(() => _searchQuery = val),
-                          style: AppTypography.bodyMedium,
-                          decoration: InputDecoration(
-                            hintText: 'ძებნა...',
-                            hintStyle: AppTypography.bodyMedium.copyWith(
-                              color: AppColors.textSecondary,
-                            ),
-                            border: InputBorder.none,
-                            enabledBorder: InputBorder.none,
-                            focusedBorder: InputBorder.none,
-                            filled: false,
-                            isDense: true,
-                            contentPadding: EdgeInsets.zero,
-                          ),
-                        ),
-                      ),
-                      if (_searchQuery.isNotEmpty)
-                        GestureDetector(
-                          onTap: () {
-                            _searchController.clear();
-                            setState(() => _searchQuery = '');
-                          },
-                          child: const Icon(
-                            LucideIcons.x,
-                            size: 18,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-
-            // 3. Categories Grid or Empty State
-            if (filteredCategories.isEmpty)
+            Expanded(
+              child: CustomScrollView(
+                slivers: [
+                  // Categories Grid or Empty State
+                  if (filteredCategories.isEmpty)
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.only(top: 60),
@@ -177,54 +123,14 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                   ),
                 ),
               ),
-          ],
+            ],
+          ),
         ),
-      ),
-    );
-  }
+      ],
+    ),
+  ),
+);
 }
-
-class _StickySearchBarDelegate extends SliverPersistentHeaderDelegate {
-  final Widget child;
-  static const double headerHeight = 64.0;
-
-  _StickySearchBarDelegate({required this.child});
-
-  @override
-  double get minExtent => headerHeight;
-
-  @override
-  double get maxExtent => headerHeight;
-
-  @override
-  Widget build(
-    BuildContext context,
-    double shrinkOffset,
-    bool overlapsContent,
-  ) {
-    return Container(
-      height: headerHeight,
-      decoration: BoxDecoration(
-        color: AppColors.bgPrimary,
-        border: overlapsContent
-            ? Border(
-                bottom: BorderSide(
-                  color: AppColors.border.withValues(alpha: 0.6),
-                  width: 1,
-                ),
-              )
-            : null,
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      alignment: Alignment.center,
-      child: child,
-    );
-  }
-
-  @override
-  bool shouldRebuild(covariant _StickySearchBarDelegate oldDelegate) {
-    return oldDelegate.child != child;
-  }
 }
 
 class _CategoryCard extends StatelessWidget {

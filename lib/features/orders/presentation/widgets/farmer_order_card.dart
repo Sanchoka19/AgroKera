@@ -10,17 +10,78 @@ import '../screens/farmer_order_detail_screen.dart';
 class FarmerOrderCard extends StatelessWidget {
   final FarmerOrder order;
   final VoidCallback? onAccept;
+  final VoidCallback? onCancel;
 
   const FarmerOrderCard({
     super.key,
     required this.order,
     this.onAccept,
+    this.onCancel,
   });
 
   void _openDetails(BuildContext context) {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => FarmerOrderDetailScreen(orderId: order.id),
+      ),
+    );
+  }
+
+  void _handleCancel(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          'შეკვეთის გაუქმება',
+          style: GoogleFonts.notoSansGeorgian(
+            fontSize: 16,
+            fontWeight: FontWeight.w800,
+            color: const Color(0xFF0F172A),
+          ),
+        ),
+        content: Text(
+          'ნამდვილად გსურთ შეკვეთის #${order.id} გაუქმება?',
+          style: GoogleFonts.notoSansGeorgian(
+            fontSize: 13.5,
+            color: const Color(0xFF64748B),
+          ),
+        ),
+        actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogCtx).pop(),
+            child: Text(
+              'უკან',
+              style: GoogleFonts.notoSansGeorgian(
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF64748B),
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(dialogCtx).pop();
+              if (onCancel != null) {
+                onCancel!();
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFDC2626),
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            ),
+            child: Text(
+              'გაუქმება',
+              style: GoogleFonts.notoSansGeorgian(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -197,7 +258,7 @@ class FarmerOrderCard extends StatelessWidget {
                 ),
 
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+                  padding: const EdgeInsets.fromLTRB(14, 11, 14, 12),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
@@ -222,7 +283,7 @@ class FarmerOrderCard extends StatelessWidget {
                                   Text(
                                     'შეკვეთის ID',
                                     style: GoogleFonts.notoSansGeorgian(
-                                      fontSize: 11.5,
+                                      fontSize: 11,
                                       fontWeight: FontWeight.w500,
                                       color: const Color(0xFF64748B),
                                     ),
@@ -230,7 +291,7 @@ class FarmerOrderCard extends StatelessWidget {
                                   Text(
                                     '#${order.id}',
                                     style: GoogleFonts.notoSansGeorgian(
-                                      fontSize: 15.5,
+                                      fontSize: 15,
                                       fontWeight: FontWeight.w800,
                                       color: const Color(0xFF0F172A),
                                       letterSpacing: -0.2,
@@ -243,15 +304,15 @@ class FarmerOrderCard extends StatelessWidget {
 
                           // Status Badge
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                             decoration: BoxDecoration(
                               color: order.status.badgeBg,
-                              borderRadius: BorderRadius.circular(10),
+                              borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
                               order.status.label,
                               style: GoogleFonts.notoSansGeorgian(
-                                fontSize: 12,
+                                fontSize: 11.5,
                                 fontWeight: FontWeight.w700,
                                 color: statusColor,
                               ),
@@ -259,7 +320,7 @@ class FarmerOrderCard extends StatelessWidget {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 8),
 
                       // Products & Price Row
                       Row(
@@ -272,17 +333,17 @@ class FarmerOrderCard extends StatelessWidget {
                                 Text(
                                   'პროდუქტი',
                                   style: GoogleFonts.notoSansGeorgian(
-                                    fontSize: 11.5,
+                                    fontSize: 11,
                                     color: const Color(0xFF64748B),
                                   ),
                                 ),
-                                const SizedBox(height: 2),
+                                const SizedBox(height: 1),
                                 Text(
                                   order.productsSummary,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: GoogleFonts.notoSansGeorgian(
-                                    fontSize: 14.5,
+                                    fontSize: 14,
                                     fontWeight: FontWeight.w800,
                                     color: const Color(0xFF1E293B),
                                   ),
@@ -297,15 +358,15 @@ class FarmerOrderCard extends StatelessWidget {
                               Text(
                                 'ჯამი',
                                 style: GoogleFonts.notoSansGeorgian(
-                                  fontSize: 11.5,
+                                  fontSize: 11,
                                   color: const Color(0xFF64748B),
                                 ),
                               ),
-                              const SizedBox(height: 2),
+                              const SizedBox(height: 1),
                               Text(
                                 '₾${order.totalAmount.toStringAsFixed(2)}',
                                 style: GoogleFonts.notoSansGeorgian(
-                                  fontSize: 15,
+                                  fontSize: 14.5,
                                   fontWeight: FontWeight.w800,
                                   color: AppColors.primary,
                                 ),
@@ -314,14 +375,14 @@ class FarmerOrderCard extends StatelessWidget {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 6),
 
                       // Customer & Date Meta
                       Row(
                         children: [
                           const Icon(
                             LucideIcons.user,
-                            size: 13,
+                            size: 12,
                             color: Color(0xFF94A3B8),
                           ),
                           const SizedBox(width: 4),
@@ -331,7 +392,7 @@ class FarmerOrderCard extends StatelessWidget {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: GoogleFonts.notoSansGeorgian(
-                                fontSize: 12,
+                                fontSize: 11.5,
                                 color: const Color(0xFF64748B),
                                 fontWeight: FontWeight.w500,
                               ),
@@ -341,86 +402,143 @@ class FarmerOrderCard extends StatelessWidget {
                           Text(
                             _formatDate(order.createdAt),
                             style: GoogleFonts.notoSansGeorgian(
-                              fontSize: 11.5,
+                              fontSize: 11,
                               color: const Color(0xFF94A3B8),
                               fontWeight: FontWeight.w500,
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 14),
+                      const SizedBox(height: 10),
 
                       // Action Buttons Row
                       Row(
                         children: [
-                          // Details Outline Button
-                          Expanded(
-                            child: OutlinedButton.icon(
+                          if (isPending) ...[
+                            // 1. Details Button
+                            OutlinedButton(
                               onPressed: () => _openDetails(context),
-                              icon: const Icon(LucideIcons.eye, size: 16),
-                              label: Text(
-                                'დეტალები',
-                                style: GoogleFonts.notoSansGeorgian(
-                                  fontSize: 13.5,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
                               style: OutlinedButton.styleFrom(
-                                foregroundColor: AppColors.primary,
+                                foregroundColor: const Color(0xFF475569),
                                 side: const BorderSide(color: Color(0xFFCBD5E1), width: 1.2),
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
+                                  borderRadius: BorderRadius.circular(10),
                                 ),
-                                padding: const EdgeInsets.symmetric(vertical: 10),
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                minimumSize: const Size(0, 38),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(LucideIcons.eye, size: 14, color: Color(0xFF64748B)),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'დეტალები',
+                                    style: GoogleFonts.notoSansGeorgian(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                          ),
+                            const SizedBox(width: 6),
 
-                          // Document Icon Button (Completed only)
-                          if (isCompleted) ...[
-                            const SizedBox(width: 8),
-                            InkWell(
-                              onTap: () => _showDocumentSheet(context),
-                              borderRadius: BorderRadius.circular(12),
-                              child: Container(
-                                width: 44,
-                                height: 44,
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  border: Border.all(color: const Color(0xFFCBD5E1), width: 1.2),
-                                  borderRadius: BorderRadius.circular(12),
+                            // 2. Cancel / Reject Button
+                            Expanded(
+                              child: OutlinedButton(
+                                onPressed: () => _handleCancel(context),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: const Color(0xFFDC2626),
+                                  backgroundColor: const Color(0xFFFEF2F2),
+                                  side: const BorderSide(color: Color(0xFFFECACA), width: 1.2),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  padding: const EdgeInsets.symmetric(vertical: 8),
+                                  minimumSize: const Size(0, 38),
                                 ),
-                                child: const Icon(
-                                  LucideIcons.fileText,
-                                  size: 18,
-                                  color: Color(0xFF334155),
+                                child: Text(
+                                  'გაუქმება',
+                                  style: GoogleFonts.notoSansGeorgian(
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w700,
+                                  ),
                                 ),
                               ),
                             ),
-                          ],
+                            const SizedBox(width: 6),
 
-                          // Accept Button (Pending only)
-                          if (isPending && onAccept != null) ...[
-                            const SizedBox(width: 8),
-                            ElevatedButton(
-                              onPressed: onAccept,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.primary,
-                                foregroundColor: Colors.white,
-                                elevation: 0,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
+                            // 3. Accept Button
+                            Expanded(
+                              child: ElevatedButton(
+                                onPressed: onAccept,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.primary,
+                                  foregroundColor: Colors.white,
+                                  elevation: 0,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  padding: const EdgeInsets.symmetric(vertical: 8),
+                                  minimumSize: const Size(0, 38),
                                 ),
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                              ),
-                              child: Text(
-                                'დათანხმება',
-                                style: GoogleFonts.notoSansGeorgian(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w700,
+                                child: Text(
+                                  'დათანხმება',
+                                  style: GoogleFonts.notoSansGeorgian(
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w700,
+                                  ),
                                 ),
                               ),
                             ),
+                          ] else ...[
+                            // Standard Details Outline Button
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                onPressed: () => _openDetails(context),
+                                icon: const Icon(LucideIcons.eye, size: 15),
+                                label: Text(
+                                  'დეტალები',
+                                  style: GoogleFonts.notoSansGeorgian(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: AppColors.primary,
+                                  side: const BorderSide(color: Color(0xFFCBD5E1), width: 1.2),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  padding: const EdgeInsets.symmetric(vertical: 8),
+                                  minimumSize: const Size(0, 38),
+                                ),
+                              ),
+                            ),
+
+                            // Document Icon Button (Completed only)
+                            if (isCompleted) ...[
+                              const SizedBox(width: 8),
+                              InkWell(
+                                onTap: () => _showDocumentSheet(context),
+                                borderRadius: BorderRadius.circular(10),
+                                child: Container(
+                                  width: 38,
+                                  height: 38,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    border: Border.all(color: const Color(0xFFCBD5E1), width: 1.2),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: const Icon(
+                                    LucideIcons.fileText,
+                                    size: 17,
+                                    color: Color(0xFF334155),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ],
                         ],
                       ),

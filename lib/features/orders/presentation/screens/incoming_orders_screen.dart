@@ -38,49 +38,56 @@ class IncomingOrdersScreen extends ConsumerWidget {
           ),
         ),
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(56),
+          preferredSize: const Size.fromHeight(50),
           child: Container(
-            height: 56,
+            height: 50,
             color: Colors.white,
-            child: ListView(
+            child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              children: [
-                _buildFilterChip(
-                  label: 'ყველა',
-                  count: ordersState.countForStatus(null),
-                  isSelected: ordersState.selectedFilter == null,
-                  onTap: () => ordersNotifier.setFilter(null),
-                ),
-                const SizedBox(width: 8),
-                _buildFilterChip(
-                  label: OrderStatus.pending.label,
-                  count: ordersState.countForStatus(OrderStatus.pending),
-                  isSelected: ordersState.selectedFilter == OrderStatus.pending,
-                  onTap: () => ordersNotifier.setFilter(OrderStatus.pending),
-                ),
-                const SizedBox(width: 8),
-                _buildFilterChip(
-                  label: OrderStatus.inProgress.label,
-                  count: ordersState.countForStatus(OrderStatus.inProgress),
-                  isSelected: ordersState.selectedFilter == OrderStatus.inProgress,
-                  onTap: () => ordersNotifier.setFilter(OrderStatus.inProgress),
-                ),
-                const SizedBox(width: 8),
-                _buildFilterChip(
-                  label: OrderStatus.completed.label,
-                  count: ordersState.countForStatus(OrderStatus.completed),
-                  isSelected: ordersState.selectedFilter == OrderStatus.completed,
-                  onTap: () => ordersNotifier.setFilter(OrderStatus.completed),
-                ),
-                const SizedBox(width: 8),
-                _buildFilterChip(
-                  label: OrderStatus.cancelled.label,
-                  count: ordersState.countForStatus(OrderStatus.cancelled),
-                  isSelected: ordersState.selectedFilter == OrderStatus.cancelled,
-                  onTap: () => ordersNotifier.setFilter(OrderStatus.cancelled),
-                ),
-              ],
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+              child: Row(
+                children: [
+                  _buildFilterChip(
+                    key: const ValueKey('chip_all'),
+                    label: 'ყველა',
+                    count: ordersState.countForStatus(null),
+                    isSelected: ordersState.selectedFilter == null,
+                    onTap: () => ordersNotifier.setFilter(null),
+                  ),
+                  const SizedBox(width: 8),
+                  _buildFilterChip(
+                    key: const ValueKey('chip_pending'),
+                    label: OrderStatus.pending.label,
+                    count: ordersState.countForStatus(OrderStatus.pending),
+                    isSelected: ordersState.selectedFilter == OrderStatus.pending,
+                    onTap: () => ordersNotifier.setFilter(OrderStatus.pending),
+                  ),
+                  const SizedBox(width: 8),
+                  _buildFilterChip(
+                    key: const ValueKey('chip_inProgress'),
+                    label: OrderStatus.inProgress.label,
+                    count: ordersState.countForStatus(OrderStatus.inProgress),
+                    isSelected: ordersState.selectedFilter == OrderStatus.inProgress,
+                    onTap: () => ordersNotifier.setFilter(OrderStatus.inProgress),
+                  ),
+                  const SizedBox(width: 8),
+                  _buildFilterChip(
+                    key: const ValueKey('chip_completed'),
+                    label: OrderStatus.completed.label,
+                    count: ordersState.countForStatus(OrderStatus.completed),
+                    isSelected: ordersState.selectedFilter == OrderStatus.completed,
+                    onTap: () => ordersNotifier.setFilter(OrderStatus.completed),
+                  ),
+                  const SizedBox(width: 8),
+                  _buildFilterChip(
+                    key: const ValueKey('chip_cancelled'),
+                    label: OrderStatus.cancelled.label,
+                    count: ordersState.countForStatus(OrderStatus.cancelled),
+                    isSelected: ordersState.selectedFilter == OrderStatus.cancelled,
+                    onTap: () => ordersNotifier.setFilter(OrderStatus.cancelled),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -91,9 +98,9 @@ class IncomingOrdersScreen extends ConsumerWidget {
               onResetFilter: () => ordersNotifier.setFilter(null),
             )
           : ListView.separated(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+              padding: const EdgeInsets.fromLTRB(14, 10, 14, 24),
               itemCount: filteredOrders.length,
-              separatorBuilder: (context, index) => const SizedBox(height: 14),
+              separatorBuilder: (context, index) => const SizedBox(height: 10),
               itemBuilder: (context, index) {
                 final order = filteredOrders[index];
                 return FarmerOrderCard(
@@ -106,6 +113,13 @@ class IncomingOrdersScreen extends ConsumerWidget {
                       'შეკვეთა #${order.id} დადასტურებულია და გადავიდა მიმდინარეში!',
                     );
                   },
+                  onCancel: () {
+                    ordersNotifier.cancelOrder(order.id, reason: 'ფერმერის მიერ გაუქმებული');
+                    AppToast.info(
+                      context,
+                      'შეკვეთა #${order.id} გაუქმებულია.',
+                    );
+                  },
                 );
               },
             ),
@@ -113,17 +127,19 @@ class IncomingOrdersScreen extends ConsumerWidget {
   }
 
   Widget _buildFilterChip({
+    Key? key,
     required String label,
     required int count,
     required bool isSelected,
     required VoidCallback onTap,
   }) {
     return InkWell(
+      key: key,
       onTap: onTap,
       borderRadius: BorderRadius.circular(10),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
           color: isSelected ? const Color(0xFF64748B) : Colors.white,
           borderRadius: BorderRadius.circular(10),

@@ -95,13 +95,23 @@ void main() {
       expect(find.text('დეტალები'), findsWidgets);
       expect(find.textContaining('#12345'), findsOneWidget);
 
-      // Tap filter "დასრულებული"
-      await tester.tap(find.text('დასრულებული'));
+      // Tap filter "დასრულებული" by key after ensuring visible
+      await tester.ensureVisible(find.byKey(const ValueKey('chip_completed')));
+      await tester.tap(find.byKey(const ValueKey('chip_completed')));
       await tester.pumpAndSettle();
 
       // Only completed order #12345 should remain
       expect(find.textContaining('#12345'), findsOneWidget);
       expect(find.textContaining('#12348'), findsNothing);
+
+      // Tap filter "მომლოდინე" by key after ensuring visible
+      await tester.ensureVisible(find.byKey(const ValueKey('chip_pending')));
+      await tester.tap(find.byKey(const ValueKey('chip_pending')));
+      await tester.pumpAndSettle();
+
+      // Pending order #12349 should have both "დათანხმება" and "გაუქმება" buttons
+      expect(find.text('დათანხმება'), findsOneWidget);
+      expect(find.text('გაუქმება'), findsWidgets);
     });
   });
 

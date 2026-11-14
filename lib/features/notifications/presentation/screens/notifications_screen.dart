@@ -429,11 +429,11 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Custom modern SVG illustration for Empty Notifications
+            // Storybook SVG illustration for Empty Notifications (matching empty_cart.svg aesthetic)
             SvgPicture.asset(
               AppAssets.emptyNotifications,
-              width: 160,
-              height: 160,
+              width: 210,
+              height: 210,
               fit: BoxFit.contain,
             ),
             const SizedBox(height: 20),

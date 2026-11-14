@@ -1,11 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'core/auth/auth_state_provider.dart';
 import 'core/theme/app_theme.dart';
 import 'features/navigation/presentation/screens/main_nav_screen.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const ProviderScope(child: AgroKeraApp()));
+  final container = ProviderContainer();
+  await container.read(authStateProvider.notifier).restoreSession();
+  runApp(
+    UncontrolledProviderScope(
+      container: container,
+      child: const AgroKeraApp(),
+    ),
+  );
 }
 
 class AgroKeraApp extends StatelessWidget {

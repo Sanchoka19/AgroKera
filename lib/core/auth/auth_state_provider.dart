@@ -113,7 +113,10 @@ class AuthState {
 
 class AuthNotifier extends Notifier<AuthState> {
   @override
-  AuthState build() => const AuthState(isAuthenticated: false);
+  AuthState build() {
+    unawaited(Future.microtask(restoreSession));
+    return const AuthState(isAuthenticated: false);
+  }
 
   /// Restores persisted user session from FlutterSecureStorage
   Future<void> restoreSession() async {
@@ -162,6 +165,20 @@ class AuthNotifier extends Notifier<AuthState> {
       kycStatus: KycStatus.verified,
     );
 
+    // Immediately persist session so reopening the app never loses auth state
+    unawaited(
+      ref.read(secureStorageProvider).saveSession(
+            token: 'ak_session_$defaultUserId',
+            userId: defaultUserId,
+            farmerId: defaultFarmerId,
+            role: role.name,
+            name: name,
+            phone: phone,
+            email: email,
+            kycStatus: KycStatus.verified.apiValue,
+          ),
+    );
+
     unawaited(_syncLoginWithBackend(
       name: name,
       phone: phone,
@@ -192,6 +209,8 @@ class AuthNotifier extends Notifier<AuthState> {
   }) {
     final defaultUserId = role == UserRole.farmer ? 'user_farmer_2' : 'user_client_1';
     final defaultFarmerId = role == UserRole.farmer ? 'farmer_2' : null;
+    final initialKyc =
+        role == UserRole.farmer ? KycStatus.pendingReview : KycStatus.verified;
 
     state = state.copyWith(
       isAuthenticated: true,
@@ -201,7 +220,21 @@ class AuthNotifier extends Notifier<AuthState> {
       userPhone: phone,
       userEmail: email,
       role: role,
-      kycStatus: role == UserRole.farmer ? KycStatus.pendingReview : KycStatus.verified,
+      kycStatus: initialKyc,
+    );
+
+    // Immediately persist session so reopening the app never loses auth state
+    unawaited(
+      ref.read(secureStorageProvider).saveSession(
+            token: 'ak_session_$defaultUserId',
+            userId: defaultUserId,
+            farmerId: defaultFarmerId,
+            role: role.name,
+            name: name,
+            phone: phone,
+            email: email,
+            kycStatus: initialKyc.apiValue,
+          ),
     );
 
     unawaited(_syncRegisterWithBackend(

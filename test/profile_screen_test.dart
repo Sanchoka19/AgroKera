@@ -22,8 +22,14 @@ void main() {
     await tester.pumpWidget(wrapWithScaffold(const GuestProfileScreen()));
     await tester.pumpAndSettle();
 
-    // Section 1 Header & Items
-    expect(find.text('ანგარიშის მართვა'), findsOneWidget);
+    // Hero Identity for Guest (starts directly with avatar, no "პროფილის გვერდი" header)
+    expect(find.text('სტუმარი'), findsOneWidget);
+    expect(find.text('სისტემაში შესვლა / რეგისტრაცია'), findsOneWidget);
+    expect(find.text('გახდი აგროკერას წევრი'), findsOneWidget);
+    expect(find.text('პროფილის გვერდი'), findsNothing);
+
+    // Section 1 Header & Items (matching mockup)
+    expect(find.text('ინსტრუმენტები და სერვისები'), findsOneWidget);
     expect(find.text('ჩემი შეკვეთები'), findsOneWidget);
     expect(find.text('ჩემი მისამართი'), findsOneWidget);
     expect(find.text('საბანკო ანგარიშები'), findsOneWidget);

@@ -29,7 +29,7 @@ class NotificationsNotifier extends Notifier<List<AppNotification>> {
     AppNotification(
       id: 'notif-3',
       title: 'ახალი შემოსული შეკვეთა #12348',
-      body: 'მომხმარებელმა გააფორმა 3 დასახელების შეკვეთა (ჯამი: ₾140). გთხოვთ დაადასტუროთ კაბინეტიდან.',
+      body: 'მომხმარებელმა გააფორმა 3 დასახელების შეკვეთა (ჯამი: ₾140). გთხოვთ დაადასტუროთ ფერმის გვერდიდან.',
       timeAgo: '3 საათის წინ',
       timestamp: DateTime.now().subtract(const Duration(hours: 3)),
       category: NotificationCategory.orders,

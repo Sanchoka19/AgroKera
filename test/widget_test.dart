@@ -51,17 +51,17 @@ void main() {
     // Verify all 4 tabs are present by their keys
     expect(find.byKey(const ValueKey('nav_tab_მთავარი')), findsOneWidget);
     expect(find.byKey(const ValueKey('nav_tab_მარკეტი')), findsOneWidget);
-    expect(find.byKey(const ValueKey('nav_tab_კაბინეტი')), findsOneWidget);
+    expect(find.byKey(const ValueKey('nav_tab_ფერმა')), findsOneWidget);
     expect(find.byKey(const ValueKey('nav_tab_პროფილი')), findsOneWidget);
     expect(find.text('მთავარი'), findsOneWidget);
 
     // Tap on Farmer tab
-    await tester.tap(find.byKey(const ValueKey('nav_tab_კაბინეტი')));
+    await tester.tap(find.byKey(const ValueKey('nav_tab_ფერმა')));
     await tester.pumpAndSettle();
 
-    // Verify Farmer Cabinet is active
-    expect(find.text('კაბინეტი'), findsOneWidget);
-    expect(find.text('ჩემი კაბინეტი'), findsOneWidget);
+    // Verify Farmer Farm dashboard is active
+    expect(find.text('ფერმა'), findsOneWidget);
+    expect(find.text('ჩემი ფერმა'), findsOneWidget);
     expect(find.text('პროდუქტის მენეჯმენტი'), findsOneWidget);
   });
 }

@@ -75,7 +75,7 @@ void main() {
     await tester.pumpWidget(
       wrapWithScaffold(
         const AppHeader(
-          title: 'ჩემი კაბინეტი',
+          title: 'ჩემი ფერმა',
           showNotificationBell: true,
         ),
         container,

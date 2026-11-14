@@ -26,9 +26,9 @@ class _FarmerCabinetOrder {
   });
 }
 
-/// Farmer Dashboard Tab: "ჩემი კაბინეტი"
+/// Farmer Dashboard Tab: "ჩემი ფერმა"
 /// Rebuilt to match the clean, focused Figma design:
-/// 1. Centered Header: "ჩემი კაბინეტი"
+/// 1. Centered Header: "ჩემი ფერმა"
 /// 2. "პროდუქტის მენეჯმენტი" (დაამატე ახალი პროდუქტი, მარაგის მართვა)
 /// 3. "შეკვეთები" (ახალი შეკვეთები: გაუქმება / დათანხმება, პროცესში მყოფი შეკვეთები)
 class FarmerDashboardScreen extends ConsumerStatefulWidget {
@@ -228,7 +228,7 @@ class _FarmerDashboardScreenState extends ConsumerState<FarmerDashboardScreen> {
           children: [
             // Unified App Header (Title & Notifications Bell)
             const AppHeader(
-              title: 'ჩემი კაბინეტი',
+              title: 'ჩემი ფერმა',
               showNotificationBell: true,
               showCart: false,
               padding: EdgeInsets.fromLTRB(20, 12, 20, 12),

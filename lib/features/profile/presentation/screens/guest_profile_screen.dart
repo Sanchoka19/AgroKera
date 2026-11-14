@@ -285,7 +285,7 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
                             title: 'ჩემი პროდუქტები',
                             subtitle: 'პროდუქტების სია და ფასები',
                             onTap: () {
-                              AppToast.info(context, 'გადადით კაბინეტში პროდუქტების სამართავად');
+                              AppToast.info(context, 'გადადით ფერმის გვერდზე პროდუქტების სამართავად');
                             },
                           ),
                           _buildRowDivider(),
@@ -294,7 +294,7 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
                             title: 'შემოსული შეკვეთები',
                             subtitle: 'შეკვეთების მართვა და სტატუსი',
                             onTap: () {
-                              AppToast.info(context, 'შემოსული შეკვეთების სია აქტიურია კაბინეტში');
+                              AppToast.info(context, 'შემოსული შეკვეთების სია აქტიურია ფერმის გვერდზე');
                             },
                           ),
                           _buildRowDivider(),

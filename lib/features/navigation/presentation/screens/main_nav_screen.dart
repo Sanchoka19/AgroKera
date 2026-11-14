@@ -80,7 +80,7 @@ class _MainNavScreenState extends ConsumerState<MainNavScreen> {
       if (isFarmer)
         const _NavItemData(
           svgAsset: AppAssets.barnIcon,
-          label: 'კაბინეტი',
+          label: 'ფერმა',
         ),
       const _NavItemData(
         icon: LucideIcons.user,

@@ -6,6 +6,8 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_header.dart';
 import '../../../../core/widgets/app_toast.dart';
 import '../../../marketplace/presentation/screens/categories_screen.dart';
+import '../../../orders/presentation/screens/incoming_orders_screen.dart';
+import '../../../orders/presentation/screens/farmer_order_detail_screen.dart';
 
 /// Model for a Farmer Cabinet Order
 class _FarmerCabinetOrder {
@@ -275,21 +277,63 @@ class _FarmerDashboardScreenState extends ConsumerState<FarmerDashboardScreen> {
                 );
               },
             ),
+            const SizedBox(height: 12),
+
+            // Card 3: შემოსული შეკვეთები
+            _buildManagementCard(
+              icon: LucideIcons.inbox,
+              title: 'შემოსული შეკვეთები',
+              subtitle: 'სტატუსები, დეტალები და ზედნადებები',
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const IncomingOrdersScreen(),
+                  ),
+                );
+              },
+            ),
             const SizedBox(height: 24),
 
             // ==========================================
             // SECTION 2: შეკვეთები
             // ==========================================
             Padding(
-              padding: const EdgeInsets.only(left: 2, bottom: 12),
-              child: Text(
-                'შეკვეთები',
-                style: GoogleFonts.notoSansGeorgian(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w800,
-                  color: const Color(0xFF1E293B),
-                  letterSpacing: -0.2,
-                ),
+              padding: const EdgeInsets.only(left: 2, right: 2, bottom: 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'შეკვეთები',
+                    style: GoogleFonts.notoSansGeorgian(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      color: const Color(0xFF1E293B),
+                      letterSpacing: -0.2,
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const IncomingOrdersScreen(),
+                        ),
+                      );
+                    },
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: Text(
+                      'ყველას ნახვა',
+                      style: GoogleFonts.notoSansGeorgian(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
 
@@ -440,34 +484,46 @@ class _FarmerDashboardScreenState extends ConsumerState<FarmerDashboardScreen> {
   Widget _buildOrderCard(_FarmerCabinetOrder order, int index) {
     final isNew = order.status == 'new';
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(18),
+      child: InkWell(
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => FarmerOrderDetailScreen(orderId: order.id),
+            ),
+          );
+        },
         borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF0F172A).withValues(alpha: 0.04),
-            blurRadius: 12,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Row 1: Order ID & Status Badge
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'შეკვეთა #${order.id}',
-                style: GoogleFonts.notoSansGeorgian(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w800,
-                  color: const Color(0xFF0F172A),
-                ),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF0F172A).withValues(alpha: 0.04),
+                blurRadius: 12,
+                offset: const Offset(0, 3),
               ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Row 1: Order ID & Status Badge
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'შეკვეთა #${order.id}',
+                    style: GoogleFonts.notoSansGeorgian(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      color: const Color(0xFF0F172A),
+                    ),
+                  ),
               // Refined Status Badge with modern Dot Indicator & Organic palette
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
@@ -605,6 +661,8 @@ class _FarmerDashboardScreenState extends ConsumerState<FarmerDashboardScreen> {
           ],
         ],
       ),
-    );
+    ),
+  ),
+);
   }
 }

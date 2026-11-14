@@ -48,6 +48,20 @@ abstract final class MockData {
       imageUrl: AppAssets.categoryBean,
       backgroundColor: Color(0xFFC78F52),
     ),
+    CategoryModel(
+      id: 'cat_honey',
+      name: 'თაფლი და მეფუტკრეობა',
+      productCount: 4,
+      imageUrl: AppAssets.categoryHoney,
+      backgroundColor: Color(0xFFD97706),
+    ),
+    CategoryModel(
+      id: 'cat_wine',
+      name: 'მეღვინეობა და სასმელები',
+      productCount: 4,
+      imageUrl: AppAssets.categoryWine,
+      backgroundColor: Color(0xFF9D174D),
+    ),
   ];
 
   static const List<FarmerModel> farmers = [
@@ -201,6 +215,38 @@ abstract final class MockData {
           'https://images.unsplash.com/photo-1537640538966-79f369143f8f?w=600&auto=format&fit=crop&q=80',
       description:
           'რჩეული საფერავის ჯიშის სუფრის ყურძენი გურჯაანის ვენახებიდან. ტკბილი, ხორციანი მარცვლებითა და საუკეთესო არომატით.',
+    ),
+    ProductModel(
+      id: 'prod_honey_1',
+      title: 'ალპური ყვავილების თაფლი',
+      category: 'თაფლი და მეფუტკრეობა',
+      farmerId: 'farmer_1',
+      farmerName: 'მწვანე ველი',
+      price: 28.0,
+      discountPercent: 0,
+      rating: 5.0,
+      reviewCount: 42,
+      stockStatus: 'მარაგშია',
+      imageUrl:
+          'https://images.unsplash.com/photo-1587049352846-4a222e784d38?w=600&auto=format&fit=crop&q=80',
+      description:
+          '100% ნატურალური, გაუცხელებელი ალპური ყვავილის თაფლი მაღალმთიანი რეგიონიდან.',
+    ),
+    ProductModel(
+      id: 'prod_wine_1',
+      title: 'საფერავი ქვევრის (ბიო)',
+      category: 'მეღვინეობა და სასმელები',
+      farmerId: 'farmer_3',
+      farmerName: 'ალაზნის ბაღები',
+      price: 35.0,
+      discountPercent: 10,
+      rating: 4.9,
+      reviewCount: 56,
+      stockStatus: 'მარაგშია',
+      imageUrl:
+          'https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=600&auto=format&fit=crop&q=80',
+      description:
+          'ტრადიციული კახური წესით, ქვევრში 6 თვის განმავლობაში დავარგებული ბიო საფერავი.',
     ),
   ];
 }

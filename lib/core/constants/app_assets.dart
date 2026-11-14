@@ -30,4 +30,8 @@ abstract final class AppAssets {
       'assets/illustrations/categories/dairy.png';
   static const String categoryBean =
       'assets/illustrations/categories/grain.png';
+  static const String categoryHoney =
+      'assets/illustrations/categories/honey.png';
+  static const String categoryWine =
+      'assets/illustrations/categories/wine.png';
 }

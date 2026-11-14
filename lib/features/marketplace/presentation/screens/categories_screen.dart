@@ -244,6 +244,20 @@ class _CategoryBentoCard extends StatelessWidget {
           borderColor: Color(0xFFFDE68A),
           accentColor: Color(0xFFB45309),
         );
+      case 'cat_honey':
+        return const _BentoStyle(
+          bgStart: Color(0xFFFFFBEB),
+          bgEnd: Color(0xFFFEF3C7),
+          borderColor: Color(0xFFFDE68A),
+          accentColor: Color(0xFFD97706),
+        );
+      case 'cat_wine':
+        return const _BentoStyle(
+          bgStart: Color(0xFFFDF2F8),
+          bgEnd: Color(0xFFFCE7F3),
+          borderColor: Color(0xFFFBCFE8),
+          accentColor: Color(0xFF9D174D),
+        );
       case 'cat_grain':
       default:
         return const _BentoStyle(

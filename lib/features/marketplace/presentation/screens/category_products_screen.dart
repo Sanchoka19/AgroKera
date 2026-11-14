@@ -222,10 +222,16 @@ class _CategoryProductsScreenState
             elevation: 4,
             shape: const CircleBorder(),
             onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => const CartScreen(),
-                ),
+              requireAuth(
+                context,
+                ref: ref,
+                onAuthenticated: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const CartScreen(),
+                    ),
+                  );
+                },
               );
             },
             child: const Icon(

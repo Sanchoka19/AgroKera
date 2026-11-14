@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:agrokera/core/auth/auth_state_provider.dart';
 import 'package:agrokera/features/cart_checkout/data/models/cart_item_model.dart';
 import 'package:agrokera/features/cart_checkout/presentation/providers/cart_provider.dart';
 import 'package:agrokera/features/cart_checkout/presentation/screens/cart_screen.dart';
 import 'package:agrokera/features/cart_checkout/presentation/screens/checkout_screen.dart';
 import 'package:agrokera/features/cart_checkout/presentation/widgets/fee_breakdown_sheet.dart';
+import 'package:agrokera/features/marketplace/presentation/screens/favorites_screen.dart';
 
 void main() {
   group('Cart Provider Unit Tests', () {
@@ -50,11 +52,43 @@ void main() {
     });
   });
 
-  group('Cart Screen Widget Tests', () {
-    testWidgets('renders populated cart with stepper and totals', (tester) async {
+  group('Cart & Favorites Auth Guard Tests', () {
+    testWidgets('shows auth required screen for unauthenticated user on CartScreen', (tester) async {
       await tester.pumpWidget(
         const ProviderScope(
           child: MaterialApp(
+            home: CartScreen(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('ავტორიზაცია აუცილებელია'), findsOneWidget);
+      expect(find.text('შესვლა / რეგისტრაცია'), findsOneWidget);
+    });
+
+    testWidgets('shows auth required screen for unauthenticated user on FavoritesScreen', (tester) async {
+      await tester.pumpWidget(
+        const ProviderScope(
+          child: MaterialApp(
+            home: FavoritesScreen(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('ავტორიზაცია აუცილებელია'), findsOneWidget);
+      expect(find.text('შესვლა / რეგისტრაცია'), findsOneWidget);
+    });
+
+    testWidgets('renders populated cart with stepper and totals for authenticated user', (tester) async {
+      final container = ProviderContainer();
+      container.read(authStateProvider.notifier).login(role: UserRole.customer);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const MaterialApp(
             home: CartScreen(),
           ),
         ),
@@ -66,8 +100,9 @@ void main() {
       expect(find.text('ადიგენის კარტოფილი'), findsOneWidget);
     });
 
-    testWidgets('renders empty cart state when cart has no items', (tester) async {
+    testWidgets('renders empty cart state when cart has no items for authenticated user', (tester) async {
       final container = ProviderContainer();
+      container.read(authStateProvider.notifier).login(role: UserRole.customer);
       container.read(cartProvider.notifier).clearCart();
 
       await tester.pumpWidget(
@@ -121,4 +156,3 @@ void main() {
     });
   });
 }
-

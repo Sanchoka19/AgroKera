@@ -11,6 +11,7 @@ import '../../data/models/product_model.dart';
 import '../../../cart_checkout/data/models/cart_item_model.dart';
 import '../../../cart_checkout/presentation/providers/cart_provider.dart';
 import '../../../cart_checkout/presentation/screens/cart_screen.dart';
+import '../providers/favorites_provider.dart';
 import 'farmer_profile_screen.dart';
 
 /// Product Details Screen adhering to specification:
@@ -32,7 +33,6 @@ class ProductDetailsScreen extends ConsumerStatefulWidget {
 
 class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
   int _quantity = 1;
-  bool _isFavorite = false;
 
   @override
   Widget build(BuildContext context) {
@@ -73,20 +73,25 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                 padding: const EdgeInsets.all(8.0),
                 child: CircleAvatar(
                   backgroundColor: AppColors.surface.withValues(alpha: 0.9),
-                  child: IconButton(
-                    icon: Icon(
-                      _isFavorite ? Icons.favorite : LucideIcons.heart,
-                      color: _isFavorite
-                          ? AppColors.accentWarm
-                          : AppColors.textPrimary,
-                      size: 20,
-                    ),
-                    onPressed: () {
-                      requireAuth(
-                        context,
-                        ref: ref,
-                        onAuthenticated: () {
-                          setState(() => _isFavorite = !_isFavorite);
+                  child: Consumer(
+                    builder: (context, ref, child) {
+                      final isFav = ref.watch(favoritesProvider).contains(product.id);
+                      return IconButton(
+                        icon: Icon(
+                          isFav ? Icons.favorite : LucideIcons.heart,
+                          color: isFav
+                              ? AppColors.accentWarm
+                              : AppColors.textPrimary,
+                          size: 20,
+                        ),
+                        onPressed: () {
+                          requireAuth(
+                            context,
+                            ref: ref,
+                            onAuthenticated: () {
+                              ref.read(favoritesProvider.notifier).toggle(product.id);
+                            },
+                          );
                         },
                       );
                     },
@@ -509,10 +514,16 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                                 label: 'კალათის ნახვა',
                                 textColor: Colors.white,
                                 onPressed: () {
-                                  Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                      builder: (_) => const CartScreen(),
-                                    ),
+                                  requireAuth(
+                                    context,
+                                    ref: ref,
+                                    onAuthenticated: () {
+                                      Navigator.of(context).push(
+                                        MaterialPageRoute(
+                                          builder: (_) => const CartScreen(),
+                                        ),
+                                      );
+                                    },
                                   );
                                 },
                               ),

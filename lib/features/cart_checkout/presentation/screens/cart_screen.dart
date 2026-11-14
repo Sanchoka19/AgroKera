@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import '../../../../core/auth/auth_state_provider.dart';
 import '../../../../core/constants/app_assets.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../core/widgets/auth_required_bottom_sheet.dart';
 import '../providers/cart_provider.dart';
 import 'checkout_screen.dart';
 
@@ -20,6 +22,96 @@ class _CartScreenState extends ConsumerState<CartScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final authState = ref.watch(authStateProvider);
+    if (!authState.isAuthenticated) {
+      return Scaffold(
+        backgroundColor: Colors.white,
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          elevation: 0,
+          centerTitle: true,
+          leading: IconButton(
+            icon: const Icon(LucideIcons.chevronLeft, color: AppColors.textPrimary, size: 28),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+          title: Text(
+            'კალათი',
+            style: AppTypography.h1.copyWith(
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+            ),
+          ),
+        ),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 90,
+                  height: 90,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFE8F5E9),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    LucideIcons.lock,
+                    size: 42,
+                    color: Color(0xFF4EA668),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  'ავტორიზაცია აუცილებელია',
+                  textAlign: TextAlign.center,
+                  style: AppTypography.h1.copyWith(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  'კალათის სანახავად და შეკვეთის გასაფორმებლად გთხოვთ გაიაროთ ავტორიზაცია.',
+                  textAlign: TextAlign.center,
+                  style: AppTypography.bodyMedium.copyWith(
+                    fontSize: 14,
+                    color: AppColors.textSecondary,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 28),
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: () => AuthRequiredBottomSheet.show(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF4EA668),
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text(
+                      'შესვლა / რეგისტრაცია',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     final cartItems = ref.watch(cartProvider);
     final isEmpty = cartItems.isEmpty;
     final subtotal = cartItems.subtotal;

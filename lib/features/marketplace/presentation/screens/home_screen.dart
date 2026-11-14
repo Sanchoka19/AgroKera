@@ -14,6 +14,7 @@ import '../../../cart_checkout/presentation/providers/cart_provider.dart';
 import '../../../cart_checkout/presentation/screens/cart_screen.dart';
 import '../widgets/global_search_dialog.dart';
 import '../widgets/guest_promo_banner.dart';
+import 'favorites_screen.dart';
 import 'farmer_profile_screen.dart';
 import 'product_details_screen.dart';
 
@@ -99,9 +100,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   context,
                                   ref: ref,
                                   onAuthenticated: () {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text('სურვილების სია გახსნილია'),
+                                    Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (_) => const FavoritesScreen(),
                                       ),
                                     );
                                   },
@@ -115,10 +116,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             ),
                             IconButton(
                               onPressed: () {
-                                Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (_) => const CartScreen(),
-                                  ),
+                                requireAuth(
+                                  context,
+                                  ref: ref,
+                                  onAuthenticated: () {
+                                    Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (_) => const CartScreen(),
+                                      ),
+                                    );
+                                  },
                                 );
                               },
                               icon: Stack(

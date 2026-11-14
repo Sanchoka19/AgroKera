@@ -74,27 +74,29 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF031A1E),
+      backgroundColor: Colors.white,
       resizeToAvoidBottomInset: true,
-      body: Column(
-        children: [
-          // ==========================================
-          // 1. TOP BRANDING HERO (Dark Midnight Teal Gradient)
-          // ==========================================
-          Container(
-            width: double.infinity,
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Color(0xFF021215),
-                  Color(0xFF04242A),
-                  Color(0xFF083C45),
-                ],
-              ),
-            ),
-            child: SafeArea(
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            stops: [0.0, 0.14, 0.28],
+            colors: [
+              Color(0xFF021215),
+              Color(0xFF04242A),
+              Color(0xFF083C45),
+            ],
+          ),
+        ),
+        child: Column(
+          children: [
+            // ==========================================
+            // 1. TOP BRANDING HERO (Dark Midnight Teal Gradient)
+            // ==========================================
+            SafeArea(
               bottom: false,
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 4, 16, 28), // Generous 28px gap to white container!
@@ -176,25 +178,17 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 ),
               ),
             ),
-          ),
 
-          // ==========================================
-          // 2. BOTTOM WHITE SHEET CARD (Ultra-clean modern form, zero-scroll by default)
-          // ==========================================
-          Expanded(
-            child: Container(
-              width: double.infinity,
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black26,
-                    blurRadius: 24,
-                    offset: Offset(0, -6),
-                  ),
-                ],
-              ),
+            // ==========================================
+            // 2. BOTTOM WHITE SHEET CARD (Ultra-clean modern form, zero-scroll by default)
+            // ==========================================
+            Expanded(
+              child: Container(
+                width: double.infinity,
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+                ),
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   return SingleChildScrollView(
@@ -422,8 +416,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildFieldLabel(String label) {
     return Text(

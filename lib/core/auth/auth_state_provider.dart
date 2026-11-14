@@ -170,6 +170,20 @@ class AuthNotifier extends Notifier<AuthState> {
     ));
   }
 
+  /// Temporarily stores the user's name and email during the multi-step registration wizard
+  /// without marking the user as authenticated until role selection & verification finish.
+  void savePendingRegistrationDraft({
+    required String name,
+    required String email,
+  }) {
+    state = state.copyWith(
+      isAuthenticated: false,
+      role: UserRole.guest,
+      userName: name,
+      userEmail: email,
+    );
+  }
+
   void register({
     required UserRole role,
     String name = 'ახალი მომხმარებელი',

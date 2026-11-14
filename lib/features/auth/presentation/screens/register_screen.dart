@@ -53,8 +53,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       return;
     }
 
-    ref.read(authStateProvider.notifier).register(
-      role: UserRole.customer,
+    ref.read(authStateProvider.notifier).savePendingRegistrationDraft(
       name: name,
       email: email,
     );
@@ -71,8 +70,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     if (account == null || !mounted) return;
 
     HapticFeedback.lightImpact();
-    ref.read(authStateProvider.notifier).register(
-      role: UserRole.customer,
+    ref.read(authStateProvider.notifier).savePendingRegistrationDraft(
       name: account.name,
       email: account.email,
     );

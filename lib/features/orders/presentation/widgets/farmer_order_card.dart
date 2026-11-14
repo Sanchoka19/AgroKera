@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/app_reason_bottom_sheet.dart';
 import '../../../../core/widgets/app_toast.dart';
 import '../../domain/models/farmer_order_model.dart';
 import '../screens/farmer_order_detail_screen.dart';
@@ -10,7 +11,7 @@ import '../screens/farmer_order_detail_screen.dart';
 class FarmerOrderCard extends StatelessWidget {
   final FarmerOrder order;
   final VoidCallback? onAccept;
-  final VoidCallback? onCancel;
+  final void Function(String reason)? onCancel;
 
   const FarmerOrderCard({
     super.key,
@@ -27,63 +28,22 @@ class FarmerOrderCard extends StatelessWidget {
     );
   }
 
-  void _handleCancel(BuildContext context) {
-    showDialog(
+  Future<void> _handleCancel(BuildContext context) async {
+    final reason = await AppReasonBottomSheet.show(
       context: context,
-      builder: (dialogCtx) => AlertDialog(
-        backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(
-          'შეკვეთის გაუქმება',
-          style: GoogleFonts.notoSansGeorgian(
-            fontSize: 16,
-            fontWeight: FontWeight.w800,
-            color: const Color(0xFF0F172A),
-          ),
-        ),
-        content: Text(
-          'ნამდვილად გსურთ შეკვეთის #${order.id} გაუქმება?',
-          style: GoogleFonts.notoSansGeorgian(
-            fontSize: 13.5,
-            color: const Color(0xFF64748B),
-          ),
-        ),
-        actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogCtx).pop(),
-            child: Text(
-              'უკან',
-              style: GoogleFonts.notoSansGeorgian(
-                fontWeight: FontWeight.w600,
-                color: const Color(0xFF64748B),
-              ),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(dialogCtx).pop();
-              if (onCancel != null) {
-                onCancel!();
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFDC2626),
-              foregroundColor: Colors.white,
-              elevation: 0,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            ),
-            child: Text(
-              'გაუქმება',
-              style: GoogleFonts.notoSansGeorgian(
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-        ],
-      ),
+      title: 'შეკვეთის გაუქმება',
+      subtitle: 'შეკვეთა #${order.id} • გთხოვთ მიუთითოთ მიზეზი',
+      confirmButtonText: 'გაუქმების დადასტურება',
+      confirmButtonColor: const Color(0xFFDC2626),
+      icon: LucideIcons.alertTriangle,
+      reasons: AppReasonBottomSheet.defaultOrderCancellationReasons,
     );
+
+    if (reason != null && context.mounted) {
+      if (onCancel != null) {
+        onCancel!(reason);
+      }
+    }
   }
 
   void _showDocumentSheet(BuildContext context) {

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/app_reason_bottom_sheet.dart';
 import '../../../../core/widgets/app_toast.dart';
 import '../../domain/models/farmer_order_model.dart';
 import '../providers/farmer_orders_provider.dart';
@@ -49,89 +50,40 @@ class _FarmerOrderDetailScreenState
     );
   }
 
-  void _onCancelOrder(FarmerOrder order) {
-    final reasonController = TextEditingController();
-
-    showDialog(
+  Future<void> _onCancelOrder(FarmerOrder order) async {
+    final reason = await AppReasonBottomSheet.show(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: Text(
-            'შეკვეთის გაუქმება',
-            style: GoogleFonts.notoSansGeorgian(
-              fontWeight: FontWeight.w800,
-              fontSize: 17,
-              color: const Color(0xFF0F172A),
-            ),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'დარწმუნებული ხართ, რომ გსურთ შეკვეთის გაუქმება? მიუთითეთ მიზეზი:',
-                style: GoogleFonts.notoSansGeorgian(
-                  fontSize: 13,
-                  color: const Color(0xFF64748B),
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: reasonController,
-                decoration: InputDecoration(
-                  hintText: 'მაგ: მარაგის არ არსებობის გამო',
-                  hintStyle: GoogleFonts.notoSansGeorgian(fontSize: 13),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text(
-                'უკან',
-                style: GoogleFonts.notoSansGeorgian(
-                  fontWeight: FontWeight.w600,
-                  color: const Color(0xFF64748B),
-                ),
-              ),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                final reason = reasonController.text.trim().isEmpty
-                    ? 'მარაგის არ არსებობის გამო'
-                    : reasonController.text.trim();
-                Navigator.of(context).pop();
-                ref.read(farmerOrdersProvider.notifier).cancelOrder(order.id, reason: reason);
-                AppToast.info(context, 'შეკვეთა #${order.id} გაუქმებულია');
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFDC2626),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-              child: Text(
-                'გაუქმება',
-                style: GoogleFonts.notoSansGeorgian(fontWeight: FontWeight.w700),
-              ),
-            ),
-          ],
-        );
-      },
+      title: 'შეკვეთის გაუქმება',
+      subtitle: 'შეკვეთა #${order.id} • გთხოვთ მიუთითოთ მიზეზი',
+      confirmButtonText: 'გაუქმების დადასტურება',
+      confirmButtonColor: const Color(0xFFDC2626),
+      icon: LucideIcons.alertTriangle,
+      reasons: AppReasonBottomSheet.defaultOrderCancellationReasons,
     );
+
+    if (reason != null && mounted) {
+      ref.read(farmerOrdersProvider.notifier).cancelOrder(order.id, reason: reason);
+      AppToast.info(context, 'შეკვეთა #${order.id} გაუქმებულია');
+    }
   }
 
-  void _onRequestCancellation(FarmerOrder order) {
-    AppToast.info(
-      context,
-      'გაუქმების მოთხოვნა გაეგზავნა ადმინისტრაციასა და დამკვეთს',
+  Future<void> _onRequestCancellation(FarmerOrder order) async {
+    final reason = await AppReasonBottomSheet.show(
+      context: context,
+      title: 'გაუქმების მოთხოვნა',
+      subtitle: 'შეკვეთა #${order.id} • მოთხოვნა გადაეგზავნება ადმინისტრაციას',
+      confirmButtonText: 'მოთხოვნის გაგზავნა',
+      confirmButtonColor: const Color(0xFFEA580C),
+      icon: LucideIcons.send,
+      reasons: AppReasonBottomSheet.defaultOrderCancellationReasons,
     );
+
+    if (reason != null && mounted) {
+      AppToast.success(
+        context,
+        'გაუქმების მოთხოვნა მიზეზით: "$reason" გაგზავნილია ადმინისტრაციასთან',
+      );
+    }
   }
 
   void _onContactCustomer(FarmerOrder order) {

@@ -113,11 +113,11 @@ class IncomingOrdersScreen extends ConsumerWidget {
                       'შეკვეთა #${order.id} დადასტურებულია და გადავიდა მიმდინარეში!',
                     );
                   },
-                  onCancel: () {
-                    ordersNotifier.cancelOrder(order.id, reason: 'ფერმერის მიერ გაუქმებული');
+                  onCancel: (reason) {
+                    ordersNotifier.cancelOrder(order.id, reason: reason);
                     AppToast.info(
                       context,
-                      'შეკვეთა #${order.id} გაუქმებულია.',
+                      'შეკვეთა #${order.id} გაუქმებულია ($reason)',
                     );
                   },
                 );

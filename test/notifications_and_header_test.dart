@@ -8,6 +8,7 @@ import 'package:agrokera/core/widgets/app_search_bar.dart';
 import 'package:agrokera/core/widgets/app_toast.dart';
 import 'package:agrokera/features/notifications/presentation/providers/notifications_provider.dart';
 import 'package:agrokera/features/notifications/presentation/screens/notifications_screen.dart';
+import 'package:agrokera/features/marketplace/presentation/screens/categories_screen.dart';
 import 'test_helper.dart';
 
 void main() {
@@ -221,6 +222,38 @@ void main() {
     AppToast.dismiss();
     await tester.pumpAndSettle();
     expect(find.text('ინფორმაცია განახლდა'), findsNothing);
+  });
+
+  testWidgets('CategoriesScreen renders bento cards and filters by search',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(
+      const ProviderScope(
+        child: MaterialApp(
+          home: CategoriesScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Verify Title and Subheader
+    expect(find.text('აგრო მარკეტი'), findsOneWidget);
+    expect(find.text('100% ორგანული'), findsOneWidget);
+    expect(find.text('ხილი'), findsOneWidget);
+    expect(find.text('ციტრუსი'), findsOneWidget);
+
+    // Search for 'ბოსტ'
+    await tester.enterText(find.byType(TextField), 'ბოსტ');
+    await tester.pumpAndSettle();
+
+    expect(find.text('ბოსტნეული'), findsOneWidget);
+    expect(find.text('ხილი'), findsNothing);
+
+    // Clear search
+    await tester.tap(find.byIcon(LucideIcons.x));
+    await tester.pumpAndSettle();
+
+    expect(find.text('ხილი'), findsOneWidget);
+    expect(find.text('ციტრუსი'), findsOneWidget);
   });
 }
 

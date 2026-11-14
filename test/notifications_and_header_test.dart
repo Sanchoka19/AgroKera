@@ -5,7 +5,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:agrokera/core/widgets/app_header.dart';
 import 'package:agrokera/core/widgets/app_search_bar.dart';
-import 'package:agrokera/features/notifications/data/models/notification_model.dart';
 import 'package:agrokera/features/notifications/presentation/providers/notifications_provider.dart';
 import 'package:agrokera/features/notifications/presentation/screens/notifications_screen.dart';
 import 'test_helper.dart';
@@ -142,3 +141,4 @@ void main() {
     expect(tapped, isTrue);
   });
 }
+

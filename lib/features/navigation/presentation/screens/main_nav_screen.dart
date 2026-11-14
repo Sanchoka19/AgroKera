@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:agrokera/core/auth/auth_state_provider.dart';
+import 'package:agrokera/core/constants/app_assets.dart';
 import 'package:agrokera/core/theme/app_colors.dart';
 import 'package:agrokera/features/farm_inventory/presentation/screens/farmer_dashboard_screen.dart';
 import '../../../marketplace/presentation/screens/categories_screen.dart';
@@ -12,11 +14,13 @@ import '../../../profile/presentation/screens/guest_profile_screen.dart';
 
 /// Navigation Tab Item Definition
 class _NavItemData {
-  final IconData icon;
+  final IconData? icon;
+  final String? svgAsset;
   final String label;
 
   const _NavItemData({
-    required this.icon,
+    this.icon,
+    this.svgAsset,
     required this.label,
   });
 }
@@ -75,7 +79,7 @@ class _MainNavScreenState extends ConsumerState<MainNavScreen> {
       ),
       if (isFarmer)
         const _NavItemData(
-          icon: LucideIcons.briefcase,
+          svgAsset: AppAssets.barnIcon,
           label: 'კაბინეტი',
         ),
       const _NavItemData(
@@ -141,11 +145,22 @@ class _MainNavScreenState extends ConsumerState<MainNavScreen> {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(
-                              item.icon,
-                              size: 21,
-                              color: isSelected ? Colors.white : const Color(0xFF64748B),
-                            ),
+                            if (item.svgAsset != null)
+                              SvgPicture.asset(
+                                item.svgAsset!,
+                                width: 21,
+                                height: 21,
+                                colorFilter: ColorFilter.mode(
+                                  isSelected ? Colors.white : const Color(0xFF64748B),
+                                  BlendMode.srcIn,
+                                ),
+                              )
+                            else
+                              Icon(
+                                item.icon!,
+                                size: 21,
+                                color: isSelected ? Colors.white : const Color(0xFF64748B),
+                              ),
                             ClipRect(
                               child: AnimatedSize(
                                 duration: const Duration(milliseconds: 240),

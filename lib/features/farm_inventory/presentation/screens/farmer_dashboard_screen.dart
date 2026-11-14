@@ -479,20 +479,46 @@ class _FarmerDashboardScreenState extends ConsumerState<FarmerDashboardScreen> {
                   color: const Color(0xFF0F172A),
                 ),
               ),
-              // Status Badge
+              // Refined Status Badge with modern Dot Indicator & Organic palette
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
                 decoration: BoxDecoration(
-                  color: isNew ? const Color(0xFFFEF3C7) : const Color(0xFFDBEAFE),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  isNew ? 'ახალი' : 'პროცესშია',
-                  style: GoogleFonts.notoSansGeorgian(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: isNew ? const Color(0xFFD97706) : const Color(0xFF2563EB),
+                  color: isNew
+                      ? const Color(0xFFFFFBEB)
+                      : const Color(0xFFF0FDF4),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: isNew
+                        ? const Color(0xFFFDE68A)
+                        : const Color(0xFF99F6E4),
+                    width: 1,
                   ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 6,
+                      height: 6,
+                      decoration: BoxDecoration(
+                        color: isNew
+                            ? const Color(0xFFD97706)
+                            : const Color(0xFF0F766E),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 5),
+                    Text(
+                      isNew ? 'ახალი' : 'პროცესშია',
+                      style: GoogleFonts.notoSansGeorgian(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w700,
+                        color: isNew
+                            ? const Color(0xFFB45309)
+                            : const Color(0xFF0F766E),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],

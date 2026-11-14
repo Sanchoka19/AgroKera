@@ -116,3 +116,4 @@ class AppSearchBar extends StatelessWidget {
     );
   }
 }
+

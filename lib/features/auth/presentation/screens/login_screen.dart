@@ -76,51 +76,53 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF031A1E),
-      body: Stack(
+      resizeToAvoidBottomInset: true,
+      body: Column(
         children: [
           // ==========================================
           // 1. TOP BRANDING HERO (Dark Midnight Teal Gradient)
           // ==========================================
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            height: 240,
-            child: Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Color(0xFF021215),
-                    Color(0xFF04242A),
-                    Color(0xFF083C45),
-                  ],
-                ),
+          Container(
+            width: double.infinity,
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Color(0xFF021215),
+                  Color(0xFF04242A),
+                  Color(0xFF083C45),
+                ],
               ),
-              child: SafeArea(
+            ),
+            child: SafeArea(
+              bottom: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 28), // Generous 28px gap to white container!
                 child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Brand Icon & Title
+                    // Back button on top-left
+                    Row(
+                      children: [
+                        IconButton(
+                          icon: const Icon(LucideIcons.chevronLeft, color: Colors.white, size: 26),
+                          onPressed: () => Navigator.of(context).pop(),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+
+                    // AgroKera Official White Logo & Title
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Container(
-                          padding: const EdgeInsets.all(7),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF0F766E).withValues(alpha: 0.35),
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: const Color(0xFF2DD4BF).withValues(alpha: 0.3),
-                              width: 1.2,
-                            ),
-                          ),
-                          child: const Icon(
-                            LucideIcons.sprout,
-                            color: Color(0xFF34D399),
-                            size: 22,
-                          ),
+                        SvgPicture.asset(
+                          AppAssets.logoWhite,
+                          width: 32,
+                          height: 32,
                         ),
                         const SizedBox(width: 10),
                         Text(
@@ -134,7 +136,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 10),
 
                     // Pill Badge
                     Container(
@@ -178,11 +180,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           ),
 
           // ==========================================
-          // 2. BOTTOM WHITE SHEET CARD (Ultra-clean modern form)
+          // 2. BOTTOM WHITE SHEET CARD (Ultra-clean modern form, zero-scroll by default)
           // ==========================================
-          Positioned.fill(
-            top: 170,
+          Expanded(
             child: Container(
+              width: double.infinity,
               decoration: const BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
@@ -194,274 +196,283 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                 ],
               ),
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(24, 14, 24, 32),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Drag Handle Pill
-                    Center(
-                      child: Container(
-                        width: 44,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFE2E8F0),
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-
-                    // Title
-                    Text(
-                      'სისტემაში შესვლა',
-                      style: AppTypography.h1.copyWith(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-
-                    // Subtitle
-                    Text(
-                      'მოგესალმებით! გაიარეთ ავტორიზაცია აგროკერაზე წვდომისთვის',
-                      style: AppTypography.bodyMedium.copyWith(
-                        fontSize: 14,
-                        color: const Color(0xFF64748B),
-                        height: 1.45,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Field 1: Email
-                    Text(
-                      'ელექტრონული ფოსტა',
-                      style: AppTypography.bodyMedium.copyWith(
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w600,
-                        color: const Color(0xFF334155),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF8FAFC),
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: const Color(0xFFE2E8F0)),
-                      ),
-                      child: TextField(
-                        controller: _emailController,
-                        keyboardType: TextInputType.emailAddress,
-                        style: const TextStyle(
-                          fontSize: 15,
-                          color: AppColors.textPrimary,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        decoration: const InputDecoration(
-                          hintText: 'user@example.ge',
-                          hintStyle: TextStyle(color: Color(0xFF94A3B8), fontSize: 14),
-                          prefixIcon: Icon(LucideIcons.mail, color: Color(0xFF94A3B8), size: 20),
-                          border: InputBorder.none,
-                          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 15),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 18),
-
-                    // Field 2: Password
-                    Text(
-                      'პაროლი',
-                      style: AppTypography.bodyMedium.copyWith(
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w600,
-                        color: const Color(0xFF334155),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF8FAFC),
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: const Color(0xFFE2E8F0)),
-                      ),
-                      child: TextField(
-                        controller: _passwordController,
-                        obscureText: _obscurePassword,
-                        style: const TextStyle(
-                          fontSize: 15,
-                          color: AppColors.textPrimary,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        decoration: InputDecoration(
-                          hintText: '••••••••',
-                          hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 16),
-                          prefixIcon: const Icon(LucideIcons.lock, color: Color(0xFF94A3B8), size: 20),
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              _obscurePassword ? LucideIcons.eyeOff : LucideIcons.eye,
-                              color: const Color(0xFF94A3B8),
-                              size: 20,
-                            ),
-                            onPressed: () {
-                              setState(() => _obscurePassword = !_obscurePassword);
-                            },
-                          ),
-                          border: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-
-                    // Forgot Password Link
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: GestureDetector(
-                        onTap: () => ForgotPasswordSheet.show(context),
-                        child: Text(
-                          'დაგავიწყდათ პაროლი?',
-                          style: AppTypography.caption.copyWith(
-                            fontSize: 13.5,
-                            fontWeight: FontWeight.w700,
-                            color: const Color(0xFF0F766E),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 22),
-
-                    // Main Sign In Button
-                    SizedBox(
-                      width: double.infinity,
-                      height: 52,
-                      child: ElevatedButton(
-                        onPressed: _onSignIn,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF064E3B),
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                        ),
-                        child: Text(
-                          'სისტემაში შესვლა',
-                          style: AppTypography.button.copyWith(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-
-                    // Google Sign-In Button
-                    SizedBox(
-                      width: double.infinity,
-                      height: 50,
-                      child: OutlinedButton(
-                        onPressed: _onGoogleSignIn,
-                        style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: Color(0xFFE2E8F0)),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          backgroundColor: Colors.white,
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            SvgPicture.asset(
-                              AppAssets.google,
-                              width: 20,
-                              height: 20,
-                            ),
-                            const SizedBox(width: 10),
-                            Text(
-                              'Google-ით შესვლა',
-                              style: AppTypography.button.copyWith(
-                                fontSize: 14.5,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.textPrimary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 18),
-
-                    // Don't have an account link
-                    Center(
-                      child: GestureDetector(
-                        onTap: () {
-                          Navigator.of(context).pushReplacement(
-                            MaterialPageRoute(
-                              builder: (_) => const RegisterScreen(),
-                            ),
-                          );
-                        },
-                        child: RichText(
-                          text: TextSpan(
-                            text: 'არ გაქვთ ანგარიში? ',
-                            style: GoogleFonts.notoSansGeorgian(
-                              fontSize: 14,
-                              color: const Color(0xFF64748B),
-                            ),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return SingleChildScrollView(
+                    physics: const ClampingScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(24, 12, 24, 20),
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(minHeight: constraints.maxHeight - 32),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              TextSpan(
-                                text: 'რეგისტრაცია',
-                                style: GoogleFonts.notoSansGeorgian(
-                                  fontWeight: FontWeight.w700,
-                                  color: const Color(0xFF0F766E),
+                              // Drag Handle Pill
+                              Center(
+                                child: Container(
+                                  width: 44,
+                                  height: 4,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFE2E8F0),
+                                    borderRadius: BorderRadius.circular(2),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 14),
+
+                              // Title
+                              Text(
+                                'სისტემაში შესვლა',
+                                style: AppTypography.h1.copyWith(
+                                  fontSize: 23,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+
+                              // Subtitle
+                              Text(
+                                'მოგესალმებით! გაიარეთ ავტორიზაცია აგროკერაზე წვდომისთვის',
+                                style: AppTypography.bodyMedium.copyWith(
+                                  fontSize: 13,
+                                  color: const Color(0xFF64748B),
+                                  height: 1.4,
+                                ),
+                              ),
+                              const SizedBox(height: 18),
+
+                              // Field 1: Email
+                              Text(
+                                'ელექტრონული ფოსტა',
+                                style: AppTypography.bodyMedium.copyWith(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: const Color(0xFF334155),
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF8FAFC),
+                                  borderRadius: BorderRadius.circular(14),
+                                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                                ),
+                                child: TextField(
+                                  controller: _emailController,
+                                  keyboardType: TextInputType.emailAddress,
+                                  style: const TextStyle(
+                                    fontSize: 14.5,
+                                    color: AppColors.textPrimary,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  decoration: const InputDecoration(
+                                    hintText: 'user@example.ge',
+                                    hintStyle: TextStyle(color: Color(0xFF94A3B8), fontSize: 13.5),
+                                    prefixIcon: Icon(LucideIcons.mail, color: Color(0xFF94A3B8), size: 19),
+                                    border: InputBorder.none,
+                                    contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+
+                              // Field 2: Password
+                              Text(
+                                'პაროლი',
+                                style: AppTypography.bodyMedium.copyWith(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: const Color(0xFF334155),
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF8FAFC),
+                                  borderRadius: BorderRadius.circular(14),
+                                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                                ),
+                                child: TextField(
+                                  controller: _passwordController,
+                                  obscureText: _obscurePassword,
+                                  style: const TextStyle(
+                                    fontSize: 14.5,
+                                    color: AppColors.textPrimary,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  decoration: InputDecoration(
+                                    hintText: '••••••••',
+                                    hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 15),
+                                    prefixIcon: const Icon(LucideIcons.lock, color: Color(0xFF94A3B8), size: 19),
+                                    suffixIcon: IconButton(
+                                      icon: Icon(
+                                        _obscurePassword ? LucideIcons.eyeOff : LucideIcons.eye,
+                                        color: const Color(0xFF94A3B8),
+                                        size: 19,
+                                      ),
+                                      onPressed: () {
+                                        setState(() => _obscurePassword = !_obscurePassword);
+                                      },
+                                    ),
+                                    border: InputBorder.none,
+                                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+
+                              // Forgot Password Link
+                              Align(
+                                alignment: Alignment.centerRight,
+                                child: GestureDetector(
+                                  onTap: () => ForgotPasswordSheet.show(context),
+                                  child: Text(
+                                    'დაგავიწყდათ პაროლი?',
+                                    style: AppTypography.caption.copyWith(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w700,
+                                      color: const Color(0xFF0F766E),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+
+                              // Main Sign In Button
+                              SizedBox(
+                                width: double.infinity,
+                                height: 48,
+                                child: ElevatedButton(
+                                  onPressed: _onSignIn,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFF064E3B),
+                                    foregroundColor: Colors.white,
+                                    elevation: 0,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(14),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    'სისტემაში შესვლა',
+                                    style: AppTypography.button.copyWith(
+                                      fontSize: 15.5,
+                                      fontWeight: FontWeight.w700,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+
+                              // Google Sign-In Button
+                              SizedBox(
+                                width: double.infinity,
+                                height: 46,
+                                child: OutlinedButton(
+                                  onPressed: _onGoogleSignIn,
+                                  style: OutlinedButton.styleFrom(
+                                    side: const BorderSide(color: Color(0xFFE2E8F0)),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(14),
+                                    ),
+                                    backgroundColor: Colors.white,
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      SvgPicture.asset(
+                                        AppAssets.google,
+                                        width: 19,
+                                        height: 19,
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Text(
+                                        'Google-ით შესვლა',
+                                        style: AppTypography.button.copyWith(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                          color: AppColors.textPrimary,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 14),
+
+                              // Don't have an account link
+                              Center(
+                                child: GestureDetector(
+                                  onTap: () {
+                                    Navigator.of(context).pushReplacement(
+                                      MaterialPageRoute(
+                                        builder: (_) => const RegisterScreen(),
+                                      ),
+                                    );
+                                  },
+                                  child: RichText(
+                                    text: TextSpan(
+                                      text: 'არ გაქვთ ანგარიში? ',
+                                      style: GoogleFonts.notoSansGeorgian(
+                                        fontSize: 13.5,
+                                        color: const Color(0xFF64748B),
+                                      ),
+                                      children: [
+                                        TextSpan(
+                                          text: 'რეგისტრაცია',
+                                          style: GoogleFonts.notoSansGeorgian(
+                                            fontWeight: FontWeight.w700,
+                                            color: const Color(0xFF0F766E),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
                                 ),
                               ),
                             ],
                           ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 26),
 
-                    // Security Footer
-                    Center(
-                      child: Text(
-                        'შესვლით თქვენ ეთანხმებით წესებსა და კონფიდენციალურობას',
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.notoSansGeorgian(
-                          fontSize: 12,
-                          color: const Color(0xFF94A3B8),
-                        ),
+                          // Security Footer
+                          Padding(
+                            padding: const EdgeInsets.only(top: 14),
+                            child: Column(
+                              children: [
+                                Center(
+                                  child: Text(
+                                    'შესვლით თქვენ ეთანხმებით წესებსა და კონფიდენციალურობას',
+                                    textAlign: TextAlign.center,
+                                    style: GoogleFonts.notoSansGeorgian(
+                                      fontSize: 11.5,
+                                      color: const Color(0xFF94A3B8),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Center(
+                                  child: Text(
+                                    'AGROKERA FIELD SECURITY • V1.0',
+                                    style: GoogleFonts.notoSansGeorgian(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: 1.5,
+                                      color: const Color(0xFFCBD5E1),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 6),
-                    Center(
-                      child: Text(
-                        'AGROKERA FIELD SECURITY • V1.0',
-                        style: GoogleFonts.notoSansGeorgian(
-                          fontSize: 10.5,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 1.5,
-                          color: const Color(0xFFCBD5E1),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                  );
+                },
               ),
-            ),
-          ),
-
-          // Close / Back button in top-left
-          Positioned(
-            top: MediaQuery.of(context).padding.top + 6,
-            left: 12,
-            child: IconButton(
-              icon: const Icon(LucideIcons.chevronLeft, color: Colors.white, size: 28),
-              onPressed: () => Navigator.of(context).pop(),
             ),
           ),
         ],

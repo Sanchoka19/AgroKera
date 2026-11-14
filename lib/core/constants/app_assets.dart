@@ -17,15 +17,17 @@ abstract final class AppAssets {
   static const String customerRole = 'assets/illustrations/customer_role.png';
   static const String emptyCart = 'assets/illustrations/empty_cart.svg';
 
-  // Categories
-  static const String categoryBean =
-      'assets/images/categories/bean_category.png';
-  static const String categoryBerry =
-      'assets/images/categories/berry_category.png';
+  // Categories (3D Bento Illustrations)
+  static const String categoryFruit =
+      'assets/illustrations/categories/fruit.png';
   static const String categoryCitrus =
-      'assets/images/categories/citrus_category.png';
-  static const String categoryMilk =
-      'assets/images/categories/milk_category.png';
+      'assets/illustrations/categories/citrus.png';
+  static const String categoryBerry =
+      'assets/illustrations/categories/berry.png';
   static const String categoryVegetable =
-      'assets/images/categories/vegetable_category.png';
+      'assets/illustrations/categories/vegetable.png';
+  static const String categoryMilk =
+      'assets/illustrations/categories/dairy.png';
+  static const String categoryBean =
+      'assets/illustrations/categories/grain.png';
 }

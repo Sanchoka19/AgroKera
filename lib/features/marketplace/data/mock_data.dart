@@ -10,8 +10,7 @@ abstract final class MockData {
       id: 'cat_fruit',
       name: 'ხილი',
       productCount: 5,
-      imageUrl:
-          'https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=600&auto=format&fit=crop&q=80',
+      imageUrl: AppAssets.categoryFruit,
       backgroundColor: Color(0xFF7CB342),
     ),
     CategoryModel(

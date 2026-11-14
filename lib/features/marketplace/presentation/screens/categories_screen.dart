@@ -150,9 +150,9 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                         gridDelegate:
                             const SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: 2,
-                          crossAxisSpacing: 14,
-                          mainAxisSpacing: 14,
-                          childAspectRatio: 0.84,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                          childAspectRatio: 1.28,
                         ),
                         delegate: SliverChildBuilderDelegate(
                           (context, index) {
@@ -261,14 +261,14 @@ class _CategoryBentoCard extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final imgSize = (constraints.maxWidth * 0.52).clamp(74.0, 94.0);
+        final imgSize = (constraints.maxHeight * 0.82).clamp(80.0, 115.0);
 
         return InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(22),
+          borderRadius: BorderRadius.circular(20),
           child: Container(
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(22),
+              borderRadius: BorderRadius.circular(20),
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
@@ -279,25 +279,25 @@ class _CategoryBentoCard extends StatelessWidget {
               ),
               border: Border.all(
                 color: style.borderColor,
-                width: 1.2,
+                width: 1.0,
               ),
               boxShadow: [
                 BoxShadow(
                   color: style.accentColor.withValues(alpha: 0.08),
-                  blurRadius: 14,
-                  offset: const Offset(0, 5),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
                 ),
                 BoxShadow(
                   color: const Color(0xFF0F172A).withValues(alpha: 0.03),
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
+                  blurRadius: 3,
+                  offset: const Offset(0, 1),
                 ),
               ],
             ),
             clipBehavior: Clip.antiAlias,
             child: Stack(
               children: [
-                // Decorative soft ambient circle in bottom corner for layered depth
+                // Soft ambient circular glow behind floating illustration
                 Positioned(
                   right: -15,
                   bottom: -15,
@@ -306,49 +306,77 @@ class _CategoryBentoCard extends StatelessWidget {
                     height: 110,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: Colors.white.withValues(alpha: 0.35),
+                      color: Colors.white.withValues(alpha: 0.45),
                     ),
                   ),
                 ),
 
-                // Top Content: Category Name + Count Dot Chip
+                // Floating 3D Transparent Illustration (No square box/border)
                 Positioned(
-                  top: 14,
-                  left: 14,
-                  right: 14,
+                  right: -4,
+                  bottom: -4,
+                  child: SizedBox(
+                    width: imgSize,
+                    height: imgSize,
+                    child: category.imageUrl.startsWith('assets/')
+                        ? Image.asset(
+                            category.imageUrl,
+                            fit: BoxFit.contain,
+                            filterQuality: FilterQuality.medium,
+                            errorBuilder: (context, error, stackTrace) =>
+                                const SizedBox.shrink(),
+                          )
+                        : Image.network(
+                            category.imageUrl,
+                            fit: BoxFit.contain,
+                            filterQuality: FilterQuality.medium,
+                            errorBuilder: (context, error, stackTrace) =>
+                                const SizedBox.shrink(),
+                          ),
+                  ),
+                ),
+
+                // Left Column: Category Name, Count Chip, and Arrow CTA
+                Positioned(
+                  top: 12,
+                  left: 12,
+                  bottom: 12,
+                  right: imgSize * 0.75,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
                     children: [
+                      // Category Title
                       Text(
                         category.name,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.notoSansGeorgian(
-                          fontSize: 15.5,
+                          fontSize: 14,
                           fontWeight: FontWeight.w800,
                           color: const Color(0xFF0F172A),
                           letterSpacing: -0.2,
-                          height: 1.2,
+                          height: 1.15,
                         ),
                       ),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: 5),
+
+                      // Count Dot Chip
                       Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 3.5,
+                          horizontal: 7,
+                          vertical: 2.5,
                         ),
                         decoration: BoxDecoration(
                           color: Colors.white.withValues(alpha: 0.92),
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(8),
                           border: Border.all(
                             color: style.accentColor.withValues(alpha: 0.20),
-                            width: 1,
+                            width: 0.8,
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.03),
-                              blurRadius: 4,
+                              color: Colors.black.withValues(alpha: 0.02),
+                              blurRadius: 3,
                               offset: const Offset(0, 1),
                             ),
                           ],
@@ -357,18 +385,18 @@ class _CategoryBentoCard extends StatelessWidget {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Container(
-                              width: 5,
-                              height: 5,
+                              width: 4.5,
+                              height: 4.5,
                               decoration: BoxDecoration(
                                 color: style.accentColor,
                                 shape: BoxShape.circle,
                               ),
                             ),
-                            const SizedBox(width: 5),
+                            const SizedBox(width: 4.5),
                             Text(
                               '${category.productCount} პროდუქტი',
                               style: GoogleFonts.notoSansGeorgian(
-                                fontSize: 11,
+                                fontSize: 10,
                                 fontWeight: FontWeight.w700,
                                 color: style.accentColor,
                               ),
@@ -376,77 +404,37 @@ class _CategoryBentoCard extends StatelessWidget {
                           ],
                         ),
                       ),
-                    ],
-                  ),
-                ),
 
-                // Bottom-Right: Crisp Rounded Food Showcase Container
-                Positioned(
-                  right: 10,
-                  bottom: 10,
-                  child: Container(
-                    width: imgSize,
-                    height: imgSize,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(
-                        color: Colors.white,
-                        width: 2.2,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.08),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    clipBehavior: Clip.antiAlias,
-                    child: category.imageUrl.startsWith('assets/')
-                        ? Image.asset(
-                            category.imageUrl,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) =>
-                                Container(color: style.bgEnd),
-                          )
-                        : Image.network(
-                            category.imageUrl,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) =>
-                                Container(color: style.bgEnd),
+                      const Spacer(),
+
+                      // Subtle tactile arrow CTA
+                      Container(
+                        width: 24,
+                        height: 24,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.95),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: style.borderColor,
+                            width: 0.8,
                           ),
-                  ),
-                ),
-
-                // Bottom-Left: Subtle circular action arrow button
-                Positioned(
-                  left: 14,
-                  bottom: 14,
-                  child: Container(
-                    width: 28,
-                    height: 28,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.95),
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: style.borderColor,
-                        width: 1,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.04),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.03),
+                              blurRadius: 3,
+                              offset: const Offset(0, 1),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                    child: Center(
-                      child: Icon(
-                        LucideIcons.arrowUpRight,
-                        size: 14,
-                        color: style.accentColor,
+                        child: Center(
+                          child: Icon(
+                            LucideIcons.arrowUpRight,
+                            size: 12.5,
+                            color: style.accentColor,
+                          ),
+                        ),
                       ),
-                    ),
+                    ],
                   ),
                 ),
               ],

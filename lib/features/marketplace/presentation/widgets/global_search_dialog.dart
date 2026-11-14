@@ -507,34 +507,19 @@ class _GlobalSearchDialogState extends State<GlobalSearchDialog> {
                     children: [
                       const Icon(
                         LucideIcons.store,
-                        size: 13,
+                        size: 12,
                         color: AppColors.textSecondary,
                       ),
                       const SizedBox(width: 4),
-                      Text(
-                        product.farmerName,
-                        style: AppTypography.caption.copyWith(
-                          color: AppColors.textSecondary,
-                          fontSize: 12,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.surfaceInput,
-                          borderRadius: BorderRadius.circular(6),
-                        ),
+                      Expanded(
                         child: Text(
-                          product.category,
+                          '${product.farmerName} • ${product.category}',
                           style: AppTypography.caption.copyWith(
                             color: AppColors.textSecondary,
-                            fontSize: 10.5,
-                            fontWeight: FontWeight.w600,
+                            fontSize: 12,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
@@ -542,6 +527,7 @@ class _GlobalSearchDialogState extends State<GlobalSearchDialog> {
                 ],
               ),
             ),
+            const SizedBox(width: 8),
 
             // Price & Discount
             Column(
@@ -629,12 +615,16 @@ class _GlobalSearchDialogState extends State<GlobalSearchDialog> {
                 children: [
                   Row(
                     children: [
-                      Text(
-                        farmer.farmName,
-                        style: AppTypography.titleMedium.copyWith(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary,
+                      Flexible(
+                        child: Text(
+                          farmer.farmName,
+                          style: AppTypography.titleMedium.copyWith(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textPrimary,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       if (farmer.isVerified) ...[
@@ -654,10 +644,13 @@ class _GlobalSearchDialogState extends State<GlobalSearchDialog> {
                       color: AppColors.textSecondary,
                       fontSize: 12,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
             ),
+            const SizedBox(width: 8),
             Row(
               children: [
                 const Icon(

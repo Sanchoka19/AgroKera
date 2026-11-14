@@ -9,6 +9,7 @@ import 'package:agrokera/core/widgets/app_toast.dart';
 import 'package:agrokera/features/notifications/presentation/providers/notifications_provider.dart';
 import 'package:agrokera/features/notifications/presentation/screens/notifications_screen.dart';
 import 'package:agrokera/features/marketplace/presentation/screens/categories_screen.dart';
+import 'package:agrokera/features/marketplace/presentation/widgets/global_search_dialog.dart';
 import 'test_helper.dart';
 
 void main() {
@@ -254,6 +255,58 @@ void main() {
 
     expect(find.text('ხილი'), findsOneWidget);
     expect(find.text('ციტრუსი'), findsOneWidget);
+  });
+
+  testWidgets(
+      'GlobalSearchDialog renders matching product tile without overflow on mobile viewport',
+      (WidgetTester tester) async {
+    // Set viewport to mobile size (390 x 778) as seen in user screenshot
+    tester.view.physicalSize = const Size(390, 778);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          home: Scaffold(
+            body: Builder(
+              builder: (context) => ElevatedButton(
+                onPressed: () => GlobalSearchDialog.show(context),
+                child: const Text('Open Search'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Open Search Dialog
+    await tester.tap(find.text('Open Search'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('დახურვა'), findsOneWidget);
+
+    // Search for "პომიდორ" (exact query from screenshot)
+    await tester.enterText(find.byType(TextField), 'პომიდორ');
+    await tester.pumpAndSettle();
+
+    // Verify search results
+    expect(find.text('პროდუქტები (1)'), findsOneWidget);
+    expect(find.text('პომიდორი'), findsOneWidget);
+    expect(find.textContaining('გიორგის ფერმა'), findsOneWidget);
+
+    // Ensure no overflow exception occurred
+    expect(tester.takeException(), isNull);
+
+    // Close Dialog
+    await tester.tap(find.text('დახურვა'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('დახურვა'), findsNothing);
   });
 }
 

@@ -83,10 +83,16 @@ class AppHeader extends ConsumerWidget {
                       tooltip: 'შეტყობინებები',
                       onPressed: () {
                         HapticFeedback.lightImpact();
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => const NotificationsScreen(),
-                          ),
+                        requireAuth(
+                          context,
+                          ref: ref,
+                          onAuthenticated: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => const NotificationsScreen(),
+                              ),
+                            );
+                          },
                         );
                       },
                       icon: Stack(
@@ -97,9 +103,9 @@ class AppHeader extends ConsumerWidget {
                             size: 24,
                             color: AppColors.primary,
                           ),
-                          if (unreadNotifs > 0)
+                          if (authState.isAuthenticated && unreadNotifs > 0)
                             Positioned(
-                              top: -2,
+                              top: -5,
                               right: -4,
                               child: Container(
                                 padding: const EdgeInsets.all(3),

@@ -1,0 +1,40 @@
+<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background Soft Circle Glow -->
+  <circle cx="100" cy="100" r="90" fill="#E6F4EA"/>
+  <circle cx="100" cy="100" r="70" fill="#D1E7DD" opacity="0.6"/>
+
+  <!-- Floating Sparkles / Stars -->
+  <path d="M48 55L50.5 62L57.5 64.5L50.5 67L48 74L45.5 67L38.5 64.5L45.5 62L48 55Z" fill="#10B981" opacity="0.75"/>
+  <path d="M154 45L156 51L162 53L156 55L154 61L152 55L146 53L152 51L154 45Z" fill="#F59E0B" opacity="0.8"/>
+  <circle cx="162" cy="138" r="4.5" fill="#10B981" opacity="0.6"/>
+  <circle cx="42" cy="124" r="3.5" fill="#F59E0B" opacity="0.6"/>
+
+  <!-- Organic Sprout / Leaf on Bell Top -->
+  <path d="M100 48C95 40 85 42 85 42C85 42 88 52 96 52" stroke="#059669" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="#34D399"/>
+  <path d="M100 48C103 38 113 39 113 39C113 39 111 49 103 50" stroke="#059669" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="#6EE7B7"/>
+
+  <!-- Bell Handle / Crown -->
+  <path d="M93 54C93 50.134 96.134 47 100 47C103.866 47 107 50.134 107 54V60H93V54Z" fill="#0F766E"/>
+
+  <!-- Bell Body -->
+  <path d="M100 58C80 58 68 74 68 98C68 116 61 123 56 128C54 130 55.5 134 58.5 134H141.5C144.5 134 146 130 144 128C139 123 132 116 132 98C132 74 120 58 100 58Z" fill="#0F766E"/>
+
+  <!-- Bell Inner Highlight / Volume Glow -->
+  <path d="M100 62C83 62 74 76 74 98C74 114 68 122 64 127C67 128 72 128 78 128C90 128 110 128 136 127C132 122 126 114 126 98C126 76 117 62 100 62Z" fill="#14B8A6" opacity="0.35"/>
+  <path d="M78 86C78 74 86 64 100 64C102 64 96 74 96 86C96 98 92 112 86 118C82 112 78 100 78 86Z" fill="white" opacity="0.2"/>
+
+  <!-- Bell Lip Rim -->
+  <rect x="52" y="132" width="96" height="9" rx="4.5" fill="#0D5F58"/>
+  <rect x="54" y="133" width="92" height="4" rx="2" fill="#14B8A6" opacity="0.5"/>
+
+  <!-- Bell Clapper / Striker (Ringing gentle sphere) -->
+  <path d="M91 141C91 146 95 150 100 150C105 150 109 146 109 141" fill="#F59E0B"/>
+  <circle cx="100" cy="145" r="8" fill="#F59E0B"/>
+  <circle cx="102" cy="143" r="2.5" fill="#FEF3C7"/>
+
+  <!-- Floating Acoustic Sound Waves / Calm Ripples -->
+  <path d="M148 85C153 91 155 98 155 106" stroke="#10B981" stroke-width="3" stroke-linecap="round" opacity="0.7"/>
+  <path d="M158 78C165 87 168 98 168 109" stroke="#10B981" stroke-width="3" stroke-linecap="round" stroke-dasharray="2 4" opacity="0.5"/>
+  <path d="M52 85C47 91 45 98 45 106" stroke="#10B981" stroke-width="3" stroke-linecap="round" opacity="0.7"/>
+  <path d="M42 78C35 87 32 98 32 109" stroke="#10B981" stroke-width="3" stroke-linecap="round" stroke-dasharray="2 4" opacity="0.5"/>
+</svg>

@@ -3,9 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:agrokera/core/auth/auth_state_provider.dart';
 import 'package:agrokera/core/widgets/app_header.dart';
 import 'package:agrokera/core/widgets/app_search_bar.dart';
 import 'package:agrokera/core/widgets/app_toast.dart';
+import 'package:agrokera/core/widgets/auth_required_bottom_sheet.dart';
 import 'package:agrokera/features/notifications/presentation/providers/notifications_provider.dart';
 import 'package:agrokera/features/notifications/presentation/screens/notifications_screen.dart';
 import 'package:agrokera/features/marketplace/presentation/screens/categories_screen.dart';
@@ -29,7 +31,8 @@ void main() {
     );
   }
 
-  testWidgets('AppHeader renders title and notification bell with unread badge',
+  testWidgets(
+      'AppHeader hides badge for guests and displays badge for authenticated users',
       (WidgetTester tester) async {
     final container = ProviderContainer();
     addTearDown(container.dispose);
@@ -39,7 +42,7 @@ void main() {
         const AppHeader(
           title: 'აგრო მარკეტი',
           showNotificationBell: true,
-          showCart: true,
+          showCart: false,
         ),
         container,
       ),
@@ -49,15 +52,22 @@ void main() {
     // Verify title is rendered
     expect(find.text('აგრო მარკეტი'), findsOneWidget);
 
-    // Verify bell and cart icons are present
+    // Verify bell is present
     expect(find.byIcon(LucideIcons.bell), findsOneWidget);
-    expect(find.byIcon(LucideIcons.shoppingCart), findsOneWidget);
 
-    // Initial unread notifications count is 2 (from sample data)
+    // Guest user should NOT see the unread notification badge
+    expect(find.text('2'), findsNothing);
+
+    // Authenticate user
+    container.read(authStateProvider.notifier).login();
+    await tester.pumpAndSettle();
+
+    // Authenticated user should see the unread count badge ("2")
     expect(find.text('2'), findsOneWidget);
   });
 
-  testWidgets('AppHeader opens NotificationsScreen on tapping notification bell',
+  testWidgets(
+      'AppHeader prompts auth for guests and opens NotificationsScreen when authenticated',
       (WidgetTester tester) async {
     final container = ProviderContainer();
     addTearDown(container.dispose);
@@ -73,17 +83,31 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // Tap notification bell
+    // Guest taps notification bell -> triggers AuthRequiredBottomSheet
     await tester.tap(find.byIcon(LucideIcons.bell));
     await tester.pumpAndSettle();
 
-    // Verify NotificationsScreen is displayed
+    expect(find.byType(AuthRequiredBottomSheet), findsOneWidget);
+
+    // Dismiss bottom sheet
+    Navigator.of(tester.element(find.byType(AuthRequiredBottomSheet))).pop();
+    await tester.pumpAndSettle();
+
+    // Authenticate user
+    container.read(authStateProvider.notifier).login();
+    await tester.pumpAndSettle();
+
+    // Tapping notification bell now navigates to NotificationsScreen
+    await tester.tap(find.byIcon(LucideIcons.bell));
+    await tester.pumpAndSettle();
+
     expect(find.byType(NotificationsScreen), findsOneWidget);
     expect(find.text('შეტყობინებები'), findsOneWidget);
     expect(find.text('ყველას წაკითხვა'), findsOneWidget);
   });
 
-  testWidgets('NotificationsScreen filters by category and marks as read',
+  testWidgets(
+      'NotificationsScreen shows auth prompt for guests and full list/filters for authenticated users',
       (WidgetTester tester) async {
     final container = ProviderContainer();
     addTearDown(container.dispose);
@@ -94,6 +118,14 @@ void main() {
         child: const MaterialApp(home: NotificationsScreen()),
       ),
     );
+    await tester.pumpAndSettle();
+
+    // Guest sees auth required message
+    expect(find.text('ავტორიზაცია აუცილებელია'), findsOneWidget);
+    expect(find.text('შესვლა / რეგისტრაცია'), findsOneWidget);
+
+    // Authenticate user
+    container.read(authStateProvider.notifier).login();
     await tester.pumpAndSettle();
 
     // Verify initial filter chips
@@ -119,6 +151,15 @@ void main() {
     // Unread count should now be 0, button disappears
     expect(find.text('ყველას წაკითხვა'), findsNothing);
     expect(container.read(unreadNotificationsCountProvider), equals(0));
+
+    // Clear all notifications to verify empty state
+    container.read(notificationsProvider.notifier).clearAll();
+    await tester.pumpAndSettle();
+
+    expect(find.text('შეტყობინებები არ არის'), findsOneWidget);
+    expect(
+        find.text('სიახლეებისა და შეკვეთების შესახებ შეტყობინებები აქ გამოჩნდება.'),
+        findsOneWidget);
   });
 
   testWidgets('AppSearchBar in tap mode renders hintText and responds to tap',

@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import '../../../../core/auth/auth_state_provider.dart';
+import '../../../../core/constants/app_assets.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/auth_required_bottom_sheet.dart';
 import '../../data/models/notification_model.dart';
 import '../providers/notifications_provider.dart';
 
@@ -19,6 +23,103 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final authState = ref.watch(authStateProvider);
+
+    // If user is not authenticated, show authorization required state
+    if (!authState.isAuthenticated) {
+      return Scaffold(
+        backgroundColor: const Color(0xFFF8FAFC),
+        appBar: AppBar(
+          backgroundColor: const Color(0xFFF8FAFC),
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          leading: IconButton(
+            icon: const Icon(
+              LucideIcons.arrowLeft,
+              color: Color(0xFF0F172A),
+              size: 22,
+            ),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+          title: Text(
+            'შეტყობინებები',
+            style: GoogleFonts.notoSansGeorgian(
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+              color: const Color(0xFF0F172A),
+            ),
+          ),
+        ),
+        body: Center(
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 90,
+                  height: 90,
+                  decoration: const BoxDecoration(
+                    color: AppColors.primaryLight,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    LucideIcons.lock,
+                    size: 42,
+                    color: AppColors.primary,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  'ავტორიზაცია აუცილებელია',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.notoSansGeorgian(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                    color: const Color(0xFF0F172A),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  'შეტყობინებების სანახავად და სიახლეების მისაღებად გთხოვთ გაიაროთ ავტორიზაცია.',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.notoSansGeorgian(
+                    fontSize: 14,
+                    color: const Color(0xFF64748B),
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 28),
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: () => AuthRequiredBottomSheet.show(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: Text(
+                      'შესვლა / რეგისტრაცია',
+                      style: GoogleFonts.notoSansGeorgian(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     final allNotifications = ref.watch(notificationsProvider);
     final unreadCount = ref.watch(unreadNotificationsCountProvider);
 
@@ -322,41 +423,40 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
 
   Widget _buildEmptyState() {
     return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 72,
-            height: 72,
-            decoration: BoxDecoration(
-              color: const Color(0xFFE6F4EA),
-              shape: BoxShape.circle,
+      child: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Custom modern SVG illustration for Empty Notifications
+            SvgPicture.asset(
+              AppAssets.emptyNotifications,
+              width: 160,
+              height: 160,
+              fit: BoxFit.contain,
             ),
-            child: const Icon(
-              LucideIcons.bellOff,
-              size: 32,
-              color: AppColors.primary,
+            const SizedBox(height: 20),
+            Text(
+              'შეტყობინებები არ არის',
+              style: GoogleFonts.notoSansGeorgian(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: const Color(0xFF0F172A),
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'შეტყობინებები არ არის',
-            style: GoogleFonts.notoSansGeorgian(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: const Color(0xFF0F172A),
+            const SizedBox(height: 8),
+            Text(
+              'სიახლეებისა და შეკვეთების შესახებ შეტყობინებები აქ გამოჩნდება.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.notoSansGeorgian(
+                fontSize: 13,
+                color: const Color(0xFF64748B),
+                height: 1.4,
+              ),
             ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'სიახლეებისა და შეკვეთების შესახებ შეტყობინებები აქ გამოჩნდება.',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.notoSansGeorgian(
-              fontSize: 13,
-              color: const Color(0xFF64748B),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -152,7 +152,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                           crossAxisCount: 2,
                           crossAxisSpacing: 12,
                           mainAxisSpacing: 12,
-                          childAspectRatio: 1.18,
+                          childAspectRatio: 1.15,
                         ),
                         delegate: SliverChildBuilderDelegate(
                           (context, index) {
@@ -275,7 +275,7 @@ class _CategoryBentoCard extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final imgSize = (constraints.maxHeight * 0.88).clamp(88.0, 122.0);
+        final imgSize = (constraints.maxHeight * 0.76).clamp(82.0, 108.0);
 
         return InkWell(
           onTap: onTap,
@@ -313,8 +313,8 @@ class _CategoryBentoCard extends StatelessWidget {
               children: [
                 // Soft ambient circular glow behind floating illustration
                 Positioned(
-                  right: -20,
-                  bottom: -20,
+                  right: -24,
+                  bottom: -24,
                   child: Container(
                     width: 120,
                     height: 120,
@@ -325,10 +325,10 @@ class _CategoryBentoCard extends StatelessWidget {
                   ),
                 ),
 
-                // 3D Illustration: pushed into bottom-right corner, partially bleeding off edge
+                // 3D Illustration: sunken into bottom-right corner, bleeding gracefully off edge
                 Positioned(
-                  right: -8,
-                  bottom: -8,
+                  right: -18,
+                  bottom: -18,
                   child: SizedBox(
                     width: imgSize,
                     height: imgSize,

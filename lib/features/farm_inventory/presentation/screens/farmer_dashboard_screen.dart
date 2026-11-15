@@ -92,59 +92,79 @@ class _FarmerDashboardScreenState extends ConsumerState<FarmerDashboardScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     // ==========================================
-                    // SECTION 1: პროდუქტის მენეჯმენტი
+                    // SECTION 1: პროდუქტის მენეჯმენტი (Grouped Card like Profile)
                     // ==========================================
                     Padding(
-                      padding: const EdgeInsets.only(left: 2, bottom: 12, top: 4),
+                      padding: const EdgeInsets.only(left: 2, bottom: 10, top: 4),
                       child: Text(
-                'პროდუქტის მენეჯმენტი',
-                style: GoogleFonts.notoSansGeorgian(
-                  fontSize: 14.5,
-                  fontWeight: FontWeight.w800,
-                  color: const Color(0xFF1E293B),
-                  letterSpacing: -0.2,
-                ),
-              ),
-            ),
+                        'პროდუქტის მენეჯმენტი',
+                        style: GoogleFonts.notoSansGeorgian(
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.w800,
+                          color: const Color(0xFF1E293B),
+                          letterSpacing: -0.2,
+                        ),
+                      ),
+                    ),
 
-            // Card 1: დაამატე ახალი პროდუქტი
-            _buildManagementCard(
-              icon: LucideIcons.shoppingBag,
-              title: 'დაამატე ახალი პროდუქტი',
-              subtitle: 'ახალი სიის შექმნა',
-              onTap: _openAddProductSheet,
-            ),
-            const SizedBox(height: 12),
+                    // Unified Management Card (Clean Grouped Container with Dividers)
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF0F172A).withValues(alpha: 0.04),
+                            blurRadius: 12,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        children: [
+                          // Item 1: დაამატე ახალი პროდუქტი
+                          _buildManagementRowItem(
+                            icon: LucideIcons.shoppingBag,
+                            title: 'დაამატე ახალი პროდუქტი',
+                            subtitle: 'ახალი სიის შექმნა',
+                            onTap: _openAddProductSheet,
+                            isFirst: true,
+                          ),
+                          _buildRowDivider(),
 
-            // Card 2: მარაგის მართვა
-            _buildManagementCard(
-              icon: LucideIcons.clipboardCheck,
-              title: 'მარაგის მართვა',
-              subtitle: 'განაახლეთ ხელმისაწვდომობა და ფასი',
-              onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => const FarmerInventoryScreen(),
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: 12),
+                          // Item 2: მარაგის მართვა
+                          _buildManagementRowItem(
+                            icon: LucideIcons.clipboardCheck,
+                            title: 'მარაგის მართვა',
+                            subtitle: 'განაახლეთ ხელმისაწვდომობა და ფასი',
+                            onTap: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) => const FarmerInventoryScreen(),
+                                ),
+                              );
+                            },
+                          ),
+                          _buildRowDivider(),
 
-            // Card 3: შემოსული შეკვეთები
-            _buildManagementCard(
-              icon: LucideIcons.inbox,
-              title: 'შემოსული შეკვეთები',
-              subtitle: 'სტატუსები, დეტალები და ზედნადებები',
-              onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => const IncomingOrdersScreen(),
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: 24),
+                          // Item 3: შემოსული შეკვეთები
+                          _buildManagementRowItem(
+                            icon: LucideIcons.inbox,
+                            title: 'შემოსული შეკვეთები',
+                            subtitle: 'სტატუსები, დეტალები და ზედნადებები',
+                            onTap: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) => const IncomingOrdersScreen(),
+                                ),
+                              );
+                            },
+                            isLast: true,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
 
             // ==========================================
             // SECTION 2: შეკვეთები
@@ -189,46 +209,49 @@ class _FarmerDashboardScreenState extends ConsumerState<FarmerDashboardScreen> {
               ),
             ),
 
-            // Order Cards List
+            // Order Cards List (Airy, container-less empty state directly on background)
             if (activeOrders.isEmpty)
-              Container(
-                padding: const EdgeInsets.all(28),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(18),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF0F172A).withValues(alpha: 0.04),
-                      blurRadius: 12,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
-                ),
-                alignment: Alignment.center,
-                child: Column(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFE8F7EE),
-                        shape: BoxShape.circle,
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 16),
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFE8F7EE),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          LucideIcons.packageCheck,
+                          size: 28,
+                          color: AppColors.primary,
+                        ),
                       ),
-                      child: const Icon(
-                        LucideIcons.packageCheck,
-                        size: 28,
-                        color: AppColors.primary,
+                      const SizedBox(height: 12),
+                      Text(
+                        'აქტიური შეკვეთები არ გაქვს',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.notoSansGeorgian(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF1E293B),
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      'შეკვეთები არ არის',
-                      style: GoogleFonts.notoSansGeorgian(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary,
+                      const SizedBox(height: 4),
+                      Text(
+                        'როდესაც მომხმარებელი შეიძენს შენს პროდუქტებს,\nახალი შეკვეთა აქ გამოჩნდება',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.notoSansGeorgian(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w400,
+                          color: const Color(0xFF64748B),
+                          height: 1.4,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               )
             else
@@ -248,45 +271,38 @@ class _FarmerDashboardScreenState extends ConsumerState<FarmerDashboardScreen> {
     );
   }
 
-  /// Management Action Card (დაამატე ახალი პროდუქტი, მარაგის მართვა)
-  Widget _buildManagementCard({
+  /// Management Row Item (matching Profile style)
+  Widget _buildManagementRowItem({
     required IconData icon,
     required String title,
     required String subtitle,
     required VoidCallback onTap,
+    bool isFirst = false,
+    bool isLast = false,
   }) {
     return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(18),
+      color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(18),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(18),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF0F172A).withValues(alpha: 0.04),
-                blurRadius: 12,
-                offset: const Offset(0, 3),
-              ),
-            ],
-          ),
+        borderRadius: BorderRadius.vertical(
+          top: isFirst ? const Radius.circular(20) : Radius.zero,
+          bottom: isLast ? const Radius.circular(20) : Radius.zero,
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
           child: Row(
             children: [
-              // Mint circular icon badge
+              // Squircle icon tile matching profile page
               Container(
-                width: 46,
-                height: 46,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFE8F7EE),
-                  shape: BoxShape.circle,
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE8F7EE),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
                   icon,
-                  size: 22,
+                  size: 20,
                   color: AppColors.primary,
                 ),
               ),
@@ -300,17 +316,17 @@ class _FarmerDashboardScreenState extends ConsumerState<FarmerDashboardScreen> {
                     Text(
                       title,
                       style: GoogleFonts.notoSansGeorgian(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w800,
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w700,
                         color: const Color(0xFF1E293B),
                       ),
                     ),
-                    const SizedBox(height: 3),
+                    const SizedBox(height: 2),
                     Text(
                       subtitle,
                       style: GoogleFonts.notoSansGeorgian(
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w500,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w400,
                         color: const Color(0xFF64748B),
                       ),
                     ),
@@ -327,6 +343,18 @@ class _FarmerDashboardScreenState extends ConsumerState<FarmerDashboardScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  /// Subtle row divider matching profile page
+  Widget _buildRowDivider() {
+    return const Padding(
+      padding: EdgeInsets.only(left: 68, right: 16),
+      child: Divider(
+        height: 1,
+        thickness: 0.8,
+        color: Color(0xFFF1F5F9),
       ),
     );
   }

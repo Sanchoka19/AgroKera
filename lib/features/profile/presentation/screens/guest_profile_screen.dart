@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -15,12 +18,15 @@ import 'package:agrokera/core/widgets/app_header.dart';
 import 'package:agrokera/core/widgets/app_toast.dart';
 import 'package:agrokera/core/widgets/auth_required_bottom_sheet.dart';
 import 'package:agrokera/features/farm_inventory/presentation/screens/farmer_inventory_screen.dart';
+import 'package:agrokera/features/farmer_onboarding/presentation/models/farmer_onboarding_state.dart';
 import 'package:agrokera/features/farmer_onboarding/presentation/widgets/farmer_map_widget.dart';
+import 'package:agrokera/features/marketplace/presentation/providers/marketplace_provider.dart';
 import 'package:agrokera/features/marketplace/presentation/screens/favorites_screen.dart';
 import 'package:agrokera/features/marketplace/presentation/widgets/guest_promo_banner.dart';
 import 'package:agrokera/features/orders/presentation/screens/client_orders_screen.dart';
 import 'package:agrokera/features/orders/presentation/screens/incoming_orders_screen.dart';
 import 'package:agrokera/features/verification/presentation/screens/kyc_verification_screen.dart';
+import 'farmer_delivery_settings_screen.dart';
 import 'help_center_screen.dart';
 
 class GuestProfileScreen extends ConsumerStatefulWidget {
@@ -94,6 +100,251 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
     }
   }
 
+  Widget _buildCoverImage(String? coverUrl) {
+    final url = (coverUrl != null && coverUrl.isNotEmpty)
+        ? coverUrl
+        : 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=1000&auto=format&fit=crop&q=80';
+
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return Image.network(
+        url,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) =>
+            Container(color: AppColors.primaryLight),
+      );
+    }
+    if (!kIsWeb && File(url).existsSync()) {
+      return Image.file(
+        File(url),
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) =>
+            Container(color: AppColors.primaryLight),
+      );
+    }
+    return Container(color: AppColors.primaryLight);
+  }
+
+  void _showCoverPhotoPicker() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'ფერმის გარეკანის შეცვლა',
+                  style: GoogleFonts.notoSansGeorgian(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'ეს ფოტო გამოჩნდება თქვენს პროფილზე და მთავარ გვერდზე',
+                  style: GoogleFonts.notoSansGeorgian(
+                    fontSize: 12.5,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                ListTile(
+                  leading: const Icon(LucideIcons.camera, color: AppColors.primary),
+                  title: Text(
+                    'კამერით გადაღება',
+                    style: GoogleFonts.notoSansGeorgian(fontWeight: FontWeight.w600),
+                  ),
+                  subtitle: const Text('გადაუღე ფერმას ან მეურნეობას'),
+                  onTap: () async {
+                    Navigator.pop(ctx);
+                    try {
+                      final XFile? file = await ImagePicker().pickImage(
+                        source: ImageSource.camera,
+                        imageQuality: 85,
+                      );
+                      if (!mounted) return;
+                      if (file != null) {
+                        await ref
+                            .read(authStateProvider.notifier)
+                            .updateFarmCoverUrl(file.path);
+                        unawaited(ref
+                            .read(marketplaceProvider.notifier)
+                            .refreshFromBackend());
+                        if (!mounted) return;
+                        if (context.mounted) {
+                          AppToast.success(context, 'გარეკანის ფოტო წარმატებით განახლდა!');
+                        }
+                      }
+                    } catch (_) {
+                      if (!mounted) return;
+                      AppToast.error(context, 'კამერის გახსნა ვერ მოხერხდა');
+                    }
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(LucideIcons.image, color: AppColors.primary),
+                  title: Text(
+                    'გალერეიდან არჩევა',
+                    style: GoogleFonts.notoSansGeorgian(fontWeight: FontWeight.w600),
+                  ),
+                  subtitle: const Text('ატვირთე ლანდშაფტური სურათი'),
+                  onTap: () async {
+                    Navigator.pop(ctx);
+                    try {
+                      final XFile? file = await ImagePicker().pickImage(
+                        source: ImageSource.gallery,
+                        imageQuality: 85,
+                      );
+                      if (!mounted) return;
+                      if (file != null) {
+                        await ref
+                            .read(authStateProvider.notifier)
+                            .updateFarmCoverUrl(file.path);
+                        unawaited(ref
+                            .read(marketplaceProvider.notifier)
+                            .refreshFromBackend());
+                        if (!mounted) return;
+                        if (context.mounted) {
+                          AppToast.success(context, 'გარეკანის ფოტო წარმატებით განახლდა!');
+                        }
+                      }
+                    } catch (_) {
+                      if (!mounted) return;
+                      AppToast.error(context, 'ფოტოს არჩევა ვერ მოხერხდა');
+                    }
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(LucideIcons.sparkles, color: AppColors.primary),
+                  title: Text(
+                    'სანიმუშო აგრო-გარეკანის არჩევა',
+                    style: GoogleFonts.notoSansGeorgian(fontWeight: FontWeight.w600),
+                  ),
+                  subtitle: const Text('მზა თემატური ფოტოები (ვენახი, ბაღი, სათბური)'),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _showPresetCoverPicker();
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showPresetCoverPicker() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'აირჩიე სანიმუშო გარეკანი',
+                  style: GoogleFonts.notoSansGeorgian(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                SizedBox(
+                  height: 160,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: FarmerOnboardingState.presetFarmCovers.length,
+                    separatorBuilder: (_, _) => const SizedBox(width: 12),
+                    itemBuilder: (context, index) {
+                      final preset = FarmerOnboardingState.presetFarmCovers[index];
+                      return GestureDetector(
+                        onTap: () async {
+                          Navigator.pop(ctx);
+                          await ref
+                              .read(authStateProvider.notifier)
+                              .updateFarmCoverUrl(preset['url']!);
+                          unawaited(ref
+                              .read(marketplaceProvider.notifier)
+                              .refreshFromBackend());
+                          if (!mounted) return;
+                          if (context.mounted) {
+                            AppToast.success(
+                                context, 'გარეკანი არჩეულია: ${preset["title"]}');
+                          }
+                        },
+                        child: Container(
+                          width: 160,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: const Color(0xFFCBD5E1)),
+                          ),
+                          clipBehavior: Clip.antiAlias,
+                          child: Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              Image.network(
+                                preset['url']!,
+                                fit: BoxFit.cover,
+                              ),
+                              Container(
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                    colors: [
+                                      Colors.transparent,
+                                      Colors.black.withValues(alpha: 0.70),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              Positioned(
+                                left: 8,
+                                right: 8,
+                                bottom: 8,
+                                child: Text(
+                                  preset['title']!,
+                                  style: GoogleFonts.notoSansGeorgian(
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.white,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authStateProvider);
@@ -106,16 +357,21 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
         child: Column(
           children: [
             // Unified App Header (Title & Notifications Bell)
-            const AppHeader(
+            AppHeader(
               title: 'ჩემი პროფილი',
               showNotificationBell: true,
               showCart: false,
-              padding: EdgeInsets.fromLTRB(20, 12, 20, 8),
+              padding: EdgeInsets.fromLTRB(20, 12, 20, isFarmer ? 0 : 8),
             ),
             Expanded(
               child: SingleChildScrollView(
                 physics: const ClampingScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(20, 4, 20, 32),
+                padding: EdgeInsets.fromLTRB(
+                  isFarmer ? 0 : 20,
+                  isFarmer ? 0 : 4,
+                  isFarmer ? 0 : 20,
+                  32,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -126,350 +382,421 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
                     if (isGuest) ...[
                       const GuestPromoBanner(showCloseButton: false),
                       const SizedBox(height: 24),
+                    ] else if (isFarmer) ...[
+                      // ONLY for Farmer: Edge-to-edge cover photo touching header,
+                      // and half-overlapping profile card with full farm name
+                      _buildFarmerProfileHero(authState),
                     ] else ...[
-                      // Hero Identity (Centered Avatar with Camera Badge, Name, Subtitle)
+                      // Regular Customer Hero Identity (Untouched & identical)
                       const SizedBox(height: 8),
                       Center(
-                  child: Column(
-                    children: [
-                      Stack(
-                        children: [
-                          Container(
-                            width: 88,
-                            height: 88,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(color: Colors.white, width: 3),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.08),
-                                  blurRadius: 14,
-                                  offset: const Offset(0, 4),
+                        child: Column(
+                          children: [
+                            Stack(
+                              children: [
+                                Container(
+                                  width: 88,
+                                  height: 88,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(color: Colors.white, width: 3),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withValues(alpha: 0.08),
+                                        blurRadius: 14,
+                                        offset: const Offset(0, 4),
+                                      ),
+                                    ],
+                                  ),
+                                  child: ClipOval(
+                                    child: Image.network(
+                                      'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80',
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (context, error, stackTrace) =>
+                                          _buildPlaceholderAvatar(),
+                                    ),
+                                  ),
+                                ),
+                                Positioned(
+                                  bottom: 0,
+                                  right: 0,
+                                  child: GestureDetector(
+                                    onTap: _showImagePickerNotice,
+                                    child: Container(
+                                      width: 28,
+                                      height: 28,
+                                      decoration: BoxDecoration(
+                                        color: AppColors.primary,
+                                        shape: BoxShape.circle,
+                                        border: Border.all(color: Colors.white, width: 2),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black.withValues(alpha: 0.15),
+                                            blurRadius: 4,
+                                            offset: const Offset(0, 2),
+                                          ),
+                                        ],
+                                      ),
+                                      child: const Icon(
+                                        LucideIcons.camera,
+                                        color: Colors.white,
+                                        size: 14,
+                                      ),
+                                    ),
+                                  ),
                                 ),
                               ],
                             ),
-                            child: ClipOval(
-                              child: isFarmer
-                                  ? Image.network(
-                                      'https://images.unsplash.com/photo-1595273670150-bd0c3c392e46?w=400&auto=format&fit=crop&q=80',
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (context, error, stackTrace) => _buildPlaceholderAvatar(),
-                                    )
-                                  : Image.network(
-                                      'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80',
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (context, error, stackTrace) => _buildPlaceholderAvatar(),
-                                    ),
-                            ),
-                          ),
-                          Positioned(
-                            bottom: 0,
-                            right: 0,
-                            child: GestureDetector(
-                              onTap: _showImagePickerNotice,
-                              child: Container(
-                                width: 28,
-                                height: 28,
-                                decoration: BoxDecoration(
-                                  color: AppColors.primary,
-                                  shape: BoxShape.circle,
-                                  border: Border.all(color: Colors.white, width: 2),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withValues(alpha: 0.15),
-                                      blurRadius: 4,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ],
-                                ),
-                                child: const Icon(
-                                  LucideIcons.camera,
-                                  color: Colors.white,
-                                  size: 14,
-                                ),
+                            const SizedBox(height: 12),
+                            Text(
+                              authState.userName ?? 'საბა ევგენიძე',
+                              style: GoogleFonts.notoSansGeorgian(
+                                fontSize: 22,
+                                fontWeight: FontWeight.w800,
+                                color: const Color(0xFF0F172A),
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            isFarmer
-                                ? (authState.userName ?? 'რევაზ ბერიძე')
-                                : (authState.userName ?? 'საბა ევგენიძე'),
-                            style: GoogleFonts.notoSansGeorgian(
-                              fontSize: 22,
-                              fontWeight: FontWeight.w800,
-                              color: const Color(0xFF0F172A),
-                            ),
-                          ),
-                          if (isFarmer) ...[
-                            const SizedBox(width: 6),
-                            Tooltip(
-                              message: 'ვერიფიცირებული ფერმერი',
-                              child: SvgPicture.asset(
-                                AppAssets.verifiedBadge,
-                                width: 22,
-                                height: 22,
+                            const SizedBox(height: 4),
+                            Text(
+                              authState.userEmail ?? 'sabaevgenidze0919@gmail.com',
+                              style: GoogleFonts.notoSansGeorgian(
+                                fontSize: 13.5,
+                                color: const Color(0xFF64748B),
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
                           ],
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        isFarmer
-                            ? 'ფერმერი • ${authState.farmName ?? "ID 3031223"}'
-                            : (authState.userEmail ?? 'sabaevgenidze0919@gmail.com'),
-                        style: GoogleFonts.notoSansGeorgian(
-                          fontSize: 13.5,
-                          color: const Color(0xFF64748B),
-                          fontWeight: FontWeight.w500,
                         ),
+                      ),
+                      const SizedBox(height: 20),
+                    ],
+
+                    // Lower profile content with horizontal padding for Farmer
+                    Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: isFarmer ? 20 : 0,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // Emerald Gradient KPI Hero Card & Verified Badge (ONLY for Farmer)
+                          if (isFarmer) ...[
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(22),
+                                gradient: const RadialGradient(
+                                  center: Alignment(-0.85, -0.75),
+                                  radius: 1.35,
+                                  colors: [
+                                    Color(0xFF059669), // Vibrant Radiant Emerald around trophy
+                                    Color(0xFF0D7A68), // Rich Teal
+                                    Color(0xFF044E46), // Deep Forest Teal at bottom-right
+                                  ],
+                                  stops: [0.0, 0.45, 1.0],
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color(0xFF044E46).withValues(alpha: 0.28),
+                                    blurRadius: 16,
+                                    offset: const Offset(0, 6),
+                                  ),
+                                ],
+                              ),
+                              child: Column(
+                                children: [
+                                  Row(
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.all(6),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white.withValues(alpha: 0.18),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Icon(
+                                          LucideIcons.trophy,
+                                          color: Colors.white,
+                                          size: 16,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Text(
+                                        'საფერმო მაჩვენებლები და KPI',
+                                        style: GoogleFonts.notoSansGeorgian(
+                                          fontSize: 14.5,
+                                          fontWeight: FontWeight.w700,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: _buildGradientMetricCol(
+                                          value: '5000₾',
+                                          label: 'ჯამური შემოსავალი',
+                                        ),
+                                      ),
+                                      Container(width: 1, height: 38, color: Colors.white.withValues(alpha: 0.22)),
+                                      Expanded(
+                                        child: _buildGradientMetricCol(
+                                          value: '100',
+                                          label: 'შეკვეთების რაოდენობა',
+                                        ),
+                                      ),
+                                      Container(width: 1, height: 38, color: Colors.white.withValues(alpha: 0.22)),
+                                      Expanded(
+                                        child: _buildGradientMetricCol(
+                                          value: '4.5',
+                                          label: 'საშუალო შეფასება',
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                          ],
+
+              // ==========================================
+              // 4. GROUPED SECTION 1: საფერმო საქმიანობა & პირადი შესყიდვები / ინსტრუმენტები
+              // (Clean White Card, NO Harsh Black Borders!)
+              // ==========================================
+              if (isFarmer) ...[
+                _buildSectionHeader('საფერმო საქმიანობა'),
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.03),
+                        blurRadius: 12,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      _buildProfileRowItem(
+                        icon: LucideIcons.shoppingBag,
+                        title: 'ჩემი პროდუქტები',
+                        subtitle: 'პროდუქტების სია და ფასები',
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const FarmerInventoryScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildRowDivider(),
+                      _buildProfileRowItem(
+                        icon: LucideIcons.clipboardCheck,
+                        title: 'შემოსული შეკვეთები',
+                        subtitle: 'შეკვეთების მართვა და სტატუსი',
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => const IncomingOrdersScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildRowDivider(),
+                      _buildProfileRowItem(
+                        icon: LucideIcons.shieldCheck,
+                        title: 'ფერმერის ვერიფიკაცია (KYC)',
+                        subtitle:
+                            'სტატუსი: ${authState.kycStatus.label}',
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const KycVerificationScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildRowDivider(),
+                      _buildProfileRowItem(
+                        icon: LucideIcons.creditCard,
+                        title: 'ანგარიშსწორება',
+                        subtitle: 'საბანკო რეკვიზიტები და გადარიცხვები',
+                        onTap: () {
+                          AppToast.info(context, 'ანგარიშსწორების გვერდი მზადდება.');
+                        },
+                      ),
+                      _buildRowDivider(),
+                      _buildProfileRowItem(
+                        icon: LucideIcons.truck,
+                        title: 'მიწოდების პარამეტრები',
+                        subtitle: 'მიტანის ზონები, ტარიფები და გრაფიკი',
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const FarmerDeliverySettingsScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildRowDivider(),
+                      _buildProfileRowItem(
+                        icon: LucideIcons.mapPin,
+                        title: 'ჩემი მისამართი',
+                        subtitle: 'ფერმის ლოკაციის GPS-ით განახლება ($_detectedAddress)',
+                        onTap: _detectUserAddressWithGps,
                       ),
                     ],
                   ),
                 ),
-                // Emerald Gradient KPI Hero Card & Verified Badge (ONLY for Farmer)
-                if (isFarmer) ...[
-                  const SizedBox(height: 20),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(22),
-                      gradient: const RadialGradient(
-                        center: Alignment(-0.85, -0.75),
-                        radius: 1.35,
-                        colors: [
-                          Color(0xFF059669), // Vibrant Radiant Emerald around trophy
-                          Color(0xFF0D7A68), // Rich Teal
-                          Color(0xFF044E46), // Deep Forest Teal at bottom-right
-                        ],
-                        stops: [0.0, 0.45, 1.0],
+                const SizedBox(height: 24),
+                _buildSectionHeader('პირადი შესყიდვები'),
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.03),
+                        blurRadius: 12,
+                        offset: const Offset(0, 3),
                       ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF044E46).withValues(alpha: 0.28),
-                          blurRadius: 16,
-                          offset: const Offset(0, 6),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(6),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.18),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(
-                                LucideIcons.trophy,
-                                color: Colors.white,
-                                size: 16,
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Text(
-                              'საფერმო მაჩვენებლები და KPI',
-                              style: GoogleFonts.notoSansGeorgian(
-                                fontSize: 14.5,
-                                fontWeight: FontWeight.w700,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _buildGradientMetricCol(
-                                value: '5000₾',
-                                label: 'ჯამური შემოსავალი',
-                              ),
-                            ),
-                            Container(width: 1, height: 38, color: Colors.white.withValues(alpha: 0.22)),
-                            Expanded(
-                              child: _buildGradientMetricCol(
-                                value: '100',
-                                label: 'შეკვეთების რაოდენობა',
-                              ),
-                            ),
-                            Container(width: 1, height: 38, color: Colors.white.withValues(alpha: 0.22)),
-                            Expanded(
-                              child: _buildGradientMetricCol(
-                                value: '4.5',
-                                label: 'საშუალო შეფასება',
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
+                    ],
                   ),
-                ],
+                  child: Column(
+                    children: [
+                      _buildProfileRowItem(
+                        icon: LucideIcons.shoppingBag,
+                        title: 'ჩემი შეკვეთები',
+                        subtitle: 'შეკვეთების ისტორია და სტატუსი',
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const ClientOrdersScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildRowDivider(),
+                      _buildProfileRowItem(
+                        icon: LucideIcons.heart,
+                        title: 'ფავორიტები',
+                        subtitle: 'შენახული სასურველი პროდუქტები',
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const FavoritesScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildRowDivider(),
+                      _buildProfileRowItem(
+                        icon: LucideIcons.creditCard,
+                        title: 'საბანკო ბარათები',
+                        subtitle: 'ბარათები და ანგარიშსწორება',
+                        onTap: () {
+                          AppToast.info(context, 'საბანკო ბარათები & ანგარიშები.');
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+              ] else ...[
+                _buildSectionHeader('ინსტრუმენტები და სერვისები'),
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.03),
+                        blurRadius: 12,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      _buildProfileRowItem(
+                        icon: LucideIcons.shoppingBag,
+                        title: 'ჩემი შეკვეთები',
+                        subtitle: 'შეკვეთების ისტორია და სტატუსი',
+                        onTap: () {
+                          requireAuth(
+                            context,
+                            ref: ref,
+                            onAuthenticated: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      const ClientOrdersScreen(),
+                                ),
+                              );
+                            },
+                          );
+                        },
+                      ),
+                      _buildRowDivider(),
+                      _buildProfileRowItem(
+                        icon: LucideIcons.heart,
+                        title: 'ფავორიტები',
+                        subtitle: 'შენახული სასურველი პროდუქტები',
+                        onTap: () {
+                          requireAuth(
+                            context,
+                            ref: ref,
+                            onAuthenticated: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => const FavoritesScreen(),
+                                ),
+                              );
+                            },
+                          );
+                        },
+                      ),
+                      _buildRowDivider(),
+                      _buildProfileRowItem(
+                        icon: LucideIcons.mapPin,
+                        title: 'ჩემი მისამართი',
+                        subtitle: 'GPS-ით დადგენა ($_detectedAddress)',
+                        onTap: () {
+                          requireAuth(
+                            context,
+                            ref: ref,
+                            onAuthenticated: _detectUserAddressWithGps,
+                          );
+                        },
+                      ),
+                      _buildRowDivider(),
+                      _buildProfileRowItem(
+                        icon: LucideIcons.creditCard,
+                        title: 'საბანკო ანგარიშები',
+                        subtitle: 'ბარათები და ანგარიშსწორება',
+                        onTap: () {
+                          requireAuth(
+                            context,
+                            ref: ref,
+                            onAuthenticated: () {
+                              AppToast.info(
+                                  context, 'საბანკო ბარათები & ანგარიშები.');
+                            },
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
                 const SizedBox(height: 24),
               ],
-
-              // ==========================================
-              // 4. GROUPED SECTION 1: ინსტრუმენტები და სერვისები / ანგარიშის მართვა
-              // (Clean White Card, NO Harsh Black Borders!)
-              // ==========================================
-              _buildSectionHeader(
-                isFarmer
-                    ? 'საფერმო საქმიანობა'
-                    : 'ინსტრუმენტები და სერვისები',
-              ),
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.03),
-                      blurRadius: 12,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  children: isFarmer
-                      ? [
-                          _buildProfileRowItem(
-                            icon: LucideIcons.shoppingBag,
-                            title: 'ჩემი პროდუქტები',
-                            subtitle: 'პროდუქტების სია და ფასები',
-                            onTap: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      const FarmerInventoryScreen(),
-                                ),
-                              );
-                            },
-                          ),
-                          _buildRowDivider(),
-                          _buildProfileRowItem(
-                            icon: LucideIcons.shieldCheck,
-                            title: 'ფერმერის ვერიფიკაცია (KYC)',
-                            subtitle:
-                                'სტატუსი: ${authState.kycStatus.label}',
-                            onTap: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      const KycVerificationScreen(),
-                                ),
-                              );
-                            },
-                          ),
-                          _buildRowDivider(),
-                          _buildProfileRowItem(
-                            icon: LucideIcons.clipboardCheck,
-                            title: 'შემოსული შეკვეთები',
-                            subtitle: 'შეკვეთების მართვა და სტატუსი',
-                            onTap: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (context) => const IncomingOrdersScreen(),
-                                ),
-                              );
-                            },
-                          ),
-                          _buildRowDivider(),
-                          _buildProfileRowItem(
-                            icon: LucideIcons.creditCard,
-                            title: 'ანგარიშსწორება',
-                            subtitle: 'საბანკო რეკვიზიტები და გადარიცხვები',
-                            onTap: () {
-                              AppToast.info(context, 'ანგარიშსწორების გვერდი მზადდება.');
-                            },
-                          ),
-                          _buildRowDivider(),
-                          _buildProfileRowItem(
-                            icon: LucideIcons.mapPin,
-                            title: 'ჩემი მისამართი',
-                            subtitle: 'ფერმის ლოკაციის GPS-ით განახლება ($_detectedAddress)',
-                            onTap: _detectUserAddressWithGps,
-                          ),
-                        ]
-                      : [
-                          _buildProfileRowItem(
-                            icon: LucideIcons.shoppingBag,
-                            title: 'ჩემი შეკვეთები',
-                            subtitle: 'შეკვეთების ისტორია და სტატუსი',
-                            onTap: () {
-                              requireAuth(
-                                context,
-                                ref: ref,
-                                onAuthenticated: () {
-                                  Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                      builder: (_) =>
-                                          const ClientOrdersScreen(),
-                                    ),
-                                  );
-                                },
-                              );
-                            },
-                          ),
-                          _buildRowDivider(),
-                          _buildProfileRowItem(
-                            icon: LucideIcons.heart,
-                            title: 'ფავორიტები',
-                            subtitle: 'შენახული სასურველი პროდუქტები',
-                            onTap: () {
-                              requireAuth(
-                                context,
-                                ref: ref,
-                                onAuthenticated: () {
-                                  Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                      builder: (_) => const FavoritesScreen(),
-                                    ),
-                                  );
-                                },
-                              );
-                            },
-                          ),
-                          _buildRowDivider(),
-                          _buildProfileRowItem(
-                            icon: LucideIcons.mapPin,
-                            title: 'ჩემი მისამართი',
-                            subtitle: 'GPS-ით დადგენა ($_detectedAddress)',
-                            onTap: () {
-                              requireAuth(
-                                context,
-                                ref: ref,
-                                onAuthenticated: _detectUserAddressWithGps,
-                              );
-                            },
-                          ),
-                          _buildRowDivider(),
-                          _buildProfileRowItem(
-                            icon: LucideIcons.creditCard,
-                            title: 'საბანკო ანგარიშები',
-                            subtitle: 'ბარათები და ანგარიშსწორება',
-                            onTap: () {
-                              requireAuth(
-                                context,
-                                ref: ref,
-                                onAuthenticated: () {
-                                  AppToast.info(
-                                      context, 'საბანკო ბარათები & ანგარიშები.');
-                                },
-                              );
-                            },
-                          ),
-                        ],
-                ),
-              ),
               const SizedBox(height: 24),
 
               // ==========================================
@@ -630,6 +957,9 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
                   ),
                 ),
               ),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -787,6 +1117,247 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildFarmerProfileHero(AuthState authState) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Stack(
+          clipBehavior: Clip.none,
+          alignment: Alignment.bottomCenter,
+          children: [
+            // 1. Cover Photo Container (Full-width, touches edges and header, no top/side radius)
+            SizedBox(
+              height: 165,
+              width: double.infinity,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  _buildCoverImage(authState.farmCoverUrl),
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.black.withValues(alpha: 0.05),
+                          Colors.black.withValues(alpha: 0.45),
+                        ],
+                      ),
+                    ),
+                  ),
+                  // Bottom-Right: Change Cover Photo Button
+                  Positioned(
+                    bottom: 12,
+                    right: 16,
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: _showCoverPhotoPicker,
+                        borderRadius: BorderRadius.circular(20),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 11,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.65),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.4),
+                              width: 1,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.25),
+                                blurRadius: 6,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                LucideIcons.camera,
+                                color: Colors.white,
+                                size: 14,
+                              ),
+                              const SizedBox(width: 5),
+                              Text(
+                                'შეცვლა',
+                                style: GoogleFonts.notoSansGeorgian(
+                                  color: Colors.white,
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // 2. Overlapping Farmer Profile Card: half on photo, half below
+            Positioned(
+              bottom: -46,
+              left: 16,
+              right: 16,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 14,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.08),
+                      blurRadius: 16,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                  border: Border.all(color: const Color(0xFFF1F5F9), width: 1.2),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    // Farmer Avatar with Camera Badge
+                    Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Container(
+                          width: 62,
+                          height: 62,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(color: AppColors.primary, width: 2.5),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.08),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: ClipOval(
+                            child: Image.network(
+                              'https://images.unsplash.com/photo-1595273670150-bd0c3c392e46?w=400&auto=format&fit=crop&q=80',
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  _buildPlaceholderAvatar(),
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          bottom: -2,
+                          right: -2,
+                          child: GestureDetector(
+                            onTap: _showImagePickerNotice,
+                            child: Container(
+                              width: 24,
+                              height: 24,
+                              decoration: BoxDecoration(
+                                color: AppColors.primary,
+                                shape: BoxShape.circle,
+                                border: Border.all(color: Colors.white, width: 1.8),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.15),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 1),
+                                  ),
+                                ],
+                              ),
+                              child: const Icon(
+                                LucideIcons.camera,
+                                color: Colors.white,
+                                size: 12,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(width: 14),
+
+                    // Farmer Name and Farm Name
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  authState.userName ?? 'რევაზ ბერიძე',
+                                  style: GoogleFonts.notoSansGeorgian(
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.w800,
+                                    color: const Color(0xFF0F172A),
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Tooltip(
+                                message: 'ვერიფიცირებული ფერმერი',
+                                child: SvgPicture.asset(
+                                  AppAssets.verifiedBadge,
+                                  width: 20,
+                                  height: 20,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 5),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              const Icon(
+                                LucideIcons.sprout,
+                                size: 15,
+                                color: AppColors.primary,
+                              ),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  (authState.farmName != null &&
+                                          authState.farmName!.trim().isNotEmpty)
+                                      ? authState.farmName!
+                                      : 'ჩემი მეურნეობა',
+                                  style: GoogleFonts.notoSansGeorgian(
+                                    fontSize: 13.5,
+                                    color: const Color(0xFF475569),
+                                    fontWeight: FontWeight.w600,
+                                    height: 1.25,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.visible,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 60),
+      ],
     );
   }
 

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import '../../../../core/auth/auth_state_provider.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
-import '../../../../core/widgets/auth_required_bottom_sheet.dart';
+import '../../../../core/widgets/app_toast.dart';
+import '../../../../core/widgets/draggable_floating_cart.dart';
+import '../../../../core/widgets/fly_to_cart_animator.dart';
 import '../../../../core/widgets/product_card.dart';
 import '../../data/models/category_model.dart';
 import '../../data/models/product_model.dart';
@@ -31,14 +33,61 @@ class CategoryProductsScreen extends ConsumerStatefulWidget {
 
 class _CategoryProductsScreenState
     extends ConsumerState<CategoryProductsScreen> {
+  final GlobalKey<DraggableFloatingCartState> _floatingCartKey = GlobalKey();
   String _searchQuery = '';
   String? _selectedRegion;
   String? _selectedCategory;
+  DateTime _lastCartOpen = DateTime.fromMillisecondsSinceEpoch(0);
 
   @override
   void initState() {
     super.initState();
     _selectedCategory = widget.category.name;
+  }
+
+  void _openCart() {
+    final now = DateTime.now();
+    if (now.difference(_lastCartOpen).inMilliseconds < 400) return;
+    _lastCartOpen = now;
+    HapticFeedback.lightImpact();
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const CartScreen(),
+      ),
+    );
+  }
+
+  void _onAddToCart(ProductModel product, BuildContext btnContext) {
+    final addQty = product.minOrderQuantity.toInt().clamp(1, 99999);
+    final result = ref.read(cartProvider.notifier).addProduct(product, addQty);
+
+    switch (result) {
+      case AddToCartOutOfStock():
+        AppToast.info(context, 'მარაგში მეტი აღარ არის');
+      case AddToCartAlreadyMax(:final maxStock):
+        AppToast.info(
+          context,
+          'ეს პროდუქტი უკვე მაქსიმალური რაოდენობით ($maxStock ${product.unit}) გაქვთ კალათაში',
+        );
+      case AddToCartSuccess(
+          :final isCapped,
+          :final addedQuantity,
+          :final maxStock,
+        ):
+        if (isCapped) {
+          AppToast.info(
+            context,
+            'მარაგის ლიმიტის გამო დაემატა $addedQuantity ${product.unit} (სულ კალათაში: $maxStock ${product.unit})',
+          );
+        }
+        FlyToCartAnimator.run(
+          context: context,
+          fromContext: btnContext,
+          toKey: _floatingCartKey,
+          quantity: addedQuantity,
+          onComplete: () => _floatingCartKey.currentState?.bounce(),
+        );
+    }
   }
 
   @override
@@ -72,10 +121,12 @@ class _CategoryProductsScreenState
         ),
         centerTitle: true,
       ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Column(
+      body: Stack(
+        children: [
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Column(
             children: [
               const SizedBox(height: 8),
               // Search bar + Filter button row
@@ -192,14 +243,8 @@ class _CategoryProductsScreenState
                                 ),
                               );
                             },
-                            onAddPressed: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      ProductDetailsScreen(product: product),
-                                ),
-                              );
-                            },
+                            onAddWithContext: (btnContext) =>
+                                _onAddToCart(product, btnContext),
                           );
                         },
                       ),
@@ -208,61 +253,13 @@ class _CategoryProductsScreenState
           ),
         ),
       ),
-      // Floating Cart Button with Badge
-      floatingActionButton: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          FloatingActionButton(
-            backgroundColor: AppColors.surface,
-            elevation: 4,
-            shape: const CircleBorder(),
-            onPressed: () {
-              requireAuth(
-                context,
-                ref: ref,
-                onAuthenticated: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => const CartScreen(),
-                    ),
-                  );
-                },
-              );
-            },
-            child: const Icon(
-              LucideIcons.shoppingCart,
-              color: AppColors.primary,
-              size: 24,
-            ),
-          ),
-          if (ref.watch(authStateProvider).isAuthenticated && ref.watch(cartProvider).isNotEmpty)
-            Positioned(
-              top: -2,
-              right: -2,
-              child: Container(
-                padding: const EdgeInsets.all(5),
-                decoration: const BoxDecoration(
-                  color: AppColors.accentWarm,
-                  shape: BoxShape.circle,
-                ),
-                constraints: const BoxConstraints(
-                  minWidth: 18,
-                  minHeight: 18,
-                ),
-                child: Text(
-                  '${ref.watch(cartProvider).length}',
-                  textAlign: TextAlign.center,
-                  style: AppTypography.caption.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 10,
-                    height: 1,
-                  ),
-                ),
-              ),
-            ),
-        ],
+      DraggableFloatingCart(
+        key: _floatingCartKey,
+        bottomOffset: 24.0,
+        onTap: _openCart,
       ),
-    );
+    ],
+  ),
+);
   }
 }

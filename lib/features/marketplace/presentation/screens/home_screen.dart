@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:ui';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -70,13 +72,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return Scaffold(
       backgroundColor: AppColors.bgPrimary,
       body: SafeArea(
-        child: SingleChildScrollView(
-          physics: const ClampingScrollPhysics(),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Unified App Header (Logo, Search Bar, Notifications & Cart)
-              AppHeader(
+        child: Column(
+          children: [
+            // Sticky Unified App Header (Logo, Search Bar, Notifications, Favorites & Cart)
+            Container(
+              color: AppColors.bgPrimary,
+              child: AppHeader(
                 showLogo: true,
                 showNotificationBell: true,
                 showCart: true,
@@ -110,13 +111,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                 ],
               ),
+            ),
 
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+            // Scrollable Content
+            Expanded(
+              child: SingleChildScrollView(
+                physics: const ClampingScrollPhysics(),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Guest Promo Banner (if unauthenticated)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Guest Promo Banner (if unauthenticated)
                     if (!authState.isAuthenticated) ...[
                       const GuestPromoBanner(),
                       const SizedBox(height: 16),
@@ -274,24 +283,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         clipBehavior: Clip.antiAlias,
                         child: Stack(
                           children: [
-                            Image.network(
-                              farmer.coverUrl,
-                              height: 145,
-                              width: 200,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) =>
-                                  Container(
-                                height: 145,
-                                width: 200,
-                                color: AppColors.surfaceInput,
-                                alignment: Alignment.center,
-                                child: const Icon(
-                                  LucideIcons.image,
-                                  color: AppColors.textSecondary,
-                                  size: 32,
-                                ),
-                              ),
-                            ),
+                            _buildFarmerCoverImage(farmer.coverUrl),
                               Container(
                                 decoration: BoxDecoration(
                                   gradient: LinearGradient(
@@ -420,6 +412,61 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ],
           ),
         ),
+      ),
+    ],
+  ),
+),
+);
+  }
+
+  Widget _buildFarmerCoverImage(String coverUrl) {
+    if (coverUrl.startsWith('http://') || coverUrl.startsWith('https://')) {
+      return Image.network(
+        coverUrl,
+        height: 145,
+        width: 200,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => Container(
+          height: 145,
+          width: 200,
+          color: AppColors.surfaceInput,
+          alignment: Alignment.center,
+          child: const Icon(
+            LucideIcons.image,
+            color: AppColors.textSecondary,
+            size: 32,
+          ),
+        ),
+      );
+    }
+    if (!kIsWeb && File(coverUrl).existsSync()) {
+      return Image.file(
+        File(coverUrl),
+        height: 145,
+        width: 200,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => Container(
+          height: 145,
+          width: 200,
+          color: AppColors.surfaceInput,
+          alignment: Alignment.center,
+          child: const Icon(
+            LucideIcons.image,
+            color: AppColors.textSecondary,
+            size: 32,
+          ),
+        ),
+      );
+    }
+    return Container(
+      height: 145,
+      width: 200,
+      color: AppColors.surfaceInput,
+      alignment: Alignment.center,
+      child: const Icon(
+        LucideIcons.image,
+        color: AppColors.textSecondary,
+        size: 32,
       ),
     );
   }

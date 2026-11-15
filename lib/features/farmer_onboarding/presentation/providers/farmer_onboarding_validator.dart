@@ -1,4 +1,4 @@
-import '../screens/farmer_onboarding_screen.dart';
+import '../models/farmer_onboarding_state.dart';
 
 /// Pure validation logic for the 5-step Farmer Onboarding & Verification flow.
 class FarmerOnboardingValidator {
@@ -64,8 +64,23 @@ class FarmerOnboardingValidator {
     return null;
   }
 
-  /// Validates Step 4: Review & Terms Agreement
+  /// Validates Step 4: Delivery & Fulfillment Options
   static String? validateStep4({
+    required bool isPickupEnabled,
+    required bool isDeliveryEnabled,
+    required List<String> deliveryDays,
+  }) {
+    if (!isPickupEnabled && !isDeliveryEnabled) {
+      return 'გთხოვთ ჩართოთ მიწოდების მინიმუმ ერთი მეთოდი (თვითგატანა ან მიტანა)';
+    }
+    if (isDeliveryEnabled && deliveryDays.isEmpty) {
+      return 'გთხოვთ მონიშნოთ მიტანის მინიმუმ 1 დღე';
+    }
+    return null;
+  }
+
+  /// Validates Step 5: Review & Terms Agreement
+  static String? validateStep5({
     required bool agreeTerms,
     required bool agreeQuality,
   }) {
@@ -78,8 +93,8 @@ class FarmerOnboardingValidator {
     return null;
   }
 
-  /// Validates Step 5: 5-digit SMS OTP Code
-  static String? validateStep5({
+  /// Validates Step 6: 5-digit SMS OTP Code
+  static String? validateStep6({
     required String otpCode,
     required int requiredLength,
   }) {

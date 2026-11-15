@@ -293,6 +293,7 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
     required String deliveryTimeWindow,
     String? customerName,
     String? contactPhone,
+    String paymentMethod = 'ESCROW',
   }) async {
     final auth = ref.read(authStateProvider);
     final effectiveName =
@@ -329,12 +330,13 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
       cancellationDeadline: now.add(const Duration(minutes: 30)),
       trackingNumber: 'AK-$generatedId',
       items: orderItems,
+      paymentMethod: paymentMethod,
     );
 
     state = state.copyWith(orders: [newOrder, ...state.orders]);
-    unawaited(
-      ref.read(marketplaceProvider.notifier).deductStockForCartItems(cartItems),
-    );
+    await ref
+        .read(marketplaceProvider.notifier)
+        .deductStockForCartItems(cartItems);
 
     try {
       final api = ref.read(apiClientProvider);
@@ -347,6 +349,7 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
           'contactPhone': effectivePhone,
           'deliveryAddress': deliveryAddress,
           'deliveryTimeWindow': deliveryTimeWindow,
+          'paymentMethod': paymentMethod,
           'items': cartItems
               .map(
                 (ci) => {

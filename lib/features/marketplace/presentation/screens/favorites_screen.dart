@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import '../../../../core/constants/app_assets.dart';
 import '../../../../core/auth/auth_state_provider.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
@@ -132,25 +134,19 @@ class FavoritesScreen extends ConsumerWidget {
       ),
       body: favoriteProducts.isEmpty
           ? Center(
-              child: Padding(
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Container(
-                      width: 90,
-                      height: 90,
-                      decoration: const BoxDecoration(
-                        color: AppColors.primaryLight,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        LucideIcons.heart,
-                        size: 44,
-                        color: AppColors.primary,
-                      ),
+                    SvgPicture.asset(
+                      AppAssets.emptyFavorites,
+                      width: 240,
+                      height: 240,
+                      fit: BoxFit.contain,
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 28),
                     Text(
                       'სურვილების სია ცარიელია!',
                       textAlign: TextAlign.center,

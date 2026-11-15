@@ -7,7 +7,9 @@ import 'package:agrokera/features/cart_checkout/presentation/providers/cart_prov
 import 'package:agrokera/features/cart_checkout/presentation/screens/cart_screen.dart';
 import 'package:agrokera/features/cart_checkout/presentation/screens/checkout_screen.dart';
 import 'package:agrokera/features/cart_checkout/presentation/widgets/fee_breakdown_sheet.dart';
+import 'package:agrokera/features/marketplace/data/models/farmer_model.dart';
 import 'package:agrokera/features/marketplace/presentation/screens/favorites_screen.dart';
+import 'package:agrokera/features/marketplace/presentation/widgets/product_details/product_delivery_info_card.dart';
 
 void main() {
   group('Cart Provider Unit Tests', () {
@@ -15,7 +17,7 @@ void main() {
       final container = ProviderContainer();
       final items = container.read(cartProvider);
       expect(items.length, 2);
-      expect(items.first.title, 'ვარდისფერი პომიდორი');
+      expect(items.first.title, 'მწვანილოვანი კომბოსტო');
       expect(items.subtotal, greaterThan(0));
     });
 
@@ -137,8 +139,8 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('კალათი'), findsOneWidget);
-      expect(find.text('ვარდისფერი პომიდორი'), findsOneWidget);
-      expect(find.text('ადიგენის კარტოფილი'), findsOneWidget);
+      expect(find.text('მწვანილოვანი კომბოსტო'), findsOneWidget);
+      expect(find.text('ბულგარული წიწაკა'), findsOneWidget);
     });
 
     testWidgets('renders empty cart state when cart has no items for authenticated user', (tester) async {
@@ -194,6 +196,143 @@ void main() {
       expect(find.textContaining('რა განსაზღვრავს ჩვენს'), findsOneWidget);
       expect(find.text('მიტანის საფასური კარამდე'), findsOneWidget);
       expect(find.text('გასაგებია'), findsOneWidget);
+    });
+
+    testWidgets('ProductDeliveryInfoCard displays dynamic regional delivery and days on modal tap', (tester) async {
+      const farmer = FarmerModel(
+        id: 'f1',
+        farmName: 'ლანას მეურნეობა',
+        farmerName: 'ლანა',
+        location: 'გურჯაანი, კახეთი',
+        rating: 4.9,
+        reviewCount: 10,
+        avatarUrl: '',
+        coverUrl: '',
+        about: '',
+        isDeliveryEnabled: true,
+        deliveryDays: ['შაბათი', 'კვირა'],
+        regionalDeliveryFees: {'თბილისი': 7.0, 'რუსთავი': 9.0},
+      );
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: ProductDeliveryInfoCard(farmer: farmer),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('მიწოდება და თვითგატანა'), findsOneWidget);
+      expect(find.text('დეტალები'), findsOneWidget);
+
+      // Tap card to open bottom sheet modal
+      await tester.tap(find.text('მიწოდება და თვითგატანა'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('მიწოდების პირობები'), findsOneWidget);
+      expect(find.text('თბილისი • 7 ₾'), findsOneWidget);
+      expect(find.text('რუსთავი • 9 ₾'), findsOneWidget);
+      expect(find.textContaining('შაბათი, კვირა'), findsOneWidget);
+      expect(find.textContaining('გურჯაანი, კახეთი'), findsOneWidget);
+      expect(find.text('გასაგებია'), findsOneWidget);
+
+      await tester.tap(find.text('გასაგებია'));
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('ProductDeliveryInfoCard displays pickup-only modal when delivery disabled', (tester) async {
+      const farmer = FarmerModel(
+        id: 'f2',
+        farmName: 'დავითის ბაღები',
+        farmerName: 'დავითი',
+        location: 'ყვარელი',
+        rating: 4.8,
+        reviewCount: 5,
+        avatarUrl: '',
+        coverUrl: '',
+        about: '',
+        isDeliveryEnabled: false,
+      );
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: ProductDeliveryInfoCard(farmer: farmer),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('მიღების მეთოდი'), findsOneWidget);
+
+      // Tap card to open bottom sheet modal
+      await tester.tap(find.text('მიღების მეთოდი'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('მიწოდების პირობები'), findsOneWidget);
+      expect(find.textContaining('ფერმერს საკურიერო მიტანა არ აქვს'), findsOneWidget);
+      expect(find.textContaining('ყვარელი'), findsWidgets);
+      expect(find.textContaining('0 ₾ • უფასო'), findsWidgets);
+
+      await tester.tap(find.text('გასაგებია'));
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('CheckoutScreen updates pricing dynamically on regional address switch', (tester) async {
+      await tester.pumpWidget(
+        const ProviderScope(
+          child: MaterialApp(
+            home: CheckoutScreen(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Default is Tbilisi (10 ₾ delivery fee for farmer_2)
+      expect(find.textContaining('მიტანა ხელმისაწვდომია: თბილისი (10 ₾)'), findsOneWidget);
+      expect(find.text('10 ₾'), findsWidgets);
+
+      // Open redesigned Address Bottom Sheet
+      await tester.tap(find.text('შეცვლა').first);
+      await tester.pumpAndSettle();
+
+      expect(find.text('მისამართის შენახვა'), findsOneWidget);
+      await tester.tap(find.text('რუსთავი'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('მისამართის შენახვა'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('მიტანა ხელმისაწვდომია: რუსთავი (12 ₾)'), findsOneWidget);
+      expect(find.text('12 ₾'), findsWidgets);
+
+      // Switch to Batumi (out-of-zone) via Address Bottom Sheet
+      await tester.tap(find.text('შეცვლა').first);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('ბათუმი'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('მისამართის შენახვა'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('მიტანა შეუძლებელია ამ მისამართზე'), findsOneWidget);
+      expect(find.textContaining('შეკვეთა გადართულია თვითგატანაზე'), findsOneWidget);
+      expect(find.text('0 ₾ (თვითგატანა)'), findsOneWidget);
+
+      // Switch back to Tbilisi and manually select self-pickup
+      await tester.tap(find.text('შეცვლა').first);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('თბილისი'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('მისამართის შენახვა'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('მიტანა ხელმისაწვდომია: თბილისი (10 ₾)'), findsOneWidget);
+
+      await tester.tap(find.text('თვითგატანა'));
+      await tester.pumpAndSettle();
+      expect(find.text('0 ₾ (თვითგატანა)'), findsOneWidget);
     });
   });
 }

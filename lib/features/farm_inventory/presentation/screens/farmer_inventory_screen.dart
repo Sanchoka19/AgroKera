@@ -9,8 +9,8 @@ import '../../../../core/widgets/app_toast.dart';
 import '../../../marketplace/data/models/product_model.dart';
 import '../providers/farmer_inventory_provider.dart';
 import '../widgets/inventory_product_card.dart';
-import '../widgets/product_form_sheet.dart';
 import '../widgets/restock_bottom_sheet.dart';
+import 'add_edit_product_screen.dart';
 
 /// Full Farmer Inventory & Stock Management Screen ("მარაგის მართვა")
 /// Clean UI screen — business logic lives in `farmerInventoryProvider`,
@@ -29,12 +29,20 @@ class FarmerInventoryScreen extends ConsumerStatefulWidget {
 }
 
 class _FarmerInventoryScreenState extends ConsumerState<FarmerInventoryScreen> {
+  void _openAddEditProduct([ProductModel? existing]) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => AddEditProductScreen(existing: existing),
+      ),
+    );
+  }
+
   @override
   void initState() {
     super.initState();
     if (widget.openAddOnStart) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) ProductFormSheet.show(context);
+        if (mounted) _openAddEditProduct();
       });
     }
   }
@@ -98,7 +106,7 @@ class _FarmerInventoryScreenState extends ConsumerState<FarmerInventoryScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => ProductFormSheet.show(context),
+        onPressed: () => _openAddEditProduct(),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         icon: const Icon(LucideIcons.plus, size: 18),
@@ -180,8 +188,7 @@ class _FarmerInventoryScreenState extends ConsumerState<FarmerInventoryScreen> {
                           product: product,
                           onToggleAvailability: (val) =>
                               _confirmToggleAvailability(product, val),
-                          onEdit: () =>
-                              ProductFormSheet.show(context, existing: product),
+                          onEdit: () => _openAddEditProduct(product),
                           onRestock: () =>
                               RestockBottomSheet.show(context, product),
                           onDelete: () => _confirmDeleteProduct(product),

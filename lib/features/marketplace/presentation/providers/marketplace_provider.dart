@@ -289,9 +289,94 @@ class MarketplaceNotifier extends Notifier<MarketplaceState> {
       await api.delete('/api/products/$productId');
     } catch (_) {}
   }
+
+  void updateFarmerDeliverySettings({
+    required String farmerId,
+    required bool isDeliveryEnabled,
+    required String deliveryCity,
+    required List<String> deliveryDays,
+    required double deliveryFee,
+    required Map<String, double> regionalDeliveryFees,
+    required bool isPickupEnabled,
+    String? location,
+  }) {
+    state = state.copyWith(
+      farmers: state.farmers.map((f) {
+        if (f.id == farmerId) {
+          return f.copyWith(
+            isDeliveryEnabled: isDeliveryEnabled,
+            deliveryCity: deliveryCity,
+            deliveryDays: deliveryDays,
+            deliveryFee: deliveryFee,
+            regionalDeliveryFees: regionalDeliveryFees,
+            isPickupEnabled: isPickupEnabled,
+            location: location ?? f.location,
+          );
+        }
+        return f;
+      }).toList(),
+    );
+  }
 }
 
 final marketplaceProvider =
     NotifierProvider<MarketplaceNotifier, MarketplaceState>(
   MarketplaceNotifier.new,
 );
+
+/// Computes smart similar products for a given [targetProduct]
+final similarProductsProvider =
+    Provider.family<List<ProductModel>, ProductModel>((ref, targetProduct) {
+  final allProducts = ref.watch(marketplaceProvider).products;
+
+  final candidates = allProducts.where((p) {
+    if (p.id == targetProduct.id) return false;
+    if (!p.isAvailable || p.stockQuantity <= 0) return false;
+    return true;
+  }).toList();
+
+  final scored = <({ProductModel product, int score})>[];
+  for (final p in candidates) {
+    int score = 0;
+
+    // Category match (highest relevance)
+    final isSameCategory = p.category.toLowerCase().trim() ==
+        targetProduct.category.toLowerCase().trim();
+    if (isSameCategory) {
+      score += 50;
+    }
+
+    // Same farmer bonus (prioritizes this farmer's products within category!)
+    final isSameFarmer = p.farmerId == targetProduct.farmerId;
+    if (isSameFarmer) {
+      score += 35;
+    }
+
+    // Shared agro characteristics tags
+    final sharedTags = p.effectiveAgroTags
+        .where((t) => targetProduct.effectiveAgroTags.contains(t))
+        .length;
+    score += sharedTags * 8;
+
+    // Rating bonus
+    score += (p.rating * 2).toInt();
+
+    // Price similarity bonus (within ±35% range)
+    if (targetProduct.price > 0) {
+      final ratio = p.price / targetProduct.price;
+      if (ratio >= 0.65 && ratio <= 1.35) {
+        score += 10;
+      }
+    }
+
+    // Candidate must share category OR be from the same farmer
+    if (isSameCategory || isSameFarmer) {
+      scored.add((product: p, score: score));
+    }
+  }
+
+  // Sort descending by score
+  scored.sort((a, b) => b.score.compareTo(a.score));
+
+  return scored.map((e) => e.product).take(8).toList();
+});

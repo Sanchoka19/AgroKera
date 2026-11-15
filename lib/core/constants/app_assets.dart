@@ -16,6 +16,7 @@ abstract final class AppAssets {
   static const String farmerRole = 'assets/illustrations/farmer_role.svg';
   static const String customerRole = 'assets/illustrations/customer_role.png';
   static const String emptyCart = 'assets/illustrations/empty_cart.svg';
+  static const String emptyFavorites = 'assets/illustrations/empty_favorites.svg';
   static const String emptyNotifications =
       'assets/illustrations/empty_notifications.svg';
   static const String emptyOrders = 'assets/illustrations/empty_orders.svg';

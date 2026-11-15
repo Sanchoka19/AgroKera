@@ -27,6 +27,20 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   bool _obscurePassword = true;
 
   @override
+  void initState() {
+    super.initState();
+    final auth = ref.read(authStateProvider);
+    if (auth.userName != null && auth.userName!.trim().isNotEmpty) {
+      _nameController.text = auth.userName!.trim();
+    }
+    if (auth.userEmail != null &&
+        auth.userEmail!.trim().isNotEmpty &&
+        auth.userEmail != 'example@gmail.com') {
+      _emailController.text = auth.userEmail!.trim();
+    }
+  }
+
+  @override
   void dispose() {
     _nameController.dispose();
     _emailController.dispose();

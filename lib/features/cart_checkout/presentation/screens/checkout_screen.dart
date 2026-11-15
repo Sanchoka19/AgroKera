@@ -1,15 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/app_toast.dart';
 import '../../../farmer_onboarding/presentation/widgets/farmer_map_widget.dart';
+import '../../../marketplace/data/models/farmer_model.dart';
+import '../../../marketplace/data/mock_data.dart';
+import '../../../marketplace/presentation/providers/marketplace_provider.dart';
 import '../../../orders/presentation/providers/farmer_orders_provider.dart';
 import '../providers/cart_provider.dart';
 import '../widgets/fee_breakdown_sheet.dart';
+import '../../domain/models/payment_method_model.dart';
+import '../providers/payment_provider.dart';
+import '../widgets/payment/order_placed_dialog.dart';
+import '../widgets/payment/payment_method_card.dart';
 
 class CheckoutScreen extends ConsumerStatefulWidget {
   const CheckoutScreen({super.key});
@@ -21,76 +29,350 @@ class CheckoutScreen extends ConsumerStatefulWidget {
 class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   String _address = 'ჭავჭავაძე - თბილისი';
   String _deliverySlot = '28 ნოემბერი, 10:00-12:00';
-  final String _paymentMethod = 'მთავრდება **** 4242';
-  bool _hasCustomCard = true;
+  bool _isPickupSelected = false;
+
+  FarmerModel _resolveFarmer(
+    MarketplaceState marketplace,
+    List<dynamic> cartItems,
+  ) {
+    if (cartItems.isNotEmpty) {
+      final firstItem = cartItems.first;
+      for (final p in marketplace.products) {
+        if (p.id == firstItem.id) {
+          for (final f in marketplace.farmers) {
+            if (f.id == p.farmerId || f.farmerName == firstItem.farmerName) {
+              return f;
+            }
+          }
+        }
+      }
+      for (final f in marketplace.farmers) {
+        if (f.farmerName == firstItem.farmerName) {
+          return f;
+        }
+      }
+    }
+    if (marketplace.farmers.isNotEmpty) {
+      return marketplace.farmers.first;
+    }
+    return MockData.farmers.first;
+  }
+
+  MapEntry<String, double>? _findMatchedDeliveryZone(
+    String address,
+    FarmerModel farmer,
+  ) {
+    if (!farmer.isDeliveryEnabled) return null;
+    final lowerAddr = address.toLowerCase();
+
+    for (final entry in farmer.regionalDeliveryFees.entries) {
+      if (lowerAddr.contains(entry.key.toLowerCase())) {
+        return entry;
+      }
+    }
+
+    if (lowerAddr.contains(farmer.deliveryCity.toLowerCase())) {
+      return MapEntry(farmer.deliveryCity, farmer.deliveryFee);
+    }
+
+    return null;
+  }
+
+  Widget _buildAddressQuickChip(
+    String label,
+    String fullAddress,
+    TextEditingController controller,
+    StateSetter setModalState,
+  ) {
+    final isSelected = controller.text.trim() == fullAddress;
+    return InkWell(
+      onTap: () {
+        setModalState(() {
+          controller.text = fullAddress;
+        });
+      },
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.primaryLight : const Color(0xFFF1F5F9),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: isSelected ? AppColors.primary : const Color(0xFFE2E8F0),
+            width: isSelected ? 1.5 : 1,
+          ),
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.notoSansGeorgian(
+            fontSize: 12.5,
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+            color: isSelected ? AppColors.primaryDark : const Color(0xFF334155),
+          ),
+        ),
+      ),
+    );
+  }
 
   void _showAddressDialog() {
     final controller = TextEditingController(text: _address);
-    showDialog(
+
+    showModalBottomSheet(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('მიტანის მისამართი'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            TextField(
-              controller: controller,
-              decoration: const InputDecoration(
-                hintText: 'შეიყვანეთ მისამართი',
-              ),
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setModalState) => SafeArea(
+          child: Padding(
+            padding: EdgeInsets.only(
+              left: 20,
+              right: 20,
+              top: 14,
+              bottom: MediaQuery.of(ctx).viewInsets.bottom + 16,
             ),
-            const SizedBox(height: 12),
-            OutlinedButton.icon(
-              onPressed: () async {
-                try {
-                  LocationPermission perm = await Geolocator.checkPermission();
-                  if (perm == LocationPermission.denied) {
-                    perm = await Geolocator.requestPermission();
-                    if (perm == LocationPermission.denied) {
-                      if (!mounted) return;
-                      AppToast.error(
-                        context,
-                        'მდებარეობაზე წვდომის ნებართვა უარყოფილია',
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Drag handle
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE2E8F0),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Header
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: AppColors.primaryLight,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(
+                            LucideIcons.mapPin,
+                            color: AppColors.primary,
+                            size: 20,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Text(
+                          'მიტანის მისამართი',
+                          style: GoogleFonts.notoSansGeorgian(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    IconButton(
+                      icon: const Icon(
+                        LucideIcons.x,
+                        size: 20,
+                        color: AppColors.textSecondary,
+                      ),
+                      onPressed: () => Navigator.pop(ctx),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                // TextField with clear button & pin prefix
+                TextField(
+                  controller: controller,
+                  style: GoogleFonts.notoSansGeorgian(
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: 'შეიყვანეთ მისამართი (ქალაქი, ქუჩა)...',
+                    hintStyle: GoogleFonts.notoSansGeorgian(
+                      fontSize: 13.5,
+                      color: AppColors.textSecondary,
+                    ),
+                    prefixIcon: const Icon(
+                      LucideIcons.search,
+                      size: 18,
+                      color: AppColors.primary,
+                    ),
+                    suffixIcon: controller.text.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(
+                              LucideIcons.x,
+                              size: 16,
+                              color: Color(0xFF94A3B8),
+                            ),
+                            onPressed: () {
+                              setModalState(() => controller.clear());
+                            },
+                          )
+                        : null,
+                    filled: true,
+                    fillColor: const Color(0xFFF8FAFC),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(
+                        color: AppColors.primary,
+                        width: 1.5,
+                      ),
+                    ),
+                  ),
+                  onChanged: (_) => setModalState(() {}),
+                ),
+                const SizedBox(height: 14),
+
+                // Quick City Selector Pills
+                Text(
+                  'სწრაფი არჩევა:',
+                  style: GoogleFonts.notoSansGeorgian(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _buildAddressQuickChip(
+                      'თბილისი',
+                      'ჭავჭავაძე - თბილისი',
+                      controller,
+                      setModalState,
+                    ),
+                    _buildAddressQuickChip(
+                      'რუსთავი',
+                      'რუსთავი, შარტავას 4',
+                      controller,
+                      setModalState,
+                    ),
+                    _buildAddressQuickChip(
+                      'მცხეთა',
+                      'მცხეთა, არსუკიძის 1',
+                      controller,
+                      setModalState,
+                    ),
+                    _buildAddressQuickChip(
+                      'ბათუმი',
+                      'ბათუმი, რუსთაველის 10',
+                      controller,
+                      setModalState,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+
+                // GPS Locator Button
+                OutlinedButton.icon(
+                  onPressed: () async {
+                    try {
+                      LocationPermission perm =
+                          await Geolocator.checkPermission();
+                      if (perm == LocationPermission.denied) {
+                        perm = await Geolocator.requestPermission();
+                        if (perm == LocationPermission.denied) {
+                          if (!ctx.mounted) return;
+                          AppToast.error(
+                            ctx,
+                            'მდებარეობაზე წვდომის ნებართვა უარყოფილია',
+                          );
+                          return;
+                        }
+                      }
+                      final pos = await Geolocator.getCurrentPosition();
+                      final resolved = GeorgianGeoLookup.resolveInstantAddress(
+                        LatLng(pos.latitude, pos.longitude),
                       );
-                      return;
+                      if (!ctx.mounted) return;
+                      setModalState(() => controller.text = resolved);
+                    } catch (_) {
+                      if (!ctx.mounted) return;
+                      AppToast.error(
+                        ctx,
+                        'GPS მდებარეობის დადგენა ვერ მოხერხდა',
+                      );
                     }
-                  }
-                  final pos = await Geolocator.getCurrentPosition();
-                  final resolved = GeorgianGeoLookup.resolveInstantAddress(
-                    LatLng(pos.latitude, pos.longitude),
-                  );
-                  controller.text = resolved;
-                  setState(() => _address = resolved);
-                } catch (_) {
-                  if (!mounted) return;
-                  AppToast.error(
-                    context,
-                    'GPS მდებარეობის დადგენა ვერ მოხერხდა',
-                  );
-                }
-              },
-              icon: const Icon(LucideIcons.locateFixed, size: 16),
-              label: const Text('ჩემი მდებარეობის დადგენა (GPS)'),
+                  },
+                  icon: const Icon(
+                    LucideIcons.locateFixed,
+                    size: 16,
+                    color: AppColors.primary,
+                  ),
+                  label: Text(
+                    'ჩემი მდებარეობის დადგენა (GPS)',
+                    style: GoogleFonts.notoSansGeorgian(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                    ),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: AppColors.primary),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 11),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Save CTA Button
+                SizedBox(
+                  height: 48,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      if (controller.text.trim().isNotEmpty) {
+                        setState(() => _address = controller.text.trim());
+                      }
+                      Navigator.pop(ctx);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: Text(
+                      'მისამართის შენახვა',
+                      style: GoogleFonts.notoSansGeorgian(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('გაუქმება'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              if (controller.text.trim().isNotEmpty) {
-                setState(() => _address = controller.text.trim());
-              }
-              Navigator.pop(ctx);
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-            child: const Text('შენახვა', style: TextStyle(color: Colors.white)),
-          ),
-        ],
       ),
     );
   }
@@ -121,7 +403,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             const SizedBox(height: 12),
             ...slots.map(
               (s) => ListTile(
-                title: Text(s, style: const TextStyle(fontWeight: FontWeight.w600)),
+                title: Text(
+                  s,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
                 trailing: _deliverySlot == s
                     ? const Icon(LucideIcons.check, color: AppColors.primary)
                     : null,
@@ -139,103 +424,104 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
   Future<void> _showSuccessDialog(double total) async {
     final cartItems = ref.read(cartProvider);
-    String orderNumber = '38195';
-    if (cartItems.isNotEmpty) {
-      final created = await ref
-          .read(farmerOrdersProvider.notifier)
-          .createOrderFromCart(
-            cartItems: cartItems,
-            deliveryAddress: _address,
-            deliveryTimeWindow: _deliverySlot,
-          );
-      orderNumber = created.id;
+    if (cartItems.isEmpty) {
+      AppToast.info(context, 'თქვენი კალათა ცარიელია');
+      return;
     }
+
+    final marketplace = ref.read(marketplaceProvider);
+    final farmer = _resolveFarmer(marketplace, cartItems);
+    final matchedZone = _findMatchedDeliveryZone(_address, farmer);
+    final isCovered = matchedZone != null && farmer.isDeliveryEnabled;
+    final isPickup = _isPickupSelected || !isCovered;
+    final finalDeliveryAddress = isPickup
+        ? 'თვითგატანა მეურნეობიდან: ${farmer.farmName} (${farmer.location})'
+        : _address;
+
+    // Pre-order stock validation against real-time marketplace stock
+    final validation = ref
+        .read(cartProvider.notifier)
+        .validateAndSyncStock(marketplace.products);
+
+    switch (validation) {
+      case CartValidationOutOfStock(:final productTitle):
+        AppToast.error(
+          context,
+          'პროდუქტი "$productTitle" მარაგში აღარ არის',
+        );
+        return;
+      case CartValidationExceedsStock(
+          :final productTitle,
+          :final availableStock,
+          :final unit,
+        ):
+        AppToast.error(
+          context,
+          'პროდუქტზე "$productTitle" ხელმისაწვდომია მხოლოდ $availableStock $unit. კალათა დაკორექტირდა.',
+        );
+        return;
+      case CartValidationValid():
+        break;
+    }
+
+    final paymentState = ref.read(paymentProvider);
+    final paymentMethod = paymentState.selectedMethod;
+
+    String orderNumber = '38195';
+    final created = await ref
+        .read(farmerOrdersProvider.notifier)
+        .createOrderFromCart(
+          cartItems: cartItems,
+          deliveryAddress: finalDeliveryAddress,
+          deliveryTimeWindow: _deliverySlot,
+          paymentMethod: paymentMethod.name.toUpperCase(),
+        );
+    orderNumber = created.id;
     if (!mounted) return;
 
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        content: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 72,
-                height: 72,
-                decoration: const BoxDecoration(
-                  color: AppColors.primaryLight,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  LucideIcons.checkCheck,
-                  color: AppColors.primary,
-                  size: 40,
-                ),
-              ),
-              const SizedBox(height: 18),
-              Text(
-                'შეკვეთა მიღებულია!',
-                style: AppTypography.h1.copyWith(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'თქვენი შეკვეთა #$orderNumber გადაეცა ფერმერს მოსამზადებლად. სრული ღირებულება: ${total.toStringAsFixed(0)} ₾',
-                textAlign: TextAlign.center,
-                style: AppTypography.bodyMedium.copyWith(
-                  color: AppColors.textSecondary,
-                  fontSize: 14,
-                ),
-              ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                height: 48,
-                child: ElevatedButton(
-                  onPressed: () {
-                    ref.read(cartProvider.notifier).clearCart();
-                    Navigator.of(ctx).pop(); // dialog
-                    Navigator.of(context).pop(); // checkout
-                    Navigator.of(context).pop(); // cart -> returns to home
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: const Text(
-                    'მთავარზე დაბრუნება',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 15,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+    OrderPlacedDialog.show(
+      context,
+      orderId: orderNumber,
+      totalAmount: total,
+      paymentMethod: paymentMethod,
+      escrowDetails: paymentState.escrowDetails,
+      isPickup: isPickup,
+      location: farmer.location,
+      onDismiss: () {
+        ref.read(cartProvider.notifier).clearCart();
+        Navigator.of(context).pop(); // dismiss dialog
+        Navigator.of(context).pop(); // pop checkout
+        Navigator.of(context).pop(); // pop cart -> return to home
+      },
     );
+  }
+
+  String _buildCtaButtonText(PaymentMethodType method, double amount) {
+    switch (method) {
+      case PaymentMethodType.bankTransfer:
+        return 'გაფორმება • ${amount.toStringAsFixed(0)} ₾ (Escrow)';
+      case PaymentMethodType.cash:
+        return 'შეკვეთის გაფორმება • ${amount.toStringAsFixed(0)} ₾';
+      case PaymentMethodType.card:
+        return 'გადახდა • ${amount.toStringAsFixed(0)} ₾';
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final cartItems = ref.watch(cartProvider);
+    final marketplace = ref.watch(marketplaceProvider);
+    final paymentState = ref.watch(paymentProvider);
+    final farmer = _resolveFarmer(marketplace, cartItems);
+    final matchedZone = _findMatchedDeliveryZone(_address, farmer);
+    final isCovered = matchedZone != null && farmer.isDeliveryEnabled;
+    final isPickup = _isPickupSelected || !isCovered;
+
     final subtotal = cartItems.isNotEmpty ? cartItems.subtotal : 65.0;
     final totalWeight = cartItems.isNotEmpty ? cartItems.totalWeight : 3.8;
-    final deliveryFee = cartItems.isNotEmpty ? cartItems.deliveryFee : 15.0;
+    final effectiveDeliveryFee = isPickup ? 0.0 : matchedZone.value;
     final platformFee = cartItems.isNotEmpty ? cartItems.platformFee : 10.0;
-    final grandTotal = cartItems.isNotEmpty ? cartItems.grandTotal : 75.0;
+    final grandTotal = subtotal + effectiveDeliveryFee + platformFee;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF9FAFB),
@@ -244,7 +530,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         elevation: 0,
         centerTitle: true,
         leading: IconButton(
-          icon: const Icon(LucideIcons.chevronLeft, color: AppColors.textPrimary, size: 28),
+          icon: const Icon(
+            LucideIcons.chevronLeft,
+            color: AppColors.textPrimary,
+            size: 28,
+          ),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
@@ -261,56 +551,6 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Column(
           children: [
-            // Top Free Delivery Promotional Banner
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFFE8F5E9),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  const Icon(
-                    LucideIcons.gift,
-                    size: 32,
-                    color: AppColors.primary,
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'დაამატე 75 ლარის პროდუქცია და\nმიიღე უფასო მიტანა',
-                          style: AppTypography.bodyMedium.copyWith(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.textPrimary,
-                            height: 1.25,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        GestureDetector(
-                          onTap: () => Navigator.of(context).pop(),
-                          child: Text(
-                            'დაამატე პროდუქტი',
-                            style: AppTypography.bodyMedium.copyWith(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.primary,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 14),
-
             // Card 1: Delivery Address
             Container(
               width: double.infinity,
@@ -361,6 +601,286 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                       color: AppColors.textSecondary,
                     ),
                   ),
+                  const SizedBox(height: 10),
+                  // Coverage status banner
+                  if (isCovered) ...[
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE8F5E9),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: const Color(0xFFA5D6A7)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            LucideIcons.checkCircle2,
+                            size: 16,
+                            color: Color(0xFF2E7D32),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'მიტანა ხელმისაწვდომია: ${matchedZone.key} (${matchedZone.value.toInt()} ₾) • ${farmer.deliveryDays.join(", ")}',
+                              style: AppTypography.caption.copyWith(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: const Color(0xFF2E7D32),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ] else ...[
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFF3E0),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: const Color(0xFFFFB74D)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(
+                                LucideIcons.alertTriangle,
+                                size: 16,
+                                color: Color(0xFFE65100),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'მიტანა შეუძლებელია ამ მისამართზე',
+                                  style: AppTypography.caption.copyWith(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w800,
+                                    color: const Color(0xFFE65100),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'ფერმერი მიტანას ახორციელებს მხოლოდ შემდეგ ზონებში: ${farmer.regionalDeliveryFees.isNotEmpty ? farmer.regionalDeliveryFees.keys.join(", ") : farmer.deliveryCity} (${farmer.deliveryDays.join(", ")}).\nშეკვეთა გადართულია თვითგატანაზე (0 ₾ • ${farmer.location}).',
+                            style: AppTypography.caption.copyWith(
+                              fontSize: 11,
+                              color: const Color(0xFFBF360C),
+                              height: 1.35,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // Card 1.5: Delivery Method Selector
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(14),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.02),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'მიღების მეთოდი',
+                    style: AppTypography.bodyMedium.copyWith(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      // Delivery option
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: isCovered
+                              ? () => setState(() => _isPickupSelected = false)
+                              : () {
+                                  AppToast.warning(
+                                    context,
+                                    'ფერმერი ამ მისამართზე მიტანას ვერ უზრუნველყოფს',
+                                  );
+                                },
+                          child: Opacity(
+                            opacity: isCovered ? 1.0 : 0.45,
+                            child: Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: (!isPickup && isCovered)
+                                    ? AppColors.primaryLight
+                                    : const Color(0xFFF9FAFB),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                  color: (!isPickup && isCovered)
+                                      ? AppColors.primary
+                                      : const Color(0xFFE5E7EB),
+                                  width: (!isPickup && isCovered) ? 1.5 : 1,
+                                ),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      const Icon(
+                                        LucideIcons.truck,
+                                        size: 18,
+                                        color: AppColors.primary,
+                                      ),
+                                      if (!isPickup && isCovered)
+                                        const Icon(
+                                          LucideIcons.checkCircle,
+                                          size: 16,
+                                          color: AppColors.primary,
+                                        ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'მიტანა',
+                                    style: AppTypography.bodyMedium.copyWith(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.textPrimary,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    isCovered
+                                        ? '${matchedZone.value.toInt()} ₾'
+                                        : 'მიუწვდომელია',
+                                    style: AppTypography.caption.copyWith(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: isCovered
+                                          ? AppColors.primaryDark
+                                          : AppColors.textSecondary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      // Self-pickup option
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () => setState(() => _isPickupSelected = true),
+                          child: Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: isPickup
+                                  ? AppColors.primaryLight
+                                  : const Color(0xFFF9FAFB),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: isPickup
+                                    ? AppColors.primary
+                                    : const Color(0xFFE5E7EB),
+                                width: isPickup ? 1.5 : 1,
+                              ),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    const Icon(
+                                      LucideIcons.store,
+                                      size: 18,
+                                      color: AppColors.primary,
+                                    ),
+                                    if (isPickup)
+                                      const Icon(
+                                        LucideIcons.checkCircle,
+                                        size: 16,
+                                        color: AppColors.primary,
+                                      ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'თვითგატანა',
+                                  style: AppTypography.bodyMedium.copyWith(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  '0 ₾ • უფასო',
+                                  style: AppTypography.caption.copyWith(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                    color: const Color(0xFF2E7D32),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (isPickup) ...[
+                    const SizedBox(height: 10),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Padding(
+                          padding: EdgeInsets.only(top: 2),
+                          child: Icon(
+                            LucideIcons.mapPin,
+                            size: 14,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            'მეურნეობის ლოკაცია: ${farmer.farmName} — ${farmer.location}',
+                            style: AppTypography.caption.copyWith(
+                              fontSize: 12,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -388,7 +908,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'მიტანის დღე',
+                        isPickup ? 'გატანის დღე და დრო' : 'მიტანის დღე',
                         style: AppTypography.bodyMedium.copyWith(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
@@ -422,98 +942,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             const SizedBox(height: 12),
 
             // Card 3: Payment Method
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(14),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.02),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  // Payment Card graphic badge
-                  Container(
-                    width: 44,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF388E3C),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Stack(
-                      children: [
-                        Positioned(
-                          top: 6,
-                          left: 0,
-                          right: 0,
-                          child: Container(
-                            height: 6,
-                            color: const Color(0xFF1B5E20),
-                          ),
-                        ),
-                        Positioned(
-                          bottom: 4,
-                          left: 6,
-                          child: Container(
-                            width: 8,
-                            height: 6,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFFFD54F),
-                              borderRadius: BorderRadius.circular(2),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'გადახდის მეთოდი',
-                          style: AppTypography.bodyMedium.copyWith(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          _hasCustomCard ? _paymentMethod : 'მთავრდება ****',
-                          style: AppTypography.bodyMedium.copyWith(
-                            fontSize: 14,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _hasCustomCard = !_hasCustomCard;
-                      });
-                    },
-                    child: Text(
-                      'დამატება',
-                      style: AppTypography.bodyMedium.copyWith(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            PaymentMethodCard(grandTotal: grandTotal),
             const SizedBox(height: 12),
 
             // Card 4: Order Summary
@@ -579,11 +1008,15 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                         ),
                       ),
                       Text(
-                        '${deliveryFee.toStringAsFixed(0)} ₾',
+                        isPickup
+                            ? '0 ₾ (თვითგატანა)'
+                            : '${effectiveDeliveryFee.toStringAsFixed(0)} ₾',
                         style: AppTypography.bodyMedium.copyWith(
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary,
+                          color: isPickup
+                              ? const Color(0xFF2E7D32)
+                              : AppColors.textPrimary,
                         ),
                       ),
                     ],
@@ -676,7 +1109,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   ),
                 ),
                 child: Text(
-                  'გადახდა ${grandTotal.toStringAsFixed(0)}₾',
+                  _buildCtaButtonText(paymentState.selectedMethod, grandTotal),
                   style: AppTypography.button.copyWith(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,

@@ -10,6 +10,8 @@ import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/app_confirmation_bottom_sheet.dart';
 import '../../../../core/widgets/app_toast.dart';
 import '../../../../core/widgets/auth_required_bottom_sheet.dart';
+import '../../../marketplace/presentation/providers/marketplace_provider.dart';
+import '../../../navigation/presentation/screens/main_nav_screen.dart';
 import '../providers/cart_provider.dart';
 import 'checkout_screen.dart';
 
@@ -236,10 +238,15 @@ class _CartScreenState extends ConsumerState<CartScreen>
                   ),
                   const SizedBox(height: 32),
 
-                  // Button to fill cart (restore sample items)
+                  // Button to navigate to Main / Home screen
                   OutlinedButton(
                     onPressed: () {
-                      ref.read(cartProvider.notifier).restoreSampleItems();
+                      Navigator.of(context).pushAndRemoveUntil(
+                        MaterialPageRoute(
+                          builder: (_) => const MainNavScreen(initialIndex: 0),
+                        ),
+                        (route) => false,
+                      );
                     },
                     style: OutlinedButton.styleFrom(
                       side: const BorderSide(color: Color(0xFFD1D5DB), width: 1.2),
@@ -494,14 +501,31 @@ class _CartScreenState extends ConsumerState<CartScreen>
                                               ),
                                               GestureDetector(
                                                 onTap: () {
-                                                  ref.read(cartProvider.notifier).increment(item.id);
+                                                  if (item.quantity >= item.stockQuantity) {
+                                                    AppToast.info(
+                                                      context,
+                                                      'მარაგში მხოლოდ ${item.stockQuantity.toInt()} ${item.unit}-ია',
+                                                    );
+                                                    return;
+                                                  }
+                                                  final success = ref
+                                                      .read(cartProvider.notifier)
+                                                      .increment(item.id);
+                                                  if (!success) {
+                                                    AppToast.info(
+                                                      context,
+                                                      'მარაგში მხოლოდ ${item.stockQuantity.toInt()} ${item.unit}-ია',
+                                                    );
+                                                  }
                                                 },
-                                                child: const Padding(
-                                                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                                child: Padding(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                                   child: Icon(
                                                     LucideIcons.plus,
                                                     size: 16,
-                                                    color: AppColors.textPrimary,
+                                                    color: item.quantity >= item.stockQuantity
+                                                        ? AppColors.textSecondary.withValues(alpha: 0.35)
+                                                        : AppColors.textPrimary,
                                                   ),
                                                 ),
                                               ),
@@ -813,6 +837,41 @@ class _CartScreenState extends ConsumerState<CartScreen>
                               height: 48,
                               child: ElevatedButton(
                                 onPressed: () {
+                                  if (!isMinimumMet) {
+                                    AppToast.info(
+                                      context,
+                                      'მინიმალური შეკვეთის თანხაა 30 ₾',
+                                    );
+                                    return;
+                                  }
+                                  final validation = ref
+                                      .read(cartProvider.notifier)
+                                      .validateAndSyncStock(
+                                        ref.read(marketplaceProvider).products,
+                                      );
+
+                                  switch (validation) {
+                                    case CartValidationOutOfStock(
+                                        :final productTitle
+                                      ):
+                                      AppToast.error(
+                                        context,
+                                        'პროდუქტი "$productTitle" მარაგში აღარ არის',
+                                      );
+                                      return;
+                                    case CartValidationExceedsStock(
+                                        :final productTitle,
+                                        :final availableStock,
+                                        :final unit,
+                                      ):
+                                      AppToast.error(
+                                        context,
+                                        'პროდუქტზე "$productTitle" მარაგში მხოლოდ $availableStock $unit-ია',
+                                      );
+                                      return;
+                                    case CartValidationValid():
+                                      break;
+                                  }
                                   Navigator.of(context).push(
                                     MaterialPageRoute(
                                       builder: (_) => const CheckoutScreen(),

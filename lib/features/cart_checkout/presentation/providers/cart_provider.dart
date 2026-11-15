@@ -2,7 +2,61 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/storage/secure_storage_service.dart';
+import '../../../marketplace/data/models/product_model.dart';
 import '../../data/models/cart_item_model.dart';
+
+sealed class AddToCartResult {
+  const AddToCartResult();
+}
+
+class AddToCartSuccess extends AddToCartResult {
+  final int requestedQuantity;
+  final int addedQuantity;
+  final int totalInCart;
+  final int maxStock;
+  bool get isCapped => addedQuantity < requestedQuantity;
+
+  const AddToCartSuccess({
+    required this.requestedQuantity,
+    required this.addedQuantity,
+    required this.totalInCart,
+    required this.maxStock,
+  });
+}
+
+class AddToCartAlreadyMax extends AddToCartResult {
+  final int maxStock;
+  const AddToCartAlreadyMax(this.maxStock);
+}
+
+class AddToCartOutOfStock extends AddToCartResult {
+  const AddToCartOutOfStock();
+}
+
+sealed class CartValidationResult {
+  const CartValidationResult();
+}
+
+class CartValidationValid extends CartValidationResult {
+  const CartValidationValid();
+}
+
+class CartValidationOutOfStock extends CartValidationResult {
+  final String productTitle;
+  const CartValidationOutOfStock(this.productTitle);
+}
+
+class CartValidationExceedsStock extends CartValidationResult {
+  final String productTitle;
+  final int availableStock;
+  final String unit;
+
+  const CartValidationExceedsStock({
+    required this.productTitle,
+    required this.availableStock,
+    required this.unit,
+  });
+}
 
 class CartNotifier extends Notifier<List<CartItemModel>> {
   @override
@@ -33,43 +87,139 @@ class CartNotifier extends Notifier<List<CartItemModel>> {
 
   static const List<CartItemModel> _sampleItems = [
     CartItemModel(
-      id: 'cart_1',
-      title: 'ვარდისფერი პომიდორი',
+      id: 'prod_1',
+      title: 'მწვანილოვანი კომბოსტო',
       packageText: '10კგ პატარა ყუთი',
-      farmerName: 'ფერმა: მწვანე ველი',
-      pricePerUnit: 10.00,
+      farmerName: 'გიორგის ფერმა',
+      pricePerUnit: 15.00,
       unit: 'კგ',
       imageUrl:
-          'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=500&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1550142414-a81e12541000?w=600&auto=format&fit=crop&q=80',
       quantity: 5,
       weightKg: 2.0,
+      minOrderQuantity: 1.0,
+      stockQuantity: 50.0,
     ),
     CartItemModel(
-      id: 'cart_2',
-      title: 'ადიგენის კარტოფილი',
+      id: 'prod_2',
+      title: 'ბულგარული წიწაკა',
       packageText: 'სუფთა მოსავალი',
-      farmerName: 'ფერმა: მწვანე ველი',
-      pricePerUnit: 1.50,
+      farmerName: 'გიორგის ფერმა',
+      pricePerUnit: 15.00,
       unit: 'კგ',
       imageUrl:
-          'https://images.unsplash.com/photo-1518977676601-b53f82aba655?w=500&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1563565375-f3fdfdbefa83?w=600&auto=format&fit=crop&q=80',
       quantity: 10,
       weightKg: 1.8,
+      minOrderQuantity: 1.0,
+      stockQuantity: 50.0,
     ),
   ];
 
-  void addItem(CartItemModel newItem) {
+  /// Clean Domain action to add a product to the cart with stock and limit enforcement.
+  AddToCartResult addProduct(ProductModel product, int quantity) {
+    if (!product.isAvailable || product.stockQuantity <= 0) {
+      return const AddToCartOutOfStock();
+    }
+
+    final maxStock = product.stockQuantity.toInt();
+    final existingIndex = state.indexWhere((item) => item.id == product.id);
+    final currentInCart =
+        existingIndex != -1 ? state[existingIndex].quantity : 0;
+
+    if (currentInCart >= maxStock) {
+      return AddToCartAlreadyMax(maxStock);
+    }
+
+    final targetTotal = currentInCart + quantity;
+    final clampedTotal = targetTotal.clamp(1, maxStock);
+    final actuallyAdded = clampedTotal - currentInCart;
+
+    if (actuallyAdded <= 0) {
+      return AddToCartAlreadyMax(maxStock);
+    }
+
+    final cartItem = CartItemModel(
+      id: product.id,
+      title: product.title,
+      packageText: '${product.unit} შეფუთვა',
+      farmerName: product.farmerName,
+      pricePerUnit: product.price,
+      unit: product.unit,
+      imageUrl: product.imageUrl,
+      quantity: clampedTotal,
+      weightKg: clampedTotal.toDouble(),
+      minOrderQuantity: product.minOrderQuantity,
+      stockQuantity: product.stockQuantity,
+      bulkDiscountMinQty: product.bulkDiscountMinQty,
+      bulkDiscountPercent: product.bulkDiscountPercent,
+    );
+
+    if (existingIndex != -1) {
+      final list = List<CartItemModel>.from(state);
+      list[existingIndex] = cartItem;
+      state = list;
+    } else {
+      state = [...state, cartItem];
+    }
+    _persistCart();
+
+    return AddToCartSuccess(
+      requestedQuantity: quantity,
+      addedQuantity: actuallyAdded,
+      totalInCart: clampedTotal,
+      maxStock: maxStock,
+    );
+  }
+
+  /// Validates cart items against current real-time marketplace inventory.
+  /// Automatically clamps cart quantities to available stock if needed.
+  CartValidationResult validateAndSyncStock(List<ProductModel> products) {
+    for (final item in state) {
+      final product = products.where((p) => p.id == item.id).firstOrNull;
+      if (product != null) {
+        if (!product.isAvailable || product.stockQuantity <= 0) {
+          return CartValidationOutOfStock(item.title);
+        }
+        if (item.quantity > product.stockQuantity) {
+          updateQuantity(item.id, product.stockQuantity.toInt());
+          return CartValidationExceedsStock(
+            productTitle: item.title,
+            availableStock: product.stockQuantity.toInt(),
+            unit: item.unit,
+          );
+        }
+      }
+    }
+    return const CartValidationValid();
+  }
+
+  int addItem(CartItemModel newItem) {
     final existingIndex = state.indexWhere((item) => item.id == newItem.id);
+    final maxAvailable = newItem.stockQuantity.toInt().clamp(1, 99999);
     if (existingIndex != -1) {
       final existing = state[existingIndex];
-      final updated = existing.copyWith(quantity: existing.quantity + newItem.quantity);
+      final targetQty = existing.quantity + newItem.quantity;
+      final clampedQty = targetQty.clamp(1, maxAvailable);
+      final added = clampedQty - existing.quantity;
+      if (added <= 0) {
+        return 0;
+      }
+      final updated = existing.copyWith(
+        quantity: clampedQty,
+        stockQuantity: newItem.stockQuantity,
+      );
       final list = List<CartItemModel>.from(state);
       list[existingIndex] = updated;
       state = list;
+      _persistCart();
+      return added;
     } else {
-      state = [...state, newItem];
+      final clampedQty = newItem.quantity.clamp(1, maxAvailable);
+      state = [...state, newItem.copyWith(quantity: clampedQty)];
+      _persistCart();
+      return clampedQty;
     }
-    _persistCart();
   }
 
   void removeItem(String id) {
@@ -84,21 +234,33 @@ class CartNotifier extends Notifier<List<CartItemModel>> {
     }
     state = state.map((item) {
       if (item.id == id) {
-        return item.copyWith(quantity: quantity);
+        final minLimit = item.minOrderQuantity.toInt().clamp(1, 99999);
+        final maxLimit = item.stockQuantity.toInt().clamp(minLimit, 99999);
+        final clamped = quantity.clamp(minLimit, maxLimit);
+        return item.copyWith(quantity: clamped);
       }
       return item;
     }).toList();
     _persistCart();
   }
 
-  void increment(String id) {
+  bool increment(String id) {
+    bool incremented = false;
     state = state.map((item) {
       if (item.id == id) {
+        final maxLimit = item.stockQuantity.toInt().clamp(1, 99999);
+        if (item.quantity >= maxLimit) {
+          return item;
+        }
+        incremented = true;
         return item.copyWith(quantity: item.quantity + 1);
       }
       return item;
     }).toList();
-    _persistCart();
+    if (incremented) {
+      _persistCart();
+    }
+    return incremented;
   }
 
   void decrement(String id) {

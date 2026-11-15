@@ -5,7 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:agrokera/features/farmer_onboarding/presentation/screens/farmer_onboarding_screen.dart';
+import 'package:agrokera/features/farmer_onboarding/presentation/providers/farmer_onboarding_provider.dart';
 import 'package:agrokera/features/farmer_onboarding/presentation/widgets/farmer_map_widget.dart';
+import 'package:agrokera/features/farmer_onboarding/presentation/widgets/onboarding_shared_widgets.dart';
 import 'test_helper.dart';
 
 void main() {
@@ -26,7 +28,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Step 1: Farm Info
-    expect(find.text('1/5'), findsOneWidget);
+    expect(find.text('1/6'), findsOneWidget);
     expect(find.text('ფერმის ინფორმაცია'), findsOneWidget);
     expect(find.text('მისამართი'), findsOneWidget);
     expect(find.text('შემდეგი'), findsOneWidget);
@@ -36,7 +38,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Step 2: Choose Status
-    expect(find.text('2/5'), findsOneWidget);
+    expect(find.text('2/6'), findsOneWidget);
     expect(find.text('ფიზიკური პირი'), findsOneWidget);
     expect(find.text('ინდ. მეწარმე'), findsOneWidget);
     expect(find.text('შპს'), findsOneWidget);
@@ -46,27 +48,81 @@ void main() {
     await tester.pumpAndSettle();
 
     // Step 3: Legal & Bank
-    expect(find.text('3/5'), findsOneWidget);
+    expect(find.text('3/6'), findsOneWidget);
     expect(find.text('საბანკო ანგარიში'), findsOneWidget);
 
     // Tap Next -> Step 4
     await tester.tap(find.text('შემდეგი'));
     await tester.pumpAndSettle();
 
-    // Step 4: Review & Terms
-    expect(find.text('4/5'), findsOneWidget);
+    // Step 4: Delivery Options
+    expect(find.text('4/6'), findsOneWidget);
+    expect(find.text('მიწოდების პირობები'), findsOneWidget);
+    expect(find.text('თვითგატანა მეურნეობიდან'), findsOneWidget);
+    expect(find.text('საბაზისო პირობა • მუდმივად აქტიური'), findsOneWidget);
+    expect(find.text('ჩემი მიტანის სერვისი (რეისები)'), findsOneWidget);
+
+    // Tap self-pickup switch and verify it cannot be disabled
+    await tester.tap(find.byType(Switch).first);
+    await tester.pump();
+    expect(find.text('თვითგატანა მეურნეობიდან არის საბაზისო პირობა და მისი გათიშვა შეუძლებელია'), findsOneWidget);
+
+    // Turn on farmer scheduled delivery
+    await tester.tap(find.byType(Switch).last);
+    await tester.pumpAndSettle();
+
+    // Verify fee pills: 5 ₾, 7 ₾, 10 ₾, 15 ₾ and "სხვა"
+    await tester.ensureVisible(find.text('სხვა'));
+    expect(find.text('5 ₾'), findsOneWidget);
+    expect(find.text('7 ₾'), findsOneWidget);
+    expect(find.text('10 ₾'), findsOneWidget);
+    expect(find.text('15 ₾'), findsOneWidget);
+    expect(find.text('სხვა'), findsOneWidget);
+
+    // Tap "სხვა" to open custom fee input
+    await tester.tap(find.text('სხვა'));
+    await tester.pumpAndSettle();
+    expect(find.text('საკუთარი საფასური:'), findsOneWidget);
+
+    // Enter custom price: 18 ₾
+    await tester.enterText(find.byType(TextField).last, '18');
+    await tester.pumpAndSettle();
+    expect(find.text('18 ₾'), findsOneWidget);
+
+    // Tap Next -> Step 5
+    await tester.ensureVisible(find.text('შემდეგი'));
+    await tester.tap(find.text('შემდეგი'));
+    await tester.pumpAndSettle();
+
+    // Step 5: Review & Terms
+    expect(find.text('5/6'), findsOneWidget);
     expect(find.text('დეტალები'), findsOneWidget);
     expect(find.text('მისამართი:'), findsOneWidget);
     expect(find.text('წესები და პირობები'), findsOneWidget);
 
-    // Tap Next -> Step 5
+    // Verify next is disabled/blocked while checkboxes are not checked
     await tester.tap(find.text('შემდეგი'));
     await tester.pump();
+    expect(find.text('5/6'), findsOneWidget);
 
-    // Step 5: SMS OTP
-    expect(find.text('5/5'), findsOneWidget);
+    // Check both terms and conditions checkboxes
+    await tester.ensureVisible(find.byType(OnboardingCustomCheckbox).first);
+    await tester.tap(find.byType(OnboardingCustomCheckbox).first);
+    await tester.ensureVisible(find.byType(OnboardingCustomCheckbox).last);
+    await tester.tap(find.byType(OnboardingCustomCheckbox).last);
+    await tester.pumpAndSettle();
+
+    // Tap Next -> Step 6
+    await tester.tap(find.text('შემდეგი'));
+    await tester.pump(const Duration(milliseconds: 300));
+
+    // Step 6: SMS OTP
+    expect(find.text('6/6'), findsOneWidget);
     expect(find.text('შეიყვანეთ SMS კოდი'), findsOneWidget);
     expect(find.text('დადასტურება'), findsOneWidget);
+    expect(find.text('შეცვლა'), findsWidgets); // in-place email editing button is present
+
+    await tester.pumpWidget(const SizedBox.shrink());
   });
 
   testWidgets('FarmerMapWidget renders OpenStreetMap tiles and attribution', (WidgetTester tester) async {
@@ -121,6 +177,53 @@ void main() {
 
     final akhalsheni = GeorgianGeoLookup.resolveInstantAddress(const LatLng(41.6033, 41.6917));
     expect(akhalsheni, contains('ახალშენი'));
+  });
+
+  testWidgets('FarmerOnboarding allows in-place email change and controller persistence', (WidgetTester tester) async {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+    container.read(farmerOnboardingProvider.notifier).setFarmName('მწვანე ველი');
+    container.read(farmerOnboardingProvider.notifier).setIdNumber('61001012345');
+    container.read(farmerOnboardingProvider.notifier).setIban('GE29TB7777777777777777');
+    container.read(farmerOnboardingProvider.notifier).setStep(6);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: const MaterialApp(
+          home: FarmerOnboardingScreen(),
+        ),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 300));
+
+    // Verify step 6 rendered with email
+    expect(find.text('6/6'), findsOneWidget);
+    expect(find.text('შეიყვანეთ SMS კოდი'), findsOneWidget);
+
+    // Tap email edit button
+    await tester.tap(find.text('შეცვლა'));
+    await tester.pump(const Duration(milliseconds: 300));
+
+    // Edit email bottom sheet is open
+    expect(find.text('ელ-ფოსტის შეცვლა'), findsOneWidget);
+    expect(find.text('შენახვა და კოდის გაგზავნა'), findsOneWidget);
+
+    // Enter a new email
+    await tester.enterText(find.byType(TextFormField), 'newfarmer@agrokera.ge');
+    await tester.pump(const Duration(milliseconds: 300));
+
+    // Tap save
+    await tester.tap(find.text('შენახვა და კოდის გაგზავნა'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump(const Duration(milliseconds: 400));
+
+    // Bottom sheet closed and verification email updated
+    expect(find.text('newfarmer@agrokera.ge'), findsOneWidget);
+    expect(container.read(farmerOnboardingProvider.notifier).resolveVerificationEmail(), 'newfarmer@agrokera.ge');
+
+    await tester.pumpWidget(const SizedBox.shrink());
   });
 }
 

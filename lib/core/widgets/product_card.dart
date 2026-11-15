@@ -15,12 +15,14 @@ class ProductCard extends StatelessWidget {
   final ProductModel product;
   final VoidCallback? onTap;
   final VoidCallback? onAddPressed;
+  final void Function(BuildContext buttonContext)? onAddWithContext;
 
   const ProductCard({
     super.key,
     required this.product,
     this.onTap,
     this.onAddPressed,
+    this.onAddWithContext,
   });
 
   @override
@@ -170,73 +172,100 @@ class ProductCard extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          product.stockStatus,
-                          style: AppTypography.caption.copyWith(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                            color: product.stockStatus == 'მარაგშია'
-                                ? AppColors.primary
-                                : AppColors.accentWarm,
-                          ),
-                        ),
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.baseline,
-                          textBaseline: TextBaseline.alphabetic,
-                          children: [
-                            Text(
-                              '₾${product.price.toStringAsFixed(0)}/${product.unit}',
-                              style: AppTypography.titleMedium.copyWith(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w800,
-                                color: AppColors.textPrimary,
-                              ),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            product.stockStatus,
+                            style: AppTypography.caption.copyWith(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: product.stockStatus == 'მარაგშია'
+                                  ? AppColors.primary
+                                  : AppColors.accentWarm,
                             ),
-                            if (product.effectiveOriginalPrice != null) ...[
-                              const SizedBox(width: 4),
+                          ),
+                          const SizedBox(height: 1),
+                          Wrap(
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            spacing: 2,
+                            runSpacing: 1,
+                            children: [
                               Text(
-                                '₾${product.effectiveOriginalPrice!.toStringAsFixed(0)}',
-                                style: AppTypography.caption.copyWith(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w500,
-                                  color: AppColors.textSecondary,
-                                  decoration: TextDecoration.lineThrough,
-                                  decorationColor: AppColors.textSecondary,
+                                '₾${product.price.toStringAsFixed(0)}',
+                                style: AppTypography.titleMedium.copyWith(
+                                  fontSize: 13.5,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.textPrimary,
                                 ),
                               ),
+                              Text(
+                                '/${product.unit}',
+                                style: AppTypography.caption.copyWith(
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.w600,
+                                  color: const Color(0xFF475569),
+                                ),
+                              ),
+                              if (product.effectiveOriginalPrice != null)
+                                Padding(
+                                  padding: const EdgeInsets.only(left: 3),
+                                  child: Text(
+                                    '₾${product.effectiveOriginalPrice!.toStringAsFixed(0)}',
+                                    style: AppTypography.caption.copyWith(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w500,
+                                      color: AppColors.textSecondary,
+                                      decoration: TextDecoration.lineThrough,
+                                      decorationColor: AppColors.textSecondary,
+                                    ),
+                                  ),
+                                ),
                             ],
-                          ],
-                        ),
-                      ],
-                    ),
-                    InkWell(
-                      onTap: onAddPressed ?? onTap,
-                      borderRadius: BorderRadius.circular(18),
-                      child: Container(
-                        width: 36,
-                        height: 36,
-                        decoration: BoxDecoration(
-                          color: AppColors.primary,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.primary.withValues(alpha: 0.28),
-                              blurRadius: 6,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        alignment: Alignment.center,
-                        child: const Icon(
-                          LucideIcons.plus,
-                          size: 20,
-                          color: AppColors.textOnPrimary,
-                        ),
+                          ),
+                        ],
                       ),
+                    ),
+                    const SizedBox(width: 4),
+                    Builder(
+                      builder: (btnContext) {
+                        return InkWell(
+                          onTap: () {
+                            if (onAddWithContext != null) {
+                              onAddWithContext!(btnContext);
+                            } else if (onAddPressed != null) {
+                              onAddPressed!();
+                            } else {
+                              onTap?.call();
+                            }
+                          },
+                          borderRadius: BorderRadius.circular(16),
+                          child: Container(
+                            width: 32,
+                            height: 32,
+                            decoration: BoxDecoration(
+                              color: AppColors.primary,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color:
+                                      AppColors.primary.withValues(alpha: 0.28),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            alignment: Alignment.center,
+                            child: const Icon(
+                              LucideIcons.plus,
+                              size: 18,
+                              color: AppColors.textOnPrimary,
+                            ),
+                          ),
+                        );
+                      },
                     ),
                   ],
                 ),

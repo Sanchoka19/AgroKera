@@ -9,6 +9,7 @@ class CartItemModel {
   final int quantity;
   final double weightKg;
   final double minOrderQuantity;
+  final double stockQuantity;
   final double? bulkDiscountMinQty;
   final int? bulkDiscountPercent;
 
@@ -23,6 +24,7 @@ class CartItemModel {
     this.quantity = 1,
     this.weightKg = 1.0,
     this.minOrderQuantity = 1.0,
+    this.stockQuantity = 99999.0,
     this.bulkDiscountMinQty,
     this.bulkDiscountPercent,
   });
@@ -35,6 +37,8 @@ class CartItemModel {
 
   bool get isBulkDiscountApplied =>
       hasBulkDiscount && quantity >= bulkDiscountMinQty!;
+
+  bool get isAtMaxStock => quantity >= stockQuantity;
 
   double get effectiveUnitPrice {
     if (isBulkDiscountApplied) {
@@ -57,6 +61,7 @@ class CartItemModel {
     int? quantity,
     double? weightKg,
     double? minOrderQuantity,
+    double? stockQuantity,
     double? bulkDiscountMinQty,
     int? bulkDiscountPercent,
   }) {
@@ -71,6 +76,7 @@ class CartItemModel {
       quantity: quantity ?? this.quantity,
       weightKg: weightKg ?? this.weightKg,
       minOrderQuantity: minOrderQuantity ?? this.minOrderQuantity,
+      stockQuantity: stockQuantity ?? this.stockQuantity,
       bulkDiscountMinQty: bulkDiscountMinQty ?? this.bulkDiscountMinQty,
       bulkDiscountPercent: bulkDiscountPercent ?? this.bulkDiscountPercent,
     );
@@ -88,6 +94,7 @@ class CartItemModel {
       'quantity': quantity,
       'weightKg': weightKg,
       'minOrderQuantity': minOrderQuantity,
+      'stockQuantity': stockQuantity,
       'bulkDiscountMinQty': bulkDiscountMinQty,
       'bulkDiscountPercent': bulkDiscountPercent,
     };
@@ -105,6 +112,7 @@ class CartItemModel {
       quantity: (json['quantity'] as num?)?.toInt() ?? 1,
       weightKg: (json['weightKg'] as num?)?.toDouble() ?? 1.0,
       minOrderQuantity: (json['minOrderQuantity'] as num?)?.toDouble() ?? 1.0,
+      stockQuantity: (json['stockQuantity'] as num?)?.toDouble() ?? 99999.0,
       bulkDiscountMinQty: (json['bulkDiscountMinQty'] as num?)?.toDouble(),
       bulkDiscountPercent: (json['bulkDiscountPercent'] as num?)?.toInt(),
     );

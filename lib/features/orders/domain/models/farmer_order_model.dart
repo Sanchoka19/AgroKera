@@ -113,6 +113,7 @@ class FarmerOrder {
   final bool hasVat;
   final DateTime? cancellationDeadline;
   final String? trackingNumber;
+  final String paymentMethod;
 
   const FarmerOrder({
     required this.id,
@@ -130,6 +131,7 @@ class FarmerOrder {
     this.hasVat = false,
     this.cancellationDeadline,
     this.trackingNumber,
+    this.paymentMethod = 'ESCROW',
   });
 
   factory FarmerOrder.fromJson(Map<String, dynamic> json) {
@@ -152,6 +154,7 @@ class FarmerOrder {
           ? DateTime.tryParse(json['cancellationDeadline'] as String)
           : null,
       trackingNumber: json['trackingNumber'] as String?,
+      paymentMethod: json['paymentMethod'] as String? ?? 'ESCROW',
       items: rawItems
           .whereType<Map<String, dynamic>>()
           .map(FarmerOrderItem.fromJson)
@@ -209,6 +212,7 @@ class FarmerOrder {
     bool? hasVat,
     DateTime? cancellationDeadline,
     String? trackingNumber,
+    String? paymentMethod,
   }) {
     return FarmerOrder(
       id: id ?? this.id,
@@ -226,6 +230,7 @@ class FarmerOrder {
       hasVat: hasVat ?? this.hasVat,
       cancellationDeadline: cancellationDeadline ?? this.cancellationDeadline,
       trackingNumber: trackingNumber ?? this.trackingNumber,
+      paymentMethod: paymentMethod ?? this.paymentMethod,
     );
   }
 }

@@ -19,6 +19,7 @@ class ProductModel {
   final double minOrderQuantity;
   final double? bulkDiscountMinQty;
   final int? bulkDiscountPercent;
+  final List<String> agroTags;
 
   const ProductModel({
     required this.id,
@@ -41,10 +42,32 @@ class ProductModel {
     this.minOrderQuantity = 1.0,
     this.bulkDiscountMinQty,
     this.bulkDiscountPercent,
+    this.agroTags = const [],
   });
 
   /// Returns all product images (at least the primary imageUrl)
   List<String> get galleryImages => images.isNotEmpty ? images : [imageUrl];
+
+  /// Effective agricultural tags for badges
+  List<String> get effectiveAgroTags {
+    if (agroTags.isNotEmpty) return agroTags;
+    if (description.contains('მახასიათებლები:')) {
+      final line = description.split('\n').firstWhere(
+            (l) => l.startsWith('მახასიათებლები:'),
+            orElse: () => '',
+          );
+      if (line.isNotEmpty) {
+        final tagsPart = line.replaceFirst('მახასიათებლები:', '').trim();
+        final parsed = tagsPart
+            .split(',')
+            .map((t) => t.trim())
+            .where((t) => t.isNotEmpty)
+            .toList();
+        if (parsed.isNotEmpty) return parsed;
+      }
+    }
+    return const ['ახალი მოსავალი', 'ბიო / ორგანული', 'ქართული წარმოება'];
+  }
 
   /// Whether the product has an active base discount > 0%
   bool get hasDiscount => discountPercent != null && discountPercent! > 0;
@@ -98,6 +121,10 @@ class ProductModel {
     final validDiscount = (rawDiscount != null && rawDiscount > 0) ? rawDiscount : null;
     final rawBulkMin = (json['bulkDiscountMinQty'] as num?)?.toDouble();
     final rawBulkPct = (json['bulkDiscountPercent'] as num?)?.toInt();
+    final rawTags = (json['agroTags'] as List<dynamic>?)
+            ?.map((e) => e.toString())
+            .toList() ??
+        const [];
     return ProductModel(
       id: json['id'] as String,
       title: json['title'] as String? ?? '',
@@ -123,6 +150,7 @@ class ProductModel {
       minOrderQuantity: (json['minOrderQuantity'] as num?)?.toDouble() ?? 1.0,
       bulkDiscountMinQty: rawBulkMin != null && rawBulkMin > 0 ? rawBulkMin : null,
       bulkDiscountPercent: rawBulkPct != null && rawBulkPct > 0 ? rawBulkPct : null,
+      agroTags: rawTags,
     );
   }
 
@@ -147,6 +175,7 @@ class ProductModel {
     double? minOrderQuantity,
     double? bulkDiscountMinQty,
     int? bulkDiscountPercent,
+    List<String>? agroTags,
   }) {
     return ProductModel(
       id: id ?? this.id,
@@ -169,6 +198,7 @@ class ProductModel {
       minOrderQuantity: minOrderQuantity ?? this.minOrderQuantity,
       bulkDiscountMinQty: bulkDiscountMinQty ?? this.bulkDiscountMinQty,
       bulkDiscountPercent: bulkDiscountPercent ?? this.bulkDiscountPercent,
+      agroTags: agroTags ?? this.agroTags,
     );
   }
 }

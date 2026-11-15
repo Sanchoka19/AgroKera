@@ -82,6 +82,15 @@ abstract final class MockData {
       about:
           '„მწვანე ველი“ მდებარეობს კახეთში, გურჯაანის ნაყოფიერ მიწებზე. ჩვენ მოგვყავს ეკოლოგიურად სუფთა, ბიო-სერტიფიცირებული ბოსტნეული და ყურძენი ყოველგვარი ქიმიური დანამატების გარეშე.',
       phone: '+995 599 33 22 11',
+      isDeliveryEnabled: true,
+      deliveryCity: 'თბილისი',
+      deliveryDays: ['შაბათი'],
+      deliveryFee: 7.0,
+      regionalDeliveryFees: {
+        'თბილისი': 7.0,
+        'რუსთავი': 9.0,
+      },
+      isPickupEnabled: true,
     ),
     FarmerModel(
       id: 'farmer_2',
@@ -100,6 +109,16 @@ abstract final class MockData {
       about:
           'საგვარეულო მეურნეობა თელავში. ვამარაგებთ რესტორნებსა და კერძო კლიენტებს ახალი ბოსტნეულითა და მწვანილეულით.',
       phone: '+995 599 11 22 33',
+      isDeliveryEnabled: true,
+      deliveryCity: 'თბილისი',
+      deliveryDays: ['ოთხშაბათი', 'შაბათი'],
+      deliveryFee: 10.0,
+      regionalDeliveryFees: {
+        'თბილისი': 10.0,
+        'რუსთავი': 12.0,
+        'მცხეთა': 14.0,
+      },
+      isPickupEnabled: true,
     ),
     FarmerModel(
       id: 'farmer_3',
@@ -118,6 +137,12 @@ abstract final class MockData {
       about:
           'ალაზნის ველზე გაშენებული მრავალწლიანი ხეხილისა და ციტრუსის ბაღები. 100% ნატურალური და მზით გამთბარი მოსავალი ყვარლიდან.',
       phone: '+995 599 44 55 66',
+      isDeliveryEnabled: false,
+      deliveryCity: 'ყვარელი',
+      deliveryDays: [],
+      deliveryFee: 0.0,
+      regionalDeliveryFees: {},
+      isPickupEnabled: true,
     ),
   ];
 

@@ -12,6 +12,12 @@ class FarmerModel {
   final String coverUrl;
   final String about;
   final String phone;
+  final bool isDeliveryEnabled;
+  final String deliveryCity;
+  final List<String> deliveryDays;
+  final double deliveryFee;
+  final Map<String, double> regionalDeliveryFees;
+  final bool isPickupEnabled;
 
   const FarmerModel({
     required this.id,
@@ -27,6 +33,12 @@ class FarmerModel {
     required this.coverUrl,
     required this.about,
     this.phone = '+995 599 12 34 56',
+    this.isDeliveryEnabled = true,
+    this.deliveryCity = 'თბილისი',
+    this.deliveryDays = const ['შაბ'],
+    this.deliveryFee = 7.0,
+    this.regionalDeliveryFees = const {'თბილისი': 7.0},
+    this.isPickupEnabled = true,
   });
 
   factory FarmerModel.fromJson(Map<String, dynamic> json) {
@@ -46,6 +58,63 @@ class FarmerModel {
           'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=1000&auto=format&fit=crop&q=80',
       about: json['about'] as String? ?? '',
       phone: json['phone'] as String? ?? '+995 599 11 22 33',
+      isDeliveryEnabled: json['isDeliveryEnabled'] as bool? ?? true,
+      deliveryCity: json['deliveryCity'] as String? ?? 'თბილისი',
+      deliveryDays: (json['deliveryDays'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          const ['შაბ'],
+      deliveryFee: (json['deliveryFee'] as num?)?.toDouble() ?? 7.0,
+      regionalDeliveryFees:
+          (json['regionalDeliveryFees'] as Map<String, dynamic>?)?.map(
+                (k, v) => MapEntry(k, (v as num).toDouble()),
+              ) ??
+              const {'თბილისი': 7.0},
+      isPickupEnabled: json['isPickupEnabled'] as bool? ?? true,
+    );
+  }
+
+  FarmerModel copyWith({
+    String? id,
+    String? farmName,
+    String? farmerName,
+    String? location,
+    double? rating,
+    int? reviewCount,
+    int? totalRatings,
+    bool? isVerified,
+    bool? isVatPayer,
+    String? avatarUrl,
+    String? coverUrl,
+    String? about,
+    String? phone,
+    bool? isDeliveryEnabled,
+    String? deliveryCity,
+    List<String>? deliveryDays,
+    double? deliveryFee,
+    Map<String, double>? regionalDeliveryFees,
+    bool? isPickupEnabled,
+  }) {
+    return FarmerModel(
+      id: id ?? this.id,
+      farmName: farmName ?? this.farmName,
+      farmerName: farmerName ?? this.farmerName,
+      location: location ?? this.location,
+      rating: rating ?? this.rating,
+      reviewCount: reviewCount ?? this.reviewCount,
+      totalRatings: totalRatings ?? this.totalRatings,
+      isVerified: isVerified ?? this.isVerified,
+      isVatPayer: isVatPayer ?? this.isVatPayer,
+      avatarUrl: avatarUrl ?? this.avatarUrl,
+      coverUrl: coverUrl ?? this.coverUrl,
+      about: about ?? this.about,
+      phone: phone ?? this.phone,
+      isDeliveryEnabled: isDeliveryEnabled ?? this.isDeliveryEnabled,
+      deliveryCity: deliveryCity ?? this.deliveryCity,
+      deliveryDays: deliveryDays ?? this.deliveryDays,
+      deliveryFee: deliveryFee ?? this.deliveryFee,
+      regionalDeliveryFees: regionalDeliveryFees ?? this.regionalDeliveryFees,
+      isPickupEnabled: isPickupEnabled ?? this.isPickupEnabled,
     );
   }
 }

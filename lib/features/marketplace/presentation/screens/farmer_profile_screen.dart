@@ -1,3 +1,5 @@
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -8,6 +10,7 @@ import '../../../../core/widgets/primary_button.dart';
 import '../../../../core/widgets/product_card.dart';
 import '../../data/models/farmer_model.dart';
 import '../providers/marketplace_provider.dart';
+import '../widgets/product_details/product_delivery_info_card.dart';
 import 'product_details_screen.dart';
 
 /// Farmer Profile Screen:
@@ -52,9 +55,12 @@ class _FarmerProfileScreenState extends ConsumerState<FarmerProfileScreen>
 
   @override
   Widget build(BuildContext context) {
-    final farmer = widget.farmer;
-    final farmerProducts = ref
-        .watch(marketplaceProvider)
+    final marketplaceState = ref.watch(marketplaceProvider);
+    final farmer = marketplaceState.farmers.firstWhere(
+      (f) => f.id == widget.farmer.id,
+      orElse: () => widget.farmer,
+    );
+    final farmerProducts = marketplaceState
         .availableProducts
         .where((p) => p.farmerId == farmer.id)
         .toList();
@@ -96,12 +102,7 @@ class _FarmerProfileScreenState extends ConsumerState<FarmerProfileScreen>
                 SizedBox(
                   height: 240,
                   width: double.infinity,
-                  child: Image.network(
-                    farmer.coverUrl,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) =>
-                        Container(color: AppColors.primaryLight),
-                  ),
+                  child: _buildCoverImage(farmer.coverUrl),
                 ),
 
                 // Overlapping Farmer Profile Card: half on photo, half below
@@ -234,29 +235,6 @@ class _FarmerProfileScreenState extends ConsumerState<FarmerProfileScreen>
                                       ),
                                     ],
                                   ),
-                                  // Logical Placement 2: Verified VAT status indicator
-                                  if (farmer.isVatPayer) ...[
-                                    const SizedBox(height: 4),
-                                    Row(
-                                      children: [
-                                        const Icon(
-                                          LucideIcons.badgeCheck,
-                                          size: 13,
-                                          color: AppColors.primary,
-                                        ),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                          'ვერიფიცირებული დღგ-ს გადამხდელი',
-                                          style: AppTypography.caption
-                                              .copyWith(
-                                            color: AppColors.primary,
-                                            fontWeight: FontWeight.w600,
-                                            fontSize: 11,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
                                 ],
                               ),
                             ),
@@ -457,6 +435,10 @@ class _FarmerProfileScreenState extends ConsumerState<FarmerProfileScreen>
                         Text(farmer.location, style: AppTypography.bodyMedium),
                       ],
                     ),
+                    const SizedBox(height: 22),
+                    Text('მიწოდების პირობები', style: AppTypography.h2),
+                    const SizedBox(height: 10),
+                    ProductDeliveryInfoCard(farmer: farmer),
                   ],
                 ),
               ),
@@ -465,5 +447,25 @@ class _FarmerProfileScreenState extends ConsumerState<FarmerProfileScreen>
         ),
       ),
     );
+  }
+
+  Widget _buildCoverImage(String coverUrl) {
+    if (coverUrl.startsWith('http://') || coverUrl.startsWith('https://')) {
+      return Image.network(
+        coverUrl,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) =>
+            Container(color: AppColors.primaryLight),
+      );
+    }
+    if (!kIsWeb && File(coverUrl).existsSync()) {
+      return Image.file(
+        File(coverUrl),
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) =>
+            Container(color: AppColors.primaryLight),
+      );
+    }
+    return Container(color: AppColors.primaryLight);
   }
 }

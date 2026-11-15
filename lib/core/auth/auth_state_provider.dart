@@ -75,6 +75,7 @@ class AuthState {
   final String? userName;
   final String? userPhone;
   final String? userEmail;
+  final String? farmCoverUrl;
   final UserRole role;
   final KycStatus kycStatus;
 
@@ -86,6 +87,7 @@ class AuthState {
     this.userName,
     this.userPhone,
     this.userEmail,
+    this.farmCoverUrl,
     this.role = UserRole.guest,
     this.kycStatus = KycStatus.verified,
   });
@@ -98,6 +100,7 @@ class AuthState {
     String? userName,
     String? userPhone,
     String? userEmail,
+    String? farmCoverUrl,
     UserRole? role,
     KycStatus? kycStatus,
   }) {
@@ -109,6 +112,7 @@ class AuthState {
       userName: userName ?? this.userName,
       userPhone: userPhone ?? this.userPhone,
       userEmail: userEmail ?? this.userEmail,
+      farmCoverUrl: farmCoverUrl ?? this.farmCoverUrl,
       role: role ?? this.role,
       kycStatus: kycStatus ?? this.kycStatus,
     );
@@ -242,6 +246,7 @@ class AuthNotifier extends Notifier<AuthState> {
           userName: saved['name'] ?? fallback.name,
           userPhone: saved['phone'] ?? fallback.phone,
           userEmail: savedEmail,
+          farmCoverUrl: saved['farmCoverUrl'],
           role: role,
           kycStatus: KycStatus.fromString(saved['kycStatus']),
         );
@@ -306,6 +311,7 @@ class AuthNotifier extends Notifier<AuthState> {
     required String region,
     required String city,
     required String address,
+    String? coverUrl,
   }) {
     final name = state.userName ?? 'ფერმერი';
     final email = state.userEmail ?? 'farmer@agrokera.ge';
@@ -328,6 +334,7 @@ class AuthNotifier extends Notifier<AuthState> {
       userName: resolved.name,
       userPhone: resolved.phone,
       userEmail: email,
+      farmCoverUrl: coverUrl,
       role: UserRole.farmer,
       kycStatus: KycStatus.verified,
     );
@@ -354,6 +361,7 @@ class AuthNotifier extends Notifier<AuthState> {
       region: region,
       city: city,
       address: address,
+      coverUrl: coverUrl,
       role: UserRole.farmer,
     ));
   }
@@ -464,6 +472,56 @@ class AuthNotifier extends Notifier<AuthState> {
         'verificationStatus': newStatus.apiValue,
       });
     } catch (_) {}
+  }
+
+  Future<void> updateFarmCoverUrl(String coverUrl) async {
+    state = state.copyWith(farmCoverUrl: coverUrl);
+    final storage = ref.read(secureStorageProvider);
+    final saved = await storage.readSession();
+    if (saved['userId'] != null) {
+      await storage.saveSession(
+        token: saved['token'] ?? '',
+        userId: saved['userId']!,
+        farmerId: saved['farmerId'] ?? state.farmerId,
+        farmName: saved['farmName'] ?? state.farmName,
+        farmCoverUrl: coverUrl,
+        role: saved['role'] ?? state.role.name,
+        name: saved['name'] ?? state.userName ?? '',
+        phone: saved['phone'] ?? state.userPhone ?? '',
+        email: saved['email'] ?? state.userEmail,
+        kycStatus: saved['kycStatus'] ?? state.kycStatus.apiValue,
+      );
+    }
+    try {
+      final api = ref.read(apiClientProvider);
+      final uid = state.userId ?? 'user_farmer_2';
+      await api.patch('/api/profile/$uid', data: {
+        'coverUrl': coverUrl,
+      });
+    } catch (_) {}
+  }
+
+  /// Updates current user email in auth state and persists to secure storage
+  void updateEmail(String newEmail) {
+    final cleanEmail = newEmail.trim();
+    state = state.copyWith(userEmail: cleanEmail);
+    final storage = ref.read(secureStorageProvider);
+    unawaited(storage.readSession().then((saved) {
+      if (saved['userId'] != null) {
+        storage.saveSession(
+          token: saved['token'] ?? '',
+          userId: saved['userId']!,
+          farmerId: saved['farmerId'] ?? state.farmerId,
+          farmName: saved['farmName'] ?? state.farmName,
+          farmCoverUrl: state.farmCoverUrl,
+          role: saved['role'] ?? state.role.name,
+          name: saved['name'] ?? state.userName ?? '',
+          phone: saved['phone'] ?? state.userPhone ?? '',
+          email: cleanEmail,
+          kycStatus: saved['kycStatus'] ?? state.kycStatus.apiValue,
+        );
+      }
+    }));
   }
 
   void logout() {
@@ -579,6 +637,7 @@ class AuthNotifier extends Notifier<AuthState> {
     String? region,
     String? city,
     String? address,
+    String? coverUrl,
     required UserRole role,
   }) async {
     try {
@@ -594,6 +653,7 @@ class AuthNotifier extends Notifier<AuthState> {
           'region': ?region,
           'city': ?city,
           'address': ?address,
+          'coverUrl': ?coverUrl,
           'role': role == UserRole.farmer ? 'FARMER' : 'CLIENT',
         },
       );
@@ -606,6 +666,8 @@ class AuthNotifier extends Notifier<AuthState> {
         final farmerId = farmerProfile?['id'] as String? ?? state.farmerId;
         final serverFarmName =
             farmerProfile?['farmName'] as String? ?? state.farmName ?? farmName;
+        final serverCoverUrl =
+            farmerProfile?['coverUrl'] as String? ?? state.farmCoverUrl ?? coverUrl;
         final serverFullName = user?['fullName'] as String? ?? state.userName ?? name;
         final serverPhone =
             user?['phoneNumber'] as String? ?? state.userPhone ?? phone ?? '+995 599 00 00 00';
@@ -619,6 +681,7 @@ class AuthNotifier extends Notifier<AuthState> {
           userName: serverFullName,
           userPhone: serverPhone,
           userEmail: serverEmail,
+          farmCoverUrl: serverCoverUrl,
           kycStatus: KycStatus.fromString(kycStr),
         );
 

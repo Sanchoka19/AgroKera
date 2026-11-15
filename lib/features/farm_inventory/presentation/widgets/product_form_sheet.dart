@@ -10,6 +10,7 @@ import '../../../../core/widgets/custom_text_field.dart';
 import '../../../marketplace/data/mock_data.dart';
 import '../../../marketplace/data/models/product_model.dart';
 import '../providers/farmer_inventory_provider.dart';
+import '../screens/add_edit_product_screen.dart';
 
 /// Modal Bottom Sheet for adding or editing a Farmer Product
 class ProductFormSheet extends ConsumerStatefulWidget {
@@ -21,11 +22,10 @@ class ProductFormSheet extends ConsumerStatefulWidget {
   });
 
   static Future<void> show(BuildContext context, {ProductModel? existing}) {
-    return showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => ProductFormSheet(existing: existing),
+    return Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => AddEditProductScreen(existing: existing),
+      ),
     );
   }
 

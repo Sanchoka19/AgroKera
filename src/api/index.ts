@@ -375,6 +375,8 @@ export default {
           region?: string;
           city?: string;
           address?: string;
+          coverUrl?: string;
+          avatarUrl?: string;
           isVatPayer?: boolean;
         };
 
@@ -415,6 +417,8 @@ export default {
                             ...(body.isVatPayer !== undefined
                                 ? { isVatPayer: body.isVatPayer }
                                 : {}),
+                            ...(body.coverUrl ? { coverUrl: body.coverUrl } : {}),
+                            ...(body.avatarUrl ? { avatarUrl: body.avatarUrl } : {}),
                           },
                         }
                       : {
@@ -425,6 +429,8 @@ export default {
                             region: body.region || "კახეთი",
                             city: body.city || "თელავი",
                             address: body.address || "თელავი, კახეთი",
+                            coverUrl: body.coverUrl,
+                            avatarUrl: body.avatarUrl,
                             isVatPayer: body.isVatPayer ?? false,
                           },
                         },
@@ -457,6 +463,8 @@ export default {
                         region: body.region || "კახეთი",
                         city: body.city || "თელავი",
                         address: body.address || "თელავი, კახეთი",
+                        coverUrl: body.coverUrl,
+                        avatarUrl: body.avatarUrl,
                         isVatPayer: body.isVatPayer ?? false,
                       },
                     },
@@ -496,6 +504,8 @@ export default {
             address?: string;
             idCardFrontUrl?: string;
             idCardBackUrl?: string;
+            coverUrl?: string;
+            avatarUrl?: string;
             isVatPayer?: boolean;
           };
 
@@ -511,6 +521,8 @@ export default {
               body.address ||
               body.idCardFrontUrl ||
               body.idCardBackUrl ||
+              body.coverUrl ||
+              body.avatarUrl ||
               body.isVatPayer !== undefined
                 ? {
                     farmerProfile: {
@@ -524,6 +536,8 @@ export default {
                         ...(body.idCardBackUrl
                           ? { idCardBackUrl: body.idCardBackUrl }
                           : {}),
+                        ...(body.coverUrl ? { coverUrl: body.coverUrl } : {}),
+                        ...(body.avatarUrl ? { avatarUrl: body.avatarUrl } : {}),
                         ...(body.isVatPayer !== undefined
                           ? { isVatPayer: body.isVatPayer }
                           : {}),

@@ -36,7 +36,7 @@ void main() {
     expect(find.text('ინსტრუმენტები და სერვისები'), findsOneWidget);
     expect(find.text('ჩემი შეკვეთები'), findsOneWidget);
     expect(find.text('ჩემი მისამართი'), findsOneWidget);
-    expect(find.text('საბანკო ანგარიშები'), findsOneWidget);
+    expect(find.text('საბანკო ანგარიშები'), findsNothing);
 
     // Section 2: პარამეტრები
     expect(find.text('პარამეტრები'), findsOneWidget);

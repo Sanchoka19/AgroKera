@@ -27,7 +27,6 @@ import 'package:agrokera/features/marketplace/presentation/screens/favorites_scr
 import 'package:agrokera/features/marketplace/presentation/widgets/guest_promo_banner.dart';
 import 'package:agrokera/features/orders/presentation/screens/client_orders_screen.dart';
 import 'package:agrokera/features/orders/presentation/screens/incoming_orders_screen.dart';
-import 'package:agrokera/features/verification/presentation/screens/kyc_verification_screen.dart';
 import 'farmer_delivery_settings_screen.dart';
 import 'help_center_screen.dart';
 
@@ -91,14 +90,16 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
       return Image.network(
         avatarUrl,
         fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => _buildPlaceholderAvatar(size),
+        errorBuilder: (context, error, stackTrace) =>
+            _buildPlaceholderAvatar(size),
       );
     }
     if (!kIsWeb && File(avatarUrl).existsSync()) {
       return Image.file(
         File(avatarUrl),
         fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => _buildPlaceholderAvatar(size),
+        errorBuilder: (context, error, stackTrace) =>
+            _buildPlaceholderAvatar(size),
       );
     }
     return _buildPlaceholderAvatar(size);
@@ -800,30 +801,6 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
                       ),
                       _buildRowDivider(),
                       _buildProfileRowItem(
-                        icon: LucideIcons.shieldCheck,
-                        title: 'ფერმერის ვერიფიკაცია (KYC)',
-                        subtitle:
-                            'სტატუსი: ${authState.kycStatus.label}',
-                        onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  const KycVerificationScreen(),
-                            ),
-                          );
-                        },
-                      ),
-                      _buildRowDivider(),
-                      _buildProfileRowItem(
-                        icon: LucideIcons.creditCard,
-                        title: 'ანგარიშსწორება',
-                        subtitle: 'საბანკო რეკვიზიტები და გადარიცხვები',
-                        onTap: () {
-                          AppToast.info(context, 'ანგარიშსწორების გვერდი მზადდება.');
-                        },
-                      ),
-                      _buildRowDivider(),
-                      _buildProfileRowItem(
                         icon: LucideIcons.truck,
                         title: 'მიწოდების პარამეტრები',
                         subtitle: 'მიტანის ზონები, ტარიფები და გრაფიკი',
@@ -887,15 +864,6 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
                               builder: (_) => const FavoritesScreen(),
                             ),
                           );
-                        },
-                      ),
-                      _buildRowDivider(),
-                      _buildProfileRowItem(
-                        icon: LucideIcons.creditCard,
-                        title: 'საბანკო ბარათები',
-                        subtitle: 'ბარათები და ანგარიშსწორება',
-                        onTap: () {
-                          AppToast.info(context, 'საბანკო ბარათები & ანგარიშები.');
                         },
                       ),
                     ],
@@ -966,22 +934,6 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
                             context,
                             ref: ref,
                             onAuthenticated: _detectUserAddressWithGps,
-                          );
-                        },
-                      ),
-                      _buildRowDivider(),
-                      _buildProfileRowItem(
-                        icon: LucideIcons.creditCard,
-                        title: 'საბანკო ანგარიშები',
-                        subtitle: 'ბარათები და ანგარიშსწორება',
-                        onTap: () {
-                          requireAuth(
-                            context,
-                            ref: ref,
-                            onAuthenticated: () {
-                              AppToast.info(
-                                  context, 'საბანკო ბარათები & ანგარიშები.');
-                            },
                           );
                         },
                       ),

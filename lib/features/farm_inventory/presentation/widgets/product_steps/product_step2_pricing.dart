@@ -343,13 +343,37 @@ class ProductStep2Pricing extends StatelessWidget {
                       ),
                       const SizedBox(width: 6),
                       Flexible(
-                        child: Text(
-                          'გადახაზული: ₾${currentPrice.toStringAsFixed(2)} ➔ ახალი ფასი: ₾${discountedPrice.toStringAsFixed(2)}',
-                          style: GoogleFonts.notoSansGeorgian(
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.primaryDark,
-                          ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              '₾${currentPrice.toStringAsFixed(2)}',
+                              style: GoogleFonts.notoSansGeorgian(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w600,
+                                decoration: TextDecoration.lineThrough,
+                                color: const Color(0xFF64748B),
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            const Icon(
+                              LucideIcons.arrowRight,
+                              size: 11,
+                              color: AppColors.primaryDark,
+                            ),
+                            const SizedBox(width: 4),
+                            Flexible(
+                              child: Text(
+                                'ახალი ფასი: ₾${discountedPrice.toStringAsFixed(2)}',
+                                style: GoogleFonts.notoSansGeorgian(
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.primaryDark,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],

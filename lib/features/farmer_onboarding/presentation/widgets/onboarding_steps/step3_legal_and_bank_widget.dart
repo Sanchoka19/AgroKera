@@ -188,7 +188,7 @@ class _Step3LegalAndBankWidgetState
               children: [
                 Expanded(
                   child: OnboardingUploadBox(
-                    label: state.selfieFileName != null ? 'სელფი ✓' : 'სელფი',
+                    label: 'სელფი',
                     icon: LucideIcons.smile,
                     isDone: state.uploadedSelfie,
                     onTap: () => _pickPhotoOrDocument(
@@ -205,9 +205,7 @@ class _Step3LegalAndBankWidgetState
                 const SizedBox(width: 10),
                 Expanded(
                   child: OnboardingUploadBox(
-                    label: state.idFrontFileName != null
-                        ? 'წინა მხარე ✓'
-                        : 'წინა მხარე',
+                    label: 'წინა მხარე',
                     icon: LucideIcons.contact,
                     isDone: state.uploadedIdFront,
                     onTap: () => _pickPhotoOrDocument(
@@ -224,9 +222,7 @@ class _Step3LegalAndBankWidgetState
                 const SizedBox(width: 10),
                 Expanded(
                   child: OnboardingUploadBox(
-                    label: state.idBackFileName != null
-                        ? 'უკანა მხარე ✓'
-                        : 'უკანა მხარე',
+                    label: 'უკანა მხარე',
                     icon: LucideIcons.creditCard,
                     isDone: state.uploadedIdBack,
                     onTap: () => _pickPhotoOrDocument(

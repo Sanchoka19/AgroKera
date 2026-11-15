@@ -301,111 +301,61 @@ class _FarmerOrderDetailScreenState
 
             // Farmer Escrow Advisory Banner (In Progress + Bank Transfer)
             if (order.status == OrderStatus.inProgress && order.isBankTransfer) ...[
-              if (!order.isPaymentConfirmed) ...[
-                Container(
-                  margin: const EdgeInsets.only(bottom: 18),
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFFBEB),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: const Color(0xFFFDE68A), width: 1.2),
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFFEF3C7),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          LucideIcons.alertTriangle,
-                          color: Color(0xFFD97706),
-                          size: 20,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'ყურადღება ფერმერს: ნუ დაკრეფთ მოსავალს!',
-                              style: GoogleFonts.notoSansGeorgian(
-                                fontSize: 13.5,
-                                fontWeight: FontWeight.w800,
-                                color: const Color(0xFF92400E),
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              order.hasClientReportedPayment
-                                  ? 'მყიდველმა მიუთითა, რომ თანხა გადმორიცხა. მოწმდება AgroKera Escrow-ზე ასახვა. დაკრეფა დაიწყეთ მხოლოდ მწვანე დასტურის შემდეგ!'
-                                  : 'მყიდველს გაეგზავნა რეკვიზიტები. ნუ დაიწყებთ მოსავლის დაკრეფას/მომზადებას, სანამ AgroKera Escrow-ზე თანხა არ ჩაირიცხება!',
-                              style: GoogleFonts.notoSansGeorgian(
-                                fontSize: 12,
-                                color: const Color(0xFFB45309),
-                                height: 1.35,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+              Container(
+                margin: const EdgeInsets.only(bottom: 16),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  color: order.isPaymentConfirmed
+                      ? const Color(0xFFF0FDF4)
+                      : (order.hasClientReportedPayment
+                          ? const Color(0xFFEFF6FF)
+                          : const Color(0xFFFFFBEB)),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: order.isPaymentConfirmed
+                        ? const Color(0xFF86EFAC)
+                        : (order.hasClientReportedPayment
+                            ? const Color(0xFFBFDBFE)
+                            : const Color(0xFFFDE68A)),
                   ),
                 ),
-              ] else ...[
-                Container(
-                  margin: const EdgeInsets.only(bottom: 18),
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF0FDF4),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: const Color(0xFF86EFAC), width: 1.2),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFDCFCE7),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          LucideIcons.shieldCheck,
-                          color: Color(0xFF16A34A),
-                          size: 20,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'თანხა გარანტირებულია AgroKera Escrow-ში!',
-                              style: GoogleFonts.notoSansGeorgian(
-                                fontSize: 13.5,
-                                fontWeight: FontWeight.w800,
-                                color: const Color(0xFF166534),
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              'შეგიძლიათ დაიწყოთ მოსავლის დაკრეფა, შეფუთვა და ტრანსპორტირება.',
-                              style: GoogleFonts.notoSansGeorgian(
-                                fontSize: 12,
-                                color: const Color(0xFF15803D),
-                              ),
-                            ),
-                          ],
+                child: Row(
+                  children: [
+                    Icon(
+                      order.isPaymentConfirmed
+                          ? LucideIcons.shieldCheck
+                          : (order.hasClientReportedPayment
+                              ? LucideIcons.clock
+                              : LucideIcons.alertCircle),
+                      color: order.isPaymentConfirmed
+                          ? const Color(0xFF16A34A)
+                          : (order.hasClientReportedPayment
+                              ? const Color(0xFF2563EB)
+                              : const Color(0xFFD97706)),
+                      size: 18,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        order.isPaymentConfirmed
+                            ? 'AgroKera Escrow დადასტურებულია • დაიწყეთ შეკვეთის მომზადება'
+                            : (order.hasClientReportedPayment
+                                ? 'გადარიცხვა დაფიქსირდა • მოწმდება AgroKera Escrow-ში'
+                                : 'Escrow გადარიცხვის მოლოდინში • მომზადება დაიწყეთ თანხის ასახვის შემდეგ'),
+                        style: GoogleFonts.notoSansGeorgian(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: order.isPaymentConfirmed
+                              ? const Color(0xFF166534)
+                              : (order.hasClientReportedPayment
+                                  ? const Color(0xFF1E40AF)
+                                  : const Color(0xFF92400E)),
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ],
 
             // ==========================================

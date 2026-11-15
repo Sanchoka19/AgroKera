@@ -380,13 +380,27 @@ class _ClientOrdersScreenState extends ConsumerState<ClientOrdersScreen> {
                   ],
                 ),
               ),
-              Text(
-                'სულ: ₾${order.totalAmount.toStringAsFixed(2)}',
-                style: GoogleFonts.notoSansGeorgian(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.primary,
-                ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    'სულ: ₾${order.totalAmount.toStringAsFixed(2)}',
+                    style: GoogleFonts.notoSansGeorgian(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                  if (order.totalDeliveryFee > 0)
+                    Text(
+                      'მიტანა: +₾${order.totalDeliveryFee.toStringAsFixed(0)}',
+                      style: GoogleFonts.notoSansGeorgian(
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF64748B),
+                      ),
+                    ),
+                ],
               ),
             ],
           ),

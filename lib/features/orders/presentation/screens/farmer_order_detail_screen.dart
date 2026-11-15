@@ -486,6 +486,27 @@ class _FarmerOrderDetailScreenState
               _buildPriceRow('დღგ (18%)', '₾${order.vatAmount.toStringAsFixed(2)}'),
             ],
 
+            // Delivery Fee
+            if (order.isPickup) ...[
+              const SizedBox(height: 8),
+              _buildPriceRow('მიტანის მეთოდი', 'თვითგატანა (0 ₾)'),
+            ] else if (order.deliveryFee > 0) ...[
+              const SizedBox(height: 8),
+              _buildPriceRow('მიტანის საფასური', '₾${order.deliveryFee.toStringAsFixed(2)}'),
+            ],
+
+            // Heavy Cargo Fee
+            if (order.heavyFee > 0) ...[
+              const SizedBox(height: 8),
+              _buildPriceRow('სატვირთო ტრანსპორტირება', '₾${order.heavyFee.toStringAsFixed(2)}'),
+            ],
+
+            // Platform Fee
+            if (order.platformFee > 0) ...[
+              const SizedBox(height: 8),
+              _buildPriceRow('სერვისის საკომისიო', '₾${order.platformFee.toStringAsFixed(2)}'),
+            ],
+
             const SizedBox(height: 10),
             // Total Sum
             Row(

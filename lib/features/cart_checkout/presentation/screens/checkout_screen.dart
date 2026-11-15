@@ -522,10 +522,15 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     final farmer = _resolveFarmer(marketplace, cartItems);
     final matchedZone = _findMatchedDeliveryZone(_address, farmer);
     final isCovered = matchedZone != null && farmer.isDeliveryEnabled;
-    final isPickup = _isPickupSelected || !isCovered;
+    final isWeightExceeded = cartItems.isWeightLimitExceeded;
+    final isPickup = isWeightExceeded || _isPickupSelected || !isCovered;
     final finalDeliveryAddress = isPickup
         ? 'თვითგატანა მეურნეობიდან: ${farmer.farmName} (${farmer.location})'
         : _address;
+
+    final effectiveDeliveryFee = isPickup ? 0.0 : matchedZone.value;
+    final effectiveHeavyFee = isPickup ? 0.0 : cartItems.heavyFee;
+    final platformFee = cartItems.isNotEmpty ? cartItems.platformFee : 10.0;
 
     // Domain guard: Farmer cannot order their own product or order from themselves
     final auth = ref.read(authStateProvider);
@@ -590,6 +595,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           deliveryTimeWindow: activeDeliverySlot,
           paymentMethod: paymentMethod.name.toUpperCase(),
           hasVat: farmer.isVatPayer,
+          deliveryFee: effectiveDeliveryFee,
+          heavyFee: effectiveHeavyFee,
+          platformFee: platformFee,
+          isPickup: isPickup,
         );
     orderNumber = created.id;
     if (!mounted) return;
@@ -638,13 +647,16 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     final farmer = _resolveFarmer(marketplace, cartItems);
     final matchedZone = _findMatchedDeliveryZone(_address, farmer);
     final isCovered = matchedZone != null && farmer.isDeliveryEnabled;
-    final isPickup = _isPickupSelected || !isCovered;
+    final isWeightExceeded = cartItems.isWeightLimitExceeded;
+    final isPickup = isWeightExceeded || _isPickupSelected || !isCovered;
 
     final subtotal = cartItems.isNotEmpty ? cartItems.subtotal : 65.0;
     final totalWeight = cartItems.isNotEmpty ? cartItems.totalWeight : 3.8;
     final effectiveDeliveryFee = isPickup ? 0.0 : matchedZone.value;
+    final effectiveHeavyFee = isPickup ? 0.0 : cartItems.heavyFee;
     final platformFee = cartItems.isNotEmpty ? cartItems.platformFee : 10.0;
-    final grandTotal = subtotal + effectiveDeliveryFee + platformFee;
+    final grandTotal =
+        subtotal + effectiveDeliveryFee + effectiveHeavyFee + platformFee;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF9FAFB),
@@ -695,12 +707,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        'მიტანის მისამართი',
-                        style: AppTypography.bodyMedium.copyWith(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary,
+                      Expanded(
+                        child: Text(
+                          'მიტანის მისამართი',
+                          style: AppTypography.bodyMedium.copyWith(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textPrimary,
+                          ),
                         ),
                       ),
                       GestureDetector(
@@ -836,22 +850,98 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                       color: AppColors.textPrimary,
                     ),
                   ),
+                  if (isWeightExceeded) ...[
+                    const SizedBox(height: 10),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFEF2F2),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: const Color(0xFFFECACA)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            LucideIcons.alertTriangle,
+                            size: 18,
+                            color: Color(0xFFDC2626),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'წონა (${totalWeight.toStringAsFixed(1)} კგ) აჭარბებს საკურიერო მიტანის ლიმიტს (250 კგ). ხელმისაწვდომია მხოლოდ თვითგატანა მეურნეობიდან.',
+                              style: AppTypography.caption.copyWith(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: const Color(0xFFDC2626),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ] else if (cartItems.isHeavyOrder) ...[
+                    const SizedBox(height: 10),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEFF6FF),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: const Color(0xFFBFDBFE)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            LucideIcons.truck,
+                            size: 18,
+                            color: Color(0xFF2563EB),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'მძიმე შეკვეთა (${totalWeight.toStringAsFixed(1)} კგ) • ტრანსპორტირება: ${cartItems.vehicleLabel} (+${effectiveHeavyFee.toInt()} ₾)',
+                              style: AppTypography.caption.copyWith(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: const Color(0xFF1D4ED8),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 12),
                   Row(
                     children: [
                       // Delivery option
                       Expanded(
                         child: GestureDetector(
-                          onTap: isCovered
-                              ? () => setState(() => _isPickupSelected = false)
-                              : () {
+                          onTap: isWeightExceeded
+                              ? () {
                                   AppToast.warning(
                                     context,
-                                    'ფერმერი ამ მისამართზე მიტანას ვერ უზრუნველყოფს',
+                                    'წონა (${totalWeight.toStringAsFixed(1)} კგ) აჭარბებს საკურიერო მიტანის ლიმიტს (250 კგ). ხელმისაწვდომია მხოლოდ თვითგატანა.',
                                   );
-                                },
+                                }
+                              : (isCovered
+                                  ? () =>
+                                      setState(() => _isPickupSelected = false)
+                                  : () {
+                                      AppToast.warning(
+                                        context,
+                                        'ფერმერი ამ მისამართზე მიტანას ვერ უზრუნველყოფს',
+                                      );
+                                    }),
                           child: Opacity(
-                            opacity: isCovered ? 1.0 : 0.45,
+                            opacity:
+                                (!isWeightExceeded && isCovered) ? 1.0 : 0.45,
                             child: Container(
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
@@ -897,9 +987,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
-                                    isCovered
-                                        ? '${matchedZone.value.toInt()} ₾'
-                                        : 'მიუწვდომელია',
+                                    isWeightExceeded
+                                        ? '>250 კგ (შეუძლებელია)'
+                                        : (isCovered
+                                            ? '${matchedZone.value.toInt()} ₾'
+                                            : 'მიუწვდომელია'),
                                     style: AppTypography.caption.copyWith(
                                       fontSize: 12,
                                       fontWeight: FontWeight.w700,
@@ -1030,12 +1122,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        isPickup ? 'გატანის დღე და დრო' : 'მიტანის დღე',
-                        style: AppTypography.bodyMedium.copyWith(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary,
+                      Expanded(
+                        child: Text(
+                          isPickup ? 'გატანის დღე და დრო' : 'მიტანის დღე',
+                          style: AppTypography.bodyMedium.copyWith(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textPrimary,
+                          ),
                         ),
                       ),
                       GestureDetector(
@@ -1100,11 +1194,13 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        'პროდუქტების საფასური',
-                        style: AppTypography.bodyMedium.copyWith(
-                          fontSize: 15,
-                          color: AppColors.textSecondary,
+                      Expanded(
+                        child: Text(
+                          'პროდუქტების საფასური',
+                          style: AppTypography.bodyMedium.copyWith(
+                            fontSize: 15,
+                            color: AppColors.textSecondary,
+                          ),
                         ),
                       ),
                       Text(
@@ -1123,11 +1219,13 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        'მიტანის საფასური',
-                        style: AppTypography.bodyMedium.copyWith(
-                          fontSize: 15,
-                          color: AppColors.textSecondary,
+                      Expanded(
+                        child: Text(
+                          'მიტანის საფასური',
+                          style: AppTypography.bodyMedium.copyWith(
+                            fontSize: 15,
+                            color: AppColors.textSecondary,
+                          ),
                         ),
                       ),
                       Text(
@@ -1144,36 +1242,63 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                       ),
                     ],
                   ),
+                  if (!isPickup && effectiveHeavyFee > 0) ...[
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'სატვირთო ტრანსპორტირება',
+                            style: AppTypography.bodyMedium.copyWith(
+                              fontSize: 15,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ),
+                        Text(
+                          '${effectiveHeavyFee.toStringAsFixed(0)} ₾',
+                          style: AppTypography.bodyMedium.copyWith(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                   const SizedBox(height: 12),
 
                   // Platform fee with info icon (Clickable -> FeeBreakdownSheet)
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      GestureDetector(
-                        onTap: () {
-                          FeeBreakdownSheet.show(
-                            context,
-                            currentWeight: totalWeight,
-                            currentSubtotal: subtotal,
-                          );
-                        },
-                        child: Row(
-                          children: [
-                            Text(
-                              'მოსაკრებელი',
-                              style: AppTypography.bodyMedium.copyWith(
-                                fontSize: 15,
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () {
+                            FeeBreakdownSheet.show(
+                              context,
+                              currentWeight: totalWeight,
+                              currentSubtotal: subtotal,
+                            );
+                          },
+                          child: Row(
+                            children: [
+                              Text(
+                                'მოსაკრებელი',
+                                style: AppTypography.bodyMedium.copyWith(
+                                  fontSize: 15,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              const Icon(
+                                LucideIcons.info,
+                                size: 16,
                                 color: AppColors.textSecondary,
                               ),
-                            ),
-                            const SizedBox(width: 6),
-                            const Icon(
-                              LucideIcons.info,
-                              size: 16,
-                              color: AppColors.textSecondary,
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                       Text(
@@ -1194,12 +1319,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        'სრული ღირებულება:',
-                        style: AppTypography.h1.copyWith(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.textPrimary,
+                      Expanded(
+                        child: Text(
+                          'სრული ღირებულება:',
+                          style: AppTypography.h1.copyWith(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.textPrimary,
+                          ),
                         ),
                       ),
                       Text(

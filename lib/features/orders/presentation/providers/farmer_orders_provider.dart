@@ -353,6 +353,10 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
     String? contactPhone,
     String paymentMethod = 'ESCROW',
     bool? hasVat,
+    double deliveryFee = 0.0,
+    double heavyFee = 0.0,
+    double platformFee = 0.0,
+    bool isPickup = false,
   }) async {
     final auth = ref.read(authStateProvider);
     if (auth.role == UserRole.farmer) {
@@ -420,6 +424,10 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
       trackingNumber: 'AK-$generatedId',
       items: orderItems,
       paymentMethod: paymentMethod,
+      deliveryFee: deliveryFee,
+      heavyFee: heavyFee,
+      platformFee: platformFee,
+      isPickup: isPickup,
     );
 
     state = state.copyWith(orders: [newOrder, ...state.orders]);
@@ -441,6 +449,11 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
             'deliveryTimeWindow': deliveryTimeWindow,
             'paymentMethod': paymentMethod,
             'hasVat': resolvedHasVat,
+            'deliveryFee': deliveryFee,
+            'heavyFee': heavyFee,
+            'platformFee': platformFee,
+            'isPickup': isPickup,
+            'totalAmount': newOrder.totalAmount,
             'items': cartItems
                 .map(
                   (ci) => {

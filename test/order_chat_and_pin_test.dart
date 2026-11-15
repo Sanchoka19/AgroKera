@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:agrokera/features/cart_checkout/data/models/cart_item_model.dart';
+import 'package:agrokera/features/cart_checkout/presentation/providers/cart_provider.dart';
+import 'package:agrokera/features/cart_checkout/presentation/screens/checkout_screen.dart';
 import 'package:agrokera/core/auth/auth_state_provider.dart';
 import 'package:agrokera/features/orders/domain/models/farmer_order_model.dart';
 import 'package:agrokera/features/orders/domain/models/order_message_model.dart';
@@ -172,4 +175,83 @@ void main() {
       expect(find.text('ადგილზე ვარ'), findsWidgets);
     });
   });
+
+  group('Logistics, Delivery Fee & 250kg Limit Tests', () {
+    test('FarmerOrder includes deliveryFee, heavyFee and platformFee in totalAmount', () {
+      final orderWithFees = FarmerOrder(
+        id: '12350',
+        createdAt: DateTime.now(),
+        status: OrderStatus.inProgress,
+        customerName: 'დავითი',
+        contactPerson: 'დავითი',
+        contactPhone: '+995599000000',
+        deliveryFee: 15.0,
+        heavyFee: 45.0,
+        platformFee: 10.0,
+        isPickup: false,
+        items: const [
+          FarmerOrderItem(
+            name: 'კარტოფილი',
+            quantityText: '100კგ',
+            price: 200.0,
+          ),
+        ],
+      );
+
+      // subtotal 200 + delivery 15 + heavy 45 + platform 10 = 270
+      expect(orderWithFees.subtotal, equals(200.0));
+      expect(orderWithFees.totalDeliveryFee, equals(60.0));
+      expect(orderWithFees.totalAmount, equals(270.0));
+
+      // When isPickup is true, delivery fees become 0
+      final pickupOrder = orderWithFees.copyWith(isPickup: true);
+      expect(pickupOrder.totalDeliveryFee, equals(0.0));
+      expect(pickupOrder.totalAmount, equals(210.0));
+    });
+
+    testWidgets('CheckoutScreen displays 250kg limit warning and forces pickup when weight > 250kg', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(430, 932));
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      // Add 300kg of potatoes
+      const heavyItem = CartItemModel(
+        id: 'prod_potato_300',
+        title: 'ახალციხის კარტოფილი',
+        packageText: '100კგ',
+        farmerName: 'გიორგის ფერმა',
+        farmerId: 'farmer_2',
+        pricePerUnit: 150.0,
+        imageUrl: '',
+        quantity: 3,
+        weightKg: 100.0, // 3 * 100 = 300 kg > 250 kg limit
+      );
+
+      container.read(cartProvider.notifier).clearCart();
+      container.read(cartProvider.notifier).addItem(heavyItem);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const MaterialApp(
+            home: CheckoutScreen(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Warning banner must be displayed
+      expect(
+        find.textContaining('წონა (300.0 კგ) აჭარბებს საკურიერო მიტანის ლიმიტს (250 კგ)'),
+        findsOneWidget,
+      );
+
+      // Subtitle under delivery indicates impossible
+      expect(find.text('>250 კგ (შეუძლებელია)'), findsOneWidget);
+
+      // Price breakdown shows 0 ₾ (თვითგატანა)
+      expect(find.text('0 ₾ (თვითგატანა)'), findsOneWidget);
+    });
+  });
 }
+

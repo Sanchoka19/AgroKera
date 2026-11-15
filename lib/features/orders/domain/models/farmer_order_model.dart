@@ -133,6 +133,10 @@ class FarmerOrder {
   final bool hasClientReportedPayment;
   final bool isPaymentConfirmed;
   final String deliveryPin;
+  final double deliveryFee;
+  final double heavyFee;
+  final double platformFee;
+  final bool isPickup;
 
   const FarmerOrder({
     required this.id,
@@ -154,6 +158,10 @@ class FarmerOrder {
     this.hasClientReportedPayment = false,
     this.isPaymentConfirmed = false,
     this.deliveryPin = '4821',
+    this.deliveryFee = 0.0,
+    this.heavyFee = 0.0,
+    this.platformFee = 0.0,
+    this.isPickup = false,
   });
 
   static String generatePinForId(String id) {
@@ -187,6 +195,10 @@ class FarmerOrder {
           json['hasClientReportedPayment'] as bool? ?? false,
       isPaymentConfirmed: json['isPaymentConfirmed'] as bool? ?? false,
       deliveryPin: json['deliveryPin'] as String? ?? generatePinForId(id),
+      deliveryFee: (json['deliveryFee'] as num?)?.toDouble() ?? 0.0,
+      heavyFee: (json['heavyFee'] as num?)?.toDouble() ?? 0.0,
+      platformFee: (json['platformFee'] as num?)?.toDouble() ?? 0.0,
+      isPickup: json['isPickup'] as bool? ?? false,
       items: rawItems
           .whereType<Map<String, dynamic>>()
           .map(FarmerOrderItem.fromJson)
@@ -200,8 +212,12 @@ class FarmerOrder {
   /// Calculated 18% VAT if farmer is registered as VAT payer
   double get vatAmount => hasVat ? (subtotal * 0.18) : 0.0;
 
-  /// Full Total Amount (Subtotal + VAT)
-  double get totalAmount => subtotal + vatAmount;
+  /// Total logistics & delivery fee (standard delivery + heavy fee)
+  double get totalDeliveryFee => isPickup ? 0.0 : (deliveryFee + heavyFee);
+
+  /// Full Total Amount (Subtotal + VAT + Delivery Fee + Heavy Fee + Platform Fee)
+  double get totalAmount =>
+      subtotal + vatAmount + (isPickup ? 0.0 : (deliveryFee + heavyFee)) + platformFee;
 
   /// User friendly summary text of products for cards
   String get productsSummary {
@@ -261,6 +277,10 @@ class FarmerOrder {
       'hasClientReportedPayment': hasClientReportedPayment,
       'isPaymentConfirmed': isPaymentConfirmed,
       'deliveryPin': deliveryPin,
+      'deliveryFee': deliveryFee,
+      'heavyFee': heavyFee,
+      'platformFee': platformFee,
+      'isPickup': isPickup,
       'items': items.map((i) => i.toJson()).toList(),
     };
   }
@@ -285,6 +305,10 @@ class FarmerOrder {
     bool? hasClientReportedPayment,
     bool? isPaymentConfirmed,
     String? deliveryPin,
+    double? deliveryFee,
+    double? heavyFee,
+    double? platformFee,
+    bool? isPickup,
   }) {
     return FarmerOrder(
       id: id ?? this.id,
@@ -307,6 +331,10 @@ class FarmerOrder {
           hasClientReportedPayment ?? this.hasClientReportedPayment,
       isPaymentConfirmed: isPaymentConfirmed ?? this.isPaymentConfirmed,
       deliveryPin: deliveryPin ?? this.deliveryPin,
+      deliveryFee: deliveryFee ?? this.deliveryFee,
+      heavyFee: heavyFee ?? this.heavyFee,
+      platformFee: platformFee ?? this.platformFee,
+      isPickup: isPickup ?? this.isPickup,
     );
   }
 }

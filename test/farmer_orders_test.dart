@@ -260,6 +260,29 @@ void main() {
       expect(cashOrder.isBankTransfer, isFalse);
       expect(cashOrder.isCash, isTrue);
     });
+
+    test('reportBankTransferSent updates hasClientReportedPayment on the order', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final notifier = container.read(farmerOrdersProvider.notifier);
+      final initialOrder = container.read(farmerOrdersProvider).orders.first;
+      expect(initialOrder.hasClientReportedPayment, isFalse);
+
+      notifier.reportBankTransferSent(initialOrder.id);
+      final updatedOrder = container
+          .read(farmerOrdersProvider)
+          .orders
+          .firstWhere((o) => o.id == initialOrder.id);
+      expect(updatedOrder.hasClientReportedPayment, isTrue);
+
+      notifier.confirmEscrowPayment(initialOrder.id);
+      final confirmedOrder = container
+          .read(farmerOrdersProvider)
+          .orders
+          .firstWhere((o) => o.id == initialOrder.id);
+      expect(confirmedOrder.isPaymentConfirmed, isTrue);
+    });
   });
 
   group('IncomingOrdersScreen Widget Tests', () {

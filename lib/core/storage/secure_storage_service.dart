@@ -15,6 +15,7 @@ class SecureStorageService {
   static const _kycStatusKey = 'agrokera_kyc_status';
   static const _cartJsonKey = 'agrokera_cart_json';
   static const _favoritesJsonKey = 'agrokera_favorites_json';
+  static const _reportedPaymentOrdersKey = 'agrokera_reported_payment_orders';
 
   final FlutterSecureStorage _storage;
 
@@ -148,6 +149,25 @@ class SecureStorageService {
       return await _storage.read(key: _favoritesJsonKey);
     } catch (_) {
       return null;
+    }
+  }
+
+  Future<void> saveReportedPaymentOrderIds(Set<String> ids) async {
+    try {
+      await _storage.write(
+        key: _reportedPaymentOrdersKey,
+        value: ids.join(','),
+      );
+    } catch (_) {}
+  }
+
+  Future<Set<String>> readReportedPaymentOrderIds() async {
+    try {
+      final raw = await _storage.read(key: _reportedPaymentOrdersKey);
+      if (raw == null || raw.trim().isEmpty) return {};
+      return raw.split(',').where((id) => id.trim().isNotEmpty).toSet();
+    } catch (_) {
+      return {};
     }
   }
 }

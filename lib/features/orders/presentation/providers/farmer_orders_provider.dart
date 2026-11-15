@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/auth/auth_state_provider.dart';
 import '../../../../core/network/api_client.dart';
+import '../../../../core/storage/secure_storage_service.dart';
 import '../../../cart_checkout/data/models/cart_item_model.dart';
 import '../../../cart_checkout/presentation/providers/cart_provider.dart';
 import '../../../marketplace/presentation/providers/marketplace_provider.dart';
@@ -44,8 +45,11 @@ class FarmerOrdersState {
 
 /// Notifier managing farmer & client orders lifecycle with Neon Backend sync
 class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
+  final Set<String> _reportedPaymentOrderIds = {};
+
   @override
   FarmerOrdersState build() {
+    unawaited(_loadReportedPayments());
     ref.listen(authStateProvider, (prev, next) {
       if (prev?.userId != next.userId ||
           prev?.farmerId != next.farmerId ||
@@ -57,6 +61,24 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
     return FarmerOrdersState(
       orders: isFlutterTestEnv ? _testOrders : const [],
     );
+  }
+
+  Future<void> _loadReportedPayments() async {
+    try {
+      final storage = ref.read(secureStorageProvider);
+      final saved = await storage.readReportedPaymentOrderIds();
+      _reportedPaymentOrderIds.addAll(saved);
+      if (_reportedPaymentOrderIds.isNotEmpty) {
+        state = state.copyWith(
+          orders: state.orders.map((o) {
+            if (_reportedPaymentOrderIds.contains(o.id)) {
+              return o.copyWith(hasClientReportedPayment: true);
+            }
+            return o;
+          }).toList(),
+        );
+      }
+    } catch (_) {}
   }
 
   static List<FarmerOrder> get _testOrders {
@@ -217,7 +239,13 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
         final localPending = state.orders
             .where((o) => !fetchedIds.contains(o.id))
             .toList();
-        state = state.copyWith(orders: [...localPending, ...fetched]);
+        final merged = [...localPending, ...fetched].map((o) {
+          if (_reportedPaymentOrderIds.contains(o.id) || o.hasClientReportedPayment) {
+            return o.copyWith(hasClientReportedPayment: true);
+          }
+          return o;
+        }).toList();
+        state = state.copyWith(orders: merged);
         checkPendingOrderExpirations();
       }
     } catch (_) {
@@ -248,6 +276,7 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
 
   /// Called by the customer after completing wire transfer in their mobile bank
   void reportBankTransferSent(String id) {
+    _reportedPaymentOrderIds.add(id);
     state = state.copyWith(
       orders: state.orders.map((o) {
         if (o.id == id) {
@@ -255,6 +284,11 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
         }
         return o;
       }).toList(),
+    );
+    unawaited(
+      ref
+          .read(secureStorageProvider)
+          .saveReportedPaymentOrderIds(_reportedPaymentOrderIds),
     );
   }
 

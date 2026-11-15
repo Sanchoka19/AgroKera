@@ -22,6 +22,7 @@ class ClientOrdersScreen extends ConsumerStatefulWidget {
 class _ClientOrdersScreenState extends ConsumerState<ClientOrdersScreen> {
   bool _showActiveOnly = false;
   Timer? _liveSyncTimer;
+  final Set<String> _locallyReportedIds = {};
 
   @override
   void initState() {
@@ -154,6 +155,8 @@ class _ClientOrdersScreenState extends ConsumerState<ClientOrdersScreen> {
   }
 
   Widget _buildClientOrderCard(FarmerOrder order) {
+    final isReported = order.hasClientReportedPayment ||
+        _locallyReportedIds.contains(order.id);
     final stepIndex = switch (order.status) {
       OrderStatus.pending => 1,
       OrderStatus.inProgress => 2,
@@ -559,13 +562,16 @@ class _ClientOrdersScreenState extends ConsumerState<ClientOrdersScreen> {
                         ],
                       ),
                     ),
-                    if (!order.hasClientReportedPayment) ...[
+                    if (!isReported) ...[
                       const SizedBox(height: 10),
                       SizedBox(
                         width: double.infinity,
                         height: 38,
                         child: ElevatedButton.icon(
                           onPressed: () {
+                            setState(() {
+                              _locallyReportedIds.add(order.id);
+                            });
                             ref
                                 .read(farmerOrdersProvider.notifier)
                                 .reportBankTransferSent(order.id);

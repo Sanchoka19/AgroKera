@@ -136,6 +136,19 @@ model Order {
   shipment             Shipment?
 }
 
+model OrderMessage {
+  id         String   @id @default(cuid())
+  orderId    String
+  senderId   String
+  senderRole String   @default("customer")
+  senderName String
+  text       String
+  isSystem   Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  @@index([orderId, createdAt])
+}
+
 model OrderItem {
   id                 String             @id @default(cuid())
   orderId            String

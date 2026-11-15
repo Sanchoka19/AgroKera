@@ -296,10 +296,10 @@ class _Step1FarmInfoWidgetState extends ConsumerState<Step1FarmInfoWidget> {
               decoration: onboardingInputDecoration(hint: 'მწვანე ველი'),
             ),
             const SizedBox(height: 18),
-            const OnboardingFieldLabel('ფერმის გარეკანის ფოტო (თამბნეილი) *'),
+            const OnboardingFieldLabel('ფერმის ბანერი *'),
             const SizedBox(height: 4),
             Text(
-              'ეს ფოტო გამოჩნდება მთავარ გვერდზე თქვენი ფერმის ბარათზე',
+              'გამოჩნდება თქვენი ფერმის ბარათზე',
               style: GoogleFonts.notoSansGeorgian(
                 fontSize: 12,
                 color: AppColors.textSecondary,
@@ -438,7 +438,7 @@ class _Step1FarmInfoWidgetState extends ConsumerState<Step1FarmInfoWidget> {
                 onTap: _pickFarmPhoto,
                 borderRadius: BorderRadius.circular(14),
                 child: Container(
-                  height: 120,
+                  height: 100,
                   decoration: BoxDecoration(
                     color: const Color(0xFFF8FAFC),
                     borderRadius: BorderRadius.circular(14),
@@ -447,39 +447,34 @@ class _Step1FarmInfoWidgetState extends ConsumerState<Step1FarmInfoWidget> {
                       width: 1.2,
                     ),
                   ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary.withValues(alpha: 0.12),
-                          shape: BoxShape.circle,
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withValues(alpha: 0.12),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            LucideIcons.plus,
+                            size: 18,
+                            color: AppColors.primary,
+                          ),
                         ),
-                        child: const Icon(
-                          LucideIcons.camera,
-                          size: 24,
-                          color: AppColors.primary,
+                        const SizedBox(height: 8),
+                        Text(
+                          'ბანერის ატვირთვა',
+                          style: GoogleFonts.notoSansGeorgian(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textPrimary,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'ატვირთეთ ფერმის გარეკანი (თამბნეილი)',
-                        style: GoogleFonts.notoSansGeorgian(
-                          fontSize: 13.5,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'კამერა • გალერეა • მზა შაბლონები',
-                        style: GoogleFonts.notoSansGeorgian(
-                          fontSize: 11.5,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),

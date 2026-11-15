@@ -14,6 +14,9 @@ class FarmerOnboardingValidator {
     if (farmName.trim().isEmpty) {
       return 'გთხოვთ შეიყვანოთ ფერმის/მეურნეობის დასახელება';
     }
+    if (!hasFarmPhoto) {
+      return 'გთხოვთ ატვირთოთ ფერმის ბანერი';
+    }
     if (region.trim().isEmpty || city.trim().isEmpty) {
       return 'გთხოვთ აირჩიოთ რეგიონი და ქალაქი/რაიონი';
     }

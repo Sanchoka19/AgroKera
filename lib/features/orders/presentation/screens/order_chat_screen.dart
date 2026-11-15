@@ -27,6 +27,7 @@ class _OrderChatScreenState extends ConsumerState<OrderChatScreen> {
   final _textController = TextEditingController();
   final _scrollController = ScrollController();
   bool _isSending = false;
+  Timer? _liveSyncTimer;
 
   @override
   void initState() {
@@ -38,10 +39,18 @@ class _OrderChatScreenState extends ConsumerState<OrderChatScreen> {
             .loadMessages(widget.order.id),
       ),
     );
+
+    // Live polling for incoming messages every 2.5 seconds
+    _liveSyncTimer = Timer.periodic(const Duration(milliseconds: 2500), (_) {
+      if (mounted) {
+        ref.read(orderChatProvider.notifier).syncMessages(widget.order.id);
+      }
+    });
   }
 
   @override
   void dispose() {
+    _liveSyncTimer?.cancel();
     _textController.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -65,10 +74,9 @@ class _OrderChatScreenState extends ConsumerState<OrderChatScreen> {
 
     final auth = ref.read(authStateProvider);
     final isOrderSeller = auth.role == UserRole.farmer &&
-        auth.farmerId != null &&
-        (widget.order.farmerId == auth.farmerId ||
-            (widget.order.clientId != auth.userId &&
-                widget.order.farmerId == null));
+        (auth.farmerId == widget.order.farmerId ||
+            widget.order.farmerId == null ||
+            widget.order.clientId != auth.userId);
 
     final senderId = isOrderSeller
         ? (auth.farmerId ?? auth.userId ?? 'farmer_unknown')
@@ -80,17 +88,19 @@ class _OrderChatScreenState extends ConsumerState<OrderChatScreen> {
     setState(() => _isSending = true);
     if (quickText == null) _textController.clear();
 
-    await ref.read(orderChatProvider.notifier).sendMessage(
-          orderId: widget.order.id,
-          text: text,
-          senderId: senderId,
-          senderRole: isOrderSeller ? UserRole.farmer : UserRole.customer,
-          senderName: senderName,
-        );
-
-    if (mounted) {
-      setState(() => _isSending = false);
-      _scrollToBottom();
+    try {
+      await ref.read(orderChatProvider.notifier).sendMessage(
+            orderId: widget.order.id,
+            text: text,
+            senderId: senderId,
+            senderRole: isOrderSeller ? UserRole.farmer : UserRole.customer,
+            senderName: senderName,
+          );
+    } finally {
+      if (mounted) {
+        setState(() => _isSending = false);
+        _scrollToBottom();
+      }
     }
   }
 
@@ -104,10 +114,9 @@ class _OrderChatScreenState extends ConsumerState<OrderChatScreen> {
     final messages = allChats[widget.order.id] ?? const [];
     final auth = ref.watch(authStateProvider);
     final isOrderSeller = auth.role == UserRole.farmer &&
-        auth.farmerId != null &&
-        (widget.order.farmerId == auth.farmerId ||
-            (widget.order.clientId != auth.userId &&
-                widget.order.farmerId == null));
+        (auth.farmerId == widget.order.farmerId ||
+            widget.order.farmerId == null ||
+            widget.order.clientId != auth.userId);
     final isFarmer = isOrderSeller;
     final isActive = widget.order.status == OrderStatus.pending ||
         widget.order.status == OrderStatus.inProgress;
@@ -218,9 +227,15 @@ class _OrderChatScreenState extends ConsumerState<OrderChatScreen> {
                       itemCount: messages.length,
                       itemBuilder: (context, index) {
                         final msg = messages[index];
-                        final isMe = isFarmer
-                            ? (msg.senderRole == UserRole.farmer)
-                            : (msg.senderRole == UserRole.customer);
+                        final currentUserId = auth.userId;
+                        final currentFarmerId = auth.farmerId;
+                        final isMe = (currentUserId != null &&
+                                msg.senderId == currentUserId) ||
+                            (currentFarmerId != null &&
+                                msg.senderId == currentFarmerId) ||
+                            (isFarmer
+                                ? msg.senderRole == UserRole.farmer
+                                : msg.senderRole == UserRole.customer);
 
                         if (msg.isSystem) {
                           return _buildSystemMessage(msg);

@@ -15,7 +15,15 @@ void main() {
     HttpOverrides.global = TestHttpOverrides();
   });
 
-  Widget wrapWithScaffold(Widget child) {
+  Widget wrapWithScaffold(Widget child, [ProviderContainer? container]) {
+    if (container != null) {
+      return UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp(
+          home: child,
+        ),
+      );
+    }
     return ProviderScope(
       child: MaterialApp(
         home: child,
@@ -24,7 +32,10 @@ void main() {
   }
 
   testWidgets('FarmerOnboardingScreen renders step 1 and navigates through steps', (WidgetTester tester) async {
-    await tester.pumpWidget(wrapWithScaffold(const FarmerOnboardingScreen()));
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+
+    await tester.pumpWidget(wrapWithScaffold(const FarmerOnboardingScreen(), container));
     await tester.pumpAndSettle();
 
     // Step 1: Farm Info
@@ -32,6 +43,20 @@ void main() {
     expect(find.text('ფერმის ინფორმაცია'), findsOneWidget);
     expect(find.text('მისამართი'), findsOneWidget);
     expect(find.text('შემდეგი'), findsOneWidget);
+
+    // Blocked if required fields are empty
+    await tester.tap(find.text('შემდეგი'));
+    await tester.pump();
+    expect(find.text('1/6'), findsOneWidget);
+    expect(find.text('2/6'), findsNothing);
+
+    // Populate required fields for Step 1
+    container.read(farmerOnboardingProvider.notifier).setFarmName('მწვანე ველი');
+    container.read(farmerOnboardingProvider.notifier).setFarmPhoto(
+      path: 'assets/sample.jpg',
+      name: 'Sample Farm Cover',
+    );
+    await tester.pumpAndSettle();
 
     // Tap Next -> Step 2
     await tester.tap(find.text('შემდეგი'));
@@ -50,6 +75,20 @@ void main() {
     // Step 3: Legal & Bank
     expect(find.text('3/6'), findsOneWidget);
     expect(find.text('საბანკო ანგარიში'), findsOneWidget);
+
+    // Blocked if required fields on Step 3 are empty
+    await tester.tap(find.text('შემდეგი'));
+    await tester.pump();
+    expect(find.text('3/6'), findsOneWidget);
+    expect(find.text('4/6'), findsNothing);
+
+    // Populate required fields for Step 3
+    container.read(farmerOnboardingProvider.notifier).setIdNumber('61001012345');
+    container.read(farmerOnboardingProvider.notifier).setSelfie('selfie.jpg');
+    container.read(farmerOnboardingProvider.notifier).setIdFront('front.jpg');
+    container.read(farmerOnboardingProvider.notifier).setIdBack('back.jpg');
+    container.read(farmerOnboardingProvider.notifier).setIban('GE29TB7777777777777777');
+    await tester.pumpAndSettle();
 
     // Tap Next -> Step 4
     await tester.tap(find.text('შემდეგი'));

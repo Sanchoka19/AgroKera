@@ -24,7 +24,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
   bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
 
   @override
   void initState() {
@@ -45,6 +47,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 
@@ -53,6 +56,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     final name = _nameController.text.trim();
     final email = _emailController.text.trim();
     final password = _passwordController.text;
+    final confirmPassword = _confirmPasswordController.text;
 
     if (name.isEmpty) {
       AppToast.error(context, 'გთხოვთ შეიყვანოთ სრული სახელი');
@@ -64,6 +68,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     }
     if (password.length < 6) {
       AppToast.error(context, 'პაროლი უნდა შედგებოდეს მინიმუმ 6 სიმბოლოსგან');
+      return;
+    }
+    if (confirmPassword.isEmpty) {
+      AppToast.error(context, 'გთხოვთ გაიმეოროთ პაროლი');
+      return;
+    }
+    if (password != confirmPassword) {
+      AppToast.error(context, 'პაროლები ერთმანეთს არ ემთხვევა');
       return;
     }
 
@@ -303,6 +315,27 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                   ),
                                   onPressed: () {
                                     setState(() => _obscurePassword = !_obscurePassword);
+                                  },
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+
+                              // Field 4: Confirm Password
+                              _buildFieldLabel('გაიმეორეთ პაროლი'),
+                              const SizedBox(height: 6),
+                              _buildInputField(
+                                controller: _confirmPasswordController,
+                                hintText: 'გაიმეორეთ პაროლი',
+                                prefixIcon: LucideIcons.lock,
+                                obscureText: _obscureConfirmPassword,
+                                suffixIcon: IconButton(
+                                  icon: Icon(
+                                    _obscureConfirmPassword ? LucideIcons.eyeOff : LucideIcons.eye,
+                                    color: const Color(0xFF94A3B8),
+                                    size: 19,
+                                  ),
+                                  onPressed: () {
+                                    setState(() => _obscureConfirmPassword = !_obscureConfirmPassword);
                                   },
                                 ),
                               ),

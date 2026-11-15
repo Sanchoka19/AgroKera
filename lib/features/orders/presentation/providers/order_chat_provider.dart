@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/auth/auth_state_provider.dart';
 import '../../../../core/network/api_client.dart';
@@ -14,8 +15,7 @@ class OrderChatNotifier extends Notifier<Map<String, List<OrderMessage>>> {
   }
 
   Future<void> loadMessages(String orderId) async {
-    if (state.containsKey(orderId) && state[orderId]!.isNotEmpty) return;
-
+    // 1. Fast cache load from local storage
     try {
       final storage = ref.read(secureStorageProvider);
       final cachedJson = await storage.readOrderMessagesJson(orderId);
@@ -27,11 +27,14 @@ class OrderChatNotifier extends Notifier<Map<String, List<OrderMessage>>> {
             .toList();
         if (messages.isNotEmpty) {
           state = {...state, orderId: messages};
-          return;
         }
       }
+    } catch (_) {
+      // Gracefully maintain state on storage or format errors
+    }
 
-      // Default system message introducing the chat
+    // 2. Default fallback system message if completely empty
+    if (!state.containsKey(orderId) || state[orderId]!.isEmpty) {
       final initialMessage = OrderMessage(
         id: 'sys_$orderId',
         orderId: orderId,
@@ -45,9 +48,38 @@ class OrderChatNotifier extends Notifier<Map<String, List<OrderMessage>>> {
 
       final initialList = [initialMessage];
       state = {...state, orderId: initialList};
-      await _persist(orderId, initialList);
+      unawaited(_persist(orderId, initialList));
+    }
+
+    // 3. Live sync from backend API
+    await syncMessages(orderId);
+  }
+
+  Future<void> syncMessages(String orderId) async {
+    try {
+      final api = ref.read(apiClientProvider);
+      final res = await api.get<List<dynamic>>('/api/orders/$orderId/messages');
+      if (res.data != null && res.data is List) {
+        final remoteMessages = (res.data as List)
+            .whereType<Map<String, dynamic>>()
+            .map(OrderMessage.fromJson)
+            .toList();
+
+        if (remoteMessages.isNotEmpty) {
+          final current = state[orderId] ?? const [];
+          final remoteIds = remoteMessages.map((m) => m.id).toSet();
+          final localUnsynced =
+              current.where((m) => !remoteIds.contains(m.id)).toList();
+
+          final merged = [...remoteMessages, ...localUnsynced]
+            ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+
+          state = {...state, orderId: merged};
+          unawaited(_persist(orderId, merged));
+        }
+      }
     } catch (_) {
-      // Gracefully maintain state on storage or format errors
+      // Gracefully maintain state on network or test environment errors
     }
   }
 
@@ -63,7 +95,7 @@ class OrderChatNotifier extends Notifier<Map<String, List<OrderMessage>>> {
 
     final currentMessages = state[orderId] ?? const [];
     final message = OrderMessage(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      id: 'msg_${DateTime.now().millisecondsSinceEpoch}_${Random().nextInt(9999)}',
       orderId: orderId,
       senderId: senderId,
       senderRole: senderRole,
@@ -93,6 +125,7 @@ class OrderChatNotifier extends Notifier<Map<String, List<OrderMessage>>> {
         '/api/orders/$orderId/messages',
         data: message.toJson(),
       );
+      unawaited(syncMessages(orderId));
     } catch (_) {
       // Gracefully ignore network errors in tests/offline
     }

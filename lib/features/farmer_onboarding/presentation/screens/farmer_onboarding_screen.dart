@@ -5,7 +5,9 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:agrokera/core/theme/app_colors.dart';
 import 'package:agrokera/core/widgets/app_toast.dart';
 import 'package:agrokera/core/widgets/primary_button.dart';
+import '../models/farmer_onboarding_state.dart';
 import '../providers/farmer_onboarding_provider.dart';
+import '../providers/farmer_onboarding_validator.dart';
 import '../widgets/onboarding_steps/step1_farm_info_widget.dart';
 import '../widgets/onboarding_steps/step2_status_selection_widget.dart';
 import '../widgets/onboarding_steps/step3_legal_and_bank_widget.dart';
@@ -69,14 +71,52 @@ class _FarmerOnboardingScreenState extends ConsumerState<FarmerOnboardingScreen>
     super.dispose();
   }
 
+  String? _validateStep(int step, FarmerOnboardingState state) {
+    switch (step) {
+      case 1:
+        return FarmerOnboardingValidator.validateStep1(
+          farmName: state.farmName,
+          hasFarmPhoto: state.hasFarmPhoto,
+          region: state.selectedRegion,
+          city: state.selectedCity,
+        );
+      case 2:
+        return null;
+      case 3:
+        return FarmerOnboardingValidator.validateStep3(
+          status: state.selectedStatus,
+          idNumber: state.idNumber,
+          uploadedSelfie: state.uploadedSelfie,
+          uploadedIdFront: state.uploadedIdFront,
+          uploadedIdBack: state.uploadedIdBack,
+          bank: state.selectedBank,
+          iban: state.iban,
+        );
+      case 4:
+        return FarmerOnboardingValidator.validateStep4(
+          isPickupEnabled: state.isPickupEnabled,
+          isDeliveryEnabled: state.isDeliveryEnabled,
+          deliveryDays: state.deliveryDays,
+        );
+      case 5:
+        return FarmerOnboardingValidator.validateStep5(
+          agreeTerms: state.agreeTerms,
+          agreeQuality: state.agreeQuality,
+        );
+      default:
+        return null;
+    }
+  }
+
   Future<void> _onNext() async {
     HapticFeedback.lightImpact();
     final state = ref.read(farmerOnboardingProvider);
     final currentStep = state.currentStep;
     final notifier = ref.read(farmerOnboardingProvider.notifier);
 
-    // Requirement 1: Step 5 cannot proceed unless both checkboxes are checked
-    if (currentStep == 5 && (!state.agreeTerms || !state.agreeQuality)) {
+    final error = _validateStep(currentStep, state);
+    if (error != null) {
+      AppToast.error(context, error);
       return;
     }
 
@@ -214,9 +254,8 @@ class _FarmerOnboardingScreenState extends ConsumerState<FarmerOnboardingScreen>
     final state = ref.watch(farmerOnboardingProvider);
     final currentStep = state.currentStep;
 
-    // Requirement 1: Step 5 button must remain disabled until both checkboxes are ticked
-    final bool isStep5Valid = state.agreeTerms && state.agreeQuality;
-    final bool canProceed = currentStep != 5 || isStep5Valid;
+    final String? stepError = _validateStep(currentStep, state);
+    final bool canProceed = stepError == null;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -279,7 +318,10 @@ class _FarmerOnboardingScreenState extends ConsumerState<FarmerOnboardingScreen>
                 text: currentStep == 6 ? 'დადასტურება' : 'შემდეგი',
                 height: 52,
                 borderRadius: BorderRadius.circular(12),
-                onPressed: canProceed ? _onNext : null,
+                backgroundColor: canProceed
+                    ? AppColors.primary
+                    : AppColors.primary.withValues(alpha: 0.55),
+                onPressed: _onNext,
               ),
             ),
           ],

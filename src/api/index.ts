@@ -1226,6 +1226,102 @@ export default {
         });
       }
 
+      // ==========================================
+      // 4.5 ORDER MESSAGES & CHAT
+      // ==========================================
+      if (path.startsWith("/api/orders/") && path.endsWith("/messages") && method === "GET") {
+        const orderId = path.replace("/api/orders/", "").replace("/messages", "");
+        let messages = await prisma.orderMessage.findMany({
+          where: { orderId },
+          orderBy: { createdAt: "asc" },
+        });
+
+        if (messages.length === 0) {
+          try {
+            const initial = await prisma.orderMessage.create({
+              data: {
+                id: `sys_${orderId}`,
+                orderId,
+                senderId: "system",
+                senderRole: "guest",
+                senderName: "AgroKera System",
+                text: "შეკვეთის ჩათი გააქტიურდა. გამოიყენეთ მისამართისა და ჩაბარების დროის დასაზუსტებლად.",
+                isSystem: true,
+              },
+            });
+            messages = [initial];
+          } catch (_) {
+            messages = await prisma.orderMessage.findMany({
+              where: { orderId },
+              orderBy: { createdAt: "asc" },
+            });
+          }
+        }
+
+        return jsonResponse(
+          messages.map((m) => ({
+            id: m.id,
+            orderId: m.orderId,
+            senderId: m.senderId,
+            senderRole: m.senderRole,
+            senderName: m.senderName,
+            text: m.text,
+            isSystem: m.isSystem,
+            createdAt: m.createdAt.toISOString(),
+          }))
+        );
+      }
+
+      if (path.startsWith("/api/orders/") && path.endsWith("/messages") && method === "POST") {
+        const orderId = path.replace("/api/orders/", "").replace("/messages", "");
+        const body = (await request.json()) as {
+          id?: string;
+          senderId?: string;
+          senderRole?: string;
+          senderName?: string;
+          text?: string;
+          isSystem?: boolean;
+          createdAt?: string;
+        };
+
+        const cleanText = (body.text || "").trim();
+        if (!cleanText) {
+          return errorResponse("Message text cannot be empty", 400);
+        }
+
+        const msgId = body.id || `msg_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+        const message = await prisma.orderMessage.upsert({
+          where: { id: msgId },
+          create: {
+            id: msgId,
+            orderId,
+            senderId: body.senderId || "unknown",
+            senderRole: body.senderRole || "customer",
+            senderName: body.senderName || "მომხმარებელი",
+            text: cleanText,
+            isSystem: Boolean(body.isSystem),
+            createdAt: body.createdAt ? new Date(body.createdAt) : new Date(),
+          },
+          update: {
+            text: cleanText,
+          },
+        });
+
+        return jsonResponse(
+          {
+            id: message.id,
+            orderId: message.orderId,
+            senderId: message.senderId,
+            senderRole: message.senderRole,
+            senderName: message.senderName,
+            text: message.text,
+            isSystem: message.isSystem,
+            createdAt: message.createdAt.toISOString(),
+          },
+          201
+        );
+      }
+
       return errorResponse(`Route not found: ${method} ${path}`, 404);
     } catch (err) {
       console.error("[AgroKera API Error]:", err);

@@ -60,6 +60,27 @@ void main() {
       ),
       findsOneWidget,
     );
+    expect(find.text('გაიმეორეთ პაროლი'), findsWidgets);
+  });
+
+  testWidgets('RegisterScreen validates confirm password matching and rejects mismatch', (WidgetTester tester) async {
+    await tester.pumpWidget(wrapWithScaffold(const RegisterScreen()));
+    await tester.pumpAndSettle();
+
+    // Enter name and email
+    await tester.enterText(find.byType(TextField).at(0), 'გიორგი ბერიძე');
+    await tester.enterText(find.byType(TextField).at(1), 'giorgi@agrokera.ge');
+    await tester.enterText(find.byType(TextField).at(2), 'password123');
+    await tester.enterText(find.byType(TextField).at(3), 'mismatch123');
+    await tester.pumpAndSettle();
+
+    // Tap register button
+    await tester.ensureVisible(find.widgetWithText(ElevatedButton, 'რეგისტრაცია'));
+    await tester.tap(find.widgetWithText(ElevatedButton, 'რეგისტრაცია'));
+    await tester.pump();
+
+    // Verify error toast
+    expect(find.text('პაროლები ერთმანეთს არ ემთხვევა'), findsOneWidget);
   });
 
   testWidgets('SmsVerificationScreen renders PIN boxes and countdown', (WidgetTester tester) async {

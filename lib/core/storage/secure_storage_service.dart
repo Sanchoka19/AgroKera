@@ -8,6 +8,7 @@ class SecureStorageService {
   static const _farmerIdKey = 'agrokera_farmer_id';
   static const _farmNameKey = 'agrokera_farm_name';
   static const _farmCoverKey = 'agrokera_farm_cover';
+  static const _userAvatarKey = 'agrokera_user_avatar';
   static const _roleKey = 'agrokera_user_role';
   static const _nameKey = 'agrokera_user_name';
   static const _phoneKey = 'agrokera_user_phone';
@@ -29,6 +30,7 @@ class SecureStorageService {
     String? farmerId,
     String? farmName,
     String? farmCoverUrl,
+    String? userAvatarUrl,
     required String role,
     required String name,
     required String phone,
@@ -51,6 +53,10 @@ class SecureStorageService {
           _storage.write(key: _farmCoverKey, value: farmCoverUrl)
         else
           _storage.delete(key: _farmCoverKey),
+        if (userAvatarUrl != null)
+          _storage.write(key: _userAvatarKey, value: userAvatarUrl)
+        else
+          _storage.delete(key: _userAvatarKey),
         _storage.write(key: _roleKey, value: role),
         _storage.write(key: _nameKey, value: name),
         _storage.write(key: _phoneKey, value: phone),
@@ -75,6 +81,7 @@ class SecureStorageService {
         _storage.read(key: _kycStatusKey),
         _storage.read(key: _farmNameKey),
         _storage.read(key: _farmCoverKey),
+        _storage.read(key: _userAvatarKey),
       ]);
       return {
         'token': results[0],
@@ -87,6 +94,7 @@ class SecureStorageService {
         'kycStatus': results[7],
         'farmName': results[8],
         'farmCoverUrl': results[9],
+        'userAvatarUrl': results[10],
       };
     } catch (_) {
       return {};
@@ -115,6 +123,7 @@ class SecureStorageService {
         _storage.delete(key: _farmerIdKey),
         _storage.delete(key: _farmNameKey),
         _storage.delete(key: _farmCoverKey),
+        _storage.delete(key: _userAvatarKey),
         _storage.delete(key: _roleKey),
         _storage.delete(key: _nameKey),
         _storage.delete(key: _phoneKey),

@@ -51,6 +51,7 @@ model User {
   email              String?            @unique
   phoneNumber        String?            @unique
   fullName           String
+  avatarUrl          String?
   role               Role               @default(CLIENT)
   verificationStatus VerificationStatus @default(UNVERIFIED)
   createdAt          DateTime           @default(now())

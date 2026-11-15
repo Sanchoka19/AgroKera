@@ -15,7 +15,6 @@ import '../../../orders/presentation/providers/farmer_orders_provider.dart';
 import '../../../orders/presentation/screens/client_orders_screen.dart';
 import '../../../orders/presentation/screens/order_chat_screen.dart';
 import '../providers/cart_provider.dart';
-import '../widgets/fee_breakdown_sheet.dart';
 import '../../domain/models/payment_method_model.dart';
 import '../providers/payment_provider.dart';
 import '../widgets/payment/order_placed_dialog.dart';
@@ -529,9 +528,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         ? 'თვითგატანა მეურნეობიდან: ${farmer.farmName} (${farmer.location})'
         : _address;
 
-    final effectiveDeliveryFee = isPickup ? 0.0 : matchedZone.value;
+    final baseDeliveryFee = isPickup ? 0.0 : matchedZone.value;
     final effectiveHeavyFee = isPickup ? 0.0 : cartItems.heavyFee;
-    final platformFee = cartItems.isNotEmpty ? cartItems.platformFee : 10.0;
+    final totalDeliveryFee = isPickup ? 0.0 : (baseDeliveryFee + effectiveHeavyFee);
+    const platformFee = 0.0;
 
     // Domain guard: Farmer cannot order their own product or order from themselves
     final auth = ref.read(authStateProvider);
@@ -596,8 +596,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           deliveryTimeWindow: activeDeliverySlot,
           paymentMethod: paymentMethod.name.toUpperCase(),
           hasVat: farmer.isVatPayer,
-          deliveryFee: effectiveDeliveryFee,
-          heavyFee: effectiveHeavyFee,
+          deliveryFee: totalDeliveryFee,
+          heavyFee: 0.0,
           platformFee: platformFee,
           isPickup: isPickup,
         );
@@ -663,11 +663,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
     final subtotal = cartItems.isNotEmpty ? cartItems.subtotal : 65.0;
     final totalWeight = cartItems.isNotEmpty ? cartItems.totalWeight : 3.8;
-    final effectiveDeliveryFee = isPickup ? 0.0 : matchedZone.value;
+    final baseDeliveryFee = isPickup ? 0.0 : matchedZone.value;
     final effectiveHeavyFee = isPickup ? 0.0 : cartItems.heavyFee;
-    final platformFee = cartItems.isNotEmpty ? cartItems.platformFee : 10.0;
-    final grandTotal =
-        subtotal + effectiveDeliveryFee + effectiveHeavyFee + platformFee;
+    final totalDeliveryFee = isPickup ? 0.0 : (baseDeliveryFee + effectiveHeavyFee);
+    final grandTotal = subtotal + totalDeliveryFee;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF9FAFB),
@@ -1226,83 +1225,35 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   ),
                   const SizedBox(height: 12),
 
-                  // Delivery fee
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          'მიტანის საფასური',
-                          style: AppTypography.bodyMedium.copyWith(
-                            fontSize: 15,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      ),
-                      Flexible(
-                        child: Text(
-                          isPickup
-                              ? '0 ₾ (თვითგატანა)'
-                              : '${effectiveDeliveryFee.toStringAsFixed(0)} ₾',
-                          style: AppTypography.bodyMedium.copyWith(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                            color: isPickup
-                                ? const Color(0xFF2E7D32)
-                                : AppColors.textPrimary,
-                          ),
-                          textAlign: TextAlign.end,
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (!isPickup && effectiveHeavyFee > 0) ...[
-                    const SizedBox(height: 12),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            'სატვირთო ტრანსპორტირება',
-                            style: AppTypography.bodyMedium.copyWith(
-                              fontSize: 15,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ),
-                        Text(
-                          '${effectiveHeavyFee.toStringAsFixed(0)} ₾',
-                          style: AppTypography.bodyMedium.copyWith(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                  const SizedBox(height: 12),
-
-                  // Platform fee with info icon (Clickable -> FeeBreakdownSheet)
+                  // Delivery fee with info icon (Clickable -> Bottom Modal Breakdown)
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Expanded(
                         child: GestureDetector(
                           onTap: () {
-                            FeeBreakdownSheet.show(
-                              context,
-                              currentWeight: totalWeight,
-                              currentSubtotal: subtotal,
+                            _showDeliveryFeeExplanation(
+                              context: context,
+                              totalWeight: totalWeight,
+                              baseFee: baseDeliveryFee,
+                              heavyFee: effectiveHeavyFee,
+                              totalFee: totalDeliveryFee,
+                              vehicleType: cartItems.vehicleType,
+                              isPickup: isPickup,
                             );
                           },
                           child: Row(
+                            mainAxisSize: MainAxisSize.min,
                             children: [
-                              Text(
-                                'მოსაკრებელი',
-                                style: AppTypography.bodyMedium.copyWith(
-                                  fontSize: 15,
-                                  color: AppColors.textSecondary,
+                              Flexible(
+                                child: Text(
+                                  'მიტანის საფასური',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: AppTypography.bodyMedium.copyWith(
+                                    fontSize: 15,
+                                    color: AppColors.textSecondary,
+                                  ),
                                 ),
                               ),
                               const SizedBox(width: 6),
@@ -1315,12 +1266,17 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                           ),
                         ),
                       ),
+                      const SizedBox(width: 8),
                       Text(
-                        '${platformFee.toStringAsFixed(0)} ₾',
+                        isPickup
+                            ? '0 ₾ (თვითგატანა)'
+                            : '${totalDeliveryFee.toStringAsFixed(0)} ₾',
                         style: AppTypography.bodyMedium.copyWith(
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary,
+                          color: isPickup
+                              ? const Color(0xFF2E7D32)
+                              : AppColors.textPrimary,
                         ),
                       ),
                     ],
@@ -1356,46 +1312,328 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 24),
-
-            // Pay CTA Button
-            SizedBox(
-              width: double.infinity,
-              height: 52,
-              child: ElevatedButton(
-                onPressed: () => _showSuccessDialog(grandTotal),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                ),
-                child: Text(
-                  _buildCtaButtonText(paymentState.selectedMethod, grandTotal),
-                  style: AppTypography.button.copyWith(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Center(
-              child: Text(
-                'თანხა წინასწარ არ იჭრება • გადახდა ფერმერის დასტურის შემდეგ',
-                style: GoogleFonts.notoSansGeorgian(
-                  fontSize: 11.5,
-                  fontWeight: FontWeight.w600,
-                  color: const Color(0xFF64748B),
-                ),
-              ),
-            ),
             const SizedBox(height: 20),
           ],
         ),
+      ),
+      bottomNavigationBar: Container(
+        padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.06),
+              blurRadius: 10,
+              offset: const Offset(0, -3),
+            ),
+          ],
+        ),
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton(
+                  onPressed: () => _showSuccessDialog(grandTotal),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  child: Text(
+                    _buildCtaButtonText(paymentState.selectedMethod, grandTotal),
+                    style: AppTypography.button.copyWith(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 6),
+              Center(
+                child: Text(
+                  'თანხა წინასწარ არ იჭრება • გადახდა ფერმერის დასტურის შემდეგ',
+                  style: GoogleFonts.notoSansGeorgian(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF64748B),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showDeliveryFeeExplanation({
+    required BuildContext context,
+    required double totalWeight,
+    required double baseFee,
+    required double heavyFee,
+    required double totalFee,
+    required DeliveryVehicleType vehicleType,
+    required bool isPickup,
+  }) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          padding: EdgeInsets.fromLTRB(
+            20,
+            16,
+            20,
+            MediaQuery.of(ctx).padding.bottom + 20,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFCBD5E1),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 18),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFE8F7EE),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      LucideIcons.truck,
+                      color: AppColors.primary,
+                      size: 22,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'მიტანის საფასურის გაანგარიშება',
+                          style: GoogleFonts.notoSansGeorgian(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                            color: const Color(0xFF0F172A),
+                          ),
+                        ),
+                        Text(
+                          'შეკვეთის საერთო წონა: ${totalWeight.toStringAsFixed(1)} კგ',
+                          style: GoogleFonts.notoSansGeorgian(
+                            fontSize: 12.5,
+                            color: const Color(0xFF64748B),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'მიტანის ჯამური საფასური:',
+                      style: GoogleFonts.notoSansGeorgian(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF334155),
+                      ),
+                    ),
+                    Text(
+                      isPickup ? '0 ₾ (თვითგატანა)' : '${totalFee.toStringAsFixed(0)} ₾',
+                      style: GoogleFonts.notoSansGeorgian(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w800,
+                        color: isPickup ? const Color(0xFF2E7D32) : AppColors.primary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'ტარიფები წონის მიხედვით:',
+                style: GoogleFonts.notoSansGeorgian(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF0F172A),
+                ),
+              ),
+              const SizedBox(height: 10),
+              _buildDeliveryTierItem(
+                title: 'სტანდარტული მიტანა (0 - 20 კგ)',
+                subtitle: 'სტანდარტული კურიერი • საბაზისო საფასური',
+                feeText: '${baseFee.toStringAsFixed(0)} ₾',
+                isActive: !isPickup && vehicleType == DeliveryVehicleType.standardCourier,
+                icon: LucideIcons.bike,
+              ),
+              const SizedBox(height: 8),
+              _buildDeliveryTierItem(
+                title: 'მსუბუქი ავტომობილი (20.01 - 60 კგ)',
+                subtitle: 'საბაზისო (${baseFee.toStringAsFixed(0)} ₾) + მძიმე ტვირთი (8 ₾)',
+                feeText: '${(baseFee + 8.0).toStringAsFixed(0)} ₾',
+                isActive: !isPickup && vehicleType == DeliveryVehicleType.passengerCar,
+                icon: LucideIcons.car,
+              ),
+              const SizedBox(height: 8),
+              _buildDeliveryTierItem(
+                title: 'სატვირთო / მინივენი (60.01 - 250 კგ)',
+                subtitle: 'საბაზისო (${baseFee.toStringAsFixed(0)} ₾) + სატვირთო (45 ₾)',
+                feeText: '${(baseFee + 45.0).toStringAsFixed(0)} ₾',
+                isActive: !isPickup && vehicleType == DeliveryVehicleType.cargoVan,
+                icon: LucideIcons.truck,
+              ),
+              const SizedBox(height: 8),
+              _buildDeliveryTierItem(
+                title: 'თვითგატანა (250+ კგ ან არჩეული)',
+                subtitle: '250 კგ-ზე მეტ წონაზე საკურიერო მიტანა არ ხორციელდება',
+                feeText: '0 ₾',
+                isActive: isPickup,
+                icon: LucideIcons.store,
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.of(ctx).pop(),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: Text(
+                    'გასაგებია',
+                    style: GoogleFonts.notoSansGeorgian(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildDeliveryTierItem({
+    required String title,
+    required String subtitle,
+    required String feeText,
+    required bool isActive,
+    required IconData icon,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: isActive ? const Color(0xFFE8F7EE) : Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: isActive ? AppColors.primary : const Color(0xFFE2E8F0),
+          width: isActive ? 1.5 : 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            icon,
+            size: 20,
+            color: isActive ? AppColors.primary : const Color(0xFF64748B),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: GoogleFonts.notoSansGeorgian(
+                          fontSize: 12.5,
+                          fontWeight: isActive ? FontWeight.w800 : FontWeight.w600,
+                          color: isActive ? const Color(0xFF0F172A) : const Color(0xFF334155),
+                        ),
+                      ),
+                    ),
+                    if (isActive)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          'მიმდინარე',
+                          style: GoogleFonts.notoSansGeorgian(
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: GoogleFonts.notoSansGeorgian(
+                    fontSize: 11,
+                    color: const Color(0xFF64748B),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            feeText,
+            style: GoogleFonts.notoSansGeorgian(
+              fontSize: 14,
+              fontWeight: FontWeight.w800,
+              color: isActive ? AppColors.primary : const Color(0xFF0F172A),
+            ),
+          ),
+        ],
       ),
     );
   }

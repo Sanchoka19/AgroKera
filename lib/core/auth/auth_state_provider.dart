@@ -302,6 +302,7 @@ class AuthNotifier extends Notifier<AuthState> {
           userPhone: saved['phone'] ?? fallback.phone,
           userEmail: savedEmail,
           farmCoverUrl: saved['farmCoverUrl'],
+          userAvatarUrl: saved['userAvatarUrl'] ?? fallback.avatarUrl,
           role: role,
           kycStatus: KycStatus.fromString(saved['kycStatus']),
         );
@@ -555,6 +556,36 @@ class AuthNotifier extends Notifier<AuthState> {
       await api.patch('/api/profile/$uid', data: {
         'coverUrl': coverUrl,
       });
+    } catch (_) {}
+  }
+
+  Future<void> updateUserAvatarUrl(String avatarUrl) async {
+    state = state.copyWith(userAvatarUrl: avatarUrl);
+    final storage = ref.read(secureStorageProvider);
+    final saved = await storage.readSession();
+    if (saved['userId'] != null) {
+      await storage.saveSession(
+        token: saved['token'] ?? '',
+        userId: saved['userId']!,
+        farmerId: saved['farmerId'] ?? state.farmerId,
+        farmName: saved['farmName'] ?? state.farmName,
+        farmCoverUrl: saved['farmCoverUrl'] ?? state.farmCoverUrl,
+        userAvatarUrl: avatarUrl,
+        role: saved['role'] ?? state.role.name,
+        name: saved['name'] ?? state.userName ?? '',
+        phone: saved['phone'] ?? state.userPhone ?? '',
+        email: saved['email'] ?? state.userEmail,
+        kycStatus: saved['kycStatus'] ?? state.kycStatus.apiValue,
+      );
+    }
+    try {
+      final api = ref.read(apiClientProvider);
+      final uid = state.userId;
+      if (uid != null) {
+        await api.patch('/api/profile/$uid', data: {
+          'avatarUrl': avatarUrl,
+        });
+      }
     } catch (_) {}
   }
 

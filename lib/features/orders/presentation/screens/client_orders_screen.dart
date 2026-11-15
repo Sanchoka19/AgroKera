@@ -18,8 +18,10 @@ class ClientOrdersScreen extends ConsumerStatefulWidget {
   ConsumerState<ClientOrdersScreen> createState() => _ClientOrdersScreenState();
 }
 
+enum ClientOrderTab { all, active, completed }
+
 class _ClientOrdersScreenState extends ConsumerState<ClientOrdersScreen> {
-  bool _showActiveOnly = false;
+  ClientOrderTab _selectedTab = ClientOrderTab.all;
   Timer? _liveSyncTimer;
 
   @override
@@ -47,14 +49,20 @@ class _ClientOrdersScreenState extends ConsumerState<ClientOrdersScreen> {
   Widget build(BuildContext context) {
     final ordersState = ref.watch(farmerOrdersProvider);
     final allOrders = ordersState.clientOrders;
+    final activeOrders = allOrders
+        .where((o) =>
+            o.status == OrderStatus.pending ||
+            o.status == OrderStatus.inProgress)
+        .toList();
+    final completedOrders = allOrders
+        .where((o) => o.status == OrderStatus.completed)
+        .toList();
 
-    final orders = _showActiveOnly
-        ? allOrders
-            .where((o) =>
-                o.status == OrderStatus.pending ||
-                o.status == OrderStatus.inProgress)
-            .toList()
-        : allOrders;
+    final orders = switch (_selectedTab) {
+      ClientOrderTab.all => allOrders,
+      ClientOrderTab.active => activeOrders,
+      ClientOrderTab.completed => completedOrders,
+    };
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
@@ -69,22 +77,27 @@ class _ClientOrdersScreenState extends ConsumerState<ClientOrdersScreen> {
               padding: EdgeInsets.fromLTRB(20, 12, 20, 8),
             ),
 
-            // Segmented Filter (ყველა / მიმდინარე)
+            // Segmented Filter (ყველა / მიმდინარე / დასრულებული)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
               child: Row(
                 children: [
                   _buildTabButton(
-                    label: 'ყველა შეკვეთა (${allOrders.length})',
-                    isSelected: !_showActiveOnly,
-                    onTap: () => setState(() => _showActiveOnly = false),
+                    label: 'ყველა (${allOrders.length})',
+                    isSelected: _selectedTab == ClientOrderTab.all,
+                    onTap: () => setState(() => _selectedTab = ClientOrderTab.all),
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 8),
                   _buildTabButton(
-                    label:
-                        'მიმდინარე (${allOrders.where((o) => o.status == OrderStatus.pending || o.status == OrderStatus.inProgress).length})',
-                    isSelected: _showActiveOnly,
-                    onTap: () => setState(() => _showActiveOnly = true),
+                    label: 'მიმდინარე (${activeOrders.length})',
+                    isSelected: _selectedTab == ClientOrderTab.active,
+                    onTap: () => setState(() => _selectedTab = ClientOrderTab.active),
+                  ),
+                  const SizedBox(width: 8),
+                  _buildTabButton(
+                    label: 'დასრულებული (${completedOrders.length})',
+                    isSelected: _selectedTab == ClientOrderTab.completed,
+                    onTap: () => setState(() => _selectedTab = ClientOrderTab.completed),
                   ),
                 ],
               ),
@@ -237,63 +250,20 @@ class _ClientOrdersScreenState extends ConsumerState<ClientOrdersScreen> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    InkWell(
-                      onTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => OrderChatScreen(order: order),
-                          ),
-                        );
-                      },
-                      borderRadius: BorderRadius.circular(8),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFEFF6FF),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: const Color(0xFF93C5FD), width: 1.2),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              LucideIcons.messageSquare,
-                              size: 13,
-                              color: Color(0xFF2563EB),
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              'ჩათი',
-                              style: GoogleFonts.notoSansGeorgian(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                                color: const Color(0xFF2563EB),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: order.status.badgeBg,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    order.status.label,
+                    style: GoogleFonts.notoSansGeorgian(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: order.status.color,
                     ),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: order.status.badgeBg,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        order.status.label,
-                        style: GoogleFonts.notoSansGeorgian(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: order.status.color,
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ],
             ),
@@ -506,9 +476,9 @@ class _ClientOrdersScreenState extends ConsumerState<ClientOrdersScreen> {
                     ),
                     icon: const Icon(LucideIcons.messageSquare, size: 14),
                     label: Text(
-                      'ჩათი ფერმერთან',
+                      'ჩათი',
                       style: GoogleFonts.notoSansGeorgian(
-                        fontSize: 11.5,
+                        fontSize: 12,
                         fontWeight: FontWeight.w700,
                       ),
                     ),

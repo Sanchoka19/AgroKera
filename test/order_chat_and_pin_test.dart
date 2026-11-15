@@ -230,10 +230,8 @@ void main() {
       );
       await tester.pump();
 
-      // Header chat pill
+      // Chat action button next to details
       expect(find.text('ჩათი'), findsWidgets);
-      // Action button
-      expect(find.text('ჩათი ფერმერთან'), findsWidgets);
     });
   });
 

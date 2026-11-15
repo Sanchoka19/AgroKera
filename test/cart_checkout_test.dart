@@ -232,7 +232,8 @@ void main() {
       expect(find.text('გადახდა'), findsOneWidget);
       expect(find.text('მიტანის მისამართი'), findsOneWidget);
       expect(find.text('შეკვეთის შეჯამება'), findsOneWidget);
-      expect(find.text('მოსაკრებელი'), findsOneWidget);
+      expect(find.text('მიტანის საფასური'), findsOneWidget);
+      expect(find.text('მოსაკრებელი'), findsNothing);
     });
 
     testWidgets('renders fee breakdown sheet', (tester) async {

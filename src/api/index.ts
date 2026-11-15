@@ -513,6 +513,7 @@ export default {
             where: { id: userId },
             data: {
               ...(body.fullName ? { fullName: body.fullName } : {}),
+              ...(body.avatarUrl ? { avatarUrl: body.avatarUrl } : {}),
               ...(body.verificationStatus
                 ? { verificationStatus: body.verificationStatus }
                 : {}),

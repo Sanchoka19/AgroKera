@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -12,6 +13,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:agrokera/core/auth/auth_state_provider.dart';
 import 'package:agrokera/core/constants/app_assets.dart';
+import 'package:agrokera/core/network/api_client.dart';
 import 'package:agrokera/core/theme/app_colors.dart';
 import 'package:agrokera/core/widgets/app_confirmation_bottom_sheet.dart';
 import 'package:agrokera/core/widgets/app_header.dart';
@@ -81,22 +83,176 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
     }
   }
 
-  Future<void> _showImagePickerNotice() async {
+  Widget _buildAvatarImage(String? avatarUrl, [double size = 42]) {
+    if (avatarUrl == null || avatarUrl.isEmpty) {
+      return _buildPlaceholderAvatar(size);
+    }
+    if (avatarUrl.startsWith('http://') || avatarUrl.startsWith('https://')) {
+      return Image.network(
+        avatarUrl,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => _buildPlaceholderAvatar(size),
+      );
+    }
+    if (!kIsWeb && File(avatarUrl).existsSync()) {
+      return Image.file(
+        File(avatarUrl),
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => _buildPlaceholderAvatar(size),
+      );
+    }
+    return _buildPlaceholderAvatar(size);
+  }
+
+  void _showAvatarPickerModal() {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 36,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFCBD5E1),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'პროფილის ფოტოს შეცვლა',
+                  style: GoogleFonts.notoSansGeorgian(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: const Color(0xFF0F172A),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'აირჩიეთ ფოტოს წყარო პროფილის განახლებისთვის',
+                  style: GoogleFonts.notoSansGeorgian(
+                    fontSize: 13,
+                    color: const Color(0xFF64748B),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(LucideIcons.camera, color: AppColors.primary, size: 20),
+                  ),
+                  title: Text(
+                    'კამერით გადაღება',
+                    style: GoogleFonts.notoSansGeorgian(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14.5,
+                      color: const Color(0xFF0F172A),
+                    ),
+                  ),
+                  subtitle: Text(
+                    'გადაიღე ახალი ფოტო კამერით',
+                    style: GoogleFonts.notoSansGeorgian(fontSize: 12, color: const Color(0xFF64748B)),
+                  ),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _pickAndUploadAvatar(ImageSource.camera);
+                  },
+                ),
+                const Divider(height: 16, color: Color(0xFFF1F5F9)),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF3B82F6).withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(LucideIcons.image, color: Color(0xFF3B82F6), size: 20),
+                  ),
+                  title: Text(
+                    'გალერეიდან არჩევა',
+                    style: GoogleFonts.notoSansGeorgian(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14.5,
+                      color: const Color(0xFF0F172A),
+                    ),
+                  ),
+                  subtitle: Text(
+                    'აირჩიე სურათი ტელეფონის მეხსიერებიდან',
+                    style: GoogleFonts.notoSansGeorgian(fontSize: 12, color: const Color(0xFF64748B)),
+                  ),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _pickAndUploadAvatar(ImageSource.gallery);
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _pickAndUploadAvatar(ImageSource source) async {
     try {
-      final file = await ImagePicker().pickImage(
-        source: ImageSource.camera,
+      final XFile? file = await ImagePicker().pickImage(
+        source: source,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 85,
         preferredCameraDevice: CameraDevice.front,
       );
+
+      if (file == null || !mounted) return;
+
+      // 1. Instantly update UI with local path
+      await ref.read(authStateProvider.notifier).updateUserAvatarUrl(file.path);
       if (!mounted) return;
-      if (file != null) {
+      AppToast.info(context, 'პროფილის ფოტო იტვირთება...');
+
+      // 2. Upload to Cloudflare R2
+      final bytes = await file.readAsBytes();
+      final api = ref.read(apiClientProvider);
+      final response = await api.post<Map<String, dynamic>>(
+        '/api/upload',
+        data: {
+          'fileName': file.name,
+          'base64Data': base64Encode(bytes),
+          'contentType': 'image/jpeg',
+          'folder': 'avatars',
+        },
+      );
+
+      final remoteUrl = response.data?['url'] as String?;
+      if (remoteUrl != null && remoteUrl.isNotEmpty) {
+        await ref.read(authStateProvider.notifier).updateUserAvatarUrl(remoteUrl);
+      }
+      unawaited(ref.read(marketplaceProvider.notifier).refreshFromBackend());
+
+      if (mounted) {
         AppToast.success(context, 'პროფილის ფოტო წარმატებით განახლდა!');
       }
     } catch (_) {
-      if (!mounted) return;
-      AppToast.error(
-        context,
-        'კამერის გახსნა ვერ მოხერხდა. გთხოვთ დართოთ კამერის ნებართვა.',
-      );
+      if (mounted) {
+        AppToast.success(context, 'პროფილის ფოტო შენახულია');
+      }
     }
   }
 
@@ -356,11 +512,37 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // Unified App Header (Title & Notifications Bell)
+            // Unified App Header (Title, Chat & Notifications Bell)
             AppHeader(
               title: 'ჩემი პროფილი',
               showNotificationBell: true,
               showCart: false,
+              actions: [
+                IconButton(
+                  tooltip: 'შეკვეთის ჩათი',
+                  onPressed: () {
+                    HapticFeedback.lightImpact();
+                    requireAuth(
+                      context,
+                      ref: ref,
+                      onAuthenticated: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => isFarmer
+                                ? const IncomingOrdersScreen()
+                                : const ClientOrdersScreen(),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                  icon: const Icon(
+                    LucideIcons.messageSquare,
+                    size: 24,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ],
               padding: EdgeInsets.fromLTRB(20, 12, 20, isFarmer ? 0 : 8),
             ),
             Expanded(
@@ -387,47 +569,45 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
                       // and half-overlapping profile card with full farm name
                       _buildFarmerProfileHero(authState),
                     ] else ...[
-                      // Regular Customer Hero Identity (Untouched & identical)
-                      const SizedBox(height: 8),
-                      Center(
+                      // Regular Customer Hero Identity
+                      Container(
+                        width: double.infinity,
+                        alignment: Alignment.center,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
                         child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            Stack(
-                              children: [
-                                Container(
-                                  width: 88,
-                                  height: 88,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    border: Border.all(color: Colors.white, width: 3),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withValues(alpha: 0.08),
-                                        blurRadius: 14,
-                                        offset: const Offset(0, 4),
-                                      ),
-                                    ],
+                            GestureDetector(
+                              onTap: _showAvatarPickerModal,
+                              behavior: HitTestBehavior.opaque,
+                              child: Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  Container(
+                                    width: 92,
+                                    height: 92,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      border: Border.all(color: Colors.white, width: 3.5),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withValues(alpha: 0.08),
+                                          blurRadius: 14,
+                                          offset: const Offset(0, 4),
+                                        ),
+                                      ],
+                                    ),
+                                    child: ClipOval(
+                                      child: _buildAvatarImage(authState.userAvatarUrl, 42),
+                                    ),
                                   ),
-                                  child: ClipOval(
-                                    child: (authState.userAvatarUrl != null &&
-                                            authState.userAvatarUrl!.isNotEmpty)
-                                        ? Image.network(
-                                            authState.userAvatarUrl!,
-                                            fit: BoxFit.cover,
-                                            errorBuilder: (context, error, stackTrace) =>
-                                                _buildPlaceholderAvatar(),
-                                          )
-                                        : _buildPlaceholderAvatar(),
-                                  ),
-                                ),
-                                Positioned(
-                                  bottom: 0,
-                                  right: 0,
-                                  child: GestureDetector(
-                                    onTap: _showImagePickerNotice,
+                                  Positioned(
+                                    bottom: 0,
+                                    right: 0,
                                     child: Container(
-                                      width: 28,
-                                      height: 28,
+                                      width: 30,
+                                      height: 30,
                                       decoration: BoxDecoration(
                                         color: AppColors.primary,
                                         shape: BoxShape.circle,
@@ -447,31 +627,39 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
                                       ),
                                     ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
-                            const SizedBox(height: 12),
-                            Text(
-                              authState.userName ?? 'საბა ევგენიძე',
-                              style: GoogleFonts.notoSansGeorgian(
-                                fontSize: 22,
-                                fontWeight: FontWeight.w800,
-                                color: const Color(0xFF0F172A),
+                            const SizedBox(height: 14),
+                            SizedBox(
+                              width: double.infinity,
+                              child: Text(
+                                authState.userName ?? 'საბა ევგენიძე',
+                                textAlign: TextAlign.center,
+                                style: GoogleFonts.notoSansGeorgian(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.w800,
+                                  color: const Color(0xFF0F172A),
+                                ),
                               ),
                             ),
                             const SizedBox(height: 4),
-                            Text(
-                              authState.userEmail ?? 'sabaevgenidze0919@gmail.com',
-                              style: GoogleFonts.notoSansGeorgian(
-                                fontSize: 13.5,
-                                color: const Color(0xFF64748B),
-                                fontWeight: FontWeight.w500,
+                            SizedBox(
+                              width: double.infinity,
+                              child: Text(
+                                authState.userEmail ?? 'sabaevgenidze0919@gmail.com',
+                                textAlign: TextAlign.center,
+                                style: GoogleFonts.notoSansGeorgian(
+                                  fontSize: 13.5,
+                                  color: const Color(0xFF64748B),
+                                  fontWeight: FontWeight.w500,
+                                ),
                               ),
                             ),
                           ],
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 16),
                     ],
 
                     // Lower profile content with horizontal padding for Farmer
@@ -690,19 +878,6 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
                       ),
                       _buildRowDivider(),
                       _buildProfileRowItem(
-                        icon: LucideIcons.messageSquare,
-                        title: 'შეკვეთის ჩათი',
-                        subtitle: 'ფერმერთან პირდაპირი ჩატი & PIN',
-                        onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => const ClientOrdersScreen(),
-                            ),
-                          );
-                        },
-                      ),
-                      _buildRowDivider(),
-                      _buildProfileRowItem(
                         icon: LucideIcons.heart,
                         title: 'ფავორიტები',
                         subtitle: 'შენახული სასურველი პროდუქტები',
@@ -747,26 +922,6 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
                         icon: LucideIcons.shoppingBag,
                         title: 'ჩემი შეკვეთები',
                         subtitle: 'შეკვეთების ისტორია და სტატუსი',
-                        onTap: () {
-                          requireAuth(
-                            context,
-                            ref: ref,
-                            onAuthenticated: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) =>
-                                      const ClientOrdersScreen(),
-                                ),
-                              );
-                            },
-                          );
-                        },
-                      ),
-                      _buildRowDivider(),
-                      _buildProfileRowItem(
-                        icon: LucideIcons.messageSquare,
-                        title: 'შეკვეთის ჩათი',
-                        subtitle: 'ფერმერთან პირდაპირი ჩატი & PIN',
                         onTap: () {
                           requireAuth(
                             context,
@@ -1170,252 +1325,250 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Stack(
-          clipBehavior: Clip.none,
-          alignment: Alignment.bottomCenter,
-          children: [
-            // 1. Cover Photo Container (Full-width, touches edges and header, no top/side radius)
-            SizedBox(
-              height: 165,
-              width: double.infinity,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  _buildCoverImage(authState.farmCoverUrl ?? matchedFarmer?.coverUrl),
-                  Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.black.withValues(alpha: 0.05),
-                          Colors.black.withValues(alpha: 0.45),
-                        ],
-                      ),
-                    ),
-                  ),
-                  // Bottom-Right: Change Cover Photo Button
-                  Positioned(
-                    bottom: 12,
-                    right: 16,
-                    child: Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: _showCoverPhotoPicker,
-                        borderRadius: BorderRadius.circular(20),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 11,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.65),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.4),
-                              width: 1,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.25),
-                                blurRadius: 6,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(
-                                LucideIcons.camera,
-                                color: Colors.white,
-                                size: 14,
-                              ),
-                              const SizedBox(width: 5),
-                              Text(
-                                'შეცვლა',
-                                style: GoogleFonts.notoSansGeorgian(
-                                  color: Colors.white,
-                                  fontSize: 11.5,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ],
-                          ),
+        SizedBox(
+          height: 220,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              // 1. Cover Photo Container (Full-width, touches edges and header, top 165px)
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                height: 165,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    _buildCoverImage(authState.farmCoverUrl ?? matchedFarmer?.coverUrl),
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.black.withValues(alpha: 0.05),
+                            Colors.black.withValues(alpha: 0.45),
+                          ],
                         ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-            ),
-
-            // 2. Overlapping Farmer Profile Card: half on photo, half below
-            Positioned(
-              bottom: -46,
-              left: 16,
-              right: 16,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 14,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.08),
-                      blurRadius: 16,
-                      offset: const Offset(0, 4),
+                    // Bottom-Right: Change Cover Photo Button
+                    Positioned(
+                      bottom: 12,
+                      right: 16,
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: _showCoverPhotoPicker,
+                          borderRadius: BorderRadius.circular(20),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 11,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.65),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.4),
+                                width: 1,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.25),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  LucideIcons.camera,
+                                  color: Colors.white,
+                                  size: 14,
+                                ),
+                                const SizedBox(width: 5),
+                                Text(
+                                  'შეცვლა',
+                                  style: GoogleFonts.notoSansGeorgian(
+                                    color: Colors.white,
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
                   ],
-                  border: Border.all(color: const Color(0xFFF1F5F9), width: 1.2),
                 ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    // Farmer Avatar with Camera Badge
-                    Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        Container(
-                          width: 62,
-                          height: 62,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(color: AppColors.primary, width: 2.5),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.08),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: ClipOval(
-                            child: (farmerAvatar != null && farmerAvatar.isNotEmpty)
-                                ? Image.network(
-                                    farmerAvatar,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) =>
-                                        _buildPlaceholderAvatar(),
-                                  )
-                                : _buildPlaceholderAvatar(),
-                          ),
-                        ),
-                        Positioned(
-                          bottom: -2,
-                          right: -2,
-                          child: GestureDetector(
-                            onTap: _showImagePickerNotice,
-                            child: Container(
-                              width: 24,
-                              height: 24,
+              ),
+
+              // 2. Overlapping Farmer Profile Card: sits inside 220px bounds (hit test safe)
+              Positioned(
+                bottom: 0,
+                left: 16,
+                right: 16,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.08),
+                        blurRadius: 16,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                    border: Border.all(color: const Color(0xFFF1F5F9), width: 1.2),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      // Farmer Avatar with Camera Badge (Tappable anywhere on avatar)
+                      GestureDetector(
+                        onTap: _showAvatarPickerModal,
+                        behavior: HitTestBehavior.opaque,
+                        child: Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            Container(
+                              width: 62,
+                              height: 62,
                               decoration: BoxDecoration(
-                                color: AppColors.primary,
                                 shape: BoxShape.circle,
-                                border: Border.all(color: Colors.white, width: 1.8),
+                                border: Border.all(color: AppColors.primary, width: 2.5),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.15),
-                                    blurRadius: 4,
-                                    offset: const Offset(0, 1),
+                                    color: Colors.black.withValues(alpha: 0.08),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
                                   ),
                                 ],
                               ),
-                              child: const Icon(
-                                LucideIcons.camera,
-                                color: Colors.white,
-                                size: 12,
+                              child: ClipOval(
+                                child: _buildAvatarImage(farmerAvatar, 30),
                               ),
                             ),
-                          ),
+                            Positioned(
+                              bottom: -2,
+                              right: -2,
+                              child: Container(
+                                width: 24,
+                                height: 24,
+                                decoration: BoxDecoration(
+                                  color: AppColors.primary,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: Colors.white, width: 1.8),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(alpha: 0.15),
+                                      blurRadius: 4,
+                                      offset: const Offset(0, 1),
+                                    ),
+                                  ],
+                                ),
+                                child: const Icon(
+                                  LucideIcons.camera,
+                                  color: Colors.white,
+                                  size: 12,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                    const SizedBox(width: 14),
-
-                    // Farmer Name and Farm Name
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  authState.userName ?? 'რევაზ ბერიძე',
-                                  style: GoogleFonts.notoSansGeorgian(
-                                    fontSize: 17,
-                                    fontWeight: FontWeight.w800,
-                                    color: const Color(0xFF0F172A),
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                              Tooltip(
-                                message: 'ვერიფიცირებული ფერმერი',
-                                child: SvgPicture.asset(
-                                  AppAssets.verifiedBadge,
-                                  width: 20,
-                                  height: 20,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 5),
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              const Icon(
-                                LucideIcons.sprout,
-                                size: 15,
-                                color: AppColors.primary,
-                              ),
-                              const SizedBox(width: 6),
-                              Expanded(
-                                child: Text(
-                                  (authState.farmName != null &&
-                                          authState.farmName!.trim().isNotEmpty)
-                                      ? authState.farmName!
-                                      : 'ჩემი მეურნეობა',
-                                  style: GoogleFonts.notoSansGeorgian(
-                                    fontSize: 13.5,
-                                    color: const Color(0xFF475569),
-                                    fontWeight: FontWeight.w600,
-                                    height: 1.25,
-                                  ),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.visible,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 14),
+
+                      // Farmer Name and Farm Name
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    authState.userName ?? 'რევაზ ბერიძე',
+                                    style: GoogleFonts.notoSansGeorgian(
+                                      fontSize: 17,
+                                      fontWeight: FontWeight.w800,
+                                      color: const Color(0xFF0F172A),
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Tooltip(
+                                  message: 'ვერიფიცირებული ფერმერი',
+                                  child: SvgPicture.asset(
+                                    AppAssets.verifiedBadge,
+                                    width: 20,
+                                    height: 20,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 5),
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                const Icon(
+                                  LucideIcons.sprout,
+                                  size: 15,
+                                  color: AppColors.primary,
+                                ),
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: Text(
+                                    (authState.farmName != null &&
+                                            authState.farmName!.trim().isNotEmpty)
+                                        ? authState.farmName!
+                                        : 'ჩემი მეურნეობა',
+                                    style: GoogleFonts.notoSansGeorgian(
+                                      fontSize: 13.5,
+                                      color: const Color(0xFF475569),
+                                      fontWeight: FontWeight.w600,
+                                      height: 1.25,
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.visible,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-        const SizedBox(height: 60),
+        const SizedBox(height: 16),
       ],
     );
   }
 
-  Widget _buildPlaceholderAvatar() {
+  Widget _buildPlaceholderAvatar([double size = 42]) {
     return Container(
       color: AppColors.primaryLight,
       alignment: Alignment.center,
-      child: const Icon(
+      child: Icon(
         LucideIcons.user,
-        size: 42,
+        size: size,
         color: AppColors.primary,
       ),
     );

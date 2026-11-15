@@ -99,7 +99,7 @@ class AppConfirmationBottomSheet extends StatelessWidget {
       title: 'განსხვავებული ფერმერი',
       message:
           'კალათში უკვე გაქვთ „$currentFarmerName“-ს პროდუქტები. გსურთ კალათის გასუფთავება და ახალი ფერმერის პროდუქტის დამატება?',
-      confirmText: 'კალათის გასუფთავება და დამატება',
+      confirmText: 'ჩანაცვლება',
       cancelText: 'გაუქმება',
       type: ConfirmationType.warning,
       icon: LucideIcons.shoppingBag,

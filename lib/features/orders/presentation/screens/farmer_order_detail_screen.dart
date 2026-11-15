@@ -9,6 +9,8 @@ import '../../../../core/widgets/app_reason_bottom_sheet.dart';
 import '../../../../core/widgets/app_toast.dart';
 import '../../domain/models/farmer_order_model.dart';
 import '../providers/farmer_orders_provider.dart';
+import '../widgets/order_pin_verification_bottom_sheet.dart';
+import 'order_chat_screen.dart';
 
 /// Detailed view of a farmer order matching the Figma mockups
 class FarmerOrderDetailScreen extends ConsumerStatefulWidget {
@@ -50,10 +52,25 @@ class _FarmerOrderDetailScreenState
   }
 
   Future<void> _onCompleteOrder(FarmerOrder order) async {
-    final confirmed = await AppConfirmationBottomSheet.showCompleteOrder(
-      context: context,
-      orderId: order.id,
-    );
+    bool confirmed = false;
+
+    if (order.isBankTransfer) {
+      confirmed = await OrderPinVerificationBottomSheet.show(
+        context: context,
+        order: order,
+      );
+    } else {
+      confirmed = await AppConfirmationBottomSheet.show(
+        context: context,
+        title: 'ნაღდი თანხის ჩაბარება',
+        message:
+            'დაადასტურეთ, რომ ნაღდი თანხა (₾${order.totalAmount.toStringAsFixed(2)}) ჩაიბარეთ და შეკვეთა #${order.id} წარმატებით გადაეცით მყიდველს.',
+        confirmText: 'თანხა მივიღე და ჩავაბარე',
+        cancelText: 'უკან',
+        type: ConfirmationType.positive,
+        icon: LucideIcons.banknote,
+      );
+    }
 
     if (confirmed && mounted) {
       ref.read(farmerOrdersProvider.notifier).completeOrder(order.id);
@@ -62,6 +79,14 @@ class _FarmerOrderDetailScreenState
         'შეკვეთა #${order.id} წარმატებით დასრულდა!',
       );
     }
+  }
+
+  void _onOpenChat(FarmerOrder order) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => OrderChatScreen(order: order),
+      ),
+    );
   }
 
   Future<void> _onCancelOrder(FarmerOrder order) async {
@@ -206,6 +231,14 @@ class _FarmerOrderDetailScreenState
             letterSpacing: -0.2,
           ),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(LucideIcons.messageSquare, color: AppColors.primary),
+            tooltip: 'ჩათი მყიდველთან',
+            onPressed: () => _onOpenChat(order),
+          ),
+          const SizedBox(width: 4),
+        ],
       ),
       body: SingleChildScrollView(
         physics: const ClampingScrollPhysics(),
@@ -383,6 +416,56 @@ class _FarmerOrderDetailScreenState
             _buildInfoRow('შემკვეთი', order.customerName),
             const SizedBox(height: 8),
             _buildInfoRow('საკონტაქტო პირი', order.contactPerson),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () => _onContactCustomer(order),
+                    icon: const Icon(LucideIcons.phone, size: 14),
+                    label: Text(
+                      'დარეკვა',
+                      style: GoogleFonts.notoSansGeorgian(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFF0F172A),
+                      side: const BorderSide(color: Color(0xFFCBD5E1)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () => _onOpenChat(order),
+                    icon: const Icon(LucideIcons.messageSquare, size: 14),
+                    label: Text(
+                      'ჩათი',
+                      style: GoogleFonts.notoSansGeorgian(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFEFF6FF),
+                      foregroundColor: const Color(0xFF2563EB),
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        side: const BorderSide(color: Color(0xFFBFDBFE)),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                    ),
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 18),
 
             // ==========================================

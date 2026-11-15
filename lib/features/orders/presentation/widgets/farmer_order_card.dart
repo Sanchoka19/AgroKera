@@ -6,6 +6,7 @@ import '../../../../core/widgets/app_reason_bottom_sheet.dart';
 import '../../../../core/widgets/app_toast.dart';
 import '../../domain/models/farmer_order_model.dart';
 import '../screens/farmer_order_detail_screen.dart';
+import '../screens/order_chat_screen.dart';
 
 /// Single Order Card on the Incoming Orders screen
 class FarmerOrderCard extends StatelessWidget {
@@ -550,6 +551,40 @@ class FarmerOrderCard extends StatelessWidget {
                                 ),
                               ),
                             ),
+
+                            // Chat Icon Button (In Progress only)
+                            if (order.status == OrderStatus.inProgress) ...[
+                              const SizedBox(width: 8),
+                              InkWell(
+                                onTap: () {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (_) => OrderChatScreen(order: order),
+                                    ),
+                                  );
+                                },
+                                borderRadius: BorderRadius.circular(10),
+                                child: Container(
+                                  width: 38,
+                                  height: 38,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFEFF6FF),
+                                    border: Border.all(
+                                      color: const Color(0xFFBFDBFE),
+                                      width: 1.2,
+                                    ),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: const Center(
+                                    child: Icon(
+                                      LucideIcons.messageSquare,
+                                      size: 16,
+                                      color: Color(0xFF2563EB),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
 
                             // Document Icon Button (Completed only)
                             if (isCompleted) ...[

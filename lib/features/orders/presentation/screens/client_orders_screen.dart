@@ -10,6 +10,7 @@ import '../../../../core/widgets/app_reason_bottom_sheet.dart';
 import '../../../../core/widgets/app_toast.dart';
 import '../../domain/models/farmer_order_model.dart';
 import '../providers/farmer_orders_provider.dart';
+import 'order_chat_screen.dart';
 
 /// Client Orders History & Live Shipment Tracking Screen ("ჩემი შეკვეთები")
 class ClientOrdersScreen extends ConsumerStatefulWidget {
@@ -662,36 +663,160 @@ class _ClientOrdersScreenState extends ConsumerState<ClientOrdersScreen> {
                 ),
               ),
             ],
-            const SizedBox(height: 10),
-            SizedBox(
-              width: double.infinity,
-              height: 42,
-              child: OutlinedButton.icon(
-                onPressed: () {
-                  ref
-                      .read(farmerOrdersProvider.notifier)
-                      .completeOrder(order.id);
-                  AppToast.success(
-                    context,
-                    'შეკვეთა #${order.id} დადასტურებულია როგორც ჩაბარებული!',
-                  );
-                },
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.primary,
-                  side: const BorderSide(color: AppColors.primary),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                icon: const Icon(LucideIcons.circleCheck, size: 16),
-                label: Text(
-                  'შეკვეთის ჩაბარების დადასტურება',
-                  style: GoogleFonts.notoSansGeorgian(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
+
+            // Delivery PIN Card for Handover (High Security)
+            Container(
+              margin: const EdgeInsets.only(top: 10),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEFF6FF),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFBFDBFE)),
               ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(
+                            LucideIcons.shieldCheck,
+                            size: 16,
+                            color: Color(0xFF2563EB),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            'ჩაბარების PIN: ',
+                            style: GoogleFonts.notoSansGeorgian(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w700,
+                              color: const Color(0xFF1E40AF),
+                            ),
+                          ),
+                          SelectableText(
+                            order.deliveryPin,
+                            style: GoogleFonts.firaCode(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w900,
+                              color: const Color(0xFF1E3A8A),
+                              letterSpacing: 2,
+                            ),
+                          ),
+                        ],
+                      ),
+                      InkWell(
+                        onTap: () {
+                          Clipboard.setData(ClipboardData(text: order.deliveryPin));
+                          AppToast.success(context, 'PIN კოდი დაკოპირდა!');
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: const Color(0xFF93C5FD)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                LucideIcons.copy,
+                                size: 11,
+                                color: Color(0xFF2563EB),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                'კოპირება',
+                                style: GoogleFonts.notoSansGeorgian(
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: const Color(0xFF2563EB),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'ეს 4-ნიშნა კოდი უთხარით ფერმერს/კურიერს მხოლოდ პროდუქციის შემოწმებისა და ჩაბარების დროს!',
+                    style: GoogleFonts.notoSansGeorgian(
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFF1D4ED8),
+                      height: 1.3,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => OrderChatScreen(order: order),
+                        ),
+                      );
+                    },
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFF2563EB),
+                      side: const BorderSide(color: Color(0xFF93C5FD)),
+                      backgroundColor: const Color(0xFFEFF6FF),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      minimumSize: const Size.fromHeight(40),
+                    ),
+                    icon: const Icon(LucideIcons.messageSquare, size: 15),
+                    label: Text(
+                      'ჩათი ფერმერთან',
+                      style: GoogleFonts.notoSansGeorgian(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      ref
+                          .read(farmerOrdersProvider.notifier)
+                          .completeOrder(order.id);
+                      AppToast.success(
+                        context,
+                        'შეკვეთა #${order.id} დადასტურებულია როგორც ჩაბარებული!',
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      minimumSize: const Size.fromHeight(40),
+                    ),
+                    icon: const Icon(LucideIcons.circleCheck, size: 15),
+                    label: Text(
+                      'ჩავიბარე',
+                      style: GoogleFonts.notoSansGeorgian(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
 

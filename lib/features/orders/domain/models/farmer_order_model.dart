@@ -132,6 +132,7 @@ class FarmerOrder {
   final String paymentMethod;
   final bool hasClientReportedPayment;
   final bool isPaymentConfirmed;
+  final String deliveryPin;
 
   const FarmerOrder({
     required this.id,
@@ -152,12 +153,19 @@ class FarmerOrder {
     this.paymentMethod = 'ESCROW',
     this.hasClientReportedPayment = false,
     this.isPaymentConfirmed = false,
+    this.deliveryPin = '4821',
   });
+
+  static String generatePinForId(String id) {
+    final code = (id.hashCode.abs() % 9000) + 1000;
+    return code.toString();
+  }
 
   factory FarmerOrder.fromJson(Map<String, dynamic> json) {
     final rawItems = (json['items'] as List<dynamic>?) ?? const [];
+    final id = json['id'] as String? ?? '00000';
     return FarmerOrder(
-      id: json['id'] as String? ?? '00000',
+      id: id,
       farmerId: json['farmerId'] as String?,
       clientId: json['clientId'] as String?,
       createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ??
@@ -178,6 +186,7 @@ class FarmerOrder {
       hasClientReportedPayment:
           json['hasClientReportedPayment'] as bool? ?? false,
       isPaymentConfirmed: json['isPaymentConfirmed'] as bool? ?? false,
+      deliveryPin: json['deliveryPin'] as String? ?? generatePinForId(id),
       items: rawItems
           .whereType<Map<String, dynamic>>()
           .map(FarmerOrderItem.fromJson)
@@ -231,6 +240,31 @@ class FarmerOrder {
     return remaining.isNegative ? Duration.zero : remaining;
   }
 
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      if (farmerId != null) 'farmerId': farmerId,
+      if (clientId != null) 'clientId': clientId,
+      'createdAt': createdAt.toIso8601String(),
+      'status': status.apiValue,
+      'customerName': customerName,
+      'contactPerson': contactPerson,
+      'contactPhone': contactPhone,
+      if (deliveryTimeWindow != null) 'deliveryTimeWindow': deliveryTimeWindow,
+      if (deliveryAddress != null) 'deliveryAddress': deliveryAddress,
+      if (cancellationReason != null) 'cancellationReason': cancellationReason,
+      'hasVat': hasVat,
+      if (cancellationDeadline != null)
+        'cancellationDeadline': cancellationDeadline!.toIso8601String(),
+      if (trackingNumber != null) 'trackingNumber': trackingNumber,
+      'paymentMethod': paymentMethod,
+      'hasClientReportedPayment': hasClientReportedPayment,
+      'isPaymentConfirmed': isPaymentConfirmed,
+      'deliveryPin': deliveryPin,
+      'items': items.map((i) => i.toJson()).toList(),
+    };
+  }
+
   FarmerOrder copyWith({
     String? id,
     String? farmerId,
@@ -250,6 +284,7 @@ class FarmerOrder {
     String? paymentMethod,
     bool? hasClientReportedPayment,
     bool? isPaymentConfirmed,
+    String? deliveryPin,
   }) {
     return FarmerOrder(
       id: id ?? this.id,
@@ -271,6 +306,7 @@ class FarmerOrder {
       hasClientReportedPayment:
           hasClientReportedPayment ?? this.hasClientReportedPayment,
       isPaymentConfirmed: isPaymentConfirmed ?? this.isPaymentConfirmed,
+      deliveryPin: deliveryPin ?? this.deliveryPin,
     );
   }
 }

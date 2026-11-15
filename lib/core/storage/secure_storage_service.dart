@@ -170,6 +170,23 @@ class SecureStorageService {
       return {};
     }
   }
+
+  Future<void> saveOrderMessagesJson(String orderId, String json) async {
+    try {
+      await _storage.write(
+        key: 'agrokera_order_chat_$orderId',
+        value: json,
+      );
+    } catch (_) {}
+  }
+
+  Future<String?> readOrderMessagesJson(String orderId) async {
+    try {
+      return await _storage.read(key: 'agrokera_order_chat_$orderId');
+    } catch (_) {
+      return null;
+    }
+  }
 }
 
 final secureStorageProvider = Provider<SecureStorageService>((ref) {

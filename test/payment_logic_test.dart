@@ -143,7 +143,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('შეკვეთა გაფორმდა!'), findsOneWidget);
+      expect(find.text('შეკვეთის მოთხოვნა გაიგზავნა!'), findsOneWidget);
       expect(find.text('შეკვეთის კოდი: AK-49201'), findsOneWidget);
       expect(find.textContaining('თანხას (120 ₾) გადაიხდით ნაღდი ფულით კურიერთან ჩაბარებისას.'), findsOneWidget);
 

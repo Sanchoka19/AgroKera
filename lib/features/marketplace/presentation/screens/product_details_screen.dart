@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../core/auth/auth_state_provider.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../core/widgets/app_confirmation_bottom_sheet.dart';
 import '../../../../core/widgets/app_toast.dart';
 import '../../../cart_checkout/presentation/providers/cart_provider.dart';
 import '../../../cart_checkout/presentation/screens/cart_screen.dart';
@@ -65,15 +67,27 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
     );
   }
 
-  void _onAddToCart(ProductModel product) {
-    if (ref.read(authStateProvider).isOwnerOfProduct(product)) {
-      AppToast.error(context, 'საკუთარი პროდუქტის შეძენა შეუძლებელია');
-      return;
+  Future<void> _handleDifferentFarmer(
+    AddToCartDifferentFarmer diff,
+    ProductModel product,
+  ) async {
+    final confirmed = await AppConfirmationBottomSheet.showDifferentFarmerCart(
+      context: context,
+      currentFarmerName: diff.currentFarmerName,
+      newFarmerName: diff.newFarmerName,
+    );
+
+    if (confirmed && mounted) {
+      final retryResult = ref.read(cartProvider.notifier).addProduct(
+            product,
+            diff.quantity,
+            forceReplaceFarmer: true,
+          );
+      _handleAddToCartResult(retryResult, product);
     }
+  }
 
-    final result =
-        ref.read(cartProvider.notifier).addProduct(product, _quantity);
-
+  void _handleAddToCartResult(AddToCartResult result, ProductModel product) {
     switch (result) {
       case AddToCartOwnerForbidden():
         AppToast.error(context, 'საკუთარი პროდუქტის შეძენა შეუძლებელია');
@@ -84,17 +98,44 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
           context,
           'ეს პროდუქტი უკვე მაქსიმალური რაოდენობით ($maxStock ${product.unit}) გაქვთ კალათაში',
         );
+      case AddToCartDifferentFarmer():
+        _handleDifferentFarmer(result, product);
       case AddToCartSuccess(
           :final isCapped,
           :final addedQuantity,
           :final maxStock,
+          :final minOrderAdjusted,
+          :final hasBulkUpsell,
+          :final remainingForBulkDiscount,
+          :final bulkDiscountPercent,
+          :final bulkDiscountApplied,
         ):
-        if (isCapped) {
+        if (minOrderAdjusted) {
+          AppToast.info(
+            context,
+            'მინიმალური შეკვეთაა ${product.minOrderDisplay}. დაემატა მინიმალური რაოდენობა.',
+            icon: LucideIcons.info,
+          );
+        } else if (isCapped) {
           AppToast.info(
             context,
             'მარაგის ლიმიტის გამო დაემატა $addedQuantity ${product.unit} (სულ კალათაში: $maxStock ${product.unit})',
+            icon: LucideIcons.alertCircle,
+          );
+        } else if (hasBulkUpsell) {
+          AppToast.info(
+            context,
+            'დაამატეთ კიდევ $remainingForBulkDiscount ${product.unit} და მიიღეთ $bulkDiscountPercent%-იანი საბითუმო ფასდაკლება!',
+            icon: LucideIcons.flame,
+          );
+        } else if (bulkDiscountApplied) {
+          AppToast.success(
+            context,
+            'გააქტიურდა $bulkDiscountPercent%-იანი საბითუმო ფასდაკლება!',
+            icon: LucideIcons.percent,
           );
         }
+
         FlyToCartAnimator.run(
           context: context,
           fromKey: _addButtonKey,
@@ -103,6 +144,17 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
           onComplete: () => _floatingCartKey.currentState?.bounce(),
         );
     }
+  }
+
+  void _onAddToCart(ProductModel product) {
+    if (ref.read(authStateProvider).isOwnerOfProduct(product)) {
+      AppToast.error(context, 'საკუთარი პროდუქტის შეძენა შეუძლებელია');
+      return;
+    }
+
+    final result =
+        ref.read(cartProvider.notifier).addProduct(product, _quantity);
+    _handleAddToCartResult(result, product);
   }
 
   Widget _buildDescription(String description) {

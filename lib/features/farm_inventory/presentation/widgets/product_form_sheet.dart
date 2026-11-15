@@ -61,9 +61,14 @@ class _ProductFormSheetState extends ConsumerState<ProductFormSheet> {
   void initState() {
     super.initState();
     final existing = widget.existing;
+    final initialBasePrice = existing?.originalPrice ?? existing?.price;
     _titleCtrl = TextEditingController(text: existing?.title ?? '');
     _priceCtrl = TextEditingController(
-      text: existing != null ? existing.price.toStringAsFixed(1) : '',
+      text: initialBasePrice != null
+          ? (initialBasePrice % 1 == 0
+              ? initialBasePrice.toInt().toString()
+              : initialBasePrice.toStringAsFixed(2))
+          : '',
     );
     _stockCtrl = TextEditingController(
       text: existing != null ? existing.stockQuantity.toStringAsFixed(0) : '50',
@@ -456,18 +461,25 @@ class _ProductFormSheetState extends ConsumerState<ProductFormSheet> {
     final bulkMinQty = double.tryParse(_bulkMinQtyCtrl.text.trim());
     final bulkDiscount = int.tryParse(_bulkDiscountCtrl.text.trim());
 
+    final hasActiveDiscount = discount != null && discount > 0;
+    final effectiveSellingPrice = hasActiveDiscount
+        ? (price * (1.0 - (discount / 100.0)))
+        : price;
+    final originalStrikethroughPrice = hasActiveDiscount ? price : null;
+
     await notifier.saveProduct(
       existing: widget.existing,
       title: title,
       category: _selectedCategory,
-      price: price,
+      price: effectiveSellingPrice,
+      originalPrice: originalStrikethroughPrice,
       unit: _selectedUnit,
       stockQuantity: stock,
       description: _descCtrl.text.trim(),
       imageUrl: imageUrls.first,
       images: imageUrls,
       minOrderQuantity: minOrder > 0 ? minOrder : 1.0,
-      discountPercent: (discount != null && discount > 0) ? discount : null,
+      discountPercent: hasActiveDiscount ? discount : null,
       bulkDiscountMinQty:
           (bulkMinQty != null && bulkMinQty > 0) ? bulkMinQty : null,
       bulkDiscountPercent:

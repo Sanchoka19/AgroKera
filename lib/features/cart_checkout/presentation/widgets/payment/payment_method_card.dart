@@ -168,6 +168,35 @@ class PaymentMethodCard extends ConsumerWidget {
               escrow: paymentState.escrowDetails,
               amount: grandTotal,
             ),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    LucideIcons.info,
+                    size: 14,
+                    color: Color(0xFF64748B),
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'თანხას გადარიცხავთ მხოლოდ ფერმერის მიერ შეკვეთის დადასტურების შემდეგ.',
+                      style: GoogleFonts.notoSansGeorgian(
+                        fontSize: 11,
+                        color: const Color(0xFF475569),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ] else if (selectedMethod == PaymentMethodType.cash) ...[
             const SizedBox(height: 10),
             Container(

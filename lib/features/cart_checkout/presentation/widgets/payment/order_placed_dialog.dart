@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../../core/theme/app_colors.dart';
-import '../../../../../core/widgets/app_toast.dart';
 import '../../../domain/models/payment_method_model.dart';
 
 /// Modal dialog presented after placing an order.
@@ -57,12 +55,6 @@ class OrderPlacedDialog extends StatelessWidget {
     );
   }
 
-  void _copyToClipboard(BuildContext context, String text, String label) {
-    Clipboard.setData(ClipboardData(text: text));
-    HapticFeedback.lightImpact();
-    AppToast.success(context, '$label დაკოპირდა!');
-  }
-
   @override
   Widget build(BuildContext context) {
     final trackingCode = 'AK-$orderId';
@@ -94,10 +86,10 @@ class OrderPlacedDialog extends StatelessWidget {
 
               // Title
               Text(
-                'შეკვეთა გაფორმდა!',
+                'შეკვეთის მოთხოვნა გაიგზავნა!',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.notoSansGeorgian(
-                  fontSize: 19,
+                  fontSize: 18,
                   fontWeight: FontWeight.w800,
                   color: const Color(0xFF0F172A),
                 ),
@@ -124,106 +116,44 @@ class OrderPlacedDialog extends StatelessWidget {
 
               // Dynamic Payment Instructions
               if (paymentMethod == PaymentMethodType.bankTransfer) ...[
-                Text(
-                  'თანხა (${totalAmount.toStringAsFixed(0)} ₾) გადმორიცხეთ AgroKera Escrow-ს ანგარიშზე:',
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.notoSansGeorgian(
-                    fontSize: 13,
-                    color: const Color(0xFF475569),
-                    height: 1.35,
-                  ),
-                ),
-                const SizedBox(height: 12),
-
-                // IBAN copy container
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF8FAFC),
+                    color: const Color(0xFFF0FDF4),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                    border: Border.all(color: const Color(0xFF86EFAC)),
                   ),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            'IBAN:',
-                            style: GoogleFonts.notoSansGeorgian(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: const Color(0xFF64748B),
-                            ),
+                          const Icon(
+                            LucideIcons.clock,
+                            size: 18,
+                            color: Color(0xFF16A34A),
                           ),
-                          InkWell(
-                            onTap: () => _copyToClipboard(
-                              context,
-                              escrowDetails.iban,
-                              'IBAN',
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(
-                                  LucideIcons.copy,
-                                  size: 13,
-                                  color: AppColors.primary,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  'კოპირება',
-                                  style: GoogleFonts.notoSansGeorgian(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.primary,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      SelectableText(
-                        escrowDetails.iban,
-                        style: GoogleFonts.firaCode(
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w700,
-                          color: const Color(0xFF0F172A),
-                        ),
-                      ),
-                      const Divider(height: 16, color: Color(0xFFE2E8F0)),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
+                          const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              'დანიშნულება: $trackingCode',
+                              'ფერმერის დადასტურების მოლოდინში',
                               style: GoogleFonts.notoSansGeorgian(
-                                fontSize: 11.5,
+                                fontSize: 13,
                                 fontWeight: FontWeight.w700,
                                 color: const Color(0xFF166534),
                               ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          InkWell(
-                            onTap: () => _copyToClipboard(
-                              context,
-                              trackingCode,
-                              'დანიშნულების კოდი',
-                            ),
-                            child: const Padding(
-                              padding: EdgeInsets.only(left: 6),
-                              child: Icon(
-                                LucideIcons.copy,
-                                size: 13,
-                                color: AppColors.primary,
-                              ),
                             ),
                           ),
                         ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'მოთხოვნა გაეგზავნა ფერმერს. როგორც კი ფერმერი დაადასტურებს მოსავლის მზადყოფნას, მოგივათ შეტყობინება და თანხას (${totalAmount.toStringAsFixed(0)} ₾) გადარიცხავთ AgroKera Escrow-ს დაცულ ანგარიშზე.',
+                        textAlign: TextAlign.left,
+                        style: GoogleFonts.notoSansGeorgian(
+                          fontSize: 12,
+                          color: const Color(0xFF166534),
+                          height: 1.35,
+                        ),
                       ),
                     ],
                   ),
@@ -234,24 +164,24 @@ class OrderPlacedDialog extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF0FDF4),
+                    color: const Color(0xFFF8FAFC),
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: const Color(0xFF86EFAC)),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
                   ),
                   child: Row(
                     children: [
                       const Icon(
                         LucideIcons.shieldCheck,
                         size: 16,
-                        color: Color(0xFF16A34A),
+                        color: Color(0xFF2563EB),
                       ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          'თანხა გაიყინება AgroKera-ში და ფერმერს გადაეცემა მხოლოდ შეკვეთის ჩაბარების შემდეგ.',
+                          'წინასწარ თანხა არ იჭრება! რეკვიზიტები გადასარიცხად გააქტიურდება „ჩემი შეკვეთების“ გვერდზე.',
                           style: GoogleFonts.notoSansGeorgian(
                             fontSize: 11,
-                            color: const Color(0xFF166534),
+                            color: const Color(0xFF334155),
                             height: 1.3,
                             fontWeight: FontWeight.w600,
                           ),
@@ -263,8 +193,8 @@ class OrderPlacedDialog extends StatelessWidget {
               ] else ...[
                 Text(
                   isPickup
-                      ? 'შეკვეთა მზადდება მეურნეობაში ($location).\nთანხას (${totalAmount.toStringAsFixed(0)} ₾) გადაიხდით ნაღდი ფულით ადგილზე გატანისას.'
-                      : 'შეკვეთა გადაეცა ფერმერს.\nთანხას (${totalAmount.toStringAsFixed(0)} ₾) გადაიხდით ნაღდი ფულით კურიერთან ჩაბარებისას.',
+                      ? 'მოთხოვნა გადაეცა მეურნეობას ($location).\nფერმერის დადასტურების შემდეგ თანხას (${totalAmount.toStringAsFixed(0)} ₾) გადაიხდით ნაღდი ფულით ადგილზე გატანისას.'
+                      : 'მოთხოვნა გადაეცა ფერმერს.\nფერმერის დადასტურების შემდეგ თანხას (${totalAmount.toStringAsFixed(0)} ₾) გადაიხდით ნაღდი ფულით კურიერთან ჩაბარებისას.',
                   textAlign: TextAlign.center,
                   style: GoogleFonts.notoSansGeorgian(
                     fontSize: 13.5,

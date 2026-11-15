@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -270,8 +271,8 @@ class _ClientOrdersScreenState extends ConsumerState<ClientOrdersScreen> {
                     Expanded(
                       child: Text(
                         order.remainingCancellationTime.inMinutes > 0
-                            ? 'ფერმერს დასადასტურებლად დარჩა ~${order.remainingCancellationTime.inMinutes} წუთი (შემდეგ დასტურდება ავტომატურად)'
-                            : 'ფერმერის დადასტურების მოლოდინში (დასტურდება ავტომატურად)',
+                            ? 'ფერმერს დასადასტურებლად დარჩა ~${order.remainingCancellationTime.inMinutes} წუთი. თანხის გადახდა არ არის საჭირო დასტურამდე.'
+                            : 'ფერმერის დადასტურების მოლოდინში. თანხის გადახდა არ არის საჭირო დასტურამდე.',
                         style: GoogleFonts.notoSansGeorgian(
                           fontSize: 11.5,
                           color: const Color(0xFF92400E),
@@ -388,6 +389,274 @@ class _ClientOrdersScreenState extends ConsumerState<ClientOrdersScreen> {
 
           if (order.status == OrderStatus.inProgress) ...[
             const SizedBox(height: 12),
+            if (order.isBankTransfer) ...[
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF0FDF4),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: const Color(0xFF86EFAC)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(
+                          LucideIcons.shieldCheck,
+                          size: 16,
+                          color: Color(0xFF16A34A),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'ფერმერმა დაადასტურა! გადმორიცხეთ Escrow-ზე:',
+                            style: GoogleFonts.notoSansGeorgian(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w700,
+                              color: const Color(0xFF166534),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: const Color(0xFFD1FAE5)),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'IBAN (თიბისი ბანკი):',
+                                  style: GoogleFonts.notoSansGeorgian(
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.w600,
+                                    color: const Color(0xFF64748B),
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                SelectableText(
+                                  'GE29TB7553608011000018',
+                                  style: GoogleFonts.firaCode(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                    color: const Color(0xFF0F172A),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          InkWell(
+                            onTap: () {
+                              Clipboard.setData(const ClipboardData(text: 'GE29TB7553608011000018'));
+                              AppToast.success(context, 'IBAN დაკოპირდა!');
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.only(left: 6),
+                              child: Row(
+                                children: [
+                                  const Icon(
+                                    LucideIcons.copy,
+                                    size: 13,
+                                    color: AppColors.primary,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'კოპირება',
+                                    style: GoogleFonts.notoSansGeorgian(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.primary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    // Destination Code Card (High Prominence)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFEF3C7),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: const Color(0xFFFDE68A)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  'დანიშნულება: ${order.trackingNumber ?? 'AK-${order.id}'}',
+                                  style: GoogleFonts.notoSansGeorgian(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w800,
+                                    color: const Color(0xFF92400E),
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              InkWell(
+                                onTap: () {
+                                  Clipboard.setData(ClipboardData(text: order.trackingNumber ?? 'AK-${order.id}'));
+                                  AppToast.success(context, 'დანიშნულების კოდი დაკოპირდა!');
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(6),
+                                    border: Border.all(color: const Color(0xFFFCD34D)),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(
+                                        LucideIcons.copy,
+                                        size: 12,
+                                        color: Color(0xFFB45309),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        'კოპირება',
+                                        style: GoogleFonts.notoSansGeorgian(
+                                          fontSize: 10.5,
+                                          fontWeight: FontWeight.w700,
+                                          color: const Color(0xFFB45309),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'მნიშვნელოვანია: მობაილ-ბანკში (TBC/BOG) გადარიცხვისას ველში „დანიშნულება“ აუცილებლად ჩასვით ეს კოდი!',
+                            style: GoogleFonts.notoSansGeorgian(
+                              fontSize: 10.5,
+                              color: const Color(0xFFB45309),
+                              fontWeight: FontWeight.w600,
+                              height: 1.3,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (!order.hasClientReportedPayment) ...[
+                      const SizedBox(height: 10),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 38,
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            ref
+                                .read(farmerOrdersProvider.notifier)
+                                .reportBankTransferSent(order.id);
+                            AppToast.success(
+                              context,
+                              'გადარიცხვა დაფიქსირდა! სისტემა ამოწმებს თანხას.',
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                          icon: const Icon(LucideIcons.sendHorizontal, size: 15),
+                          label: Text(
+                            'გადარიცხვა შევასრულე',
+                            style: GoogleFonts.notoSansGeorgian(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ] else ...[
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFDCFCE7),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: const Color(0xFF86EFAC)),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              LucideIcons.circleCheck,
+                              size: 15,
+                              color: Color(0xFF15803D),
+                            ),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                'გადარიცხვა დაფიქსირდა • მოწმდება AgroKera Escrow-ში',
+                                style: GoogleFonts.notoSansGeorgian(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: const Color(0xFF15803D),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ] else ...[
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      LucideIcons.banknote,
+                      size: 16,
+                      color: Color(0xFF475569),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'ფერმერმა დაადასტურა! თანხას (₾${order.totalAmount.toStringAsFixed(2)}) გადაიხდით ნაღდი ფულით ჩაბარებისას.',
+                        style: GoogleFonts.notoSansGeorgian(
+                          fontSize: 11.5,
+                          color: const Color(0xFF334155),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            const SizedBox(height: 10),
             SizedBox(
               width: double.infinity,
               height: 42,

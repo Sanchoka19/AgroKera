@@ -184,16 +184,10 @@ class AppHeader extends ConsumerWidget {
                     IconButton(
                       tooltip: 'კალათა',
                       onPressed: () {
-                        requireAuth(
-                          context,
-                          ref: ref,
-                          onAuthenticated: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => const CartScreen(),
-                              ),
-                            );
-                          },
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const CartScreen(),
+                          ),
                         );
                       },
                       icon: Stack(
@@ -204,7 +198,7 @@ class AppHeader extends ConsumerWidget {
                             size: 24,
                             color: AppColors.primary,
                           ),
-                          if (authState.isAuthenticated && cartItems.isNotEmpty)
+                          if (cartItems.isNotEmpty)
                             _buildCountBadge(
                               cartItems.length > 9 ? '9+' : '${cartItems.length}',
                             ),

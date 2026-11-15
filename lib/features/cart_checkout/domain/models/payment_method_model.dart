@@ -27,7 +27,7 @@ enum PaymentMethodType {
   String get shortSubtitle {
     switch (this) {
       case PaymentMethodType.bankTransfer:
-        return 'AgroKera Escrow — თანხა გაიყინება ჩაბარებამდე';
+        return 'გადახდა ფერმერის დასტურის შემდეგ • Escrow დაცვა';
       case PaymentMethodType.cash:
         return 'გადახდა პროდუქტის მიღებისას კურიერთან ან ფერმაში';
     }

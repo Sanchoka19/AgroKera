@@ -218,7 +218,7 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
             .where((o) => !fetchedIds.contains(o.id))
             .toList();
         state = state.copyWith(orders: [...localPending, ...fetched]);
-        checkAutoConfirmation();
+        checkPendingOrderExpirations();
       }
     } catch (_) {
       // Gracefully keep local state when offline or in widget tests
@@ -246,6 +246,30 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
     unawaited(_syncOrderStatus(id, status: OrderStatus.inProgress));
   }
 
+  /// Called by the customer after completing wire transfer in their mobile bank
+  void reportBankTransferSent(String id) {
+    state = state.copyWith(
+      orders: state.orders.map((o) {
+        if (o.id == id) {
+          return o.copyWith(hasClientReportedPayment: true);
+        }
+        return o;
+      }).toList(),
+    );
+  }
+
+  /// Called by system / admin / bank webhook when wire transfer is verified in AgroKera Escrow
+  void confirmEscrowPayment(String id) {
+    state = state.copyWith(
+      orders: state.orders.map((o) {
+        if (o.id == id) {
+          return o.copyWith(isPaymentConfirmed: true);
+        }
+        return o;
+      }).toList(),
+    );
+  }
+
   void completeOrder(String id) {
     state = state.copyWith(
       orders: state.orders.map((o) {
@@ -260,6 +284,15 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
   }
 
   void cancelOrder(String id, {String reason = 'მარაგის არ არსებობის გამო'}) {
+    final targetOrder = state.orders.where((o) => o.id == id).firstOrNull;
+    if (targetOrder != null && targetOrder.status != OrderStatus.cancelled) {
+      unawaited(
+        ref
+            .read(marketplaceProvider.notifier)
+            .restoreStockForOrderItems(targetOrder.items),
+      );
+    }
+
     state = state.copyWith(
       orders: state.orders.map((o) {
         if (o.id == id) {
@@ -285,6 +318,7 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
     String? customerName,
     String? contactPhone,
     String paymentMethod = 'ESCROW',
+    bool? hasVat,
   }) async {
     final auth = ref.read(authStateProvider);
     if (auth.role == UserRole.farmer) {
@@ -308,22 +342,44 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
     final orderItems = cartItems
         .map(
           (ci) => FarmerOrderItem(
+            productId: ci.id,
             name: ci.title,
             quantityText: '${ci.quantity}${ci.unit}',
             price: ci.totalPrice,
+            quantity: ci.quantity.toDouble(),
           ),
         )
         .toList();
 
+    final targetFarmerId = (cartItems.isNotEmpty &&
+            cartItems.first.farmerId != null &&
+            cartItems.first.farmerId!.isNotEmpty)
+        ? cartItems.first.farmerId!
+        : 'farmer_2';
+
+    final resolvedHasVat = hasVat ??
+        () {
+          final marketplace = ref.read(marketplaceProvider);
+          final matchedFarmer = marketplace.farmers.where((f) =>
+              (cartItems.isNotEmpty &&
+                  cartItems.first.farmerId != null &&
+                  f.id == cartItems.first.farmerId) ||
+              (cartItems.isNotEmpty &&
+                  (f.farmerName == cartItems.first.farmerName ||
+                      f.farmName == cartItems.first.farmerName))).firstOrNull;
+          return matchedFarmer?.isVatPayer ?? false;
+        }();
+
     final newOrder = FarmerOrder(
       id: generatedId,
       clientId: auth.userId ?? 'user_client_1',
-      farmerId: 'farmer_2',
+      farmerId: targetFarmerId,
       createdAt: now,
       status: OrderStatus.pending,
       customerName: effectiveName,
       contactPerson: effectiveName,
       contactPhone: effectivePhone,
+      hasVat: resolvedHasVat,
       deliveryAddress: deliveryAddress,
       deliveryTimeWindow: deliveryTimeWindow,
       cancellationDeadline: now.add(const Duration(minutes: 30)),
@@ -350,6 +406,7 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
             'deliveryAddress': deliveryAddress,
             'deliveryTimeWindow': deliveryTimeWindow,
             'paymentMethod': paymentMethod,
+            'hasVat': resolvedHasVat,
             'items': cartItems
                 .map(
                   (ci) => {
@@ -377,8 +434,9 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
     return newOrder;
   }
 
-  /// Checks and automatically confirms pending orders whose 30-minute review window has elapsed
-  void checkAutoConfirmation() {
+  /// Automatically cancels and expires pending orders whose review window has elapsed
+  /// without farmer confirmation, restoring reserved stock to inventory with zero refund friction.
+  void checkPendingOrderExpirations() {
     final now = DateTime.now();
     bool hasChanges = false;
     final updated = state.orders.map((o) {
@@ -386,7 +444,25 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
           o.cancellationDeadline != null &&
           now.isAfter(o.cancellationDeadline!)) {
         hasChanges = true;
-        return o.copyWith(status: OrderStatus.inProgress);
+        // Restore inventory stock because farmer didn't confirm
+        unawaited(
+          ref
+              .read(marketplaceProvider.notifier)
+              .restoreStockForOrderItems(o.items),
+        );
+        unawaited(
+          _syncOrderStatus(
+            o.id,
+            status: OrderStatus.cancelled,
+            reason:
+                'ფერმერმა შეკვეთა დადგენილ დროში ვერ დაადასტურა (ვადა ამოიწურა)',
+          ),
+        );
+        return o.copyWith(
+          status: OrderStatus.cancelled,
+          cancellationReason:
+              'ფერმერმა შეკვეთა დადგენილ დროში ვერ დაადასტურა (ვადა ამოიწურა)',
+        );
       }
       return o;
     }).toList();
@@ -395,6 +471,9 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
       state = state.copyWith(orders: updated);
     }
   }
+
+  /// Backward-compatible alias for expiring overdue pending orders
+  void checkAutoConfirmation() => checkPendingOrderExpirations();
 
   Future<void> _syncOrderStatus(
     String id, {

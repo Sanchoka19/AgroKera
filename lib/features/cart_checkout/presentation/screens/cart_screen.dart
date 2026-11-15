@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../core/auth/auth_state_provider.dart';
 import '../../../../core/constants/app_assets.dart';
@@ -81,96 +82,6 @@ class _CartScreenState extends ConsumerState<CartScreen>
 
   @override
   Widget build(BuildContext context) {
-    final authState = ref.watch(authStateProvider);
-    if (!authState.isAuthenticated) {
-      return Scaffold(
-        backgroundColor: Colors.white,
-        appBar: AppBar(
-          backgroundColor: Colors.white,
-          elevation: 0,
-          centerTitle: true,
-          leading: IconButton(
-            icon: const Icon(LucideIcons.chevronLeft, color: AppColors.textPrimary, size: 28),
-            onPressed: () => Navigator.of(context).pop(),
-          ),
-          title: Text(
-            'კალათი',
-            style: AppTypography.h1.copyWith(
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
-            ),
-          ),
-        ),
-        body: Center(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  width: 90,
-                  height: 90,
-                  decoration: const BoxDecoration(
-                    color: AppColors.primaryLight,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    LucideIcons.lock,
-                    size: 42,
-                    color: AppColors.primary,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Text(
-                  'ავტორიზაცია აუცილებელია',
-                  textAlign: TextAlign.center,
-                  style: AppTypography.h1.copyWith(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  'კალათის სანახავად და შეკვეთის გასაფორმებლად გთხოვთ გაიაროთ ავტორიზაცია.',
-                  textAlign: TextAlign.center,
-                  style: AppTypography.bodyMedium.copyWith(
-                    fontSize: 14,
-                    color: AppColors.textSecondary,
-                    height: 1.4,
-                  ),
-                ),
-                const SizedBox(height: 28),
-                SizedBox(
-                  width: double.infinity,
-                  height: 50,
-                  child: ElevatedButton(
-                    onPressed: () => AuthRequiredBottomSheet.show(context),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: const Text(
-                      'შესვლა / რეგისტრაცია',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 15,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
-
     final cartItems = ref.watch(cartProvider);
     final isEmpty = cartItems.isEmpty;
     final subtotal = cartItems.subtotal;
@@ -313,6 +224,44 @@ class _CartScreenState extends ConsumerState<CartScreen>
                       ],
                     ),
                   ),
+
+                  // Single-Farmer Store Indicator
+                  if (cartItems.isNotEmpty && cartItems.first.farmerName.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 2, 16, 8),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryLight.withValues(alpha: 0.6),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: AppColors.primary.withValues(alpha: 0.2),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              LucideIcons.store,
+                              size: 16,
+                              color: AppColors.primary,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'მეურნეობა: ${cartItems.first.farmerName}',
+                                style: GoogleFonts.notoSansGeorgian(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.primaryDark,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
 
                   // Cart Items List
                   Expanded(
@@ -791,6 +740,80 @@ class _CartScreenState extends ConsumerState<CartScreen>
                             ),
                           ),
 
+                          // Vehicle Capacity / Weight Banner in expanded details
+                          if (cartItems.isWeightLimitExceeded)
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFEF2F2),
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(color: const Color(0xFFFECACA)),
+                                ),
+                                child: Row(
+                                  children: [
+                                    const Icon(LucideIcons.alertTriangle, size: 16, color: Color(0xFFDC2626)),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        'წონა (${totalWeight.toStringAsFixed(1)} კგ) აჭარბებს საკურიერო მიტანის ლიმიტს (250 კგ). ჩექაუთზე ხელმისაწვდომი იქნება მხოლოდ თვითგატანა.',
+                                        style: AppTypography.caption.copyWith(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                          color: const Color(0xFFDC2626),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            )
+                          else if (cartItems.isHeavyOrder)
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: cartItems.vehicleType == DeliveryVehicleType.cargoVan
+                                      ? const Color(0xFFEFF6FF)
+                                      : const Color(0xFFFFFBEB),
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(
+                                    color: cartItems.vehicleType == DeliveryVehicleType.cargoVan
+                                        ? const Color(0xFFBFDBFE)
+                                        : const Color(0xFFFDE68A),
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      cartItems.vehicleType == DeliveryVehicleType.cargoVan
+                                          ? LucideIcons.truck
+                                          : LucideIcons.car,
+                                      size: 16,
+                                      color: cartItems.vehicleType == DeliveryVehicleType.cargoVan
+                                          ? const Color(0xFF1D4ED8)
+                                          : const Color(0xFFB45309),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        'საჭირო ტრანსპორტი: ${cartItems.vehicleLabel} (+${cartItems.heavyFee.toInt()} ₾)',
+                                        style: AppTypography.caption.copyWith(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                          color: cartItems.vehicleType == DeliveryVehicleType.cargoVan
+                                              ? const Color(0xFF1D4ED8)
+                                              : const Color(0xFFB45309),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+
                           // Products Value Row
                           Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 3),
@@ -870,66 +893,72 @@ class _CartScreenState extends ConsumerState<CartScreen>
                               height: 48,
                               child: ElevatedButton(
                                 onPressed: () {
-                                  if (!isMinimumMet) {
-                                    AppToast.info(
-                                      context,
-                                      'მინიმალური შეკვეთის თანხაა 30 ₾',
-                                    );
-                                    return;
-                                  }
-                                  final auth = ref.read(authStateProvider);
-                                  final ownItem = cartItems
-                                      .where((it) => auth.isOwnerOfCartItem(it))
-                                      .firstOrNull;
-                                  if (auth.role == UserRole.farmer &&
-                                      ownItem != null) {
-                                    AppToast.error(
-                                      context,
-                                      'კალათაში გაქვთ თქვენი მეურნეობის პროდუქტი ("${ownItem.title}"). შეკვეთის გასაგრძელებლად წაშალეთ იგი.',
-                                    );
-                                    return;
-                                  }
+                                  requireAuth(
+                                    context,
+                                    ref: ref,
+                                    onAuthenticated: () {
+                                      if (!isMinimumMet) {
+                                        AppToast.info(
+                                          context,
+                                          'მინიმალური შეკვეთის თანხაა 30 ₾',
+                                        );
+                                        return;
+                                      }
+                                      final auth = ref.read(authStateProvider);
+                                      final ownItem = cartItems
+                                          .where((it) => auth.isOwnerOfCartItem(it))
+                                          .firstOrNull;
+                                      if (auth.role == UserRole.farmer &&
+                                          ownItem != null) {
+                                        AppToast.error(
+                                          context,
+                                          'კალათაში გაქვთ თქვენი მეურნეობის პროდუქტი ("${ownItem.title}"). შეკვეთის გასაგრძელებლად წაშალეთ იგი.',
+                                        );
+                                        return;
+                                      }
 
-                                  final validation = ref
-                                      .read(cartProvider.notifier)
-                                      .validateAndSyncStock(
-                                        ref.read(marketplaceProvider).products,
-                                      );
+                                      final validation = ref
+                                          .read(cartProvider.notifier)
+                                          .validateAndSyncStock(
+                                            ref.read(marketplaceProvider).products,
+                                          );
 
-                                  switch (validation) {
-                                    case CartValidationContainsOwnProduct(
-                                        :final productTitle
-                                      ):
-                                      AppToast.error(
-                                        context,
-                                        'პროდუქტი "$productTitle" თქვენი მეურნეობისაა. შეკვეთის გასაგრძელებლად წაშალეთ იგი.',
+                                      switch (validation) {
+                                        case CartValidationContainsOwnProduct(
+                                            :final productTitle
+                                          ):
+                                          AppToast.error(
+                                            context,
+                                            'პროდუქტი "$productTitle" თქვენი მეურნეობისაა. შეკვეთის გასაგრძელებლად წაშალეთ იგი.',
+                                          );
+                                          return;
+                                        case CartValidationOutOfStock(
+                                            :final productTitle
+                                          ):
+                                          AppToast.error(
+                                            context,
+                                            'პროდუქტი "$productTitle" მარაგში აღარ არის',
+                                          );
+                                          return;
+                                        case CartValidationExceedsStock(
+                                            :final productTitle,
+                                            :final availableStock,
+                                            :final unit,
+                                          ):
+                                          AppToast.error(
+                                            context,
+                                            'პროდუქტზე "$productTitle" მარაგში მხოლოდ $availableStock $unit-ია',
+                                          );
+                                          return;
+                                        case CartValidationValid():
+                                          break;
+                                      }
+                                      Navigator.of(context).push(
+                                        MaterialPageRoute(
+                                          builder: (_) => const CheckoutScreen(),
+                                        ),
                                       );
-                                      return;
-                                    case CartValidationOutOfStock(
-                                        :final productTitle
-                                      ):
-                                      AppToast.error(
-                                        context,
-                                        'პროდუქტი "$productTitle" მარაგში აღარ არის',
-                                      );
-                                      return;
-                                    case CartValidationExceedsStock(
-                                        :final productTitle,
-                                        :final availableStock,
-                                        :final unit,
-                                      ):
-                                      AppToast.error(
-                                        context,
-                                        'პროდუქტზე "$productTitle" მარაგში მხოლოდ $availableStock $unit-ია',
-                                      );
-                                      return;
-                                    case CartValidationValid():
-                                      break;
-                                  }
-                                  Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                      builder: (_) => const CheckoutScreen(),
-                                    ),
+                                    },
                                   );
                                 },
                                 style: ElevatedButton.styleFrom(

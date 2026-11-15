@@ -88,6 +88,24 @@ class AppConfirmationBottomSheet extends StatelessWidget {
     );
   }
 
+  /// Preset for attempting to add an item from a different farmer in Single-Vendor Cart
+  static Future<bool> showDifferentFarmerCart({
+    required BuildContext context,
+    required String currentFarmerName,
+    required String newFarmerName,
+  }) {
+    return show(
+      context: context,
+      title: 'განსხვავებული ფერმერი',
+      message:
+          'კალათში უკვე გაქვთ „$currentFarmerName“-ს პროდუქტები. გსურთ კალათის გასუფთავება და ახალი ფერმერის პროდუქტის დამატება?',
+      confirmText: 'კალათის გასუფთავება და დამატება',
+      cancelText: 'გაუქმება',
+      type: ConfirmationType.warning,
+      icon: LucideIcons.shoppingBag,
+    );
+  }
+
   /// Preset for clearing the shopping cart
   static Future<bool> showClearCart({
     required BuildContext context,

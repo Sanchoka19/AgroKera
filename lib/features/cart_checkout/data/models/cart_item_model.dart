@@ -49,8 +49,37 @@ class CartItemModel {
     return pricePerUnit;
   }
 
+  /// Resolves the default logistics weight (in kg) based on packaging/measurement unit.
+  static double resolveDefaultUnitWeight(String unit) {
+    final clean = unit.toLowerCase().trim();
+    switch (clean) {
+      case 'ლიტრი':
+      case 'ლ':
+        return 1.1; // 1L liquid + bottle/container
+      case 'ბოთლი':
+        return 1.4; // 0.75-1L liquid + glass bottle
+      case 'ყუთი':
+        return 10.0; // Standard produce crate/box
+      case 'ცალი':
+        return 1.5; // Average single agricultural item (cheese head, melon, etc.)
+      case 'შეკვრა':
+        return 0.5; // Bundle (greens, herbs, dried items)
+      case 'კგ':
+      default:
+        return 1.0;
+    }
+  }
+
+  /// Effective unit logistics weight based on packaging/measurement unit and weightKg
+  double get effectiveUnitWeight {
+    if (weightKg > 0 && weightKg != 1.0) {
+      return weightKg;
+    }
+    return resolveDefaultUnitWeight(unit);
+  }
+
   double get totalPrice => effectiveUnitPrice * quantity;
-  double get totalWeight => weightKg * quantity;
+  double get totalWeight => effectiveUnitWeight * quantity;
 
   CartItemModel copyWith({
     String? id,

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:agrokera/features/cart_checkout/data/models/cart_item_model.dart';
+import 'package:agrokera/features/marketplace/presentation/providers/marketplace_provider.dart';
 import 'package:agrokera/features/orders/domain/models/farmer_order_model.dart';
 import 'package:agrokera/features/orders/presentation/providers/farmer_orders_provider.dart';
 import 'package:agrokera/features/orders/presentation/screens/incoming_orders_screen.dart';
@@ -65,6 +67,198 @@ void main() {
       order = state.orders.firstWhere((o) => o.id == '12347');
       expect(order.status, equals(OrderStatus.cancelled));
       expect(order.cancellationReason, equals('მყიდველის თხოვნით'));
+    });
+
+    test('cancelOrder restores deducted stock back to marketplaceProvider inventory', () async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final initialProduct = container
+          .read(marketplaceProvider)
+          .products
+          .firstWhere((p) => p.id == 'prod_1');
+      final initialStock = initialProduct.stockQuantity;
+
+      // Create an order containing 5 units of prod_1
+      const item = CartItemModel(
+        id: 'prod_1',
+        title: 'მწვანილოვანი კომბოსტო',
+        packageText: '1კგ',
+        farmerName: 'გიორგის ფერმა',
+        farmerId: 'farmer_2',
+        pricePerUnit: 15.0,
+        imageUrl: '',
+        quantity: 5,
+        weightKg: 1.0,
+      );
+
+      final ordersNotifier = container.read(farmerOrdersProvider.notifier);
+      final createdOrder = await ordersNotifier.createOrderFromCart(
+        cartItems: const [item],
+        deliveryAddress: 'თბილისი',
+        deliveryTimeWindow: 'შაბათი, 10:00-13:00',
+      );
+
+      // Stock was deducted by 5
+      final deductedProduct = container
+          .read(marketplaceProvider)
+          .products
+          .firstWhere((p) => p.id == 'prod_1');
+      expect(deductedProduct.stockQuantity, equals(initialStock - 5));
+
+      // Now cancel the order
+      ordersNotifier.cancelOrder(createdOrder.id, reason: 'მყიდველის უარი');
+
+      // Stock must be restored back to initialStock
+      final restoredProduct = container
+          .read(marketplaceProvider)
+          .products
+          .firstWhere((p) => p.id == 'prod_1');
+      expect(restoredProduct.stockQuantity, equals(initialStock));
+    });
+
+    test('createOrderFromCart dynamically sets hasVat based on farmer VAT status', () async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final ordersNotifier = container.read(farmerOrdersProvider.notifier);
+
+      // farmer_2 in MockData has isVatPayer = false
+      const itemFarmerNoVat = CartItemModel(
+        id: 'prod_1',
+        title: 'მწვანილოვანი კომბოსტო',
+        packageText: '1კგ',
+        farmerName: 'გიორგის ფერმა',
+        farmerId: 'farmer_2',
+        pricePerUnit: 100.0,
+        imageUrl: '',
+        quantity: 1,
+      );
+
+      final orderNoVat = await ordersNotifier.createOrderFromCart(
+        cartItems: const [itemFarmerNoVat],
+        deliveryAddress: 'თბილისი',
+        deliveryTimeWindow: 'შაბათი, 10:00-13:00',
+      );
+      expect(orderNoVat.hasVat, isFalse);
+      expect(orderNoVat.vatAmount, equals(0.0));
+
+      // farmer_1 in MockData has isVatPayer = true
+      const itemFarmerWithVat = CartItemModel(
+        id: 'prod_f1',
+        title: 'ორგანული ყველი',
+        packageText: '1კგ',
+        farmerName: 'შატო მუხრანი',
+        farmerId: 'farmer_1',
+        pricePerUnit: 100.0,
+        imageUrl: '',
+        quantity: 1,
+      );
+
+      final orderWithVat = await ordersNotifier.createOrderFromCart(
+        cartItems: const [itemFarmerWithVat],
+        deliveryAddress: 'თბილისი',
+        deliveryTimeWindow: 'შაბათი, 10:00-13:00',
+      );
+      expect(orderWithVat.hasVat, isTrue);
+      expect(orderWithVat.vatAmount, equals(18.0));
+    });
+
+    test('overdue pending orders auto-expire and cancel instead of auto-confirming', () async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final ordersNotifier = container.read(farmerOrdersProvider.notifier);
+      final initialProduct = container
+          .read(marketplaceProvider)
+          .products
+          .firstWhere((p) => p.id == 'prod_1');
+      final initialStock = initialProduct.stockQuantity;
+
+      const item = CartItemModel(
+        id: 'prod_1',
+        title: 'მწვანილოვანი კომბოსტო',
+        packageText: '1კგ',
+        farmerName: 'გიორგის ფერმა',
+        farmerId: 'farmer_2',
+        pricePerUnit: 15.0,
+        imageUrl: '',
+        quantity: 3,
+      );
+
+      final created = await ordersNotifier.createOrderFromCart(
+        cartItems: const [item],
+        deliveryAddress: 'თბილისი',
+        deliveryTimeWindow: 'შაბათი, 10:00-13:00',
+      );
+
+      // Stock was deducted by 3
+      expect(
+        container.read(marketplaceProvider).products.firstWhere((p) => p.id == 'prod_1').stockQuantity,
+        equals(initialStock - 3),
+      );
+
+      // Mutate cancellation deadline to past
+      final pastTime = DateTime.now().subtract(const Duration(minutes: 5));
+      final currentState = container.read(farmerOrdersProvider);
+      container.read(farmerOrdersProvider.notifier).state = currentState.copyWith(
+        orders: currentState.orders.map((o) {
+          if (o.id == created.id) {
+            return o.copyWith(cancellationDeadline: pastTime);
+          }
+          return o;
+        }).toList(),
+      );
+
+      // Trigger expiration check
+      ordersNotifier.checkPendingOrderExpirations();
+
+      final expiredOrder = container
+          .read(farmerOrdersProvider)
+          .orders
+          .firstWhere((o) => o.id == created.id);
+
+      // It must be cancelled, NOT inProgress!
+      expect(expiredOrder.status, equals(OrderStatus.cancelled));
+      expect(
+        expiredOrder.cancellationReason,
+        contains('ვადა ამოიწურა'),
+      );
+
+      // Stock must be restored
+      expect(
+        container.read(marketplaceProvider).products.firstWhere((p) => p.id == 'prod_1').stockQuantity,
+        equals(initialStock),
+      );
+    });
+
+    test('FarmerOrder payment method helpers correctly identify BankTransfer vs Cash', () {
+      final now = DateTime.now();
+      final escrowOrder = FarmerOrder(
+        id: '991',
+        createdAt: now,
+        status: OrderStatus.inProgress,
+        customerName: 'ტესტერი',
+        contactPerson: 'ტესტერი',
+        contactPhone: '+995599000000',
+        items: const [],
+        paymentMethod: 'BANKTRANSFER',
+      );
+      expect(escrowOrder.isBankTransfer, isTrue);
+      expect(escrowOrder.isCash, isFalse);
+
+      final cashOrder = FarmerOrder(
+        id: '992',
+        createdAt: now,
+        status: OrderStatus.pending,
+        customerName: 'ტესტერი',
+        contactPerson: 'ტესტერი',
+        contactPhone: '+995599000000',
+        items: const [],
+        paymentMethod: 'CASH',
+      );
+      expect(cashOrder.isBankTransfer, isFalse);
+      expect(cashOrder.isCash, isTrue);
     });
   });
 

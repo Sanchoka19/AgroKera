@@ -471,6 +471,55 @@ class FarmerOrderCard extends StatelessWidget {
                           ],
                         ),
                       ] else ...[
+                        if (order.status == OrderStatus.inProgress && order.isBankTransfer) ...[
+                          Container(
+                            margin: const EdgeInsets.only(bottom: 8),
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: order.isPaymentConfirmed
+                                  ? const Color(0xFFDCFCE7)
+                                  : const Color(0xFFFFFBEB),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: order.isPaymentConfirmed
+                                    ? const Color(0xFF86EFAC)
+                                    : const Color(0xFFFDE68A),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  order.isPaymentConfirmed
+                                      ? LucideIcons.shieldCheck
+                                      : LucideIcons.alertTriangle,
+                                  size: 14,
+                                  color: order.isPaymentConfirmed
+                                      ? const Color(0xFF16A34A)
+                                      : const Color(0xFFD97706),
+                                ),
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: Text(
+                                    order.isPaymentConfirmed
+                                        ? 'თანხა Escrow-ზეა • მზადება'
+                                        : (order.hasClientReportedPayment
+                                            ? 'მყიდველმა გადარიცხა • მოწმდება'
+                                            : 'თანხის ჩარიცხვის მოლოდინში (არ დაკრიფოთ)'),
+                                    style: GoogleFonts.notoSansGeorgian(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700,
+                                      color: order.isPaymentConfirmed
+                                          ? const Color(0xFF166534)
+                                          : const Color(0xFF92400E),
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                         Row(
                           children: [
                             // Standard Details Outline Button

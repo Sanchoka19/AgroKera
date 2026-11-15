@@ -178,6 +178,77 @@ class OrderDetailsSheet extends ConsumerWidget {
               ),
             ],
           ),
+
+          // Vehicle Capacity / Weight Banner
+          if (cartItems.isWeightLimitExceeded) ...[
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFEF2F2),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFFFECACA)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(LucideIcons.alertTriangle, size: 16, color: Color(0xFFDC2626)),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'წონა (${totalWeight.toStringAsFixed(1)} კგ) აჭარბებს საკურიერო მიტანის ლიმიტს (250 კგ). ხელმისაწვდომია მხოლოდ თვითგატანა.',
+                      style: AppTypography.caption.copyWith(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFFDC2626),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ] else if (cartItems.isHeavyOrder) ...[
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: cartItems.vehicleType == DeliveryVehicleType.cargoVan
+                    ? const Color(0xFFEFF6FF)
+                    : const Color(0xFFFFFBEB),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: cartItems.vehicleType == DeliveryVehicleType.cargoVan
+                      ? const Color(0xFFBFDBFE)
+                      : const Color(0xFFFDE68A),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    cartItems.vehicleType == DeliveryVehicleType.cargoVan
+                        ? LucideIcons.truck
+                        : LucideIcons.car,
+                    size: 16,
+                    color: cartItems.vehicleType == DeliveryVehicleType.cargoVan
+                        ? const Color(0xFF1D4ED8)
+                        : const Color(0xFFB45309),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'საჭირო ტრანსპორტი: ${cartItems.vehicleLabel} (+${cartItems.heavyFee.toInt()} ₾)',
+                      style: AppTypography.caption.copyWith(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: cartItems.vehicleType == DeliveryVehicleType.cargoVan
+                            ? const Color(0xFF1D4ED8)
+                            : const Color(0xFFB45309),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: 12),
 
           // Products Value Row

@@ -6,6 +6,7 @@ import '../../../../core/auth/auth_state_provider.dart';
 import '../../../../core/constants/app_categories.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../cart_checkout/data/models/cart_item_model.dart';
+import '../../../orders/domain/models/farmer_order_model.dart';
 import '../../data/mock_data.dart';
 import '../../data/models/category_model.dart';
 import '../../data/models/farmer_model.dart';
@@ -107,6 +108,7 @@ class MarketplaceNotifier extends Notifier<MarketplaceState> {
     required String title,
     required String category,
     required double price,
+    double? originalPrice,
     String unit = 'კგ',
     double stockQuantity = 50.0,
     int? discountPercent,
@@ -141,6 +143,7 @@ class MarketplaceNotifier extends Notifier<MarketplaceState> {
       farmerId: farmerId,
       farmerName: farmerName,
       price: price,
+      originalPrice: originalPrice,
       unit: unit,
       discountPercent: discountPercent,
       stockQuantity: stockQuantity,
@@ -198,6 +201,7 @@ class MarketplaceNotifier extends Notifier<MarketplaceState> {
     String? title,
     String? category,
     double? price,
+    double? originalPrice,
     int? discountPercent,
     String? unit,
     double? stockQuantity,
@@ -225,6 +229,7 @@ class MarketplaceNotifier extends Notifier<MarketplaceState> {
           title: title,
           category: category,
           price: price,
+          originalPrice: originalPrice,
           discountPercent: discountPercent,
           unit: unit,
           stockQuantity: newStock,
@@ -248,6 +253,7 @@ class MarketplaceNotifier extends Notifier<MarketplaceState> {
           if (title != null) 'title': title,
           if (category != null) 'category': category,
           if (price != null) 'pricePerUnit': price,
+          if (originalPrice != null) 'originalPrice': originalPrice,
           if (discountPercent != null) 'discountPercent': discountPercent,
           if (unit != null) 'unit': unit,
           if (stockQuantity != null) 'stockQuantity': stockQuantity,
@@ -287,6 +293,33 @@ class MarketplaceNotifier extends Notifier<MarketplaceState> {
           match.id,
           stockQuantity: remaining,
           isAvailable: remaining > 0,
+        );
+      }
+    }
+  }
+
+  /// Restores deducted stock back to inventory when an order is cancelled
+  Future<void> restoreStockForOrderItems(List<FarmerOrderItem> items) async {
+    for (final item in items) {
+      final match = state.products.where((p) =>
+          (item.productId != null && p.id == item.productId) ||
+          p.title.trim().toLowerCase() == item.name.trim().toLowerCase()).firstOrNull;
+
+      if (match != null) {
+        double qtyToRestore = item.quantity;
+        if (qtyToRestore <= 1.0 && item.quantityText.isNotEmpty) {
+          final digits = RegExp(r'(\d+(?:\.\d+)?)')
+              .firstMatch(item.quantityText)
+              ?.group(1);
+          if (digits != null) {
+            qtyToRestore = double.tryParse(digits) ?? item.quantity;
+          }
+        }
+        final newStock = match.stockQuantity + qtyToRestore;
+        await updateProduct(
+          match.id,
+          stockQuantity: newStock,
+          isAvailable: true,
         );
       }
     }

@@ -88,8 +88,13 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
     _selectedCategory = existing?.category ?? AppCategories.categories.first.name;
 
     // Step 2
+    final initialBasePrice = existing?.originalPrice ?? existing?.price;
     _priceCtrl = TextEditingController(
-      text: existing != null ? existing.price.toStringAsFixed(1) : '',
+      text: initialBasePrice != null
+          ? (initialBasePrice % 1 == 0
+              ? initialBasePrice.toInt().toString()
+              : initialBasePrice.toStringAsFixed(2))
+          : '',
     );
     _stockCtrl = TextEditingController(
       text: existing != null ? existing.stockQuantity.toStringAsFixed(0) : '50',
@@ -445,19 +450,26 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
       rawDescription: _descCtrl.text,
     );
 
+    final hasActiveDiscount = discount != null && discount > 0;
+    final effectiveSellingPrice = hasActiveDiscount
+        ? (price * (1.0 - (discount / 100.0)))
+        : price;
+    final originalStrikethroughPrice = hasActiveDiscount ? price : null;
+
     try {
       await notifier.saveProduct(
         existing: widget.existing,
         title: title,
         category: _selectedCategory,
-        price: price,
+        price: effectiveSellingPrice,
+        originalPrice: originalStrikethroughPrice,
         unit: _selectedUnit,
         stockQuantity: stock,
         description: composedDescription,
         imageUrl: orderedImageUrls.first,
         images: orderedImageUrls,
         minOrderQuantity: minOrder,
-        discountPercent: (discount != null && discount > 0) ? discount : null,
+        discountPercent: hasActiveDiscount ? discount : null,
         bulkDiscountMinQty:
             (bulkMinQty != null && bulkMinQty > 0) ? bulkMinQty : null,
         bulkDiscountPercent:

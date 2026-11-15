@@ -5,6 +5,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../core/auth/auth_state_provider.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../core/widgets/app_confirmation_bottom_sheet.dart';
 import '../../../../core/widgets/app_toast.dart';
 import '../../../../core/widgets/draggable_floating_cart.dart';
 import '../../../../core/widgets/fly_to_cart_animator.dart';
@@ -58,14 +59,32 @@ class _CategoryProductsScreenState
     );
   }
 
-  void _onAddToCart(ProductModel product, BuildContext btnContext) {
-    if (ref.read(authStateProvider).isOwnerOfProduct(product)) {
-      AppToast.error(context, 'საკუთარი პროდუქტის დამატება შეუძლებელია');
-      return;
-    }
-    final addQty = product.minOrderQuantity.toInt().clamp(1, 99999);
-    final result = ref.read(cartProvider.notifier).addProduct(product, addQty);
+  Future<void> _handleDifferentFarmer(
+    AddToCartDifferentFarmer diff,
+    ProductModel product,
+    BuildContext btnContext,
+  ) async {
+    final confirmed = await AppConfirmationBottomSheet.showDifferentFarmerCart(
+      context: context,
+      currentFarmerName: diff.currentFarmerName,
+      newFarmerName: diff.newFarmerName,
+    );
 
+    if (confirmed && mounted && btnContext.mounted) {
+      final retryResult = ref.read(cartProvider.notifier).addProduct(
+            product,
+            diff.quantity,
+            forceReplaceFarmer: true,
+          );
+      _handleAddToCartResult(retryResult, product, btnContext);
+    }
+  }
+
+  void _handleAddToCartResult(
+    AddToCartResult result,
+    ProductModel product,
+    BuildContext btnContext,
+  ) {
     switch (result) {
       case AddToCartOwnerForbidden():
         AppToast.error(context, 'საკუთარი პროდუქტის დამატება შეუძლებელია');
@@ -76,17 +95,44 @@ class _CategoryProductsScreenState
           context,
           'ეს პროდუქტი უკვე მაქსიმალური რაოდენობით ($maxStock ${product.unit}) გაქვთ კალათაში',
         );
+      case AddToCartDifferentFarmer():
+        _handleDifferentFarmer(result, product, btnContext);
       case AddToCartSuccess(
           :final isCapped,
           :final addedQuantity,
           :final maxStock,
+          :final minOrderAdjusted,
+          :final hasBulkUpsell,
+          :final remainingForBulkDiscount,
+          :final bulkDiscountPercent,
+          :final bulkDiscountApplied,
         ):
-        if (isCapped) {
+        if (minOrderAdjusted) {
+          AppToast.info(
+            context,
+            'მინიმალური შეკვეთაა ${product.minOrderDisplay}. კალათაში დაემატა მინიმალური რაოდენობა.',
+            icon: LucideIcons.info,
+          );
+        } else if (isCapped) {
           AppToast.info(
             context,
             'მარაგის ლიმიტის გამო დაემატა $addedQuantity ${product.unit} (სულ კალათაში: $maxStock ${product.unit})',
+            icon: LucideIcons.alertCircle,
+          );
+        } else if (hasBulkUpsell) {
+          AppToast.info(
+            context,
+            'დაამატეთ კიდევ $remainingForBulkDiscount ${product.unit} და მიიღეთ $bulkDiscountPercent%-იანი საბითუმო ფასდაკლება!',
+            icon: LucideIcons.flame,
+          );
+        } else if (bulkDiscountApplied) {
+          AppToast.success(
+            context,
+            'გააქტიურდა $bulkDiscountPercent%-იანი საბითუმო ფასდაკლება!',
+            icon: LucideIcons.percent,
           );
         }
+
         FlyToCartAnimator.run(
           context: context,
           fromContext: btnContext,
@@ -95,6 +141,16 @@ class _CategoryProductsScreenState
           onComplete: () => _floatingCartKey.currentState?.bounce(),
         );
     }
+  }
+
+  void _onAddToCart(ProductModel product, BuildContext btnContext) {
+    if (ref.read(authStateProvider).isOwnerOfProduct(product)) {
+      AppToast.error(context, 'საკუთარი პროდუქტის დამატება შეუძლებელია');
+      return;
+    }
+    final addQty = product.minOrderQuantity.toInt().clamp(1, 99999);
+    final result = ref.read(cartProvider.notifier).addProduct(product, addQty);
+    _handleAddToCartResult(result, product, btnContext);
   }
 
   @override

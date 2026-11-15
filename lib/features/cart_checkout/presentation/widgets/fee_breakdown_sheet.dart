@@ -5,6 +5,8 @@ import '../../../../core/theme/app_typography.dart';
 
 enum FeeBreakdownType {
   standard,
+  passengerCar,
+  cargoVan,
   heavyWeight,
   heavyVolume,
   freeDelivery,
@@ -19,7 +21,7 @@ class FeeBreakdownSheet extends StatelessWidget {
     super.key,
     this.currentWeight = 3.8,
     this.currentSubtotal = 25.50,
-    this.type = FeeBreakdownType.heavyWeight,
+    this.type = FeeBreakdownType.standard,
   });
 
   static Future<void> show(
@@ -31,9 +33,11 @@ class FeeBreakdownSheet extends StatelessWidget {
     final determinedType = type ??
         (currentSubtotal >= 150.0
             ? FeeBreakdownType.freeDelivery
-            : (currentWeight > 25.0
-                ? FeeBreakdownType.heavyWeight
-                : FeeBreakdownType.standard));
+            : (currentWeight > 60.0
+                ? FeeBreakdownType.cargoVan
+                : (currentWeight > 20.0
+                    ? FeeBreakdownType.passengerCar
+                    : FeeBreakdownType.standard)));
 
     return showModalBottomSheet(
       context: context,
@@ -119,12 +123,55 @@ class FeeBreakdownSheet extends StatelessWidget {
             const SizedBox(height: 20),
           ],
 
-          // Heavy Weight / Volume Fee Row
-          if (type == FeeBreakdownType.heavyWeight || type == FeeBreakdownType.standard) ...[
+          // Heavy Weight / Cargo Van Fee Row
+          if (type == FeeBreakdownType.cargoVan) ...[
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(LucideIcons.package, size: 24, color: AppColors.textPrimary),
+                const Icon(LucideIcons.truck, size: 24, color: AppColors.primary),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'სატვირთო გადაზიდვის\nსაფასური',
+                        style: AppTypography.bodyMedium.copyWith(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
+                          height: 1.2,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'ემატება, რადგან თქვენი შეკვეთის წონამ (${currentWeight.toStringAsFixed(1)} კგ) გადააჭარბა 60 კგ-ს. მიტანას უზრუნველყოფს სატვირთო ვენი ან მინივენი.',
+                        style: AppTypography.caption.copyWith(
+                          fontSize: 13,
+                          color: AppColors.textSecondary,
+                          height: 1.4,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  '45.00 ₾',
+                  style: AppTypography.bodyMedium.copyWith(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+          ] else if (type == FeeBreakdownType.passengerCar || type == FeeBreakdownType.heavyWeight) ...[
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(LucideIcons.car, size: 24, color: AppColors.textPrimary),
                 const SizedBox(width: 14),
                 Expanded(
                   child: Column(
@@ -141,7 +188,7 @@ class FeeBreakdownSheet extends StatelessWidget {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        'ემატება, რადგან თქვენი შეკვეთის წონამ (${currentWeight.toStringAsFixed(1)} კგ) გადააჭარბა 25 კგ-იან ზღვარს.',
+                        'ემატება, რადგან თქვენი შეკვეთის წონამ (${currentWeight.toStringAsFixed(1)} კგ) გადააჭარბა 20 კგ-იან სტანდარტულ ზღვარს. მიტანას უზრუნველყოფს მსუბუქი ავტომობილი.',
                         style: AppTypography.caption.copyWith(
                           fontSize: 13,
                           color: AppColors.textSecondary,
@@ -153,7 +200,50 @@ class FeeBreakdownSheet extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  '5.00 ₾',
+                  '8.00 ₾',
+                  style: AppTypography.bodyMedium.copyWith(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+          ] else if (type == FeeBreakdownType.standard) ...[
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(LucideIcons.bike, size: 24, color: AppColors.textPrimary),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'სტანდარტული კურიერი',
+                        style: AppTypography.bodyMedium.copyWith(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
+                          height: 1.2,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'შეკვეთის წონა (${currentWeight.toStringAsFixed(1)} კგ) ეტევა სტანდარტულ საკურიერო ზღვარში (20 კგ-მდე). დამატებითი წონის გადასახადი არ გეკისრებათ.',
+                        style: AppTypography.caption.copyWith(
+                          fontSize: 13,
+                          color: AppColors.textSecondary,
+                          height: 1.4,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  '0.00 ₾',
                   style: AppTypography.bodyMedium.copyWith(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,

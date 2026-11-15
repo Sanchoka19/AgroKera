@@ -29,8 +29,73 @@ class CheckoutScreen extends ConsumerStatefulWidget {
 
 class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   String _address = 'ჭავჭავაძე - თბილისი';
-  String _deliverySlot = '28 ნოემბერი, 10:00-12:00';
+  String? _deliverySlot;
   bool _isPickupSelected = false;
+
+  List<String> _generateDeliverySlots(FarmerModel farmer) {
+    if (!farmer.isDeliveryEnabled) {
+      return ['თვითგატანა მეურნეობიდან (${farmer.deliveryCity})'];
+    }
+
+    final rawDays = farmer.deliveryDays.isNotEmpty
+        ? farmer.deliveryDays.map(FarmerModel.normalizeDay).toList()
+        : ['შაბათი'];
+
+    const geoWeekdayMap = {
+      DateTime.monday: 'ორშაბათი',
+      DateTime.tuesday: 'სამშაბათი',
+      DateTime.wednesday: 'ოთხშაბათი',
+      DateTime.thursday: 'ხუთშაბათი',
+      DateTime.friday: 'პარასკევი',
+      DateTime.saturday: 'შაბათი',
+      DateTime.sunday: 'კვირა',
+    };
+
+    const monthNames = [
+      '',
+      'იანვარი',
+      'თებერვალი',
+      'მარტი',
+      'აპრილი',
+      'მაისი',
+      'ივნისი',
+      'ივლისი',
+      'აგვისტო',
+      'სექტემბერი',
+      'ოქტომბერი',
+      'ნოემბერი',
+      'დეკემბერი',
+    ];
+
+    final now = DateTime.now();
+    final matchingDates = <DateTime>[];
+
+    for (int i = 1; i <= 14; i++) {
+      final date = now.add(Duration(days: i));
+      final weekdayName = geoWeekdayMap[date.weekday];
+      if (rawDays.contains(weekdayName)) {
+        matchingDates.add(date);
+        if (matchingDates.length >= 2) break;
+      }
+    }
+
+    if (matchingDates.isEmpty) {
+      return [
+        '${rawDays.first}, 10:00 - 13:00',
+        '${rawDays.first}, 14:00 - 18:00',
+      ];
+    }
+
+    final slots = <String>[];
+    for (final d in matchingDates) {
+      final weekdayName = geoWeekdayMap[d.weekday] ?? '';
+      final monthName = monthNames[d.month];
+      slots.add('$weekdayName, ${d.day} $monthName, 10:00-13:00');
+      slots.add('$weekdayName, ${d.day} $monthName, 14:00-18:00');
+    }
+
+    return slots;
+  }
 
   FarmerModel _resolveFarmer(
     MarketplaceState marketplace,
@@ -393,12 +458,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   }
 
   void _showDeliverySlotDialog() {
-    final slots = [
-      '28 ნოემბერი, 10:00-12:00',
-      '28 ნოემბერი, 14:00-16:00',
-      '28 ნოემბერი, 18:00-20:00',
-      '29 ნოემბერი, 10:00-12:00',
-    ];
+    final marketplace = ref.read(marketplaceProvider);
+    final cartItems = ref.read(cartProvider);
+    final farmer = _resolveFarmer(marketplace, cartItems);
+    final slots = _generateDeliverySlots(farmer);
+    final activeSlot = _deliverySlot ?? slots.first;
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.white,
@@ -415,6 +480,15 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               'აირჩიეთ მიტანის დრო',
               style: AppTypography.h1.copyWith(fontSize: 18),
             ),
+            const SizedBox(height: 4),
+            Text(
+              'ფერმერის მიწოდების დღეები: ${farmer.deliveryDays.isNotEmpty ? farmer.deliveryDays.join(", ") : "შაბათი"}',
+              style: GoogleFonts.notoSansGeorgian(
+                fontSize: 13,
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
             const SizedBox(height: 12),
             ...slots.map(
               (s) => ListTile(
@@ -422,7 +496,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   s,
                   style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
-                trailing: _deliverySlot == s
+                trailing: activeSlot == s
                     ? const Icon(LucideIcons.check, color: AppColors.primary)
                     : null,
                 onTap: () {
@@ -504,14 +578,18 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     final paymentState = ref.read(paymentProvider);
     final paymentMethod = paymentState.selectedMethod;
 
+    final activeDeliverySlot =
+        _deliverySlot ?? _generateDeliverySlots(farmer).first;
+
     String orderNumber = '38195';
     final created = await ref
         .read(farmerOrdersProvider.notifier)
         .createOrderFromCart(
           cartItems: cartItems,
           deliveryAddress: finalDeliveryAddress,
-          deliveryTimeWindow: _deliverySlot,
+          deliveryTimeWindow: activeDeliverySlot,
           paymentMethod: paymentMethod.name.toUpperCase(),
+          hasVat: farmer.isVatPayer,
         );
     orderNumber = created.id;
     if (!mounted) return;
@@ -546,9 +624,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   String _buildCtaButtonText(PaymentMethodType method, double amount) {
     switch (method) {
       case PaymentMethodType.bankTransfer:
-        return 'გაფორმება • ${amount.toStringAsFixed(0)} ₾ (Escrow)';
+        return 'მოთხოვნის გაგზავნა • ${amount.toStringAsFixed(0)} ₾';
       case PaymentMethodType.cash:
-        return 'შეკვეთის გაფორმება • ${amount.toStringAsFixed(0)} ₾';
+        return 'მოთხოვნის გაგზავნა • ${amount.toStringAsFixed(0)} ₾';
     }
   }
 
@@ -975,7 +1053,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    _deliverySlot,
+                    _deliverySlot ?? _generateDeliverySlots(farmer).first,
                     style: AppTypography.bodyMedium.copyWith(
                       fontSize: 14,
                       color: AppColors.textSecondary,
@@ -1160,6 +1238,17 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     fontWeight: FontWeight.w700,
                     color: Colors.white,
                   ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Center(
+              child: Text(
+                'თანხა წინასწარ არ იჭრება • გადახდა ფერმერის დასტურის შემდეგ',
+                style: GoogleFonts.notoSansGeorgian(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF64748B),
                 ),
               ),
             ),

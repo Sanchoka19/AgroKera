@@ -98,18 +98,42 @@ void main() {
   });
 
   group('Cart & Favorites Auth Guard Tests', () {
-    testWidgets('shows auth required screen for unauthenticated user on CartScreen', (tester) async {
+    testWidgets('allows unauthenticated guest to view cart and prompts auth on checkout button', (tester) async {
+      final container = ProviderContainer();
+      container.read(cartProvider.notifier).addItem(
+        const CartItemModel(
+          id: 'guest_prod_1',
+          title: 'სოფლის პომიდორი',
+          packageText: '1კგ',
+          farmerName: 'სოფლის ფერმა',
+          pricePerUnit: 35.00,
+          unit: 'კგ',
+          imageUrl: '',
+          quantity: 1,
+          weightKg: 1.0,
+          minOrderQuantity: 1.0,
+          stockQuantity: 50.0,
+        ),
+      );
+
       await tester.pumpWidget(
-        const ProviderScope(
-          child: MaterialApp(
+        UncontrolledProviderScope(
+          container: container,
+          child: const MaterialApp(
             home: CartScreen(),
           ),
         ),
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('ავტორიზაცია აუცილებელია'), findsOneWidget);
-      expect(find.text('შესვლა / რეგისტრაცია'), findsOneWidget);
+      expect(find.text('კალათი'), findsOneWidget);
+      expect(find.text('სოფლის პომიდორი'), findsOneWidget);
+      expect(find.text('გაგრძელება'), findsOneWidget);
+
+      await tester.tap(find.text('გაგრძელება'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('ავტორიზაცია'), findsWidgets);
     });
 
     testWidgets('shows auth required screen for unauthenticated user on FavoritesScreen', (tester) async {
@@ -518,6 +542,276 @@ void main() {
       expect(farmerProducts.any((p) => p.farmerName == 'გიორგის ფერმა'), isFalse);
       // Products of other farmers (e.g. farmer_1) remain available
       expect(farmerProducts.any((p) => p.farmerId == 'farmer_1'), isTrue);
+    });
+
+    test('Single-Vendor Cart enforces one farmer and allows replacement on confirmation', () {
+      final container = ProviderContainer();
+      container.read(authStateProvider.notifier).login(role: UserRole.customer);
+      final notifier = container.read(cartProvider.notifier);
+      notifier.clearCart();
+
+      // Product 1 from Farmer 1
+      final p1 = ProductModel(
+        id: 'prod_f1_1',
+        title: 'ყურძენი',
+        category: 'ხილი',
+        farmerId: 'farmer_1',
+        farmerName: 'მწვანე ველი',
+        price: 5.0,
+        imageUrl: '',
+        description: '',
+        stockQuantity: 50,
+      );
+
+      // Product 2 from Farmer 2
+      final p2 = ProductModel(
+        id: 'prod_f2_1',
+        title: 'ატამი',
+        category: 'ხილი',
+        farmerId: 'farmer_2',
+        farmerName: 'გიორგის ფერმა',
+        price: 7.0,
+        imageUrl: '',
+        description: '',
+        stockQuantity: 50,
+      );
+
+      // Add product from Farmer 1 -> Success
+      final res1 = notifier.addProduct(p1, 2);
+      expect(res1, isA<AddToCartSuccess>());
+      expect(container.read(cartProvider).length, 1);
+      expect(container.read(cartProvider).first.farmerName, 'მწვანე ველი');
+
+      // Attempt to add product from Farmer 2 without force -> AddToCartDifferentFarmer
+      final res2 = notifier.addProduct(p2, 3);
+      expect(res2, isA<AddToCartDifferentFarmer>());
+      final diff = res2 as AddToCartDifferentFarmer;
+      expect(diff.currentFarmerName, 'მწვანე ველი');
+      expect(diff.newFarmerName, 'გიორგის ფერმა');
+      expect(diff.quantity, 3);
+      // Cart should still contain only Farmer 1's product
+      expect(container.read(cartProvider).length, 1);
+      expect(container.read(cartProvider).first.farmerName, 'მწვანე ველი');
+
+      // User confirms replacement -> forceReplaceFarmer: true
+      final res3 = notifier.addProduct(p2, 3, forceReplaceFarmer: true);
+      expect(res3, isA<AddToCartSuccess>());
+      expect(container.read(cartProvider).length, 1);
+      expect(container.read(cartProvider).first.farmerName, 'გიორგის ფერმა');
+      expect(container.read(cartProvider).first.quantity, 3);
+    });
+
+    test('Weight calculation correctly reflects linear weight rather than squared weight', () {
+      final container = ProviderContainer();
+      container.read(authStateProvider.notifier).login(role: UserRole.customer);
+      final notifier = container.read(cartProvider.notifier);
+      notifier.clearCart();
+
+      final p = ProductModel(
+        id: 'prod_weight_1',
+        title: 'კარტოფილი',
+        category: 'ბოსტნეული',
+        farmerId: 'farmer_1',
+        farmerName: 'მწვანე ველი',
+        price: 2.0,
+        imageUrl: '',
+        description: '',
+        stockQuantity: 100,
+      );
+
+      // Adding 5 kg
+      final res = notifier.addProduct(p, 5);
+      expect(res, isA<AddToCartSuccess>());
+
+      final items = container.read(cartProvider);
+      expect(items.length, 1);
+      // Weight per unit is 1.0, totalWeight is 5.0 kg (NOT 25 kg!)
+      expect(items.totalWeight, 5.0);
+      expect(items.heavyFee, 0.0);
+    });
+
+    test('Minimum order quantity is automatically enforced on addProduct', () {
+      final container = ProviderContainer();
+      container.read(authStateProvider.notifier).login(role: UserRole.customer);
+      final notifier = container.read(cartProvider.notifier);
+      notifier.clearCart();
+
+      final p = ProductModel(
+        id: 'prod_min_1',
+        title: 'კაკალი',
+        category: 'ჩირი და თხილეული',
+        farmerId: 'farmer_1',
+        farmerName: 'მწვანე ველი',
+        price: 15.0,
+        imageUrl: '',
+        description: '',
+        minOrderQuantity: 5.0,
+        stockQuantity: 50,
+      );
+
+      // Attempt to add 2 units (less than minOrderQuantity = 5)
+      final res = notifier.addProduct(p, 2);
+      expect(res, isA<AddToCartSuccess>());
+      final success = res as AddToCartSuccess;
+      expect(success.minOrderAdjusted, isTrue);
+      expect(success.totalInCart, 5);
+      expect(container.read(cartProvider).first.quantity, 5);
+    });
+
+    test('Bulk discount upsell and applied states are accurately computed', () {
+      final container = ProviderContainer();
+      container.read(authStateProvider.notifier).login(role: UserRole.customer);
+      final notifier = container.read(cartProvider.notifier);
+      notifier.clearCart();
+
+      final p = ProductModel(
+        id: 'prod_bulk_test_1',
+        title: 'მარწყვი',
+        category: 'ხილი',
+        farmerId: 'farmer_1',
+        farmerName: 'მწვანე ველი',
+        price: 10.0,
+        imageUrl: '',
+        description: '',
+        bulkDiscountMinQty: 10.0,
+        bulkDiscountPercent: 20,
+        stockQuantity: 100,
+      );
+
+      // Add 8 units (2 units short of bulk threshold 10)
+      final res1 = notifier.addProduct(p, 8);
+      expect(res1, isA<AddToCartSuccess>());
+      final s1 = res1 as AddToCartSuccess;
+      expect(s1.hasBulkUpsell, isTrue);
+      expect(s1.remainingForBulkDiscount, 2);
+      expect(s1.bulkDiscountPercent, 20);
+      expect(s1.bulkDiscountApplied, isFalse);
+
+      // Add 2 more units (reach 10)
+      final res2 = notifier.addProduct(p, 2);
+      expect(res2, isA<AddToCartSuccess>());
+      final s2 = res2 as AddToCartSuccess;
+      expect(s2.bulkDiscountApplied, isTrue);
+      expect(s2.hasBulkUpsell, isFalse);
+      expect(container.read(cartProvider).first.isBulkDiscountApplied, isTrue);
+    });
+
+    test('Unit logistics weight conversion matrix calculates correct weight for bottles, crates, pieces, bundles', () {
+      expect(CartItemModel.resolveDefaultUnitWeight('კგ'), 1.0);
+      expect(CartItemModel.resolveDefaultUnitWeight('ლიტრი'), 1.1);
+      expect(CartItemModel.resolveDefaultUnitWeight('ლ'), 1.1);
+      expect(CartItemModel.resolveDefaultUnitWeight('ბოთლი'), 1.4);
+      expect(CartItemModel.resolveDefaultUnitWeight('ყუთი'), 10.0);
+      expect(CartItemModel.resolveDefaultUnitWeight('ცალი'), 1.5);
+      expect(CartItemModel.resolveDefaultUnitWeight('შეკვრა'), 0.5);
+
+      const wineItem = CartItemModel(
+        id: 'wine_1',
+        title: 'საფერავი',
+        packageText: 'ბოთლი',
+        farmerName: 'კახური ველი',
+        pricePerUnit: 25.0,
+        unit: 'ბოთლი',
+        imageUrl: '',
+        quantity: 10,
+      );
+      // 10 bottles * 1.4 kg = 14.0 kg
+      expect(wineItem.totalWeight, 14.0);
+
+      const crateItem = CartItemModel(
+        id: 'crate_1',
+        title: 'ატამი',
+        packageText: 'ყუთი',
+        farmerName: 'კახური ველი',
+        pricePerUnit: 30.0,
+        unit: 'ყუთი',
+        imageUrl: '',
+        quantity: 3,
+      );
+      // 3 crates * 10.0 kg = 30.0 kg
+      expect(crateItem.totalWeight, 30.0);
+    });
+
+    test('Vehicle capacity tiers and heavy fee surcharges work properly across weight thresholds', () {
+      final container = ProviderContainer();
+      final notifier = container.read(cartProvider.notifier);
+      notifier.clearCart();
+
+      // Tier 1: <= 20 kg (Standard Courier, heavyFee = 0)
+      notifier.addItem(
+        const CartItemModel(
+          id: 'tier1_item',
+          title: 'პომიდორი',
+          packageText: 'კგ',
+          farmerName: 'ფერმა',
+          pricePerUnit: 5.0,
+          unit: 'კგ',
+          imageUrl: '',
+          quantity: 15, // 15 kg
+        ),
+      );
+      var items = container.read(cartProvider);
+      expect(items.totalWeight, 15.0);
+      expect(items.vehicleType, DeliveryVehicleType.standardCourier);
+      expect(items.heavyFee, 0.0);
+      expect(items.isWeightLimitExceeded, isFalse);
+
+      // Tier 2: 20.01 - 60 kg (Passenger Car, heavyFee = 8.0)
+      notifier.addItem(
+        const CartItemModel(
+          id: 'tier2_item',
+          title: 'ღვინო',
+          packageText: 'ბოთლი',
+          farmerName: 'ფერმა',
+          pricePerUnit: 20.0,
+          unit: 'ბოთლი',
+          imageUrl: '',
+          quantity: 15, // 15 * 1.4 = 21.0 kg -> Total = 36.0 kg
+        ),
+      );
+      items = container.read(cartProvider);
+      expect(items.totalWeight, 36.0);
+      expect(items.vehicleType, DeliveryVehicleType.passengerCar);
+      expect(items.heavyFee, 8.0);
+      expect(items.isWeightLimitExceeded, isFalse);
+
+      // Tier 3: 60.01 - 250 kg (Cargo Van, heavyFee = 45.0)
+      notifier.addItem(
+        const CartItemModel(
+          id: 'tier3_item',
+          title: 'კარტოფილი',
+          packageText: 'ყუთი',
+          farmerName: 'ფერმა',
+          pricePerUnit: 15.0,
+          unit: 'ყუთი',
+          imageUrl: '',
+          quantity: 5, // 5 * 10.0 = 50.0 kg -> Total = 86.0 kg
+        ),
+      );
+      items = container.read(cartProvider);
+      expect(items.totalWeight, 86.0);
+      expect(items.vehicleType, DeliveryVehicleType.cargoVan);
+      expect(items.heavyFee, 45.0);
+      expect(items.isWeightLimitExceeded, isFalse);
+
+      // Tier 4: > 250 kg (Exceeded Limit -> Courier delivery blocked, pickup required)
+      notifier.addItem(
+        const CartItemModel(
+          id: 'tier4_item',
+          title: 'საზამთრო საბითუმო',
+          packageText: 'კგ',
+          farmerName: 'ფერმა',
+          pricePerUnit: 1.0,
+          unit: 'კგ',
+          imageUrl: '',
+          quantity: 200, // 200 kg -> Total = 286.0 kg
+        ),
+      );
+      items = container.read(cartProvider);
+      expect(items.totalWeight, 286.0);
+      expect(items.vehicleType, DeliveryVehicleType.exceededLimit);
+      expect(items.isWeightLimitExceeded, isTrue);
+      expect(items.heavyFee, 0.0); // No courier heavy fee charged because delivery is blocked
     });
   });
 }

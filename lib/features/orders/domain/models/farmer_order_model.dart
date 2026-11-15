@@ -77,22 +77,38 @@ enum OrderStatus {
 
 /// A line item inside a farmer order
 class FarmerOrderItem {
+  final String? productId;
   final String name;
   final String quantityText;
   final double price;
+  final double quantity;
 
   const FarmerOrderItem({
+    this.productId,
     required this.name,
     required this.quantityText,
     required this.price,
+    this.quantity = 1.0,
   });
 
   factory FarmerOrderItem.fromJson(Map<String, dynamic> json) {
     return FarmerOrderItem(
+      productId: json['productId'] as String? ?? json['id'] as String?,
       name: json['name'] as String? ?? 'პროდუქტი',
       quantityText: json['quantityText'] as String? ?? '1კგ',
       price: (json['price'] as num?)?.toDouble() ?? 0.0,
+      quantity: (json['quantity'] as num?)?.toDouble() ?? 1.0,
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      if (productId != null) 'productId': productId,
+      'name': name,
+      'quantityText': quantityText,
+      'price': price,
+      'quantity': quantity,
+    };
   }
 }
 
@@ -114,6 +130,8 @@ class FarmerOrder {
   final DateTime? cancellationDeadline;
   final String? trackingNumber;
   final String paymentMethod;
+  final bool hasClientReportedPayment;
+  final bool isPaymentConfirmed;
 
   const FarmerOrder({
     required this.id,
@@ -132,6 +150,8 @@ class FarmerOrder {
     this.cancellationDeadline,
     this.trackingNumber,
     this.paymentMethod = 'ESCROW',
+    this.hasClientReportedPayment = false,
+    this.isPaymentConfirmed = false,
   });
 
   factory FarmerOrder.fromJson(Map<String, dynamic> json) {
@@ -155,6 +175,9 @@ class FarmerOrder {
           : null,
       trackingNumber: json['trackingNumber'] as String?,
       paymentMethod: json['paymentMethod'] as String? ?? 'ESCROW',
+      hasClientReportedPayment:
+          json['hasClientReportedPayment'] as bool? ?? false,
+      isPaymentConfirmed: json['isPaymentConfirmed'] as bool? ?? false,
       items: rawItems
           .whereType<Map<String, dynamic>>()
           .map(FarmerOrderItem.fromJson)
@@ -178,6 +201,18 @@ class FarmerOrder {
       return items.first.name;
     }
     return '${items.first.name} +${items.length - 1} სხვა';
+  }
+
+  /// Whether payment is processed via AgroKera Escrow Bank Transfer
+  bool get isBankTransfer {
+    final pm = paymentMethod.toUpperCase();
+    return pm == 'BANKTRANSFER' || pm == 'ESCROW';
+  }
+
+  /// Whether payment is made with cash on delivery/pickup
+  bool get isCash {
+    final pm = paymentMethod.toUpperCase();
+    return pm == 'CASH';
   }
 
   /// Whether cancellation without prior approval is still possible
@@ -213,6 +248,8 @@ class FarmerOrder {
     DateTime? cancellationDeadline,
     String? trackingNumber,
     String? paymentMethod,
+    bool? hasClientReportedPayment,
+    bool? isPaymentConfirmed,
   }) {
     return FarmerOrder(
       id: id ?? this.id,
@@ -231,6 +268,9 @@ class FarmerOrder {
       cancellationDeadline: cancellationDeadline ?? this.cancellationDeadline,
       trackingNumber: trackingNumber ?? this.trackingNumber,
       paymentMethod: paymentMethod ?? this.paymentMethod,
+      hasClientReportedPayment:
+          hasClientReportedPayment ?? this.hasClientReportedPayment,
+      isPaymentConfirmed: isPaymentConfirmed ?? this.isPaymentConfirmed,
     );
   }
 }

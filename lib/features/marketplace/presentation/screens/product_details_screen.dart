@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/auth/auth_state_provider.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/app_toast.dart';
 import '../../../cart_checkout/presentation/providers/cart_provider.dart';
 import '../../../cart_checkout/presentation/screens/cart_screen.dart';
-import '../../data/models/farmer_model.dart';
+import '../../data/mock_data.dart';
 import '../../data/models/product_model.dart';
 import '../providers/marketplace_provider.dart';
 import 'package:agrokera/core/widgets/draggable_floating_cart.dart';
@@ -65,10 +66,17 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
   }
 
   void _onAddToCart(ProductModel product) {
+    if (ref.read(authStateProvider).isOwnerOfProduct(product)) {
+      AppToast.error(context, 'საკუთარი პროდუქტის შეძენა შეუძლებელია');
+      return;
+    }
+
     final result =
         ref.read(cartProvider.notifier).addProduct(product, _quantity);
 
     switch (result) {
+      case AddToCartOwnerForbidden():
+        AppToast.error(context, 'საკუთარი პროდუქტის შეძენა შეუძლებელია');
       case AddToCartOutOfStock():
         AppToast.info(context, 'მარაგში მეტი აღარ არის');
       case AddToCartAlreadyMax(:final maxStock):
@@ -124,6 +132,8 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
   Widget build(BuildContext context) {
     final product = widget.product;
     final marketplace = ref.watch(marketplaceProvider);
+    final authState = ref.watch(authStateProvider);
+    final isOwner = authState.isOwnerOfProduct(product);
     final cartCount = ref.watch(cartProvider).length;
     final similarProducts = ref.watch(similarProductsProvider(product));
 
@@ -134,21 +144,7 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
           f.farmerName == product.farmerName,
       orElse: () => marketplace.farmers.isNotEmpty
           ? marketplace.farmers.first
-          : FarmerModel(
-              id: product.farmerId,
-              farmName: product.farmerName,
-              farmerName: product.farmerName,
-              location: 'კახეთი',
-              rating: product.rating,
-              reviewCount: product.reviewCount,
-              totalRatings: product.reviewCount,
-              isVerified: true,
-              isVatPayer: false,
-              avatarUrl: '',
-              coverUrl: '',
-              about: 'ნატურალური ქართული აგრო-პროდუქცია პირდაპირ მეურნეობიდან.',
-              phone: '',
-            ),
+          : MockData.farmers.first,
     );
 
     return Scaffold(
@@ -177,6 +173,7 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                       ProductQuantitySection(
                         product: product,
                         quantity: _quantity,
+                        isOwner: isOwner,
                         onQuantityChanged: (val) =>
                             setState(() => _quantity = val),
                       ),
@@ -205,6 +202,7 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
         product: product,
         quantity: _quantity,
         addButtonKey: _addButtonKey,
+        isOwner: isOwner,
         onAddToCart: () => _onAddToCart(product),
       ),
     );

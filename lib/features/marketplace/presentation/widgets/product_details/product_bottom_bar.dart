@@ -12,6 +12,7 @@ class ProductBottomBar extends StatelessWidget {
   final int quantity;
   final GlobalKey addButtonKey;
   final VoidCallback onAddToCart;
+  final bool isOwner;
 
   const ProductBottomBar({
     super.key,
@@ -19,6 +20,7 @@ class ProductBottomBar extends StatelessWidget {
     required this.quantity,
     required this.addButtonKey,
     required this.onAddToCart,
+    this.isOwner = false,
   });
 
   @override
@@ -108,15 +110,23 @@ class ProductBottomBar extends StatelessWidget {
               Expanded(
                 child: PrimaryButton(
                   key: addButtonKey,
-                  text: isOutOfStock ? 'მარაგში აღარ არის' : 'დამატება',
-                  icon: isOutOfStock
-                      ? null
-                      : const Icon(
-                          LucideIcons.shoppingCart,
-                          size: 20,
+                  text: isOwner
+                      ? 'თქვენი პროდუქტი'
+                      : (isOutOfStock ? 'მარაგში აღარ არის' : 'დამატება'),
+                  icon: isOwner
+                      ? const Icon(
+                          LucideIcons.ban,
+                          size: 18,
                           color: Colors.white,
-                        ),
-                  onPressed: isOutOfStock ? null : onAddToCart,
+                        )
+                      : (isOutOfStock
+                          ? null
+                          : const Icon(
+                              LucideIcons.shoppingCart,
+                              size: 20,
+                              color: Colors.white,
+                            )),
+                  onPressed: (isOwner || isOutOfStock) ? null : onAddToCart,
                 ),
               ),
             ],

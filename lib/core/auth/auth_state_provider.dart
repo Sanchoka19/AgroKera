@@ -121,6 +121,37 @@ class AuthState {
       kycStatus: kycStatus ?? this.kycStatus,
     );
   }
+
+  /// Checks if the authenticated user is the owner farmer matching any of
+  /// the provided farmer ID, farm name, or farmer user name.
+  bool isOwner({String? farmerId, String? farmName, String? farmerName}) {
+    if (role != UserRole.farmer) return false;
+    if (this.farmerId != null &&
+        farmerId != null &&
+        farmerId.isNotEmpty &&
+        this.farmerId == farmerId) {
+      return true;
+    }
+    if (this.farmName != null &&
+        farmName != null &&
+        farmName.isNotEmpty &&
+        this.farmName == farmName) {
+      return true;
+    }
+    if (this.farmName != null &&
+        farmerName != null &&
+        farmerName.isNotEmpty &&
+        this.farmName == farmerName) {
+      return true;
+    }
+    if (userName != null &&
+        farmerName != null &&
+        farmerName.isNotEmpty &&
+        userName == farmerName) {
+      return true;
+    }
+    return false;
+  }
 }
 
 class _ResolvedAccountIdentity {

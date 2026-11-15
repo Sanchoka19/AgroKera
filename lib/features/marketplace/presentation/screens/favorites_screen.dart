@@ -203,6 +203,7 @@ class FavoritesScreen extends ConsumerWidget {
                 final product = favoriteProducts[index];
                 return ProductCard(
                   product: product,
+                  isOwner: product.isOwnedBy(authState),
                   onTap: () {
                     Navigator.of(context).push(
                       MaterialPageRoute(

@@ -3,6 +3,7 @@ class CartItemModel {
   final String title;
   final String packageText;
   final String farmerName;
+  final String? farmerId;
   final double pricePerUnit;
   final String unit;
   final String imageUrl;
@@ -18,6 +19,7 @@ class CartItemModel {
     required this.title,
     required this.packageText,
     required this.farmerName,
+    this.farmerId,
     required this.pricePerUnit,
     this.unit = 'კგ',
     required this.imageUrl,
@@ -55,6 +57,7 @@ class CartItemModel {
     String? title,
     String? packageText,
     String? farmerName,
+    String? farmerId,
     double? pricePerUnit,
     String? unit,
     String? imageUrl,
@@ -70,6 +73,7 @@ class CartItemModel {
       title: title ?? this.title,
       packageText: packageText ?? this.packageText,
       farmerName: farmerName ?? this.farmerName,
+      farmerId: farmerId ?? this.farmerId,
       pricePerUnit: pricePerUnit ?? this.pricePerUnit,
       unit: unit ?? this.unit,
       imageUrl: imageUrl ?? this.imageUrl,
@@ -88,6 +92,7 @@ class CartItemModel {
       'title': title,
       'packageText': packageText,
       'farmerName': farmerName,
+      'farmerId': farmerId,
       'pricePerUnit': pricePerUnit,
       'unit': unit,
       'imageUrl': imageUrl,
@@ -106,6 +111,7 @@ class CartItemModel {
       title: json['title'] as String? ?? '',
       packageText: json['packageText'] as String? ?? '',
       farmerName: json['farmerName'] as String? ?? '',
+      farmerId: json['farmerId'] as String?,
       pricePerUnit: (json['pricePerUnit'] as num?)?.toDouble() ?? 0.0,
       unit: json['unit'] as String? ?? 'კგ',
       imageUrl: json['imageUrl'] as String? ?? '',

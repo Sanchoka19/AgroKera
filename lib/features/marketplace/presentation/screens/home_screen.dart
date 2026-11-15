@@ -428,8 +428,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       itemCount: products.length,
                       itemBuilder: (context, index) {
                         final product = products[index];
+                        final isOwner = product.isOwnedBy(
+                          ref.watch(authStateProvider),
+                        );
                         return ProductCard(
                           product: product,
+                          isOwner: isOwner,
                           onTap: () {
                             Navigator.of(context).push(
                               MaterialPageRoute(

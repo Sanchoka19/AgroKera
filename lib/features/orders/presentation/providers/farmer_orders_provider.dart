@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/auth/auth_state_provider.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../cart_checkout/data/models/cart_item_model.dart';
+import '../../../cart_checkout/presentation/providers/cart_provider.dart';
 import '../../../marketplace/presentation/providers/marketplace_provider.dart';
 import '../../domain/models/farmer_order_model.dart';
 
@@ -286,6 +287,12 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
     String paymentMethod = 'ESCROW',
   }) async {
     final auth = ref.read(authStateProvider);
+    if (auth.role == UserRole.farmer) {
+      final isOwn = cartItems.any((ci) => auth.isOwnerOfCartItem(ci));
+      if (isOwn) {
+        throw StateError('ფერმერს არ შეუძლია საკუთარი პროდუქციის შეკვეთა');
+      }
+    }
     final effectiveName =
         (customerName != null && customerName.trim().isNotEmpty)
             ? customerName.trim()

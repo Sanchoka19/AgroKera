@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/auth/auth_state_provider.dart';
 import '../../../../core/storage/secure_storage_service.dart';
 import '../../../marketplace/data/models/product_model.dart';
 import '../../data/models/cart_item_model.dart';
@@ -33,12 +34,21 @@ class AddToCartOutOfStock extends AddToCartResult {
   const AddToCartOutOfStock();
 }
 
+class AddToCartOwnerForbidden extends AddToCartResult {
+  const AddToCartOwnerForbidden();
+}
+
 sealed class CartValidationResult {
   const CartValidationResult();
 }
 
 class CartValidationValid extends CartValidationResult {
   const CartValidationValid();
+}
+
+class CartValidationContainsOwnProduct extends CartValidationResult {
+  final String productTitle;
+  const CartValidationContainsOwnProduct(this.productTitle);
 }
 
 class CartValidationOutOfStock extends CartValidationResult {
@@ -58,7 +68,51 @@ class CartValidationExceedsStock extends CartValidationResult {
   });
 }
 
+/// Domain ownership check extension for cart items
+extension AuthStateCartOwnership on AuthState {
+  bool isOwnerOfCartItem(CartItemModel item) {
+    return isOwner(
+      farmerId: item.farmerId,
+      farmName: item.farmerName,
+      farmerName: item.farmerName,
+    );
+  }
+}
+
 class CartNotifier extends Notifier<List<CartItemModel>> {
+  static const List<CartItemModel> _sampleItems = [
+    CartItemModel(
+      id: 'prod_1',
+      title: 'მწვანილოვანი კომბოსტო',
+      packageText: '10კგ პატარა ყუთი',
+      farmerName: 'გიორგის ფერმა',
+      farmerId: 'farmer_2',
+      pricePerUnit: 15.00,
+      unit: 'კგ',
+      imageUrl:
+          'https://images.unsplash.com/photo-1550142414-a81e12541000?w=600&auto=format&fit=crop&q=80',
+      quantity: 5,
+      weightKg: 2.0,
+      minOrderQuantity: 1.0,
+      stockQuantity: 50.0,
+    ),
+    CartItemModel(
+      id: 'prod_2',
+      title: 'ბულგარული წიწაკა',
+      packageText: 'სუფთა მოსავალი',
+      farmerName: 'გიორგის ფერმა',
+      farmerId: 'farmer_2',
+      pricePerUnit: 15.00,
+      unit: 'კგ',
+      imageUrl:
+          'https://images.unsplash.com/photo-1563565375-f3fdfdbefa83?w=600&auto=format&fit=crop&q=80',
+      quantity: 10,
+      weightKg: 1.8,
+      minOrderQuantity: 1.0,
+      stockQuantity: 50.0,
+    ),
+  ];
+
   @override
   List<CartItemModel> build() {
     unawaited(Future.microtask(restoreCart));
@@ -87,6 +141,11 @@ class CartNotifier extends Notifier<List<CartItemModel>> {
 
   /// Clean Domain action to add a product to the cart with stock and limit enforcement.
   AddToCartResult addProduct(ProductModel product, int quantity) {
+    final auth = ref.read(authStateProvider);
+    if (auth.isOwnerOfProduct(product)) {
+      return const AddToCartOwnerForbidden();
+    }
+
     if (!product.isAvailable || product.stockQuantity <= 0) {
       return const AddToCartOutOfStock();
     }
@@ -113,6 +172,7 @@ class CartNotifier extends Notifier<List<CartItemModel>> {
       title: product.title,
       packageText: '${product.unit} შეფუთვა',
       farmerName: product.farmerName,
+      farmerId: product.farmerId,
       pricePerUnit: product.price,
       unit: product.unit,
       imageUrl: product.imageUrl,
@@ -144,7 +204,11 @@ class CartNotifier extends Notifier<List<CartItemModel>> {
   /// Validates cart items against current real-time marketplace inventory.
   /// Automatically clamps cart quantities to available stock if needed.
   CartValidationResult validateAndSyncStock(List<ProductModel> products) {
+    final auth = ref.read(authStateProvider);
     for (final item in state) {
+      if (auth.isOwnerOfCartItem(item)) {
+        return CartValidationContainsOwnProduct(item.title);
+      }
       final product = products.where((p) => p.id == item.id).firstOrNull;
       if (product != null) {
         if (!product.isAvailable || product.stockQuantity <= 0) {
@@ -164,6 +228,10 @@ class CartNotifier extends Notifier<List<CartItemModel>> {
   }
 
   int addItem(CartItemModel newItem) {
+    final auth = ref.read(authStateProvider);
+    if (auth.isOwnerOfCartItem(newItem)) {
+      return 0;
+    }
     final existingIndex = state.indexWhere((item) => item.id == newItem.id);
     final maxAvailable = newItem.stockQuantity.toInt().clamp(1, 99999);
     if (existingIndex != -1) {

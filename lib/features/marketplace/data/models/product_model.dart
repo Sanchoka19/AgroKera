@@ -1,3 +1,5 @@
+import '../../../../core/auth/auth_state_provider.dart';
+
 class ProductModel {
   final String id;
   final String title;
@@ -201,4 +203,18 @@ class ProductModel {
       agroTags: agroTags ?? this.agroTags,
     );
   }
+
+  /// Checks if this product is owned by the provided authenticated user.
+  bool isOwnedBy(AuthState auth) {
+    return auth.isOwner(
+      farmerId: farmerId,
+      farmName: farmerName,
+      farmerName: farmerName,
+    );
+  }
+}
+
+/// Extension providing clean domain checks for product ownership by authenticated users.
+extension AuthStateProductOwnership on AuthState {
+  bool isOwnerOfProduct(ProductModel product) => product.isOwnedBy(this);
 }

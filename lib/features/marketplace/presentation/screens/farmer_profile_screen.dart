@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import '../../../../core/auth/auth_state_provider.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/auth_required_bottom_sheet.dart';
@@ -370,8 +371,12 @@ class _FarmerProfileScreenState extends ConsumerState<FarmerProfileScreen>
                     itemCount: farmerProducts.length,
                     itemBuilder: (context, index) {
                       final product = farmerProducts[index];
+                      final isOwner = product.isOwnedBy(
+                        ref.watch(authStateProvider),
+                      );
                       return ProductCard(
                         product: product,
+                        isOwner: isOwner,
                         onTap: () {
                           Navigator.of(context).push(
                             MaterialPageRoute(

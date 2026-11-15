@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import '../../../../core/auth/auth_state_provider.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/app_toast.dart';
@@ -58,10 +59,16 @@ class _CategoryProductsScreenState
   }
 
   void _onAddToCart(ProductModel product, BuildContext btnContext) {
+    if (ref.read(authStateProvider).isOwnerOfProduct(product)) {
+      AppToast.error(context, 'საკუთარი პროდუქტის დამატება შეუძლებელია');
+      return;
+    }
     final addQty = product.minOrderQuantity.toInt().clamp(1, 99999);
     final result = ref.read(cartProvider.notifier).addProduct(product, addQty);
 
     switch (result) {
+      case AddToCartOwnerForbidden():
+        AppToast.error(context, 'საკუთარი პროდუქტის დამატება შეუძლებელია');
       case AddToCartOutOfStock():
         AppToast.info(context, 'მარაგში მეტი აღარ არის');
       case AddToCartAlreadyMax(:final maxStock):
@@ -233,8 +240,12 @@ class _CategoryProductsScreenState
                         itemCount: products.length,
                         itemBuilder: (context, index) {
                           final product = products[index];
+                          final isOwner = ref
+                              .watch(authStateProvider)
+                              .isOwnerOfProduct(product);
                           return ProductCard(
                             product: product,
+                            isOwner: isOwner,
                             onTap: () {
                               Navigator.of(context).push(
                                 MaterialPageRoute(
@@ -243,8 +254,10 @@ class _CategoryProductsScreenState
                                 ),
                               );
                             },
-                            onAddWithContext: (btnContext) =>
-                                _onAddToCart(product, btnContext),
+                            onAddWithContext: isOwner
+                                ? null
+                                : (btnContext) =>
+                                    _onAddToCart(product, btnContext),
                           );
                         },
                       ),

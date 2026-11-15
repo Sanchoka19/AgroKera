@@ -3,6 +3,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../features/marketplace/data/models/product_model.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
+import 'app_toast.dart';
 
 /// Product card according to DESIGN_SYSTEM.md and Figma screenshots:
 /// - Background: #FFFFFF
@@ -16,6 +17,7 @@ class ProductCard extends StatelessWidget {
   final VoidCallback? onTap;
   final VoidCallback? onAddPressed;
   final void Function(BuildContext buttonContext)? onAddWithContext;
+  final bool isOwner;
 
   const ProductCard({
     super.key,
@@ -23,6 +25,7 @@ class ProductCard extends StatelessWidget {
     this.onTap,
     this.onAddPressed,
     this.onAddWithContext,
+    this.isOwner = false,
   });
 
   @override
@@ -74,6 +77,40 @@ class ProductCard extends StatelessWidget {
                                 ),
                               ),
                         ),
+                  if (isOwner)
+                    Positioned(
+                      top: 6,
+                      left: 6,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF0F172A).withValues(alpha: 0.8),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              LucideIcons.user,
+                              size: 10,
+                              color: Colors.white,
+                            ),
+                            const SizedBox(width: 3),
+                            Text(
+                              'თქვენი',
+                              style: AppTypography.caption.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 10,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   if (product.hasDiscount)
                   Positioned(
                     top: 6,
@@ -231,6 +268,35 @@ class ProductCard extends StatelessWidget {
                     const SizedBox(width: 4),
                     Builder(
                       builder: (btnContext) {
+                        if (isOwner) {
+                          return InkWell(
+                            onTap: () {
+                              AppToast.info(
+                                btnContext,
+                                'საკუთარი პროდუქტის დამატება შეუძლებელია',
+                              );
+                            },
+                            borderRadius: BorderRadius.circular(16),
+                            child: Container(
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF1F5F9),
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: const Color(0xFFCBD5E1),
+                                  width: 1,
+                                ),
+                              ),
+                              alignment: Alignment.center,
+                              child: const Icon(
+                                LucideIcons.ban,
+                                size: 15,
+                                color: Color(0xFF94A3B8),
+                              ),
+                            ),
+                          );
+                        }
                         return InkWell(
                           onTap: () {
                             if (onAddWithContext != null) {

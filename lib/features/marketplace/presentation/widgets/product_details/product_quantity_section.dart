@@ -12,12 +12,14 @@ class ProductQuantitySection extends StatefulWidget {
   final ProductModel product;
   final int quantity;
   final ValueChanged<int> onQuantityChanged;
+  final bool isOwner;
 
   const ProductQuantitySection({
     super.key,
     required this.product,
     required this.quantity,
     required this.onQuantityChanged,
+    this.isOwner = false,
   });
 
   @override
@@ -49,6 +51,13 @@ class _ProductQuantitySectionState extends State<ProductQuantitySection> {
   }
 
   void _updateQuantity(int newQty) {
+    if (widget.isOwner) {
+      AppToast.info(
+        context,
+        'საკუთარი პროდუქტის შეკვეთა შეუძლებელია',
+      );
+      return;
+    }
     final minQty = widget.product.minOrderQuantity.toInt().clamp(1, 99999);
     final maxStock = widget.product.stockQuantity.toInt();
     if (newQty > maxStock && maxStock > 0) {
@@ -95,6 +104,40 @@ class _ProductQuantitySectionState extends State<ProductQuantitySection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (widget.isOwner)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            margin: const EdgeInsets.only(bottom: 12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFEF3C7),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: const Color(0xFFF59E0B).withValues(alpha: 0.35),
+              ),
+            ),
+            child: Row(
+              children: [
+                const Icon(
+                  LucideIcons.shieldAlert,
+                  size: 18,
+                  color: Color(0xFFD97706),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'ეს თქვენი მეურნეობის პროდუქტია — შეკვეთის გაფორმება შეუძლებელია',
+                    style: GoogleFonts.notoSansGeorgian(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFF92400E),
+                      height: 1.35,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
@@ -139,19 +182,21 @@ class _ProductQuantitySectionState extends State<ProductQuantitySection> {
                     children: [
                       // Decrement
                       InkWell(
-                        onTap: () {
-                          final minQty = product.minOrderQuantity
-                              .toInt()
-                              .clamp(1, 99999);
-                          if (widget.quantity > minQty) {
-                            _updateQuantity(widget.quantity - 1);
-                          } else {
-                            AppToast.info(
-                              context,
-                              'მინიმალური შეკვეთაა ${product.minOrderDisplay}',
-                            );
-                          }
-                        },
+                        onTap: widget.isOwner
+                            ? null
+                            : () {
+                                final minQty = product.minOrderQuantity
+                                    .toInt()
+                                    .clamp(1, 99999);
+                                if (widget.quantity > minQty) {
+                                  _updateQuantity(widget.quantity - 1);
+                                } else {
+                                  AppToast.info(
+                                    context,
+                                    'მინიმალური შეკვეთაა ${product.minOrderDisplay}',
+                                  );
+                                }
+                              },
                         borderRadius: BorderRadius.circular(10),
                         child: Container(
                           width: 34,
@@ -160,7 +205,9 @@ class _ProductQuantitySectionState extends State<ProductQuantitySection> {
                             color: AppColors.surface,
                             borderRadius: BorderRadius.circular(10),
                             border: Border.all(
-                              color: widget.quantity <= product.minOrderQuantity
+                              color: (widget.isOwner ||
+                                      widget.quantity <=
+                                          product.minOrderQuantity)
                                   ? AppColors.border.withValues(alpha: 0.4)
                                   : AppColors.border,
                               width: 1,
@@ -170,7 +217,8 @@ class _ProductQuantitySectionState extends State<ProductQuantitySection> {
                           child: Icon(
                             LucideIcons.minus,
                             size: 16,
-                            color: widget.quantity <= product.minOrderQuantity
+                            color: (widget.isOwner ||
+                                    widget.quantity <= product.minOrderQuantity)
                                 ? AppColors.textSecondary
                                     .withValues(alpha: 0.35)
                                 : AppColors.textPrimary,
@@ -189,12 +237,15 @@ class _ProductQuantitySectionState extends State<ProductQuantitySection> {
                         alignment: Alignment.center,
                         child: TextField(
                           controller: _qtyController,
+                          enabled: !widget.isOwner,
                           keyboardType: TextInputType.number,
                           textAlign: TextAlign.center,
                           style: AppTypography.titleMedium.copyWith(
                             fontSize: 16,
                             fontWeight: FontWeight.w800,
-                            color: AppColors.textPrimary,
+                            color: widget.isOwner
+                                ? AppColors.textSecondary
+                                : AppColors.textPrimary,
                           ),
                           decoration: const InputDecoration(
                             border: InputBorder.none,
@@ -217,7 +268,7 @@ class _ProductQuantitySectionState extends State<ProductQuantitySection> {
 
                       // Increment
                       InkWell(
-                        onTap: isOutOfStock
+                        onTap: (isOutOfStock || widget.isOwner)
                             ? null
                             : () {
                                 final maxStock = product.stockQuantity.toInt();
@@ -236,6 +287,7 @@ class _ProductQuantitySectionState extends State<ProductQuantitySection> {
                           height: 34,
                           decoration: BoxDecoration(
                             color: isOutOfStock ||
+                                    widget.isOwner ||
                                     widget.quantity >= product.stockQuantity
                                 ? AppColors.primary.withValues(alpha: 0.4)
                                 : AppColors.primary,
@@ -255,7 +307,7 @@ class _ProductQuantitySectionState extends State<ProductQuantitySection> {
               ),
 
               // Quick Increment Helper Chips
-              if (!isOutOfStock) ...[
+              if (!isOutOfStock && !widget.isOwner) ...[
                 const SizedBox(height: 10),
                 Wrap(
                   spacing: 6,

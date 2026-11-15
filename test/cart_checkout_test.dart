@@ -8,7 +8,9 @@ import 'package:agrokera/features/cart_checkout/presentation/screens/cart_screen
 import 'package:agrokera/features/cart_checkout/presentation/screens/checkout_screen.dart';
 import 'package:agrokera/features/cart_checkout/presentation/widgets/fee_breakdown_sheet.dart';
 import 'package:agrokera/features/marketplace/data/models/farmer_model.dart';
+import 'package:agrokera/features/marketplace/data/models/product_model.dart';
 import 'package:agrokera/features/marketplace/presentation/screens/favorites_screen.dart';
+import 'package:agrokera/features/marketplace/presentation/screens/product_details_screen.dart';
 import 'package:agrokera/features/marketplace/presentation/widgets/product_details/product_delivery_info_card.dart';
 
 void main() {
@@ -382,6 +384,119 @@ void main() {
       await tester.tap(find.text('თვითგატანა'));
       await tester.pumpAndSettle();
       expect(find.text('0 ₾ (თვითგატანა)'), findsOneWidget);
+    });
+  });
+
+  group('Farmer Own Product Restriction Tests', () {
+    const ownProduct = ProductModel(
+      id: 'prod_giorgi_1',
+      title: 'გიორგის პომიდორი',
+      category: 'ბოსტნეული',
+      farmerId: 'farmer_2',
+      farmerName: 'გიორგის ფერმა',
+      price: 15.0,
+      stockQuantity: 50.0,
+      imageUrl: '',
+      description: 'ახალი პომიდორი',
+    );
+
+    const otherProduct = ProductModel(
+      id: 'prod_lana_1',
+      title: 'ლანას თაფლი',
+      category: 'თაფლი',
+      farmerId: 'farmer_1',
+      farmerName: 'მწვანე ველი',
+      price: 25.0,
+      stockQuantity: 20.0,
+      imageUrl: '',
+      description: 'ბიო თაფლი',
+    );
+
+    test('farmer cannot add their own product to cart', () {
+      final container = ProviderContainer();
+      container.read(authStateProvider.notifier).login(
+            role: UserRole.farmer,
+            email: 'giorgi@agrokera.ge',
+          );
+
+      expect(container.read(authStateProvider).farmerId, 'farmer_2');
+      expect(ownProduct.isOwnedBy(container.read(authStateProvider)), isTrue);
+
+      final result = container
+          .read(cartProvider.notifier)
+          .addProduct(ownProduct, 2);
+
+      expect(result, isA<AddToCartOwnerForbidden>());
+      expect(container.read(cartProvider).isEmpty, isTrue);
+
+      // Farmer CAN add products from another farmer
+      final successResult = container
+          .read(cartProvider.notifier)
+          .addProduct(otherProduct, 1);
+      expect(successResult, isA<AddToCartSuccess>());
+      expect(container.read(cartProvider).length, 1);
+    });
+
+    test('customer can freely add any farmer product', () {
+      final container = ProviderContainer();
+      container.read(authStateProvider.notifier).login(role: UserRole.customer);
+
+      final result = container
+          .read(cartProvider.notifier)
+          .addProduct(ownProduct, 2);
+
+      expect(result, isA<AddToCartSuccess>());
+      expect(container.read(cartProvider).length, 1);
+    });
+
+    test('cart validation identifies owned product', () {
+      final container = ProviderContainer();
+      container.read(authStateProvider.notifier).login(role: UserRole.customer);
+
+      // Add item as customer
+      container.read(cartProvider.notifier).addProduct(ownProduct, 2);
+      expect(container.read(cartProvider).length, 1);
+
+      // Switch to farmer who owns this product
+      container.read(authStateProvider.notifier).login(
+            role: UserRole.farmer,
+            email: 'giorgi@agrokera.ge',
+          );
+
+      final validation = container
+          .read(cartProvider.notifier)
+          .validateAndSyncStock([ownProduct]);
+
+      expect(validation, isA<CartValidationContainsOwnProduct>());
+    });
+
+    testWidgets('ProductDetailsScreen disables purchase CTA for owner farmer',
+        (tester) async {
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 2.0;
+      addTearDown(() => tester.view.resetPhysicalSize());
+
+      final container = ProviderContainer();
+      container.read(authStateProvider.notifier).login(
+            role: UserRole.farmer,
+            email: 'giorgi@agrokera.ge',
+          );
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const MaterialApp(
+            home: ProductDetailsScreen(product: ownProduct),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('თქვენი პროდუქტი'), findsOneWidget);
+      expect(
+        find.textContaining('ეს თქვენი მეურნეობის პროდუქტია'),
+        findsOneWidget,
+      );
     });
   });
 }

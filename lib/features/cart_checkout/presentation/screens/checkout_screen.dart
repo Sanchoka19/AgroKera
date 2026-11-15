@@ -4,6 +4,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import '../../../../core/auth/auth_state_provider.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/app_toast.dart';
@@ -452,12 +453,34 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         ? 'თვითგატანა მეურნეობიდან: ${farmer.farmName} (${farmer.location})'
         : _address;
 
+    // Domain guard: Farmer cannot order their own product or order from themselves
+    final auth = ref.read(authStateProvider);
+    final hasOwnItem = cartItems.any((it) => auth.isOwnerOfCartItem(it));
+    final isOwnFarmer = auth.isOwner(
+      farmerId: farmer.id,
+      farmName: farmer.farmName,
+      farmerName: farmer.farmerName,
+    );
+    if (auth.role == UserRole.farmer && (hasOwnItem || isOwnFarmer)) {
+      AppToast.error(
+        context,
+        'საკუთარი მეურნეობიდან შეკვეთის გაფორმება შეუძლებელია',
+      );
+      return;
+    }
+
     // Pre-order stock validation against real-time marketplace stock
     final validation = ref
         .read(cartProvider.notifier)
         .validateAndSyncStock(marketplace.products);
 
     switch (validation) {
+      case CartValidationContainsOwnProduct(:final productTitle):
+        AppToast.error(
+          context,
+          'პროდუქტი "$productTitle" თქვენი მეურნეობისაა. შეკვეთის გაფორმება შეუძლებელია.',
+        );
+        return;
       case CartValidationOutOfStock(:final productTitle):
         AppToast.error(
           context,

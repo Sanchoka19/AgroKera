@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:agrokera/core/auth/auth_state_provider.dart';
 import 'package:agrokera/core/theme/app_colors.dart';
 import 'package:agrokera/core/theme/app_typography.dart';
 import 'package:agrokera/core/widgets/product_card.dart';
@@ -7,13 +9,13 @@ import 'package:agrokera/features/marketplace/data/models/product_model.dart';
 import 'package:agrokera/features/marketplace/presentation/screens/product_details_screen.dart';
 
 /// Horizontal carousel displaying smart recommended similar products.
-class ProductSimilarCarousel extends StatelessWidget {
+class ProductSimilarCarousel extends ConsumerWidget {
   final List<ProductModel> products;
 
   const ProductSimilarCarousel({super.key, required this.products});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     if (products.isEmpty) return const SizedBox.shrink();
 
     return Column(
@@ -59,10 +61,13 @@ class ProductSimilarCarousel extends StatelessWidget {
             separatorBuilder: (context, index) => const SizedBox(width: 12),
             itemBuilder: (context, index) {
               final item = products[index];
+              final isOwner =
+                  ref.watch(authStateProvider).isOwnerOfProduct(item);
               return SizedBox(
                 width: 172,
                 child: ProductCard(
                   product: item,
+                  isOwner: isOwner,
                   onTap: () {
                     Navigator.of(context).push(
                       MaterialPageRoute(

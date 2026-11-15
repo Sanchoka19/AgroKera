@@ -1,6 +1,6 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
+import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -13,7 +13,6 @@ import 'package:latlong2/latlong.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:agrokera/core/auth/auth_state_provider.dart';
 import 'package:agrokera/core/constants/app_assets.dart';
-import 'package:agrokera/core/network/api_client.dart';
 import 'package:agrokera/core/theme/app_colors.dart';
 import 'package:agrokera/core/widgets/app_confirmation_bottom_sheet.dart';
 import 'package:agrokera/core/widgets/app_header.dart';
@@ -25,6 +24,8 @@ import 'package:agrokera/features/farmer_onboarding/presentation/widgets/farmer_
 import 'package:agrokera/features/marketplace/presentation/providers/marketplace_provider.dart';
 import 'package:agrokera/features/marketplace/presentation/screens/favorites_screen.dart';
 import 'package:agrokera/features/marketplace/presentation/widgets/guest_promo_banner.dart';
+import 'package:agrokera/features/notifications/presentation/providers/notifications_provider.dart';
+import 'package:agrokera/features/notifications/presentation/screens/notifications_screen.dart';
 import 'package:agrokera/features/orders/presentation/screens/client_orders_screen.dart';
 import 'package:agrokera/features/orders/presentation/screens/incoming_orders_screen.dart';
 import 'farmer_delivery_settings_screen.dart';
@@ -223,36 +224,21 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
 
       if (file == null || !mounted) return;
 
-      // 1. Instantly update UI with local path
-      await ref.read(authStateProvider.notifier).updateUserAvatarUrl(file.path);
-      if (!mounted) return;
       AppToast.info(context, 'პროფილის ფოტო იტვირთება...');
 
-      // 2. Upload to Cloudflare R2
-      final bytes = await file.readAsBytes();
-      final api = ref.read(apiClientProvider);
-      final response = await api.post<Map<String, dynamic>>(
-        '/api/upload',
-        data: {
-          'fileName': file.name,
-          'base64Data': base64Encode(bytes),
-          'contentType': 'image/jpeg',
-          'folder': 'avatars',
-        },
-      );
-
-      final remoteUrl = response.data?['url'] as String?;
-      if (remoteUrl != null && remoteUrl.isNotEmpty) {
-        await ref.read(authStateProvider.notifier).updateUserAvatarUrl(remoteUrl);
-      }
+      final success = await ref.read(authStateProvider.notifier).uploadAvatar(file);
       unawaited(ref.read(marketplaceProvider.notifier).refreshFromBackend());
 
       if (mounted) {
-        AppToast.success(context, 'პროფილის ფოტო წარმატებით განახლდა!');
+        if (success) {
+          AppToast.success(context, 'პროფილის ფოტო წარმატებით განახლდა!');
+        } else {
+          AppToast.success(context, 'პროფილის ფოტო შენახულია');
+        }
       }
     } catch (_) {
       if (mounted) {
-        AppToast.success(context, 'პროფილის ფოტო შენახულია');
+        AppToast.error(context, 'ფოტოს არჩევა ვერ მოხერხდა');
       }
     }
   }
@@ -329,14 +315,14 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
                       );
                       if (!mounted) return;
                       if (file != null) {
+                        AppToast.info(context, 'გარეკანის ფოტო იტვირთება...');
                         await ref
                             .read(authStateProvider.notifier)
-                            .updateFarmCoverUrl(file.path);
+                            .uploadFarmCover(file);
                         unawaited(ref
                             .read(marketplaceProvider.notifier)
                             .refreshFromBackend());
-                        if (!mounted) return;
-                        if (context.mounted) {
+                        if (mounted) {
                           AppToast.success(context, 'გარეკანის ფოტო წარმატებით განახლდა!');
                         }
                       }
@@ -362,14 +348,14 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
                       );
                       if (!mounted) return;
                       if (file != null) {
+                        AppToast.info(context, 'გარეკანის ფოტო იტვირთება...');
                         await ref
                             .read(authStateProvider.notifier)
-                            .updateFarmCoverUrl(file.path);
+                            .uploadFarmCover(file);
                         unawaited(ref
                             .read(marketplaceProvider.notifier)
                             .refreshFromBackend());
-                        if (!mounted) return;
-                        if (context.mounted) {
+                        if (mounted) {
                           AppToast.success(context, 'გარეკანის ფოტო წარმატებით განახლდა!');
                         }
                       }
@@ -511,41 +497,41 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       body: SafeArea(
+        top: !isFarmer, // Farmer cover photo extends edge-to-edge behind status bar
         child: Column(
           children: [
-            // Unified App Header (Title, Chat & Notifications Bell)
-            AppHeader(
-              title: 'ჩემი პროფილი',
-              showNotificationBell: true,
-              showCart: false,
-              actions: [
-                IconButton(
-                  tooltip: 'შეკვეთის ჩათი',
-                  onPressed: () {
-                    HapticFeedback.lightImpact();
-                    requireAuth(
-                      context,
-                      ref: ref,
-                      onAuthenticated: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => isFarmer
-                                ? const IncomingOrdersScreen()
-                                : const ClientOrdersScreen(),
-                          ),
-                        );
-                      },
-                    );
-                  },
-                  icon: const Icon(
-                    LucideIcons.messageSquare,
-                    size: 24,
-                    color: AppColors.primary,
+            // Standard App Header for Customer & Guest (Farmer uses edge-to-edge cover with floating frosted actions)
+            if (!isFarmer)
+              AppHeader(
+                title: 'ჩემი პროფილი',
+                showNotificationBell: true,
+                showCart: false,
+                actions: [
+                  IconButton(
+                    tooltip: 'შეკვეთის ჩათი',
+                    onPressed: () {
+                      HapticFeedback.lightImpact();
+                      requireAuth(
+                        context,
+                        ref: ref,
+                        onAuthenticated: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const ClientOrdersScreen(),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                    icon: const Icon(
+                      LucideIcons.messageSquare,
+                      size: 24,
+                      color: AppColors.primary,
+                    ),
                   ),
-                ),
-              ],
-              padding: EdgeInsets.fromLTRB(20, 12, 20, isFarmer ? 0 : 8),
-            ),
+                ],
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
+              ),
             Expanded(
               child: SingleChildScrollView(
                 physics: const ClampingScrollPhysics(),
@@ -1265,8 +1251,96 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
     );
   }
 
+  Widget _buildFrostedCircleButton({
+    required IconData icon,
+    required VoidCallback onTap,
+    String? tooltip,
+    String? badgeText,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: Tooltip(
+        message: tooltip ?? '',
+        child: InkWell(
+          onTap: () {
+            HapticFeedback.lightImpact();
+            onTap();
+          },
+          borderRadius: BorderRadius.circular(22),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(22),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+              child: Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.35),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.35),
+                    width: 1.2,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.25),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Stack(
+                  alignment: Alignment.center,
+                  clipBehavior: Clip.none,
+                  children: [
+                    Icon(
+                      icon,
+                      size: 20,
+                      color: Colors.white,
+                    ),
+                    if (badgeText != null)
+                      Positioned(
+                        top: 5,
+                        right: 5,
+                        child: Container(
+                          padding: const EdgeInsets.all(3),
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFEF4444),
+                            shape: BoxShape.circle,
+                          ),
+                          constraints: const BoxConstraints(
+                            minWidth: 15,
+                            minHeight: 15,
+                          ),
+                          child: Text(
+                            badgeText,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 8.5,
+                              fontWeight: FontWeight.w800,
+                              height: 1,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildFarmerProfileHero(AuthState authState) {
     final marketplace = ref.watch(marketplaceProvider);
+    final unreadNotifs = ref.watch(unreadNotificationsCountProvider);
+    final topInset = MediaQuery.of(context).padding.top;
+    final coverHeight = 185.0 + topInset;
+    final heroHeight = coverHeight + 58.0;
+
     final matchedFarmer = marketplace.farmers.where(
       (f) =>
           (authState.farmerId != null && f.id == authState.farmerId) ||
@@ -1278,16 +1352,16 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         SizedBox(
-          height: 220,
+          height: heroHeight,
           child: Stack(
             clipBehavior: Clip.none,
             children: [
-              // 1. Cover Photo Container (Full-width, touches edges and header, top 165px)
+              // 1. Cover Photo Container (Full-width, touches edges and top status bar)
               Positioned(
                 top: 0,
                 left: 0,
                 right: 0,
-                height: 165,
+                height: coverHeight,
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
@@ -1297,13 +1371,66 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
                         gradient: LinearGradient(
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
+                          stops: const [0.0, 0.35, 0.65, 1.0],
                           colors: [
-                            Colors.black.withValues(alpha: 0.05),
-                            Colors.black.withValues(alpha: 0.45),
+                            Colors.black.withValues(alpha: 0.55),
+                            Colors.black.withValues(alpha: 0.12),
+                            Colors.transparent,
+                            Colors.black.withValues(alpha: 0.50),
                           ],
                         ),
                       ),
                     ),
+
+                    // Top-Right: Floating Frosted Action Buttons (Chat & Notifications)
+                    Positioned(
+                      top: topInset + 8,
+                      right: 16,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _buildFrostedCircleButton(
+                            icon: LucideIcons.messageSquare,
+                            tooltip: 'შეკვეთის ჩათი',
+                            onTap: () {
+                              requireAuth(
+                                context,
+                                ref: ref,
+                                onAuthenticated: () {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (_) => const IncomingOrdersScreen(),
+                                    ),
+                                  );
+                                },
+                              );
+                            },
+                          ),
+                          const SizedBox(width: 10),
+                          _buildFrostedCircleButton(
+                            icon: LucideIcons.bell,
+                            tooltip: 'შეტყობინებები',
+                            badgeText: (authState.isAuthenticated && unreadNotifs > 0)
+                                ? (unreadNotifs > 9 ? '9+' : '$unreadNotifs')
+                                : null,
+                            onTap: () {
+                              requireAuth(
+                                context,
+                                ref: ref,
+                                onAuthenticated: () {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (_) => const NotificationsScreen(),
+                                    ),
+                                  );
+                                },
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+
                     // Bottom-Right: Change Cover Photo Button
                     Positioned(
                       bottom: 12,
@@ -1360,7 +1487,7 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
                 ),
               ),
 
-              // 2. Overlapping Farmer Profile Card: sits inside 220px bounds (hit test safe)
+              // 2. Overlapping Farmer Profile Card: sits inside heroHeight bounds (hit test safe)
               Positioned(
                 bottom: 0,
                 left: 16,

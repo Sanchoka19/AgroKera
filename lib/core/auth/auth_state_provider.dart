@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 import '../network/api_client.dart';
 import '../storage/secure_storage_service.dart';
 
@@ -587,6 +589,66 @@ class AuthNotifier extends Notifier<AuthState> {
         });
       }
     } catch (_) {}
+  }
+
+  /// Uploads user avatar to cloud storage and persists to backend profile and local storage
+  Future<bool> uploadAvatar(XFile file) async {
+    // 1. Instant local preview
+    await updateUserAvatarUrl(file.path);
+
+    // 2. Upload bytes to backend / Cloudflare R2
+    try {
+      final bytes = await file.readAsBytes();
+      final api = ref.read(apiClientProvider);
+      final response = await api.post<Map<String, dynamic>>(
+        '/api/upload',
+        data: {
+          'fileName': file.name,
+          'base64Data': base64Encode(bytes),
+          'contentType': 'image/jpeg',
+          'folder': 'avatars',
+        },
+      );
+
+      final remoteUrl = response.data?['url'] as String?;
+      if (remoteUrl != null && remoteUrl.isNotEmpty) {
+        await updateUserAvatarUrl(remoteUrl);
+      }
+      return true;
+    } catch (_) {
+      // Offline fallback: local preview remains stored
+      return false;
+    }
+  }
+
+  /// Uploads farm cover photo to cloud storage and persists to backend profile and local storage
+  Future<bool> uploadFarmCover(XFile file) async {
+    // 1. Instant local preview
+    await updateFarmCoverUrl(file.path);
+
+    // 2. Upload bytes to backend / Cloudflare R2
+    try {
+      final bytes = await file.readAsBytes();
+      final api = ref.read(apiClientProvider);
+      final response = await api.post<Map<String, dynamic>>(
+        '/api/upload',
+        data: {
+          'fileName': file.name,
+          'base64Data': base64Encode(bytes),
+          'contentType': 'image/jpeg',
+          'folder': 'covers',
+        },
+      );
+
+      final remoteUrl = response.data?['url'] as String?;
+      if (remoteUrl != null && remoteUrl.isNotEmpty) {
+        await updateFarmCoverUrl(remoteUrl);
+      }
+      return true;
+    } catch (_) {
+      // Offline fallback: local preview remains stored
+      return false;
+    }
   }
 
   /// Updates current user email in auth state and persists to secure storage

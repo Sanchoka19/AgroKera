@@ -249,17 +249,6 @@ class _PaymentSelectionSheetState extends ConsumerState<PaymentSelectionSheet> {
                 setState(() => _temporarySelected = PaymentMethodType.cash);
               },
             ),
-            const SizedBox(height: 10),
-
-            // Option 3: Card Payment
-            _buildMethodOption(
-              type: PaymentMethodType.card,
-              isSelected: _temporarySelected == PaymentMethodType.card,
-              onTap: () {
-                HapticFeedback.selectionClick();
-                setState(() => _temporarySelected = PaymentMethodType.card);
-              },
-            ),
             const SizedBox(height: 18),
 
             // Confirm Selection Button

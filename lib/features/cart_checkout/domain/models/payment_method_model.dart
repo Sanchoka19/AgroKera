@@ -4,8 +4,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 /// Supported Payment Methods in AgroKera
 enum PaymentMethodType {
   bankTransfer, // საბანკო გადარიცხვა (AgroKera Escrow)
-  cash, // ნაღდი ანგარიშსწორება (ადგილზე ჩაბარებისას)
-  card; // საბანკო ბარათი (Visa / Mastercard)
+  cash; // ნაღდი ანგარიშსწორება (ადგილზე ჩაბარებისას)
 
   String get label {
     switch (this) {
@@ -13,8 +12,6 @@ enum PaymentMethodType {
         return 'საბანკო გადარიცხვა';
       case PaymentMethodType.cash:
         return 'ნაღდი ფულით გადახდა';
-      case PaymentMethodType.card:
-        return 'საბანკო ბარათი';
     }
   }
 
@@ -24,8 +21,6 @@ enum PaymentMethodType {
         return 'Escrow დაცული';
       case PaymentMethodType.cash:
         return 'ადგილზე';
-      case PaymentMethodType.card:
-        return 'მყისიერი';
     }
   }
 
@@ -35,8 +30,6 @@ enum PaymentMethodType {
         return 'AgroKera Escrow — თანხა გაიყინება ჩაბარებამდე';
       case PaymentMethodType.cash:
         return 'გადახდა პროდუქტის მიღებისას კურიერთან ან ფერმაში';
-      case PaymentMethodType.card:
-        return 'ონლაინ უსაფრთხო გადახდა Visa / Mastercard-ით';
     }
   }
 
@@ -46,8 +39,6 @@ enum PaymentMethodType {
         return LucideIcons.building2;
       case PaymentMethodType.cash:
         return LucideIcons.banknote;
-      case PaymentMethodType.card:
-        return LucideIcons.creditCard;
     }
   }
 }

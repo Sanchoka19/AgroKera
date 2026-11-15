@@ -23,22 +23,21 @@ void main() {
       expect(state.savedCard?.lastFour, equals('4242'));
     });
 
-    test('Can switch payment method to Cash and Card', () {
+    test('Can switch payment method to Cash and back to BankTransfer', () {
       final container = ProviderContainer();
       addTearDown(container.dispose);
 
       container.read(paymentProvider.notifier).selectMethod(PaymentMethodType.cash);
       expect(container.read(paymentProvider).selectedMethod, equals(PaymentMethodType.cash));
 
-      container.read(paymentProvider.notifier).selectMethod(PaymentMethodType.card);
-      expect(container.read(paymentProvider).selectedMethod, equals(PaymentMethodType.card));
+      container.read(paymentProvider.notifier).selectMethod(PaymentMethodType.bankTransfer);
+      expect(container.read(paymentProvider).selectedMethod, equals(PaymentMethodType.bankTransfer));
     });
 
     test('Escrow model guarantees frozen funds description and safety badge', () {
       expect(PaymentMethodType.bankTransfer.label, equals('საბანკო გადარიცხვა'));
       expect(PaymentMethodType.bankTransfer.badgeText, equals('Escrow დაცული'));
       expect(PaymentMethodType.cash.badgeText, equals('ადგილზე'));
-      expect(PaymentMethodType.card.badgeText, equals('მყისიერი'));
     });
   });
 
@@ -90,8 +89,8 @@ void main() {
       await tester.tap(find.text('Open Sheet'));
       await tester.pumpAndSettle();
 
+      expect(find.text('საბანკო გადარიცხვა'), findsWidgets);
       expect(find.text('ნაღდი ფულით გადახდა'), findsOneWidget);
-      expect(find.text('საბანკო ბარათი'), findsOneWidget);
 
       // Tap Cash option
       await tester.tap(find.text('ნაღდი ფულით გადახდა'));

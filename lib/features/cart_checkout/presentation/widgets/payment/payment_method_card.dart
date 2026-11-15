@@ -110,10 +110,7 @@ class PaymentMethodCard extends ConsumerWidget {
                       children: [
                         Flexible(
                           child: Text(
-                            selectedMethod == PaymentMethodType.card &&
-                                    paymentState.savedCard != null
-                                ? 'ბარათი (${paymentState.savedCard!.brand} •••• ${paymentState.savedCard!.lastFour})'
-                                : selectedMethod.label,
+                            selectedMethod.label,
                             style: GoogleFonts.notoSansGeorgian(
                               fontSize: 14.5,
                               fontWeight: FontWeight.w700,

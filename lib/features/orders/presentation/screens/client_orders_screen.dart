@@ -250,6 +250,39 @@ class _ClientOrdersScreenState extends ConsumerState<ClientOrdersScreen> {
                 _buildTrackingStep('ჩაბარდა', stepIndex >= 3),
               ],
             ),
+            if (order.status == OrderStatus.pending) ...[
+              const SizedBox(height: 10),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFFBEB),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: const Color(0xFFFDE68A)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      LucideIcons.clock,
+                      size: 15,
+                      color: Color(0xFFD97706),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        order.remainingCancellationTime.inMinutes > 0
+                            ? 'ფერმერს დასადასტურებლად დარჩა ~${order.remainingCancellationTime.inMinutes} წუთი (შემდეგ დასტურდება ავტომატურად)'
+                            : 'ფერმერის დადასტურების მოლოდინში (დასტურდება ავტომატურად)',
+                        style: GoogleFonts.notoSansGeorgian(
+                          fontSize: 11.5,
+                          color: const Color(0xFF92400E),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
             const SizedBox(height: 14),
           ] else if (order.cancellationReason != null &&
               order.cancellationReason!.trim().isNotEmpty) ...[

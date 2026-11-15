@@ -12,6 +12,7 @@ import '../../../marketplace/data/models/farmer_model.dart';
 import '../../../marketplace/data/mock_data.dart';
 import '../../../marketplace/presentation/providers/marketplace_provider.dart';
 import '../../../orders/presentation/providers/farmer_orders_provider.dart';
+import '../../../orders/presentation/screens/client_orders_screen.dart';
 import '../providers/cart_provider.dart';
 import '../widgets/fee_breakdown_sheet.dart';
 import '../../domain/models/payment_method_model.dart';
@@ -493,6 +494,16 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         Navigator.of(context).pop(); // pop checkout
         Navigator.of(context).pop(); // pop cart -> return to home
       },
+      onViewOrders: () {
+        ref.read(cartProvider.notifier).clearCart();
+        Navigator.of(context).pop(); // dismiss dialog
+        Navigator.of(context).pop(); // pop checkout
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (_) => const ClientOrdersScreen(),
+          ),
+        );
+      },
     );
   }
 
@@ -502,8 +513,6 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         return 'გაფორმება • ${amount.toStringAsFixed(0)} ₾ (Escrow)';
       case PaymentMethodType.cash:
         return 'შეკვეთის გაფორმება • ${amount.toStringAsFixed(0)} ₾';
-      case PaymentMethodType.card:
-        return 'გადახდა • ${amount.toStringAsFixed(0)} ₾';
     }
   }
 

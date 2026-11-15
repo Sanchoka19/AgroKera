@@ -218,16 +218,12 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
             .map(FarmerOrder.fromJson)
             .toList();
 
-        if (auth.isAuthenticated) {
-          // Strict isolation for real authenticated Farmer or Customer accounts
-          state = state.copyWith(orders: fetched);
-        } else if (fetched.isNotEmpty) {
-          final fetchedIds = fetched.map((o) => o.id).toSet();
-          final localRemaining = state.orders
-              .where((o) => !fetchedIds.contains(o.id))
-              .toList();
-          state = state.copyWith(orders: [...fetched, ...localRemaining]);
-        }
+        final fetchedIds = fetched.map((o) => o.id).toSet();
+        final localPending = state.orders
+            .where((o) => !fetchedIds.contains(o.id))
+            .toList();
+        state = state.copyWith(orders: [...localPending, ...fetched]);
+        checkAutoConfirmation();
       }
     } catch (_) {
       // Gracefully keep local state when offline or in widget tests
@@ -320,6 +316,8 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
 
     final newOrder = FarmerOrder(
       id: generatedId,
+      clientId: auth.userId ?? 'user_client_1',
+      farmerId: 'farmer_2',
       createdAt: now,
       status: OrderStatus.pending,
       customerName: effectiveName,
@@ -338,44 +336,63 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
         .read(marketplaceProvider.notifier)
         .deductStockForCartItems(cartItems);
 
-    try {
-      final api = ref.read(apiClientProvider);
-      final response = await api.post<Map<String, dynamic>>(
-        '/api/orders',
-        data: {
-          'clientId': auth.userId ?? 'user_client_1',
-          'clientEmail': ?auth.userEmail,
-          'contactPerson': effectiveName,
-          'contactPhone': effectivePhone,
-          'deliveryAddress': deliveryAddress,
-          'deliveryTimeWindow': deliveryTimeWindow,
-          'paymentMethod': paymentMethod,
-          'items': cartItems
-              .map(
-                (ci) => {
-                  'productId': ci.id,
-                  'quantity': ci.quantity,
-                  'pricePerUnit': ci.pricePerUnit,
-                },
-              )
-              .toList(),
-        },
-      );
-      if (response.data != null) {
-        final serverOrder = FarmerOrder.fromJson(response.data!);
-        state = state.copyWith(
-          orders: state.orders
-              .map((o) => o.id == generatedId ? serverOrder : o)
-              .toList(),
+    unawaited(() async {
+      try {
+        final api = ref.read(apiClientProvider);
+        final response = await api.post<Map<String, dynamic>>(
+          '/api/orders',
+          data: {
+            'clientId': auth.userId ?? 'user_client_1',
+            'clientEmail': ?auth.userEmail,
+            'contactPerson': effectiveName,
+            'contactPhone': effectivePhone,
+            'deliveryAddress': deliveryAddress,
+            'deliveryTimeWindow': deliveryTimeWindow,
+            'paymentMethod': paymentMethod,
+            'items': cartItems
+                .map(
+                  (ci) => {
+                    'productId': ci.id,
+                    'quantity': ci.quantity,
+                    'pricePerUnit': ci.pricePerUnit,
+                  },
+                )
+                .toList(),
+          },
         );
-        unawaited(refreshFromBackend());
-        return serverOrder;
+        if (response.data != null) {
+          final serverOrder = FarmerOrder.fromJson(response.data!);
+          state = state.copyWith(
+            orders: state.orders
+                .map((o) => o.id == generatedId ? serverOrder : o)
+                .toList(),
+          );
+        }
+      } catch (_) {
+        // Offline resilient fallback
       }
-    } catch (_) {
-      // Offline resilient fallback
-    }
+    }());
 
     return newOrder;
+  }
+
+  /// Checks and automatically confirms pending orders whose 30-minute review window has elapsed
+  void checkAutoConfirmation() {
+    final now = DateTime.now();
+    bool hasChanges = false;
+    final updated = state.orders.map((o) {
+      if (o.status == OrderStatus.pending &&
+          o.cancellationDeadline != null &&
+          now.isAfter(o.cancellationDeadline!)) {
+        hasChanges = true;
+        return o.copyWith(status: OrderStatus.inProgress);
+      }
+      return o;
+    }).toList();
+
+    if (hasChanges) {
+      state = state.copyWith(orders: updated);
+    }
   }
 
   Future<void> _syncOrderStatus(

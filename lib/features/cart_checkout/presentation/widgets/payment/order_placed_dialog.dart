@@ -16,6 +16,7 @@ class OrderPlacedDialog extends StatelessWidget {
   final bool isPickup;
   final String location;
   final VoidCallback onDismiss;
+  final VoidCallback? onViewOrders;
 
   const OrderPlacedDialog({
     super.key,
@@ -26,6 +27,7 @@ class OrderPlacedDialog extends StatelessWidget {
     required this.isPickup,
     required this.location,
     required this.onDismiss,
+    this.onViewOrders,
   });
 
   static void show(
@@ -37,6 +39,7 @@ class OrderPlacedDialog extends StatelessWidget {
     required bool isPickup,
     required String location,
     required VoidCallback onDismiss,
+    VoidCallback? onViewOrders,
   }) {
     showDialog(
       context: context,
@@ -49,6 +52,7 @@ class OrderPlacedDialog extends StatelessWidget {
         isPickup: isPickup,
         location: location,
         onDismiss: onDismiss,
+        onViewOrders: onViewOrders,
       ),
     );
   }
@@ -90,9 +94,7 @@ class OrderPlacedDialog extends StatelessWidget {
 
               // Title
               Text(
-                paymentMethod == PaymentMethodType.card
-                    ? 'გადახდა წარმატებულია!'
-                    : 'შეკვეთა გაფორმდა!',
+                'შეკვეთა გაფორმდა!',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.notoSansGeorgian(
                   fontSize: 19,
@@ -258,7 +260,7 @@ class OrderPlacedDialog extends StatelessWidget {
                     ],
                   ),
                 ),
-              ] else if (paymentMethod == PaymentMethodType.cash) ...[
+              ] else ...[
                 Text(
                   isPickup
                       ? 'შეკვეთა მზადდება მეურნეობაში ($location).\nთანხას (${totalAmount.toStringAsFixed(0)} ₾) გადაიხდით ნაღდი ფულით ადგილზე გატანისას.'
@@ -270,42 +272,79 @@ class OrderPlacedDialog extends StatelessWidget {
                     height: 1.4,
                   ),
                 ),
-              ] else ...[
-                Text(
-                  '${totalAmount.toStringAsFixed(0)} ₾ წარმატებით დარეზერვებულია AgroKera Escrow-ში. შეკვეთა გადაეცა ფერმერს მოსამზადებლად.',
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.notoSansGeorgian(
-                    fontSize: 13.5,
-                    color: const Color(0xFF334155),
-                    height: 1.4,
-                  ),
-                ),
               ],
               const SizedBox(height: 20),
 
-              // Dismiss / Return home button
-              SizedBox(
-                width: double.infinity,
-                height: 48,
-                child: ElevatedButton(
-                  onPressed: onDismiss,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+              // Action buttons: "ჩემი შეკვეთების ნახვა" & "მთავარზე დაბრუნება"
+              if (onViewOrders != null) ...[
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton.icon(
+                    onPressed: onViewOrders,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
-                  ),
-                  child: Text(
-                    'მთავარზე დაბრუნება',
-                    style: GoogleFonts.notoSansGeorgian(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 15,
+                    icon: const Icon(LucideIcons.packageCheck, size: 18, color: Colors.white),
+                    label: Text(
+                      'ჩემი შეკვეთების ნახვა',
+                      style: GoogleFonts.notoSansGeorgian(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                      ),
                     ),
                   ),
                 ),
-              ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  height: 42,
+                  child: TextButton(
+                    onPressed: onDismiss,
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppColors.textSecondary,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: Text(
+                      'მთავარზე დაბრუნება',
+                      style: GoogleFonts.notoSansGeorgian(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                ),
+              ] else ...[
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton(
+                    onPressed: onDismiss,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: Text(
+                      'მთავარზე დაბრუნება',
+                      style: GoogleFonts.notoSansGeorgian(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         ),

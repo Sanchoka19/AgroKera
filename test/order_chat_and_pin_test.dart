@@ -4,6 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:agrokera/features/cart_checkout/data/models/cart_item_model.dart';
 import 'package:agrokera/features/cart_checkout/presentation/providers/cart_provider.dart';
 import 'package:agrokera/features/cart_checkout/presentation/screens/checkout_screen.dart';
+import 'package:agrokera/features/orders/presentation/providers/farmer_orders_provider.dart';
+import 'package:agrokera/features/orders/presentation/screens/client_orders_screen.dart';
 import 'package:agrokera/core/auth/auth_state_provider.dart';
 import 'package:agrokera/features/orders/domain/models/farmer_order_model.dart';
 import 'package:agrokera/features/orders/domain/models/order_message_model.dart';
@@ -173,6 +175,65 @@ void main() {
 
       // Check that message bubble appears in chat
       expect(find.text('ადგილზე ვარ'), findsWidgets);
+    });
+
+    testWidgets('OrderChatScreen is active and allows messaging for pending orders', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(430, 932));
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final pendingOrder = sampleOrder.copyWith(status: OrderStatus.pending);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp(
+            home: OrderChatScreen(order: pendingOrder),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // TextField should be present (chat not closed)
+      expect(find.byType(TextField), findsOneWidget);
+      expect(find.text('როდის შეძლებთ გამოგზავნას?'), findsOneWidget);
+
+      await tester.tap(find.text('როდის შეძლებთ გამოგზავნას?'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('როდის შეძლებთ გამოგზავნას?'), findsWidgets);
+    });
+
+    testWidgets('ClientOrdersScreen displays chat pill and chat button for pending order', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(430, 932));
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      container.read(authStateProvider.notifier).login(role: UserRole.customer);
+
+      final pendingOrder = sampleOrder.copyWith(
+        id: '99991',
+        status: OrderStatus.pending,
+      );
+
+      container.read(farmerOrdersProvider.notifier).state = FarmerOrdersState(
+        orders: [pendingOrder],
+        clientOrders: [pendingOrder],
+      );
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const MaterialApp(
+            home: ClientOrdersScreen(),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      // Header chat pill
+      expect(find.text('ჩათი'), findsWidgets);
+      // Action button
+      expect(find.text('ჩათი ფერმერთან'), findsWidgets);
     });
   });
 

@@ -64,12 +64,16 @@ class _OrderChatScreenState extends ConsumerState<OrderChatScreen> {
     if (text.trim().isEmpty || _isSending) return;
 
     final auth = ref.read(authStateProvider);
-    final isFarmer = auth.role == UserRole.farmer;
+    final isOrderSeller = auth.role == UserRole.farmer &&
+        auth.farmerId != null &&
+        (widget.order.farmerId == auth.farmerId ||
+            (widget.order.clientId != auth.userId &&
+                widget.order.farmerId == null));
 
-    final senderId = isFarmer
+    final senderId = isOrderSeller
         ? (auth.farmerId ?? auth.userId ?? 'farmer_unknown')
         : (auth.userId ?? 'customer_unknown');
-    final senderName = isFarmer
+    final senderName = isOrderSeller
         ? (auth.farmName ?? auth.userName ?? 'ფერმერი')
         : (auth.userName ?? widget.order.customerName);
 
@@ -80,7 +84,7 @@ class _OrderChatScreenState extends ConsumerState<OrderChatScreen> {
           orderId: widget.order.id,
           text: text,
           senderId: senderId,
-          senderRole: isFarmer ? UserRole.farmer : UserRole.customer,
+          senderRole: isOrderSeller ? UserRole.farmer : UserRole.customer,
           senderName: senderName,
         );
 
@@ -99,8 +103,14 @@ class _OrderChatScreenState extends ConsumerState<OrderChatScreen> {
     final allChats = ref.watch(orderChatProvider);
     final messages = allChats[widget.order.id] ?? const [];
     final auth = ref.watch(authStateProvider);
-    final isFarmer = auth.role == UserRole.farmer;
-    final isActive = widget.order.status == OrderStatus.inProgress;
+    final isOrderSeller = auth.role == UserRole.farmer &&
+        auth.farmerId != null &&
+        (widget.order.farmerId == auth.farmerId ||
+            (widget.order.clientId != auth.userId &&
+                widget.order.farmerId == null));
+    final isFarmer = isOrderSeller;
+    final isActive = widget.order.status == OrderStatus.pending ||
+        widget.order.status == OrderStatus.inProgress;
 
     // Scroll down when new messages arrive
     ref.listen(orderChatProvider, (previous, next) {
@@ -110,7 +120,7 @@ class _OrderChatScreenState extends ConsumerState<OrderChatScreen> {
       }
     });
 
-    final partnerName = isFarmer
+    final partnerName = isOrderSeller
         ? widget.order.customerName
         : 'ფერმერი (${widget.order.items.firstOrNull?.name ?? "შეკვეთა"})';
 
@@ -382,8 +392,12 @@ class _OrderChatScreenState extends ConsumerState<OrderChatScreen> {
 
   Widget _buildQuickReplies(bool isFarmer) {
     final replies = isFarmer
-        ? ['გზაში ვარ', '10 წუთში მოვალ', 'ადგილზე ვარ', 'შლაგბაუმთან ვდგავარ']
-        : ['ადგილზე ვარ', 'სადარბაზოს კოდია', 'ჭიშკართან გელოდებით', 'მადლობა!'];
+        ? (widget.order.status == OrderStatus.pending
+            ? ['შეკვეთა მიღებულია', 'დღესვე გამოგიგზავნით', 'მისამართს ვაზუსტებ', 'გამარჯობა!']
+            : ['გზაში ვარ', '10 წუთში მოვალ', 'ადგილზე ვარ', 'შლაგბაუმთან ვდგავარ'])
+        : (widget.order.status == OrderStatus.pending
+            ? ['როდის შეძლებთ გამოგზავნას?', 'მისამართი დავაზუსტე', 'გელოდებით', 'მადლობა!']
+            : ['ადგილზე ვარ', 'სადარბაზოს კოდია', 'ჭიშკართან გელოდებით', 'მადლობა!']);
 
     return Container(
       height: 38,
@@ -418,6 +432,7 @@ class _OrderChatScreenState extends ConsumerState<OrderChatScreen> {
 
   Widget _buildBottomBar(bool isActive) {
     if (!isActive) {
+      final isCancelled = widget.order.status == OrderStatus.cancelled;
       return Container(
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
@@ -428,7 +443,9 @@ class _OrderChatScreenState extends ConsumerState<OrderChatScreen> {
             const Icon(LucideIcons.lock, size: 15, color: Color(0xFF64748B)),
             const SizedBox(width: 8),
             Text(
-              'შეკვეთა დასრულებულია • ჩათი დახურულია',
+              isCancelled
+                  ? 'შეკვეთა გაუქმებულია • ჩათი დახურულია'
+                  : 'შეკვეთა დასრულებულია • ჩათი დახურულია',
               style: GoogleFonts.notoSansGeorgian(
                 fontSize: 12.5,
                 fontWeight: FontWeight.w600,

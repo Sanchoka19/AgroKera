@@ -49,7 +49,7 @@ class _ClientOrdersScreenState extends ConsumerState<ClientOrdersScreen> {
   @override
   Widget build(BuildContext context) {
     final ordersState = ref.watch(farmerOrdersProvider);
-    final allOrders = ordersState.orders;
+    final allOrders = ordersState.clientOrders;
 
     final orders = _showActiveOnly
         ? allOrders
@@ -186,58 +186,110 @@ class _ClientOrdersScreenState extends ConsumerState<ClientOrdersScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Container(
-                    width: 38,
-                    height: 38,
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(10),
+              Expanded(
+                child: Row(
+                  children: [
+                    Container(
+                      width: 38,
+                      height: 38,
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(
+                        LucideIcons.packageCheck,
+                        color: AppColors.primary,
+                        size: 18,
+                      ),
                     ),
-                    child: const Icon(
-                      LucideIcons.packageCheck,
-                      color: AppColors.primary,
-                      size: 18,
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'შეკვეთა #${order.id}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.notoSansGeorgian(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              color: const Color(0xFF0F172A),
+                            ),
+                          ),
+                          Text(
+                            order.trackingNumber ?? 'AK-${order.id}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.notoSansGeorgian(
+                              fontSize: 11,
+                              color: const Color(0xFF64748B),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  InkWell(
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => OrderChatScreen(order: order),
+                        ),
+                      );
+                    },
+                    borderRadius: BorderRadius.circular(8),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEFF6FF),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: const Color(0xFF93C5FD), width: 1.2),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            LucideIcons.messageSquare,
+                            size: 13,
+                            color: Color(0xFF2563EB),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'ჩათი',
+                            style: GoogleFonts.notoSansGeorgian(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: const Color(0xFF2563EB),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                  const SizedBox(width: 10),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'შეკვეთა #${order.id}',
-                        style: GoogleFonts.notoSansGeorgian(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color: const Color(0xFF0F172A),
-                        ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: order.status.badgeBg,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      order.status.label,
+                      style: GoogleFonts.notoSansGeorgian(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: order.status.color,
                       ),
-                      Text(
-                        order.trackingNumber ?? 'AK-${order.id}',
-                        style: GoogleFonts.notoSansGeorgian(
-                          fontSize: 11,
-                          color: const Color(0xFF64748B),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 ],
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(
-                  color: order.status.badgeBg,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  order.status.label,
-                  style: GoogleFonts.notoSansGeorgian(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: order.status.color,
-                  ),
-                ),
               ),
             ],
           ),
@@ -834,8 +886,89 @@ class _ClientOrdersScreenState extends ConsumerState<ClientOrdersScreen> {
             ),
           ],
 
-          if (order.status == OrderStatus.pending ||
-              order.canDirectlyCancel) ...[
+          if (order.status == OrderStatus.pending) ...[
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => OrderChatScreen(order: order),
+                        ),
+                      );
+                    },
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFF2563EB),
+                      side: const BorderSide(color: Color(0xFF93C5FD)),
+                      backgroundColor: const Color(0xFFEFF6FF),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      minimumSize: const Size.fromHeight(40),
+                    ),
+                    icon: const Icon(LucideIcons.messageSquare, size: 15),
+                    label: Text(
+                      'ჩათი ფერმერთან',
+                      style: GoogleFonts.notoSansGeorgian(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ),
+                if (order.canDirectlyCancel) ...[
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: TextButton.icon(
+                      onPressed: () async {
+                        final reason = await AppReasonBottomSheet.show(
+                          context: context,
+                          title: 'შეკვეთის გაუქმება',
+                          subtitle:
+                              'შეკვეთა #${order.id} • გთხოვთ აირჩიოთ გაუქმების მიზეზი',
+                          confirmButtonText: 'გაუქმება',
+                          confirmButtonColor: const Color(0xFFDC2626),
+                          icon: LucideIcons.alertTriangle,
+                          reasons: const [
+                            'შემთხვევით გავაფორმე შეკვეთა',
+                            'მიწოდების დრო აღარ მაწყობს',
+                            'მისამართის შეცვლა მსურს',
+                            'სხვა პროდუქტის არჩევა მსურს',
+                          ],
+                        );
+                        if (reason != null && mounted) {
+                          ref
+                              .read(farmerOrdersProvider.notifier)
+                              .cancelOrder(order.id, reason: reason);
+                          AppToast.info(
+                            context,
+                            'შეკვეთა #${order.id} გაუქმებულია ($reason)',
+                          );
+                        }
+                      },
+                      style: TextButton.styleFrom(
+                        foregroundColor: const Color(0xFFDC2626),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        minimumSize: const Size.fromHeight(40),
+                      ),
+                      icon: const Icon(LucideIcons.x, size: 15),
+                      label: Text(
+                        'გაუქმება',
+                        style: GoogleFonts.notoSansGeorgian(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ] else if (order.canDirectlyCancel) ...[
             const SizedBox(height: 8),
             SizedBox(
               width: double.infinity,
@@ -876,6 +1009,40 @@ class _ClientOrdersScreenState extends ConsumerState<ClientOrdersScreen> {
                 icon: const Icon(LucideIcons.x, size: 15),
                 label: Text(
                   'შეკვეთის გაუქმება',
+                  style: GoogleFonts.notoSansGeorgian(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
+          ],
+
+          if (order.status == OrderStatus.completed ||
+              order.status == OrderStatus.cancelled) ...[
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              height: 38,
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => OrderChatScreen(order: order),
+                    ),
+                  );
+                },
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFF475569),
+                  side: const BorderSide(color: Color(0xFFCBD5E1)),
+                  backgroundColor: const Color(0xFFF8FAFC),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                icon: const Icon(LucideIcons.messageSquare, size: 14),
+                label: Text(
+                  'ჩათის ისტორია',
                   style: GoogleFonts.notoSansGeorgian(
                     fontSize: 12,
                     fontWeight: FontWeight.w700,

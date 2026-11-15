@@ -15,6 +15,7 @@ class OrderPlacedDialog extends StatelessWidget {
   final String location;
   final VoidCallback onDismiss;
   final VoidCallback? onViewOrders;
+  final VoidCallback? onOpenChat;
 
   const OrderPlacedDialog({
     super.key,
@@ -26,6 +27,7 @@ class OrderPlacedDialog extends StatelessWidget {
     required this.location,
     required this.onDismiss,
     this.onViewOrders,
+    this.onOpenChat,
   });
 
   static void show(
@@ -38,6 +40,7 @@ class OrderPlacedDialog extends StatelessWidget {
     required String location,
     required VoidCallback onDismiss,
     VoidCallback? onViewOrders,
+    VoidCallback? onOpenChat,
   }) {
     showDialog(
       context: context,
@@ -51,6 +54,7 @@ class OrderPlacedDialog extends StatelessWidget {
         location: location,
         onDismiss: onDismiss,
         onViewOrders: onViewOrders,
+        onOpenChat: onOpenChat,
       ),
     );
   }
@@ -205,7 +209,34 @@ class OrderPlacedDialog extends StatelessWidget {
               ],
               const SizedBox(height: 20),
 
-              // Action buttons: "ჩემი შეკვეთების ნახვა" & "მთავარზე დაბრუნება"
+              // Action buttons: "ჩათი ფერმერთან", "ჩემი შეკვეთების ნახვა" & "მთავარზე დაბრუნება"
+              if (onOpenChat != null) ...[
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: OutlinedButton.icon(
+                    onPressed: onOpenChat,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFF2563EB),
+                      side: const BorderSide(color: Color(0xFF93C5FD), width: 1.3),
+                      backgroundColor: const Color(0xFFEFF6FF),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    icon: const Icon(LucideIcons.messageSquare, size: 18),
+                    label: Text(
+                      'ჩათი ფერმერთან',
+                      style: GoogleFonts.notoSansGeorgian(
+                        color: const Color(0xFF2563EB),
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+              ],
               if (onViewOrders != null) ...[
                 SizedBox(
                   width: double.infinity,

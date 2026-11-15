@@ -13,6 +13,7 @@ import '../../../marketplace/data/models/farmer_model.dart';
 import '../../../marketplace/presentation/providers/marketplace_provider.dart';
 import '../../../orders/presentation/providers/farmer_orders_provider.dart';
 import '../../../orders/presentation/screens/client_orders_screen.dart';
+import '../../../orders/presentation/screens/order_chat_screen.dart';
 import '../providers/cart_provider.dart';
 import '../widgets/fee_breakdown_sheet.dart';
 import '../../domain/models/payment_method_model.dart';
@@ -627,6 +628,16 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           ),
         );
       },
+      onOpenChat: () {
+        ref.read(cartProvider.notifier).clearCart();
+        Navigator.of(context).pop(); // dismiss dialog
+        Navigator.of(context).pop(); // pop checkout
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => OrderChatScreen(order: created),
+          ),
+        );
+      },
     );
   }
 
@@ -1228,16 +1239,19 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                           ),
                         ),
                       ),
-                      Text(
-                        isPickup
-                            ? '0 ₾ (თვითგატანა)'
-                            : '${effectiveDeliveryFee.toStringAsFixed(0)} ₾',
-                        style: AppTypography.bodyMedium.copyWith(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color: isPickup
-                              ? const Color(0xFF2E7D32)
-                              : AppColors.textPrimary,
+                      Flexible(
+                        child: Text(
+                          isPickup
+                              ? '0 ₾ (თვითგატანა)'
+                              : '${effectiveDeliveryFee.toStringAsFixed(0)} ₾',
+                          style: AppTypography.bodyMedium.copyWith(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: isPickup
+                                ? const Color(0xFF2E7D32)
+                                : AppColors.textPrimary,
+                          ),
+                          textAlign: TextAlign.end,
                         ),
                       ),
                     ],

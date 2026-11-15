@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:agrokera/core/auth/auth_state_provider.dart';
 import 'package:agrokera/features/cart_checkout/data/models/cart_item_model.dart';
 import 'package:agrokera/features/marketplace/presentation/providers/marketplace_provider.dart';
 import 'package:agrokera/features/orders/domain/models/farmer_order_model.dart';
@@ -282,6 +283,56 @@ void main() {
           .orders
           .firstWhere((o) => o.id == initialOrder.id);
       expect(confirmedOrder.isPaymentConfirmed, isTrue);
+    });
+
+    test('Farmer role strictly isolates incoming orders vs client purchases', () async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      // Login as farmer (farmer_1, მწვანე ველი)
+      container.read(authStateProvider.notifier).login(
+            email: 'lana@agrokera.ge',
+            role: UserRole.farmer,
+          );
+      final farmerAuth = container.read(authStateProvider);
+      expect(farmerAuth.role, equals(UserRole.farmer));
+      expect(farmerAuth.farmerId, equals('farmer_1'));
+
+      final state = container.read(farmerOrdersProvider);
+      // Incoming orders must contain the farm's incoming orders from clients
+      expect(state.incomingOrders.length, greaterThanOrEqualTo(5));
+      // Client orders ("ჩემი შეკვეთები") must NOT contain incoming customer orders
+      expect(state.clientOrders, isEmpty);
+
+      // Now the farmer buys a product from another farmer (farmer_2)
+      final ordersNotifier = container.read(farmerOrdersProvider.notifier);
+      const purchaseItem = CartItemModel(
+        id: 'prod_1',
+        title: 'მწვანილოვანი კომბოსტო',
+        packageText: '1კგ',
+        farmerName: 'გიორგის ფერმა',
+        farmerId: 'farmer_2',
+        pricePerUnit: 15.0,
+        imageUrl: '',
+        quantity: 2,
+      );
+
+      final purchaseOrder = await ordersNotifier.createOrderFromCart(
+        cartItems: const [purchaseItem],
+        deliveryAddress: 'ქუთაისი',
+        deliveryTimeWindow: 'ხვალ, 11:00-14:00',
+      );
+
+      final updatedState = container.read(farmerOrdersProvider);
+      // The purchase must be in clientOrders ("ჩემი შეკვეთები")
+      expect(updatedState.clientOrders.length, equals(1));
+      expect(updatedState.clientOrders.first.id, equals(purchaseOrder.id));
+
+      // The purchase must NOT be in incomingOrders ("შემოსული შეკვეთები")
+      expect(
+        updatedState.incomingOrders.any((o) => o.id == purchaseOrder.id),
+        isFalse,
+      );
     });
   });
 

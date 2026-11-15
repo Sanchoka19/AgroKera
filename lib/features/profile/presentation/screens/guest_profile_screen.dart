@@ -690,6 +690,19 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
                       ),
                       _buildRowDivider(),
                       _buildProfileRowItem(
+                        icon: LucideIcons.messageSquare,
+                        title: 'შეკვეთის ჩათი',
+                        subtitle: 'ფერმერთან პირდაპირი ჩატი & PIN',
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const ClientOrdersScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildRowDivider(),
+                      _buildProfileRowItem(
                         icon: LucideIcons.heart,
                         title: 'ფავორიტები',
                         subtitle: 'შენახული სასურველი პროდუქტები',
@@ -734,6 +747,26 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
                         icon: LucideIcons.shoppingBag,
                         title: 'ჩემი შეკვეთები',
                         subtitle: 'შეკვეთების ისტორია და სტატუსი',
+                        onTap: () {
+                          requireAuth(
+                            context,
+                            ref: ref,
+                            onAuthenticated: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      const ClientOrdersScreen(),
+                                ),
+                              );
+                            },
+                          );
+                        },
+                      ),
+                      _buildRowDivider(),
+                      _buildProfileRowItem(
+                        icon: LucideIcons.messageSquare,
+                        title: 'შეკვეთის ჩათი',
+                        subtitle: 'ფერმერთან პირდაპირი ჩატი & PIN',
                         onTap: () {
                           requireAuth(
                             context,

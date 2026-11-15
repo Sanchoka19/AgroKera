@@ -66,7 +66,7 @@ class _FarmerDashboardScreenState extends ConsumerState<FarmerDashboardScreen> {
   Widget build(BuildContext context) {
     final activeOrders = ref
         .watch(farmerOrdersProvider)
-        .orders
+        .incomingOrders
         .where((o) =>
             o.status == OrderStatus.pending ||
             o.status == OrderStatus.inProgress)

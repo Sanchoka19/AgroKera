@@ -552,8 +552,9 @@ class FarmerOrderCard extends StatelessWidget {
                               ),
                             ),
 
-                            // Chat Icon Button (In Progress only)
-                            if (order.status == OrderStatus.inProgress) ...[
+                            // Chat Icon Button (Pending & In Progress)
+                            if (order.status == OrderStatus.pending ||
+                                order.status == OrderStatus.inProgress) ...[
                               const SizedBox(width: 8),
                               InkWell(
                                 onTap: () {

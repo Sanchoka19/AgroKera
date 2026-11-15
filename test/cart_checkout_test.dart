@@ -13,12 +13,11 @@ import 'package:agrokera/features/marketplace/presentation/widgets/product_detai
 
 void main() {
   group('Cart Provider Unit Tests', () {
-    test('initial state has sample items', () {
+    test('initial state is empty', () {
       final container = ProviderContainer();
       final items = container.read(cartProvider);
-      expect(items.length, 2);
-      expect(items.first.title, 'მწვანილოვანი კომბოსტო');
-      expect(items.subtotal, greaterThan(0));
+      expect(items.isEmpty, isTrue);
+      expect(items.subtotal, 0.0);
     });
 
     test('can clear cart, increment, decrement and add items', () {
@@ -127,6 +126,36 @@ void main() {
     testWidgets('renders populated cart with stepper and totals for authenticated user', (tester) async {
       final container = ProviderContainer();
       container.read(authStateProvider.notifier).login(role: UserRole.customer);
+      container.read(cartProvider.notifier).addItem(
+        const CartItemModel(
+          id: 'prod_1',
+          title: 'მწვანილოვანი კომბოსტო',
+          packageText: '10კგ პატარა ყუთი',
+          farmerName: 'გიორგის ფერმა',
+          pricePerUnit: 15.00,
+          unit: 'კგ',
+          imageUrl: '',
+          quantity: 5,
+          weightKg: 2.0,
+          minOrderQuantity: 1.0,
+          stockQuantity: 50.0,
+        ),
+      );
+      container.read(cartProvider.notifier).addItem(
+        const CartItemModel(
+          id: 'prod_2',
+          title: 'ბულგარული წიწაკა',
+          packageText: 'სუფთა მოსავალი',
+          farmerName: 'გიორგის ფერმა',
+          pricePerUnit: 15.00,
+          unit: 'კგ',
+          imageUrl: '',
+          quantity: 10,
+          weightKg: 1.8,
+          minOrderQuantity: 1.0,
+          stockQuantity: 50.0,
+        ),
+      );
 
       await tester.pumpWidget(
         UncontrolledProviderScope(
@@ -215,9 +244,11 @@ void main() {
       );
 
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: ProductDeliveryInfoCard(farmer: farmer),
+        const ProviderScope(
+          child: MaterialApp(
+            home: Scaffold(
+              body: ProductDeliveryInfoCard(farmer: farmer),
+            ),
           ),
         ),
       );
@@ -256,9 +287,11 @@ void main() {
       );
 
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: ProductDeliveryInfoCard(farmer: farmer),
+        const ProviderScope(
+          child: MaterialApp(
+            home: Scaffold(
+              body: ProductDeliveryInfoCard(farmer: farmer),
+            ),
           ),
         ),
       );
@@ -280,9 +313,25 @@ void main() {
     });
 
     testWidgets('CheckoutScreen updates pricing dynamically on regional address switch', (tester) async {
+      final container = ProviderContainer();
+      container.read(cartProvider.notifier).addItem(
+        const CartItemModel(
+          id: 'prod_1',
+          title: 'მწვანილოვანი კომბოსტო',
+          packageText: '10კგ',
+          farmerName: 'გიორგის ფერმა',
+          pricePerUnit: 15.00,
+          unit: 'კგ',
+          imageUrl: '',
+          quantity: 2,
+          weightKg: 2.0,
+        ),
+      );
+
       await tester.pumpWidget(
-        const ProviderScope(
-          child: MaterialApp(
+        UncontrolledProviderScope(
+          container: container,
+          child: const MaterialApp(
             home: CheckoutScreen(),
           ),
         ),

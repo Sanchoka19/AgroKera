@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import '../../../../core/constants/app_categories.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/app_header.dart';
 import '../../../../core/widgets/app_search_bar.dart';
-import '../../data/mock_data.dart';
 import '../../data/models/category_model.dart';
 import '../providers/marketplace_provider.dart';
 import 'category_products_screen.dart';
@@ -40,7 +40,7 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
   @override
   Widget build(BuildContext context) {
     final availableProducts = ref.watch(marketplaceProvider).availableProducts;
-    final filteredCategories = MockData.categories.where((c) {
+    final filteredCategories = AppCategories.categories.where((c) {
       return c.name.toLowerCase().contains(_searchQuery.toLowerCase());
     }).map((c) {
       final liveCount = availableProducts

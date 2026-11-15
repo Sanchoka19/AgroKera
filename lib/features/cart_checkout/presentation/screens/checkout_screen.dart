@@ -9,7 +9,6 @@ import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/app_toast.dart';
 import '../../../farmer_onboarding/presentation/widgets/farmer_map_widget.dart';
 import '../../../marketplace/data/models/farmer_model.dart';
-import '../../../marketplace/data/mock_data.dart';
 import '../../../marketplace/presentation/providers/marketplace_provider.dart';
 import '../../../orders/presentation/providers/farmer_orders_provider.dart';
 import '../../../orders/presentation/screens/client_orders_screen.dart';
@@ -56,7 +55,21 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     if (marketplace.farmers.isNotEmpty) {
       return marketplace.farmers.first;
     }
-    return MockData.farmers.first;
+    return const FarmerModel(
+      id: 'default_farmer',
+      farmName: 'აგრო ფერმა',
+      farmerName: 'ფერმერი',
+      location: 'საქართველო',
+      rating: 5.0,
+      reviewCount: 0,
+      totalRatings: 0,
+      isVerified: true,
+      isVatPayer: false,
+      avatarUrl: '',
+      coverUrl: '',
+      about: '',
+      phone: '',
+    );
   }
 
   MapEntry<String, double>? _findMatchedDeliveryZone(

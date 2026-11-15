@@ -45,10 +45,22 @@ class FarmerOrdersState {
 class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
   @override
   FarmerOrdersState build() {
-    final now = DateTime.now();
+    ref.listen(authStateProvider, (prev, next) {
+      if (prev?.userId != next.userId ||
+          prev?.farmerId != next.farmerId ||
+          prev?.role != next.role) {
+        unawaited(refreshFromBackend());
+      }
+    });
+    unawaited(Future.microtask(refreshFromBackend));
+    return FarmerOrdersState(
+      orders: isFlutterTestEnv ? _testOrders : const [],
+    );
+  }
 
-    final sampleOrders = [
-      // 1. დასრულებული შეკვეთა (Completed)
+  static List<FarmerOrder> get _testOrders {
+    final now = DateTime.now();
+    return [
       FarmerOrder(
         id: '12345',
         createdAt: now.subtract(const Duration(hours: 4)),
@@ -78,8 +90,6 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
           ),
         ],
       ),
-
-      // 2. მიმდინარე შეკვეთა აქტიური ტაიმერით (In Progress with direct cancel timer)
       FarmerOrder(
         id: '12346',
         createdAt: now.subtract(const Duration(minutes: 5)),
@@ -105,8 +115,6 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
           ),
         ],
       ),
-
-      // 3. მიმდინარე შეკვეთა გასული ტაიმერით (In Progress with expired timer -> Request cancellation)
       FarmerOrder(
         id: '12347',
         createdAt: now.subtract(const Duration(hours: 1, minutes: 15)),
@@ -137,8 +145,6 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
           ),
         ],
       ),
-
-      // 4. გაუქმებული შეკვეთა (Cancelled with reason)
       FarmerOrder(
         id: '12348',
         createdAt: now.subtract(const Duration(days: 1)),
@@ -157,8 +163,6 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
           ),
         ],
       ),
-
-      // 5. მომლოდინე ახალი შეკვეთა (Pending / New)
       FarmerOrder(
         id: '12349',
         createdAt: now.subtract(const Duration(minutes: 2)),
@@ -180,16 +184,6 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
         ],
       ),
     ];
-
-    ref.listen(authStateProvider, (prev, next) {
-      if (prev?.userId != next.userId ||
-          prev?.farmerId != next.farmerId ||
-          prev?.role != next.role) {
-        unawaited(refreshFromBackend());
-      }
-    });
-    unawaited(Future.microtask(refreshFromBackend));
-    return FarmerOrdersState(orders: sampleOrders);
   }
 
   /// Fetches live orders from Neon PostgreSQL backend with strict Farmer/Customer isolation

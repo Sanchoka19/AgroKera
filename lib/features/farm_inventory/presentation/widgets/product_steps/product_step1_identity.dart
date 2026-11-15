@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import '../../../../../core/constants/app_categories.dart';
 import '../../../../../core/theme/app_colors.dart';
 import '../../../../../core/widgets/custom_text_field.dart';
-import '../../../../marketplace/data/mock_data.dart';
 import '../../providers/farmer_inventory_provider.dart';
 import 'agro_tag_item.dart';
 import 'product_photo_entry.dart';
@@ -37,7 +37,7 @@ class ProductStep1Identity extends StatelessWidget {
   });
 
   void _openCategorySelectionSheet(BuildContext context) {
-    final categories = MockData.categories.map((c) => c.name).toList();
+    final categories = AppCategories.categories.map((c) => c.name).toList();
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,

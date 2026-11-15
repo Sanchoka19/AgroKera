@@ -19,6 +19,20 @@ class FarmerModel {
   final Map<String, double> regionalDeliveryFees;
   final bool isPickupEnabled;
 
+  static String normalizeDay(String d) {
+    const map = {
+      'ორშ': 'ორშაბათი',
+      'სამ': 'სამშაბათი',
+      'ოთხ': 'ოთხშაბათი',
+      'ხუთ': 'ხუთშაბათი',
+      'პარ': 'პარასკევი',
+      'შაბ': 'შაბათი',
+      'კვი': 'კვირა',
+    };
+    final trimmed = d.trim();
+    return map[trimmed] ?? trimmed;
+  }
+
   const FarmerModel({
     required this.id,
     required this.farmName,
@@ -35,7 +49,7 @@ class FarmerModel {
     this.phone = '+995 599 12 34 56',
     this.isDeliveryEnabled = true,
     this.deliveryCity = 'თბილისი',
-    this.deliveryDays = const ['შაბ'],
+    this.deliveryDays = const ['შაბათი'],
     this.deliveryFee = 7.0,
     this.regionalDeliveryFees = const {'თბილისი': 7.0},
     this.isPickupEnabled = true,
@@ -61,9 +75,10 @@ class FarmerModel {
       isDeliveryEnabled: json['isDeliveryEnabled'] as bool? ?? true,
       deliveryCity: json['deliveryCity'] as String? ?? 'თბილისი',
       deliveryDays: (json['deliveryDays'] as List<dynamic>?)
-              ?.map((e) => e.toString())
+              ?.map((e) => normalizeDay(e.toString()))
+              .toSet()
               .toList() ??
-          const ['შაბ'],
+          const ['შაბათი'],
       deliveryFee: (json['deliveryFee'] as num?)?.toDouble() ?? 7.0,
       regionalDeliveryFees:
           (json['regionalDeliveryFees'] as Map<String, dynamic>?)?.map(

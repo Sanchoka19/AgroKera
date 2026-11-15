@@ -75,6 +75,7 @@ class AuthState {
   final String? userName;
   final String? userPhone;
   final String? userEmail;
+  final String? userAvatarUrl;
   final String? farmCoverUrl;
   final UserRole role;
   final KycStatus kycStatus;
@@ -87,6 +88,7 @@ class AuthState {
     this.userName,
     this.userPhone,
     this.userEmail,
+    this.userAvatarUrl,
     this.farmCoverUrl,
     this.role = UserRole.guest,
     this.kycStatus = KycStatus.verified,
@@ -100,6 +102,7 @@ class AuthState {
     String? userName,
     String? userPhone,
     String? userEmail,
+    String? userAvatarUrl,
     String? farmCoverUrl,
     UserRole? role,
     KycStatus? kycStatus,
@@ -112,6 +115,7 @@ class AuthState {
       userName: userName ?? this.userName,
       userPhone: userPhone ?? this.userPhone,
       userEmail: userEmail ?? this.userEmail,
+      userAvatarUrl: userAvatarUrl ?? this.userAvatarUrl,
       farmCoverUrl: farmCoverUrl ?? this.farmCoverUrl,
       role: role ?? this.role,
       kycStatus: kycStatus ?? this.kycStatus,
@@ -125,6 +129,8 @@ class _ResolvedAccountIdentity {
   final String? farmName;
   final String name;
   final String phone;
+  final String? avatarUrl;
+  final String? coverUrl;
 
   const _ResolvedAccountIdentity({
     required this.userId,
@@ -132,6 +138,8 @@ class _ResolvedAccountIdentity {
     this.farmName,
     required this.name,
     required this.phone,
+    this.avatarUrl,
+    this.coverUrl,
   });
 }
 
@@ -158,6 +166,10 @@ class AuthNotifier extends Notifier<AuthState> {
           farmName: explicitFarmName ?? 'მწვანე ველი',
           name: explicitName ?? 'ლანა მახარაძე',
           phone: explicitPhone ?? '+995 599 33 22 11',
+          avatarUrl:
+              'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&auto=format&fit=crop&q=80',
+          coverUrl:
+              'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=1000&auto=format&fit=crop&q=80',
         );
       }
       if (normalizedEmail.contains('giorgi')) {
@@ -167,6 +179,10 @@ class AuthNotifier extends Notifier<AuthState> {
           farmName: explicitFarmName ?? 'გიორგის ფერმა',
           name: explicitName ?? 'გიორგი ბერიძე',
           phone: explicitPhone ?? '+995 599 11 22 33',
+          avatarUrl:
+              'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80',
+          coverUrl:
+              'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=1000&auto=format&fit=crop&q=80',
         );
       }
       if (normalizedEmail.contains('davit')) {
@@ -176,6 +192,10 @@ class AuthNotifier extends Notifier<AuthState> {
           farmName: explicitFarmName ?? 'ალაზნის ბაღები',
           name: explicitName ?? 'დავით ნოზაძე',
           phone: explicitPhone ?? '+995 599 44 55 66',
+          avatarUrl:
+              'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&auto=format&fit=crop&q=80',
+          coverUrl:
+              'https://images.unsplash.com/photo-1464965911861-746a04b4bca6?w=1000&auto=format&fit=crop&q=80',
         );
       }
       if (normalizedEmail == 'example@gmail.com' || normalizedEmail.isEmpty) {
@@ -186,6 +206,10 @@ class AuthNotifier extends Notifier<AuthState> {
           farmName: explicitFarmName ?? 'გიორგის ფერმა',
           name: resolvedName,
           phone: explicitPhone ?? '+995 599 11 22 33',
+          avatarUrl:
+              'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80',
+          coverUrl:
+              'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=1000&auto=format&fit=crop&q=80',
         );
       }
       final slug = normalizedEmail.replaceAll(RegExp(r'[^a-z0-9]'), '_');
@@ -277,6 +301,8 @@ class AuthNotifier extends Notifier<AuthState> {
       userName: resolved.name,
       userPhone: resolved.phone,
       userEmail: email,
+      userAvatarUrl: resolved.avatarUrl,
+      farmCoverUrl: resolved.coverUrl ?? state.farmCoverUrl,
       role: role,
       kycStatus: KycStatus.verified,
     );
@@ -590,6 +616,8 @@ class AuthNotifier extends Notifier<AuthState> {
         final serverPhone =
             user?['phoneNumber'] as String? ?? state.userPhone ?? phone ?? '+995 599 11 22 33';
         final serverEmail = user?['email'] as String? ?? state.userEmail ?? email;
+        final serverAvatarUrl = farmerProfile?['avatarUrl'] as String?;
+        final serverCoverUrl = farmerProfile?['coverUrl'] as String?;
         final kycStr = user?['verificationStatus'] as String?;
 
         state = state.copyWith(
@@ -599,6 +627,8 @@ class AuthNotifier extends Notifier<AuthState> {
           userName: serverFullName,
           userPhone: serverPhone,
           userEmail: serverEmail,
+          userAvatarUrl: serverAvatarUrl ?? state.userAvatarUrl,
+          farmCoverUrl: serverCoverUrl ?? state.farmCoverUrl,
           kycStatus: KycStatus.fromString(kycStr),
         );
 

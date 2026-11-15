@@ -243,9 +243,31 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
 
               // Horizontal list of farms (Edge-to-edge scrolling with 16px start/end insets)
-              SizedBox(
-                height: 145,
-                child: ListView.separated(
+              if (farmers.isEmpty)
+                SizedBox(
+                  height: 100,
+                  child: Center(
+                    child: marketplace.isSyncing
+                        ? const SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.5,
+                              color: AppColors.primary,
+                            ),
+                          )
+                        : Text(
+                            'ფერმები ჯერ არ არის დამატებული',
+                            style: AppTypography.bodyMedium.copyWith(
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                  ),
+                )
+              else
+                SizedBox(
+                  height: 145,
+                  child: ListView.separated(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   clipBehavior: Clip.none,
                   scrollDirection: Axis.horizontal,
@@ -371,7 +393,29 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     const SizedBox(height: 12),
 
                     // Responsive grid of products (auto 2, 3, 4+ columns based on screen width)
-                    GridView.builder(
+                    if (products.isEmpty)
+                      Center(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 40),
+                          child: marketplace.isSyncing
+                              ? const SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2.5,
+                                    color: AppColors.primary,
+                                  ),
+                                )
+                              : Text(
+                                  'პროდუქტები ჯერ არ არის დამატებული',
+                                  style: AppTypography.bodyMedium.copyWith(
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                        ),
+                      )
+                    else
+                      GridView.builder(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
                       gridDelegate:

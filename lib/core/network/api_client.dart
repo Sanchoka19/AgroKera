@@ -11,7 +11,7 @@ String resolveDefaultApiBaseUrl() {
   return 'https://agrokera.onrender.com';
 }
 
-bool get _isFlutterTestEnv {
+bool get isFlutterTestEnv {
   if (kIsWeb) return false;
   try {
     return Platform.environment.containsKey('FLUTTER_TEST');
@@ -45,7 +45,7 @@ class ApiClient {
     _dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
-          if (_isFlutterTestEnv && !_hasCustomDio) {
+          if (isFlutterTestEnv && !_hasCustomDio) {
             return handler.reject(
               DioException(
                 requestOptions: options,
@@ -76,7 +76,7 @@ class ApiClient {
     String path, {
     Map<String, dynamic>? queryParameters,
   }) async {
-    if (_isFlutterTestEnv && !_hasCustomDio) _throwInTestEnv(path);
+    if (isFlutterTestEnv && !_hasCustomDio) _throwInTestEnv(path);
     return _dio.get<T>(path, queryParameters: queryParameters);
   }
 
@@ -84,7 +84,7 @@ class ApiClient {
     String path, {
     Object? data,
   }) async {
-    if (_isFlutterTestEnv && !_hasCustomDio) _throwInTestEnv(path);
+    if (isFlutterTestEnv && !_hasCustomDio) _throwInTestEnv(path);
     return _dio.post<T>(path, data: data);
   }
 
@@ -92,12 +92,12 @@ class ApiClient {
     String path, {
     Object? data,
   }) async {
-    if (_isFlutterTestEnv && !_hasCustomDio) _throwInTestEnv(path);
+    if (isFlutterTestEnv && !_hasCustomDio) _throwInTestEnv(path);
     return _dio.patch<T>(path, data: data);
   }
 
   Future<Response<T>> delete<T>(String path) async {
-    if (_isFlutterTestEnv && !_hasCustomDio) _throwInTestEnv(path);
+    if (isFlutterTestEnv && !_hasCustomDio) _throwInTestEnv(path);
     return _dio.delete<T>(path);
   }
 }

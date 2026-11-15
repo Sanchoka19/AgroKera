@@ -438,7 +438,7 @@ class _FarmerProfileScreenState extends ConsumerState<FarmerProfileScreen>
                     const SizedBox(height: 22),
                     Text('მიწოდების პირობები', style: AppTypography.h2),
                     const SizedBox(height: 10),
-                    ProductDeliveryInfoCard(farmer: farmer),
+                    ProductDeliveryInfoCard(farmer: farmer, farmerId: farmer.id),
                   ],
                 ),
               ),

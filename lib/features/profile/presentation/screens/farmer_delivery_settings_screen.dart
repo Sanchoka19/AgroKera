@@ -10,7 +10,6 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_toast.dart';
 import '../../../farmer_onboarding/presentation/widgets/farmer_map_widget.dart';
 import '../../../marketplace/data/models/farmer_model.dart';
-import '../../../marketplace/data/mock_data.dart';
 import '../../../marketplace/presentation/providers/marketplace_provider.dart';
 
 /// Screen allowing farmers to configure and update their delivery options,
@@ -85,7 +84,21 @@ class _FarmerDeliverySettingsScreenState
       (f) => f.id == targetId,
       orElse: () => marketplace.farmers.isNotEmpty
           ? marketplace.farmers.first
-          : MockData.farmers.first,
+          : FarmerModel(
+              id: targetId,
+              farmName: authState.farmName ?? 'ჩემი მეურნეობა',
+              farmerName: authState.userName ?? 'ფერმერი',
+              location: 'საქართველო',
+              rating: 5.0,
+              reviewCount: 0,
+              totalRatings: 0,
+              isVerified: true,
+              isVatPayer: false,
+              avatarUrl: authState.userAvatarUrl ?? '',
+              coverUrl: authState.farmCoverUrl ?? '',
+              about: '',
+              phone: authState.userPhone ?? '',
+            ),
     );
 
     _isDeliveryEnabled = farmer.isDeliveryEnabled;
@@ -181,32 +194,31 @@ class _FarmerDeliverySettingsScreenState
 
                   // Header Row
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: AppColors.primaryLight,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: const Icon(
-                              LucideIcons.mapPin,
-                              color: AppColors.primary,
-                              size: 20,
-                            ),
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryLight,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(
+                          LucideIcons.mapPin,
+                          color: AppColors.primary,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'ახალი რეგიონის დამატება',
+                          style: GoogleFonts.notoSansGeorgian(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.textPrimary,
                           ),
-                          const SizedBox(width: 10),
-                          Text(
-                            'ახალი რეგიონის დამატება',
-                            style: GoogleFonts.notoSansGeorgian(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                        ],
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                       IconButton(
                         icon: const Icon(
@@ -444,7 +456,21 @@ class _FarmerDeliverySettingsScreenState
       (f) => f.id == targetId,
       orElse: () => marketplace.farmers.isNotEmpty
           ? marketplace.farmers.first
-          : MockData.farmers.first,
+          : FarmerModel(
+              id: targetId,
+              farmName: authState.farmName ?? 'ჩემი მეურნეობა',
+              farmerName: authState.userName ?? 'ფერმერი',
+              location: 'საქართველო',
+              rating: 5.0,
+              reviewCount: 0,
+              totalRatings: 0,
+              isVerified: true,
+              isVatPayer: false,
+              avatarUrl: authState.userAvatarUrl ?? '',
+              coverUrl: authState.farmCoverUrl ?? '',
+              about: '',
+              phone: authState.userPhone ?? '',
+            ),
     );
   }
 
@@ -467,10 +493,14 @@ class _FarmerDeliverySettingsScreenState
     }
 
     final farmer = _resolveFarmer();
+    final authState = ref.read(authStateProvider);
     final primaryCity =
         _regionalFees.keys.isNotEmpty ? _regionalFees.keys.first : 'თბილისი';
     final primaryFee =
         _regionalFees.values.isNotEmpty ? _regionalFees.values.first : 7.0;
+
+    final shouldUpdateAllDemo =
+        authState.farmerId == null || widget.farmerId == null;
 
     ref.read(marketplaceProvider.notifier).updateFarmerDeliverySettings(
           farmerId: farmer.id,
@@ -483,7 +513,24 @@ class _FarmerDeliverySettingsScreenState
           location: _locationController.text.trim().isNotEmpty
               ? _locationController.text.trim()
               : farmer.location,
+          updateAllDemoFarmers: shouldUpdateAllDemo,
         );
+
+    if (authState.farmerId != null && authState.farmerId != farmer.id) {
+      ref.read(marketplaceProvider.notifier).updateFarmerDeliverySettings(
+            farmerId: authState.farmerId!,
+            isDeliveryEnabled: _isDeliveryEnabled,
+            deliveryCity: primaryCity,
+            deliveryDays: _selectedDays,
+            deliveryFee: primaryFee,
+            regionalDeliveryFees: _regionalFees,
+            isPickupEnabled: true,
+            location: _locationController.text.trim().isNotEmpty
+                ? _locationController.text.trim()
+                : farmer.location,
+            updateAllDemoFarmers: false,
+          );
+    }
 
     AppToast.success(context, 'მიწოდების პარამეტრები წარმატებით განახლდა!');
     Navigator.of(context).pop();

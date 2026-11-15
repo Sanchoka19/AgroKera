@@ -128,24 +128,27 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
     final similarProducts = ref.watch(similarProductsProvider(product));
 
     final farmer = marketplace.farmers.firstWhere(
-      (f) => f.id == product.farmerId,
-      orElse: () => FarmerModel(
-        id: product.farmerId,
-        farmName: product.farmerName,
-        farmerName: product.farmerName,
-        location: 'კახეთი',
-        rating: product.rating,
-        reviewCount: product.reviewCount,
-        totalRatings: product.reviewCount,
-        isVerified: true,
-        isVatPayer: false,
-        avatarUrl:
-            'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80',
-        coverUrl:
-            'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=1000&auto=format&fit=crop&q=80',
-        about: 'ნატურალური ქართული აგრო-პროდუქცია პირდაპირ მეურნეობიდან.',
-        phone: '+995 599 11 22 33',
-      ),
+      (f) =>
+          f.id == product.farmerId ||
+          f.farmName == product.farmerName ||
+          f.farmerName == product.farmerName,
+      orElse: () => marketplace.farmers.isNotEmpty
+          ? marketplace.farmers.first
+          : FarmerModel(
+              id: product.farmerId,
+              farmName: product.farmerName,
+              farmerName: product.farmerName,
+              location: 'კახეთი',
+              rating: product.rating,
+              reviewCount: product.reviewCount,
+              totalRatings: product.reviewCount,
+              isVerified: true,
+              isVatPayer: false,
+              avatarUrl: '',
+              coverUrl: '',
+              about: 'ნატურალური ქართული აგრო-პროდუქცია პირდაპირ მეურნეობიდან.',
+              phone: '',
+            ),
     );
 
     return Scaffold(
@@ -178,7 +181,7 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                             setState(() => _quantity = val),
                       ),
                       const SizedBox(height: 20),
-                      ProductDeliveryInfoCard(farmer: farmer),
+                      ProductDeliveryInfoCard(farmer: farmer, farmerId: farmer.id),
                       const SizedBox(height: 22),
                       ProductFarmerCard(farmer: farmer),
                       const SizedBox(height: 22),

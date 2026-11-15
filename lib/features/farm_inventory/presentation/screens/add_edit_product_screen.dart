@@ -5,11 +5,11 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../core/auth/auth_state_provider.dart';
+import '../../../../core/constants/app_categories.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_confirmation_bottom_sheet.dart';
 import '../../../../core/widgets/app_toast.dart';
 import '../../../../core/widgets/primary_button.dart';
-import '../../../marketplace/data/mock_data.dart';
 import '../../../marketplace/data/models/product_model.dart';
 import '../providers/farmer_inventory_provider.dart';
 import '../providers/product_form_validator.dart';
@@ -85,7 +85,7 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
 
     // Step 1
     _titleCtrl = TextEditingController(text: existing?.title ?? '');
-    _selectedCategory = existing?.category ?? MockData.categories.first.name;
+    _selectedCategory = existing?.category ?? AppCategories.categories.first.name;
 
     // Step 2
     _priceCtrl = TextEditingController(

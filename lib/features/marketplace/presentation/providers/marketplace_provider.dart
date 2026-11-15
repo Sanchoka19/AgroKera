@@ -2,6 +2,7 @@
 
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/constants/app_categories.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../cart_checkout/data/models/cart_item_model.dart';
 import '../../data/mock_data.dart';
@@ -50,14 +51,16 @@ class MarketplaceNotifier extends Notifier<MarketplaceState> {
   @override
   MarketplaceState build() {
     unawaited(Future.microtask(refreshFromBackend));
-    return const MarketplaceState(
+    return MarketplaceState(
       products: MockData.products,
       farmers: MockData.farmers,
-      categories: MockData.categories,
+      categories: AppCategories.categories,
+      isSyncing: !isFlutterTestEnv,
     );
   }
 
   Future<void> refreshFromBackend() async {
+    state = state.copyWith(isSyncing: true);
     try {
       final api = ref.read(apiClientProvider);
       final results = await Future.wait([
@@ -71,23 +74,31 @@ class MarketplaceNotifier extends Notifier<MarketplaceState> {
       final rawProducts = results[0].data;
       final rawFarmers = results[1].data;
 
-      if (rawProducts != null && rawProducts.isNotEmpty) {
-        final fetchedProducts = rawProducts
+      List<ProductModel>? newProducts;
+      List<FarmerModel>? newFarmers;
+
+      if (rawProducts != null) {
+        newProducts = rawProducts
             .whereType<Map<String, dynamic>>()
             .map(ProductModel.fromJson)
             .toList();
-        state = state.copyWith(products: fetchedProducts);
       }
 
-      if (rawFarmers != null && rawFarmers.isNotEmpty) {
-        final fetchedFarmers = rawFarmers
+      if (rawFarmers != null) {
+        newFarmers = rawFarmers
             .whereType<Map<String, dynamic>>()
             .map(FarmerModel.fromJson)
             .toList();
-        state = state.copyWith(farmers: fetchedFarmers);
       }
+
+      state = state.copyWith(
+        products: newProducts,
+        farmers: newFarmers,
+        isSyncing: false,
+      );
     } catch (_) {
-      // Gracefully keep local/offline state when API is unreachable
+      // Gracefully finish syncing when API is unreachable
+      state = state.copyWith(isSyncing: false);
     }
   }
 
@@ -290,6 +301,34 @@ class MarketplaceNotifier extends Notifier<MarketplaceState> {
     } catch (_) {}
   }
 
+  static String normalizeDayName(String d) {
+    const map = {
+      'ორშ': 'ორშაბათი',
+      'სამ': 'სამშაბათი',
+      'ოთხ': 'ოთხშაბათი',
+      'ხუთ': 'ხუთშაბათი',
+      'პარ': 'პარასკევი',
+      'შაბ': 'შაბათი',
+      'კვი': 'კვირა',
+    };
+    final trimmed = d.trim();
+    return map[trimmed] ?? trimmed;
+  }
+
+  static int weekdayOrderIndex(String day) {
+    const order = [
+      'ორშაბათი',
+      'სამშაბათი',
+      'ოთხშაბათი',
+      'ხუთშაბათი',
+      'პარასკევი',
+      'შაბათი',
+      'კვირა',
+    ];
+    final idx = order.indexOf(normalizeDayName(day));
+    return idx >= 0 ? idx : 99;
+  }
+
   void updateFarmerDeliverySettings({
     required String farmerId,
     required bool isDeliveryEnabled,
@@ -299,14 +338,22 @@ class MarketplaceNotifier extends Notifier<MarketplaceState> {
     required Map<String, double> regionalDeliveryFees,
     required bool isPickupEnabled,
     String? location,
+    bool updateAllDemoFarmers = false,
   }) {
-    state = state.copyWith(
-      farmers: state.farmers.map((f) {
-        if (f.id == farmerId) {
+    final cleanDays = deliveryDays.map(normalizeDayName).toSet().toList();
+    cleanDays.sort((a, b) => weekdayOrderIndex(a).compareTo(weekdayOrderIndex(b)));
+
+    final exists = state.farmers.any((f) => f.id == farmerId);
+    List<FarmerModel> updatedFarmers;
+
+    if (exists) {
+      updatedFarmers = state.farmers.map((f) {
+        if (f.id == farmerId ||
+            (updateAllDemoFarmers && (f.id == 'farmer_1' || f.id == 'farmer_2'))) {
           return f.copyWith(
             isDeliveryEnabled: isDeliveryEnabled,
             deliveryCity: deliveryCity,
-            deliveryDays: deliveryDays,
+            deliveryDays: cleanDays,
             deliveryFee: deliveryFee,
             regionalDeliveryFees: regionalDeliveryFees,
             isPickupEnabled: isPickupEnabled,
@@ -314,8 +361,50 @@ class MarketplaceNotifier extends Notifier<MarketplaceState> {
           );
         }
         return f;
-      }).toList(),
-    );
+      }).toList();
+    } else {
+      final newFarmer = FarmerModel(
+        id: farmerId,
+        farmName: 'ჩემი მეურნეობა',
+        farmerName: 'ფერმერი',
+        location: location ?? 'კახეთი',
+        rating: 5.0,
+        reviewCount: 0,
+        totalRatings: 0,
+        isDeliveryEnabled: isDeliveryEnabled,
+        deliveryCity: deliveryCity,
+        deliveryDays: cleanDays,
+        deliveryFee: deliveryFee,
+        regionalDeliveryFees: regionalDeliveryFees,
+        isPickupEnabled: isPickupEnabled,
+        avatarUrl:
+            'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80',
+        coverUrl:
+            'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=1000&auto=format&fit=crop&q=80',
+        about: 'ნატურალური ქართული პროდუქცია პირდაპირ მეურნეობიდან.',
+      );
+
+      var list = [...state.farmers, newFarmer];
+      if (updateAllDemoFarmers) {
+        list = list.map((f) {
+          if (f.id == 'farmer_1' || f.id == 'farmer_2') {
+            return f.copyWith(
+              isDeliveryEnabled: isDeliveryEnabled,
+              deliveryCity: deliveryCity,
+              deliveryDays: cleanDays,
+              deliveryFee: deliveryFee,
+              regionalDeliveryFees: regionalDeliveryFees,
+              isPickupEnabled: isPickupEnabled,
+              location: location ?? f.location,
+            );
+          }
+          return f;
+        }).toList();
+      }
+      updatedFarmers = list;
+    }
+
+    state = state.copyWith(farmers: updatedFarmers);
   }
 }
 

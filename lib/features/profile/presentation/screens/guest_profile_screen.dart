@@ -409,12 +409,15 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
                                     ],
                                   ),
                                   child: ClipOval(
-                                    child: Image.network(
-                                      'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80',
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (context, error, stackTrace) =>
-                                          _buildPlaceholderAvatar(),
-                                    ),
+                                    child: (authState.userAvatarUrl != null &&
+                                            authState.userAvatarUrl!.isNotEmpty)
+                                        ? Image.network(
+                                            authState.userAvatarUrl!,
+                                            fit: BoxFit.cover,
+                                            errorBuilder: (context, error, stackTrace) =>
+                                                _buildPlaceholderAvatar(),
+                                          )
+                                        : _buildPlaceholderAvatar(),
                                   ),
                                 ),
                                 Positioned(
@@ -640,7 +643,9 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
                           Navigator.of(context).push(
                             MaterialPageRoute(
                               builder: (context) =>
-                                  const FarmerDeliverySettingsScreen(),
+                                  FarmerDeliverySettingsScreen(
+                                    farmerId: authState.farmerId,
+                                  ),
                             ),
                           );
                         },
@@ -1121,6 +1126,14 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
   }
 
   Widget _buildFarmerProfileHero(AuthState authState) {
+    final marketplace = ref.watch(marketplaceProvider);
+    final matchedFarmer = marketplace.farmers.where(
+      (f) =>
+          (authState.farmerId != null && f.id == authState.farmerId) ||
+          (authState.farmName != null && f.farmName == authState.farmName),
+    ).firstOrNull;
+    final farmerAvatar = authState.userAvatarUrl ?? matchedFarmer?.avatarUrl;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -1135,7 +1148,7 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  _buildCoverImage(authState.farmCoverUrl),
+                  _buildCoverImage(authState.farmCoverUrl ?? matchedFarmer?.coverUrl),
                   Container(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
@@ -1248,12 +1261,14 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
                             ],
                           ),
                           child: ClipOval(
-                            child: Image.network(
-                              'https://images.unsplash.com/photo-1595273670150-bd0c3c392e46?w=400&auto=format&fit=crop&q=80',
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) =>
-                                  _buildPlaceholderAvatar(),
-                            ),
+                            child: (farmerAvatar != null && farmerAvatar.isNotEmpty)
+                                ? Image.network(
+                                    farmerAvatar,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) =>
+                                        _buildPlaceholderAvatar(),
+                                  )
+                                : _buildPlaceholderAvatar(),
                           ),
                         ),
                         Positioned(

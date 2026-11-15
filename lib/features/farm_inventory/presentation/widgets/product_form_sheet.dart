@@ -4,10 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import '../../../../core/constants/app_categories.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_toast.dart';
 import '../../../../core/widgets/custom_text_field.dart';
-import '../../../marketplace/data/mock_data.dart';
 import '../../../marketplace/data/models/product_model.dart';
 import '../providers/farmer_inventory_provider.dart';
 import '../screens/add_edit_product_screen.dart';
@@ -98,7 +98,7 @@ class _ProductFormSheetState extends ConsumerState<ProductFormSheet> {
           ? existing.bulkDiscountPercent.toString()
           : '',
     );
-    _selectedCategory = existing?.category ?? MockData.categories.first.name;
+    _selectedCategory = existing?.category ?? AppCategories.categories.first.name;
     _selectedUnit = existing?.unit ?? 'კგ';
     if (existing != null) {
       for (final img in existing.galleryImages.take(
@@ -298,7 +298,7 @@ class _ProductFormSheetState extends ConsumerState<ProductFormSheet> {
   }
 
   void _openCategorySelectionSheet() {
-    final categories = MockData.categories.map((c) => c.name).toList();
+    final categories = AppCategories.categories.map((c) => c.name).toList();
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,

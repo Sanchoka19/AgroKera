@@ -104,12 +104,15 @@ class CartNotifier extends Notifier<List<CartItemModel>> {
   void decrement(String id) {
     state = state.map((item) {
       if (item.id == id) {
+        final minLimit = item.minOrderQuantity.toInt().clamp(1, 99999);
+        if (item.quantity <= minLimit) {
+          return item;
+        }
         final newQty = item.quantity - 1;
-        if (newQty <= 0) return null;
         return item.copyWith(quantity: newQty);
       }
       return item;
-    }).whereType<CartItemModel>().toList();
+    }).toList();
     _persistCart();
   }
 

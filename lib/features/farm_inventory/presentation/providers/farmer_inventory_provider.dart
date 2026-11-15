@@ -231,6 +231,10 @@ class FarmerInventoryNotifier extends Notifier<FarmerInventoryState> {
     required String description,
     required String imageUrl,
     List<String>? images,
+    double? minOrderQuantity,
+    int? discountPercent,
+    double? bulkDiscountMinQty,
+    int? bulkDiscountPercent,
   }) async {
     final auth = ref.read(authStateProvider);
     final notifier = ref.read(marketplaceProvider.notifier);
@@ -255,6 +259,10 @@ class FarmerInventoryNotifier extends Notifier<FarmerInventoryState> {
         price: price,
         unit: unit,
         stockQuantity: stockQuantity,
+        discountPercent: discountPercent,
+        minOrderQuantity: minOrderQuantity ?? 1.0,
+        bulkDiscountMinQty: bulkDiscountMinQty,
+        bulkDiscountPercent: bulkDiscountPercent,
         farmerId: activeFarmerId,
         farmerName: resolvedFarmName,
         description: description.trim(),
@@ -269,6 +277,10 @@ class FarmerInventoryNotifier extends Notifier<FarmerInventoryState> {
         price: price,
         unit: unit,
         stockQuantity: stockQuantity,
+        discountPercent: discountPercent,
+        minOrderQuantity: minOrderQuantity,
+        bulkDiscountMinQty: bulkDiscountMinQty,
+        bulkDiscountPercent: bulkDiscountPercent,
         description: description.trim(),
         imageUrl: normalizedImages.first,
         images: normalizedImages,

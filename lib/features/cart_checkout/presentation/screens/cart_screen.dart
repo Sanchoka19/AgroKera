@@ -8,6 +8,7 @@ import '../../../../core/constants/app_assets.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/app_confirmation_bottom_sheet.dart';
+import '../../../../core/widgets/app_toast.dart';
 import '../../../../core/widgets/auth_required_bottom_sheet.dart';
 import '../providers/cart_provider.dart';
 import 'checkout_screen.dart';
@@ -421,17 +422,29 @@ class _CartScreenState extends ConsumerState<CartScreen>
                                               style: AppTypography.bodyMedium.copyWith(
                                                 fontSize: 16,
                                                 fontWeight: FontWeight.w800,
-                                                color: AppColors.textPrimary,
+                                                color: item.isBulkDiscountApplied
+                                                    ? AppColors.primary
+                                                    : AppColors.textPrimary,
                                               ),
                                             ),
                                             const SizedBox(height: 1),
-                                            Text(
-                                              '${item.pricePerUnit.toStringAsFixed(2)} ₾/${item.unit}',
-                                              style: AppTypography.caption.copyWith(
-                                                fontSize: 12,
-                                                color: AppColors.textSecondary,
+                                            if (item.isBulkDiscountApplied)
+                                              Text(
+                                                '${item.effectiveUnitPrice.toStringAsFixed(2)} ₾/${item.unit} (-${item.bulkDiscountPercent}%)',
+                                                style: AppTypography.caption.copyWith(
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.w700,
+                                                  color: AppColors.primary,
+                                                ),
+                                              )
+                                            else
+                                              Text(
+                                                '${item.pricePerUnit.toStringAsFixed(2)} ₾/${item.unit}',
+                                                style: AppTypography.caption.copyWith(
+                                                  fontSize: 12,
+                                                  color: AppColors.textSecondary,
+                                                ),
                                               ),
-                                            ),
                                           ],
                                         ),
                                         const Spacer(),
@@ -448,14 +461,23 @@ class _CartScreenState extends ConsumerState<CartScreen>
                                             children: [
                                               GestureDetector(
                                                 onTap: () {
+                                                  if (item.quantity <= item.minOrderQuantity) {
+                                                    AppToast.info(
+                                                      context,
+                                                      'მინიმალური შეკვეთაა ${item.minOrderQuantity.toInt()} ${item.unit}',
+                                                    );
+                                                    return;
+                                                  }
                                                   ref.read(cartProvider.notifier).decrement(item.id);
                                                 },
-                                                child: const Padding(
-                                                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                                child: Padding(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                                   child: Icon(
                                                     LucideIcons.minus,
                                                     size: 16,
-                                                    color: AppColors.textPrimary,
+                                                    color: item.quantity <= item.minOrderQuantity
+                                                        ? AppColors.textSecondary.withValues(alpha: 0.35)
+                                                        : AppColors.textPrimary,
                                                   ),
                                                 ),
                                               ),

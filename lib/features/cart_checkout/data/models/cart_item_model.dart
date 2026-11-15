@@ -8,6 +8,9 @@ class CartItemModel {
   final String imageUrl;
   final int quantity;
   final double weightKg;
+  final double minOrderQuantity;
+  final double? bulkDiscountMinQty;
+  final int? bulkDiscountPercent;
 
   const CartItemModel({
     required this.id,
@@ -19,9 +22,28 @@ class CartItemModel {
     required this.imageUrl,
     this.quantity = 1,
     this.weightKg = 1.0,
+    this.minOrderQuantity = 1.0,
+    this.bulkDiscountMinQty,
+    this.bulkDiscountPercent,
   });
 
-  double get totalPrice => pricePerUnit * quantity;
+  bool get hasBulkDiscount =>
+      bulkDiscountMinQty != null &&
+      bulkDiscountMinQty! > 0 &&
+      bulkDiscountPercent != null &&
+      bulkDiscountPercent! > 0;
+
+  bool get isBulkDiscountApplied =>
+      hasBulkDiscount && quantity >= bulkDiscountMinQty!;
+
+  double get effectiveUnitPrice {
+    if (isBulkDiscountApplied) {
+      return pricePerUnit * (1.0 - (bulkDiscountPercent! / 100.0));
+    }
+    return pricePerUnit;
+  }
+
+  double get totalPrice => effectiveUnitPrice * quantity;
   double get totalWeight => weightKg * quantity;
 
   CartItemModel copyWith({
@@ -34,6 +56,9 @@ class CartItemModel {
     String? imageUrl,
     int? quantity,
     double? weightKg,
+    double? minOrderQuantity,
+    double? bulkDiscountMinQty,
+    int? bulkDiscountPercent,
   }) {
     return CartItemModel(
       id: id ?? this.id,
@@ -45,6 +70,9 @@ class CartItemModel {
       imageUrl: imageUrl ?? this.imageUrl,
       quantity: quantity ?? this.quantity,
       weightKg: weightKg ?? this.weightKg,
+      minOrderQuantity: minOrderQuantity ?? this.minOrderQuantity,
+      bulkDiscountMinQty: bulkDiscountMinQty ?? this.bulkDiscountMinQty,
+      bulkDiscountPercent: bulkDiscountPercent ?? this.bulkDiscountPercent,
     );
   }
 
@@ -59,6 +87,9 @@ class CartItemModel {
       'imageUrl': imageUrl,
       'quantity': quantity,
       'weightKg': weightKg,
+      'minOrderQuantity': minOrderQuantity,
+      'bulkDiscountMinQty': bulkDiscountMinQty,
+      'bulkDiscountPercent': bulkDiscountPercent,
     };
   }
 
@@ -73,7 +104,9 @@ class CartItemModel {
       imageUrl: json['imageUrl'] as String? ?? '',
       quantity: (json['quantity'] as num?)?.toInt() ?? 1,
       weightKg: (json['weightKg'] as num?)?.toDouble() ?? 1.0,
+      minOrderQuantity: (json['minOrderQuantity'] as num?)?.toDouble() ?? 1.0,
+      bulkDiscountMinQty: (json['bulkDiscountMinQty'] as num?)?.toDouble(),
+      bulkDiscountPercent: (json['bulkDiscountPercent'] as num?)?.toInt(),
     );
   }
 }
-

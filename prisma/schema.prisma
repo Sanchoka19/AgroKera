@@ -100,6 +100,8 @@ model Product {
   stockQuantity      Float              @default(0.0)
   stockStatus        String             @default("მარაგშია")
   minOrderQuantity   Float              @default(1.0)
+  bulkDiscountMinQty Float?
+  bulkDiscountPercent Int?
   rating             Float              @default(4.9)
   reviewCount        Int                @default(0)
   imageUrl           String?

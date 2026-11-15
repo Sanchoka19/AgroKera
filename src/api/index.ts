@@ -627,6 +627,8 @@ export default {
             images: imageList,
             description: p.description || "",
             minOrderQuantity: p.minOrderQuantity,
+            bulkDiscountMinQty: p.bulkDiscountMinQty,
+            bulkDiscountPercent: p.bulkDiscountPercent,
           };
         });
 
@@ -644,6 +646,8 @@ export default {
           unit?: string;
           stockQuantity?: number;
           minOrderQuantity?: number;
+          bulkDiscountMinQty?: number;
+          bulkDiscountPercent?: number;
           imageUrl?: string;
           images?: string[];
           description?: string;
@@ -712,6 +716,12 @@ export default {
             stockQuantity: stockQty,
             stockStatus: stockQty < 20 ? "იწურება" : "მარაგშია",
             minOrderQuantity: Number(body.minOrderQuantity ?? 1.0),
+            bulkDiscountMinQty: body.bulkDiscountMinQty
+              ? Number(body.bulkDiscountMinQty)
+              : null,
+            bulkDiscountPercent: body.bulkDiscountPercent
+              ? Number(body.bulkDiscountPercent)
+              : null,
             imageUrl: primaryImage,
             images: normalizedImages,
             description:
@@ -740,6 +750,8 @@ export default {
             images: created.images && created.images.length > 0 ? created.images : [created.imageUrl],
             description: created.description,
             minOrderQuantity: created.minOrderQuantity,
+            bulkDiscountMinQty: created.bulkDiscountMinQty,
+            bulkDiscountPercent: created.bulkDiscountPercent,
           },
           201
         );
@@ -757,6 +769,8 @@ export default {
             unit?: string;
             stockQuantity?: number;
             minOrderQuantity?: number;
+            bulkDiscountMinQty?: number;
+            bulkDiscountPercent?: number;
             isAvailable?: boolean;
             description?: string;
             imageUrl?: string;
@@ -800,6 +814,20 @@ export default {
               ...(body.minOrderQuantity !== undefined
                 ? { minOrderQuantity: Number(body.minOrderQuantity) }
                 : {}),
+              ...(body.bulkDiscountMinQty !== undefined
+                ? {
+                    bulkDiscountMinQty: body.bulkDiscountMinQty
+                      ? Number(body.bulkDiscountMinQty)
+                      : null,
+                  }
+                : {}),
+              ...(body.bulkDiscountPercent !== undefined
+                ? {
+                    bulkDiscountPercent: body.bulkDiscountPercent
+                      ? Number(body.bulkDiscountPercent)
+                      : null,
+                  }
+                : {}),
               ...(body.description !== undefined
                 ? { description: body.description }
                 : {}),
@@ -834,6 +862,8 @@ export default {
             images: updated.images && updated.images.length > 0 ? updated.images : [updated.imageUrl],
             description: updated.description,
             minOrderQuantity: updated.minOrderQuantity,
+            bulkDiscountMinQty: updated.bulkDiscountMinQty,
+            bulkDiscountPercent: updated.bulkDiscountPercent,
           });
         }
 

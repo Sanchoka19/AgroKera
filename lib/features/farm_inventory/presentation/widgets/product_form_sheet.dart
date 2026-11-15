@@ -48,6 +48,10 @@ class _ProductFormSheetState extends ConsumerState<ProductFormSheet> {
   late final TextEditingController _priceCtrl;
   late final TextEditingController _stockCtrl;
   late final TextEditingController _descCtrl;
+  late final TextEditingController _minOrderCtrl;
+  late final TextEditingController _discountCtrl;
+  late final TextEditingController _bulkMinQtyCtrl;
+  late final TextEditingController _bulkDiscountCtrl;
   late String _selectedCategory;
   late String _selectedUnit;
   final List<_SelectedPhotoEntry> _selectedPhotos = [];
@@ -65,6 +69,35 @@ class _ProductFormSheetState extends ConsumerState<ProductFormSheet> {
       text: existing != null ? existing.stockQuantity.toStringAsFixed(0) : '50',
     );
     _descCtrl = TextEditingController(text: existing?.description ?? '');
+    _minOrderCtrl = TextEditingController(
+      text: existing != null
+          ? (existing.minOrderQuantity.truncateToDouble() ==
+                  existing.minOrderQuantity
+              ? existing.minOrderQuantity.toInt().toString()
+              : existing.minOrderQuantity.toString())
+          : '1',
+    );
+    _discountCtrl = TextEditingController(
+      text: (existing?.discountPercent != null &&
+              existing!.discountPercent! > 0)
+          ? existing.discountPercent.toString()
+          : '',
+    );
+    _bulkMinQtyCtrl = TextEditingController(
+      text: (existing?.bulkDiscountMinQty != null &&
+              existing!.bulkDiscountMinQty! > 0)
+          ? (existing.bulkDiscountMinQty!.truncateToDouble() ==
+                  existing.bulkDiscountMinQty!
+              ? existing.bulkDiscountMinQty!.toInt().toString()
+              : existing.bulkDiscountMinQty!.toString())
+          : '',
+    );
+    _bulkDiscountCtrl = TextEditingController(
+      text: (existing?.bulkDiscountPercent != null &&
+              existing!.bulkDiscountPercent! > 0)
+          ? existing.bulkDiscountPercent.toString()
+          : '',
+    );
     _selectedCategory = existing?.category ?? MockData.categories.first.name;
     _selectedUnit = existing?.unit ?? 'კგ';
     if (existing != null) {
@@ -84,6 +117,10 @@ class _ProductFormSheetState extends ConsumerState<ProductFormSheet> {
     _priceCtrl.dispose();
     _stockCtrl.dispose();
     _descCtrl.dispose();
+    _minOrderCtrl.dispose();
+    _discountCtrl.dispose();
+    _bulkMinQtyCtrl.dispose();
+    _bulkDiscountCtrl.dispose();
     super.dispose();
   }
 
@@ -414,6 +451,10 @@ class _ProductFormSheetState extends ConsumerState<ProductFormSheet> {
     final title = _titleCtrl.text.trim();
     final price = double.parse(_priceCtrl.text.trim());
     final stock = double.parse(_stockCtrl.text.trim());
+    final minOrder = double.tryParse(_minOrderCtrl.text.trim()) ?? 1.0;
+    final discount = int.tryParse(_discountCtrl.text.trim());
+    final bulkMinQty = double.tryParse(_bulkMinQtyCtrl.text.trim());
+    final bulkDiscount = int.tryParse(_bulkDiscountCtrl.text.trim());
 
     await notifier.saveProduct(
       existing: widget.existing,
@@ -425,6 +466,12 @@ class _ProductFormSheetState extends ConsumerState<ProductFormSheet> {
       description: _descCtrl.text.trim(),
       imageUrl: imageUrls.first,
       images: imageUrls,
+      minOrderQuantity: minOrder > 0 ? minOrder : 1.0,
+      discountPercent: (discount != null && discount > 0) ? discount : null,
+      bulkDiscountMinQty:
+          (bulkMinQty != null && bulkMinQty > 0) ? bulkMinQty : null,
+      bulkDiscountPercent:
+          (bulkDiscount != null && bulkDiscount > 0) ? bulkDiscount : null,
     );
 
     if (!mounted) return;
@@ -734,6 +781,93 @@ class _ProductFormSheetState extends ConsumerState<ProductFormSheet> {
                   },
                 );
               }).toList(),
+            ),
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                Expanded(
+                  child: CustomTextField(
+                    labelText: 'მინ. შეკვეთა ($_selectedUnit)',
+                    hintText: '1',
+                    controller: _minOrderCtrl,
+                    keyboardType: TextInputType.number,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: CustomTextField(
+                    labelText: 'ფასდაკლება (%)',
+                    hintText: 'მაგ: 10',
+                    controller: _discountCtrl,
+                    keyboardType: TextInputType.number,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: const Color(0xFFE2E8F0),
+                  width: 1.0,
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(
+                        LucideIcons.boxes,
+                        size: 17,
+                        color: AppColors.primary,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'საბითუმო / მოცულობითი ფასდაკლება',
+                        style: GoogleFonts.notoSansGeorgian(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF1E293B),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'მიუთითეთ რაოდენობა, რის შემდეგაც მყიდველს დაუკლდება პროცენტი (არასავალდებულო)',
+                    style: GoogleFonts.notoSansGeorgian(
+                      fontSize: 11.5,
+                      color: const Color(0xFF64748B),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: CustomTextField(
+                          labelText: 'ზღვარი ($_selectedUnit-დან)',
+                          hintText: 'მაგ: 10',
+                          controller: _bulkMinQtyCtrl,
+                          keyboardType: TextInputType.number,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: CustomTextField(
+                          labelText: 'საბითუმო ფასდაკლება (%)',
+                          hintText: 'მაგ: 15',
+                          controller: _bulkDiscountCtrl,
+                          keyboardType: TextInputType.number,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
             const SizedBox(height: 12),
             CustomTextField(

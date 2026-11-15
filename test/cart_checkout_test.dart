@@ -50,6 +50,47 @@ void main() {
       notifier.decrement('test_1');
       expect(container.read(cartProvider).first.quantity, 2);
     });
+
+    test('bulk discount calculation and min order enforcement in CartItemModel and CartNotifier', () {
+      final container = ProviderContainer();
+      final notifier = container.read(cartProvider.notifier);
+      notifier.clearCart();
+
+      const item = CartItemModel(
+        id: 'bulk_1',
+        title: 'მარწყვი',
+        packageText: 'კგ',
+        farmerName: 'სანჩოს ფერმა',
+        pricePerUnit: 10.0,
+        quantity: 5,
+        imageUrl: '',
+        weightKg: 1.0,
+        minOrderQuantity: 5.0,
+        bulkDiscountMinQty: 10.0,
+        bulkDiscountPercent: 20,
+      );
+
+      notifier.addItem(item);
+      final currentItem = container.read(cartProvider).first;
+      expect(currentItem.quantity, 5);
+      expect(currentItem.isBulkDiscountApplied, isFalse);
+      expect(currentItem.effectiveUnitPrice, 10.0);
+      expect(currentItem.totalPrice, 50.0);
+
+      // Decrementing should NOT go below minOrderQuantity (5)
+      notifier.decrement('bulk_1');
+      expect(container.read(cartProvider).first.quantity, 5);
+
+      // Incrementing to 10 should trigger bulk discount (20% off => 8 GEL/kg)
+      for (int i = 0; i < 5; i++) {
+        notifier.increment('bulk_1');
+      }
+      final bulkActiveItem = container.read(cartProvider).first;
+      expect(bulkActiveItem.quantity, 10);
+      expect(bulkActiveItem.isBulkDiscountApplied, isTrue);
+      expect(bulkActiveItem.effectiveUnitPrice, 8.0);
+      expect(bulkActiveItem.totalPrice, 80.0);
+    });
   });
 
   group('Cart & Favorites Auth Guard Tests', () {

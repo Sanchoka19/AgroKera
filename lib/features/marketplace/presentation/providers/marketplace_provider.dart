@@ -1,3 +1,5 @@
+// ignore_for_file: use_null_aware_elements
+
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/network/api_client.dart';
@@ -97,6 +99,8 @@ class MarketplaceNotifier extends Notifier<MarketplaceState> {
     double stockQuantity = 50.0,
     int? discountPercent,
     double minOrderQuantity = 1.0,
+    double? bulkDiscountMinQty,
+    int? bulkDiscountPercent,
     String farmerId = 'farmer_2',
     String farmerName = 'გიორგის ფერმა',
     String? description,
@@ -131,6 +135,8 @@ class MarketplaceNotifier extends Notifier<MarketplaceState> {
       stockStatus: stockStatus,
       isAvailable: stockQuantity > 0,
       minOrderQuantity: minOrderQuantity,
+      bulkDiscountMinQty: bulkDiscountMinQty,
+      bulkDiscountPercent: bulkDiscountPercent,
       imageUrl: effectivePrimaryImage,
       images: effectiveImages,
       description:
@@ -153,7 +159,9 @@ class MarketplaceNotifier extends Notifier<MarketplaceState> {
           'unit': unit,
           'stockQuantity': stockQuantity,
           'minOrderQuantity': minOrderQuantity,
-          'description': ?description,
+          if (bulkDiscountMinQty != null) 'bulkDiscountMinQty': bulkDiscountMinQty,
+          if (bulkDiscountPercent != null) 'bulkDiscountPercent': bulkDiscountPercent,
+          if (description != null) 'description': description,
           'imageUrl': effectivePrimaryImage,
           'images': effectiveImages,
         },
@@ -181,6 +189,9 @@ class MarketplaceNotifier extends Notifier<MarketplaceState> {
     int? discountPercent,
     String? unit,
     double? stockQuantity,
+    double? minOrderQuantity,
+    double? bulkDiscountMinQty,
+    int? bulkDiscountPercent,
     bool? isAvailable,
     String? description,
     String? imageUrl,
@@ -206,6 +217,9 @@ class MarketplaceNotifier extends Notifier<MarketplaceState> {
           unit: unit,
           stockQuantity: newStock,
           stockStatus: newStatus,
+          minOrderQuantity: minOrderQuantity,
+          bulkDiscountMinQty: bulkDiscountMinQty,
+          bulkDiscountPercent: bulkDiscountPercent,
           isAvailable: isAvailable ?? (newStock > 0 ? p.isAvailable : false),
           description: description,
           imageUrl: imageUrl ?? (nextImages.isNotEmpty ? nextImages.first : p.imageUrl),
@@ -219,16 +233,19 @@ class MarketplaceNotifier extends Notifier<MarketplaceState> {
       await api.patch(
         '/api/products/$productId',
         data: {
-          'title': ?title,
-          'category': ?category,
-          'pricePerUnit': ?price,
-          'discountPercent': ?discountPercent,
-          'unit': ?unit,
-          'stockQuantity': ?stockQuantity,
-          'isAvailable': ?isAvailable,
-          'description': ?description,
-          'imageUrl': ?imageUrl,
-          'images': ?images,
+          if (title != null) 'title': title,
+          if (category != null) 'category': category,
+          if (price != null) 'pricePerUnit': price,
+          if (discountPercent != null) 'discountPercent': discountPercent,
+          if (unit != null) 'unit': unit,
+          if (stockQuantity != null) 'stockQuantity': stockQuantity,
+          if (minOrderQuantity != null) 'minOrderQuantity': minOrderQuantity,
+          if (bulkDiscountMinQty != null) 'bulkDiscountMinQty': bulkDiscountMinQty,
+          if (bulkDiscountPercent != null) 'bulkDiscountPercent': bulkDiscountPercent,
+          if (isAvailable != null) 'isAvailable': isAvailable,
+          if (description != null) 'description': description,
+          if (imageUrl != null) 'imageUrl': imageUrl,
+          if (images != null) 'images': images,
         },
       );
     } catch (_) {}

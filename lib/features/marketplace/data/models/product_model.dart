@@ -17,6 +17,8 @@ class ProductModel {
   final List<String> images;
   final String description;
   final double minOrderQuantity;
+  final double? bulkDiscountMinQty;
+  final int? bulkDiscountPercent;
 
   const ProductModel({
     required this.id,
@@ -37,13 +39,40 @@ class ProductModel {
     this.images = const [],
     required this.description,
     this.minOrderQuantity = 1.0,
+    this.bulkDiscountMinQty,
+    this.bulkDiscountPercent,
   });
 
   /// Returns all product images (at least the primary imageUrl)
   List<String> get galleryImages => images.isNotEmpty ? images : [imageUrl];
 
-  /// Whether the product has an active discount > 0%
+  /// Whether the product has an active base discount > 0%
   bool get hasDiscount => discountPercent != null && discountPercent! > 0;
+
+  /// Whether the product has volume/wholesale tiered discount
+  bool get hasBulkDiscount =>
+      bulkDiscountMinQty != null &&
+      bulkDiscountMinQty! > 0 &&
+      bulkDiscountPercent != null &&
+      bulkDiscountPercent! > 0;
+
+  /// Effective unit price taking volume/bulk discount into account
+  double priceForQuantity(num quantity) {
+    if (hasBulkDiscount && quantity >= bulkDiscountMinQty!) {
+      return price * (1.0 - (bulkDiscountPercent! / 100.0));
+    }
+    return price;
+  }
+
+  /// Bulk unit price if volume threshold is met
+  double? get bulkUnitPrice {
+    if (!hasBulkDiscount) return null;
+    return price * (1.0 - (bulkDiscountPercent! / 100.0));
+  }
+
+  /// Formatted minimum order text
+  String get minOrderDisplay =>
+      '${minOrderQuantity.truncateToDouble() == minOrderQuantity ? minOrderQuantity.toInt() : minOrderQuantity} $unit';
 
   /// Computes the initial/original price before discount
   double? get effectiveOriginalPrice {
@@ -67,6 +96,8 @@ class ProductModel {
             : 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=600&auto=format&fit=crop&q=80');
     final rawDiscount = (json['discountPercent'] as num?)?.toInt();
     final validDiscount = (rawDiscount != null && rawDiscount > 0) ? rawDiscount : null;
+    final rawBulkMin = (json['bulkDiscountMinQty'] as num?)?.toDouble();
+    final rawBulkPct = (json['bulkDiscountPercent'] as num?)?.toInt();
     return ProductModel(
       id: json['id'] as String,
       title: json['title'] as String? ?? '',
@@ -90,6 +121,8 @@ class ProductModel {
       images: rawImages.isNotEmpty ? rawImages : [primaryUrl],
       description: json['description'] as String? ?? '',
       minOrderQuantity: (json['minOrderQuantity'] as num?)?.toDouble() ?? 1.0,
+      bulkDiscountMinQty: rawBulkMin != null && rawBulkMin > 0 ? rawBulkMin : null,
+      bulkDiscountPercent: rawBulkPct != null && rawBulkPct > 0 ? rawBulkPct : null,
     );
   }
 
@@ -112,6 +145,8 @@ class ProductModel {
     List<String>? images,
     String? description,
     double? minOrderQuantity,
+    double? bulkDiscountMinQty,
+    int? bulkDiscountPercent,
   }) {
     return ProductModel(
       id: id ?? this.id,
@@ -132,6 +167,8 @@ class ProductModel {
       images: images ?? this.images,
       description: description ?? this.description,
       minOrderQuantity: minOrderQuantity ?? this.minOrderQuantity,
+      bulkDiscountMinQty: bulkDiscountMinQty ?? this.bulkDiscountMinQty,
+      bulkDiscountPercent: bulkDiscountPercent ?? this.bulkDiscountPercent,
     );
   }
 }

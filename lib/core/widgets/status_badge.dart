@@ -65,6 +65,16 @@ class StatusBadge extends StatelessWidget {
     );
   }
 
+  /// Factory for Warning / Alert / Threshold states
+  factory StatusBadge.warning({Key? key, required String label, Widget? icon}) {
+    return StatusBadge(
+      key: key,
+      label: label,
+      variant: StatusBadgeVariant.warning,
+      icon: icon,
+    );
+  }
+
   /// Factory for Urgent / Discount / Low Stock alerts
   factory StatusBadge.danger({Key? key, required String label, Widget? icon}) {
     return StatusBadge(

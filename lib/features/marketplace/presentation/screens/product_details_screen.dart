@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
@@ -34,14 +35,23 @@ class ProductDetailsScreen extends ConsumerStatefulWidget {
 }
 
 class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
-  int _quantity = 1;
+  late int _quantity;
   int _currentPhotoIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _quantity = widget.product.minOrderQuantity.toInt().clamp(1, 99999);
+  }
 
   @override
   Widget build(BuildContext context) {
     final product = widget.product;
     final gallery = product.galleryImages;
-    final totalPrice = product.price * _quantity;
+    final isBulkActive =
+        product.hasBulkDiscount && _quantity >= product.bulkDiscountMinQty!;
+    final unitPrice = product.priceForQuantity(_quantity);
+    final totalPrice = unitPrice * _quantity;
 
     // Find farmer strictly matching product.farmerId
     final farmers = ref.watch(marketplaceProvider).farmers;
@@ -278,6 +288,17 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                         ),
                       ),
                       const Spacer(),
+                      if (product.minOrderQuantity > 1) ...[
+                        StatusBadge.warning(
+                          label: 'მინ. ${product.minOrderDisplay}',
+                          icon: const Icon(
+                            LucideIcons.scale,
+                            size: 12,
+                            color: AppColors.accentWarm,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                      ],
                       StatusBadge.success(
                         label: product.stockStatus,
                         icon: const Icon(
@@ -314,8 +335,16 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                             // Decrement
                             InkWell(
                               onTap: () {
-                                if (_quantity > 1) {
+                                final minQty = product.minOrderQuantity
+                                    .toInt()
+                                    .clamp(1, 99999);
+                                if (_quantity > minQty) {
                                   setState(() => _quantity--);
+                                } else {
+                                  AppToast.info(
+                                    context,
+                                    'მინიმალური შეკვეთაა ${product.minOrderDisplay}',
+                                  );
                                 }
                               },
                               borderRadius: BorderRadius.circular(10),
@@ -326,15 +355,20 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                                   color: AppColors.surface,
                                   borderRadius: BorderRadius.circular(10),
                                   border: Border.all(
-                                    color: AppColors.border,
+                                    color: _quantity <= product.minOrderQuantity
+                                        ? AppColors.border.withValues(alpha: 0.4)
+                                        : AppColors.border,
                                     width: 1,
                                   ),
                                 ),
                                 alignment: Alignment.center,
-                                child: const Icon(
+                                child: Icon(
                                   LucideIcons.minus,
                                   size: 16,
-                                  color: AppColors.textPrimary,
+                                  color: _quantity <= product.minOrderQuantity
+                                      ? AppColors.textSecondary
+                                          .withValues(alpha: 0.35)
+                                      : AppColors.textPrimary,
                                 ),
                               ),
                             ),
@@ -376,6 +410,105 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                       ],
                     ),
                   ),
+                  if (product.hasBulkDiscount) ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 12,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isBulkActive
+                            ? const Color(0xFFEBF7EF)
+                            : const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: isBulkActive
+                              ? AppColors.primary
+                              : const Color(0xFFE2E8F0),
+                          width: isBulkActive ? 1.5 : 1.0,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: isBulkActive
+                                  ? AppColors.primary
+                                  : const Color(0xFFE2E8F0),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              LucideIcons.badgePercent,
+                              size: 18,
+                              color: isBulkActive
+                                  ? Colors.white
+                                  : const Color(0xFF64748B),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Text(
+                                      'საბითუმო ფასდაკლება',
+                                      style: AppTypography.titleMedium.copyWith(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w700,
+                                        color: isBulkActive
+                                            ? AppColors.primaryDark
+                                            : const Color(0xFF1E293B),
+                                      ),
+                                    ),
+                                    if (isBulkActive) ...[
+                                      const SizedBox(width: 6),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 6,
+                                          vertical: 2,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.primary,
+                                          borderRadius:
+                                              BorderRadius.circular(6),
+                                        ),
+                                        child: Text(
+                                          'გააქტიურებულია',
+                                          style: GoogleFonts.notoSansGeorgian(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w700,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  '${product.bulkDiscountMinQty?.toInt()} ${product.unit}-დან: ₾${product.bulkUnitPrice?.toStringAsFixed(2)}/${product.unit} (-${product.bulkDiscountPercent}%)',
+                                  style: AppTypography.caption.copyWith(
+                                    fontSize: 12,
+                                    fontWeight: isBulkActive
+                                        ? FontWeight.w600
+                                        : FontWeight.w500,
+                                    color: isBulkActive
+                                        ? AppColors.primaryDark
+                                        : const Color(0xFF64748B),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 20),
 
                   // Delivery Info Block with #EBF7EF Soft Leaf Tint
@@ -519,7 +652,19 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                             color: AppColors.primary,
                           ),
                         ),
-                        if (product.effectiveOriginalPrice != null) ...[
+                        if (isBulkActive) ...[
+                          const SizedBox(width: 8),
+                          Text(
+                            '₾${(product.price * _quantity).toStringAsFixed(2)}',
+                            style: AppTypography.bodyMedium.copyWith(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textSecondary,
+                              decoration: TextDecoration.lineThrough,
+                              decorationColor: AppColors.textSecondary,
+                            ),
+                          ),
+                        ] else if (product.effectiveOriginalPrice != null) ...[
                           const SizedBox(width: 8),
                           Text(
                             '₾${(product.effectiveOriginalPrice! * _quantity).toStringAsFixed(2)}',
@@ -561,6 +706,11 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                                   imageUrl: product.imageUrl,
                                   quantity: _quantity,
                                   weightKg: _quantity.toDouble(),
+                                  minOrderQuantity: product.minOrderQuantity,
+                                  bulkDiscountMinQty:
+                                      product.bulkDiscountMinQty,
+                                  bulkDiscountPercent:
+                                      product.bulkDiscountPercent,
                                 ),
                               );
 
@@ -592,7 +742,7 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
           ),
 
           // Overlapping Discount Badge: half outside top border, half inside above button
-          if (product.hasDiscount)
+          if (isBulkActive || product.hasDiscount)
             Positioned(
               top: -12,
               right: 24,
@@ -602,11 +752,15 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.accentWarm,
+                  color:
+                      isBulkActive ? AppColors.primary : AppColors.accentWarm,
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.accentWarm.withValues(alpha: 0.4),
+                      color: (isBulkActive
+                              ? AppColors.primary
+                              : AppColors.accentWarm)
+                          .withValues(alpha: 0.4),
                       blurRadius: 6,
                       offset: const Offset(0, 2),
                     ),
@@ -615,14 +769,16 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(
-                      LucideIcons.tag,
+                    Icon(
+                      isBulkActive ? LucideIcons.boxes : LucideIcons.tag,
                       size: 12,
                       color: Colors.white,
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      '-${product.discountPercent}% ფასდაკლება',
+                      isBulkActive
+                          ? '-${product.bulkDiscountPercent}% საბითუმო'
+                          : '-${product.discountPercent}% ფასდაკლება',
                       style: AppTypography.caption.copyWith(
                         color: Colors.white,
                         fontWeight: FontWeight.w800,

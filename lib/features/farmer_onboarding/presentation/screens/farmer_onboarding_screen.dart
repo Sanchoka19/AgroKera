@@ -14,7 +14,6 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/app_toast.dart';
 import '../../../../core/widgets/primary_button.dart';
-import '../providers/farmer_onboarding_validator.dart';
 import '../widgets/farmer_map_widget.dart';
 
 enum LegalStatus {
@@ -321,41 +320,6 @@ class _FarmerOnboardingScreenState extends ConsumerState<FarmerOnboardingScreen>
         });
       },
     );
-  }
-
-  String? _validateCurrentStep() {
-    switch (_currentStep) {
-      case 1:
-        return FarmerOnboardingValidator.validateStep1(
-          farmName: _farmNameController.text,
-          hasFarmPhoto: _hasFarmPhoto,
-          region: _selectedRegion,
-          city: _selectedCity,
-        );
-      case 3:
-        return FarmerOnboardingValidator.validateStep3(
-          status: _selectedStatus,
-          idNumber: _idNumberController.text,
-          uploadedSelfie: _uploadedSelfie,
-          uploadedIdFront: _uploadedIdFront,
-          uploadedIdBack: _uploadedIdBack,
-          bank: _selectedBank,
-          iban: _ibanController.text,
-        );
-      case 4:
-        return FarmerOnboardingValidator.validateStep4(
-          agreeTerms: _agreeTerms,
-          agreeQuality: _agreeQuality,
-        );
-      case 5:
-        final otpCode = _pinControllers.map((c) => c.text.trim()).join();
-        return FarmerOnboardingValidator.validateStep5(
-          otpCode: otpCode,
-          requiredLength: _pinLength,
-        );
-      default:
-        return null;
-    }
   }
 
   String get _verificationEmail {

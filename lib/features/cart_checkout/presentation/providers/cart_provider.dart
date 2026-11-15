@@ -80,39 +80,6 @@ extension AuthStateCartOwnership on AuthState {
 }
 
 class CartNotifier extends Notifier<List<CartItemModel>> {
-  static const List<CartItemModel> _sampleItems = [
-    CartItemModel(
-      id: 'prod_1',
-      title: 'მწვანილოვანი კომბოსტო',
-      packageText: '10კგ პატარა ყუთი',
-      farmerName: 'გიორგის ფერმა',
-      farmerId: 'farmer_2',
-      pricePerUnit: 15.00,
-      unit: 'კგ',
-      imageUrl:
-          'https://images.unsplash.com/photo-1550142414-a81e12541000?w=600&auto=format&fit=crop&q=80',
-      quantity: 5,
-      weightKg: 2.0,
-      minOrderQuantity: 1.0,
-      stockQuantity: 50.0,
-    ),
-    CartItemModel(
-      id: 'prod_2',
-      title: 'ბულგარული წიწაკა',
-      packageText: 'სუფთა მოსავალი',
-      farmerName: 'გიორგის ფერმა',
-      farmerId: 'farmer_2',
-      pricePerUnit: 15.00,
-      unit: 'კგ',
-      imageUrl:
-          'https://images.unsplash.com/photo-1563565375-f3fdfdbefa83?w=600&auto=format&fit=crop&q=80',
-      quantity: 10,
-      weightKg: 1.8,
-      minOrderQuantity: 1.0,
-      stockQuantity: 50.0,
-    ),
-  ];
-
   @override
   List<CartItemModel> build() {
     unawaited(Future.microtask(restoreCart));

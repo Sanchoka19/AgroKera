@@ -99,7 +99,7 @@ class _CategoryProductsScreenState
 
   @override
   Widget build(BuildContext context) {
-    final allProducts = ref.watch(marketplaceProvider).availableProducts;
+    final allProducts = ref.watch(buyerProductsProvider);
     // Filter products
     List<ProductModel> products = allProducts.where((p) {
       final matchesSearch = p.title.toLowerCase().contains(

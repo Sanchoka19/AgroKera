@@ -39,7 +39,7 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final availableProducts = ref.watch(marketplaceProvider).availableProducts;
+    final availableProducts = ref.watch(buyerProductsProvider);
     final filteredCategories = AppCategories.categories.where((c) {
       return c.name.toLowerCase().contains(_searchQuery.toLowerCase());
     }).map((c) {

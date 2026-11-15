@@ -110,7 +110,9 @@ class FavoritesScreen extends ConsumerWidget {
     final favoriteIds = ref.watch(favoritesProvider);
     final allProducts = ref.watch(marketplaceProvider).products;
     final favoriteProducts = allProducts
-        .where((product) => favoriteIds.contains(product.id))
+        .where((product) =>
+            favoriteIds.contains(product.id) &&
+            !product.isOwnedBy(authState))
         .toList();
 
     return Scaffold(

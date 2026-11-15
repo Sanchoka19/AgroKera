@@ -116,9 +116,11 @@ class _GlobalSearchDialogState extends ConsumerState<GlobalSearchDialog> {
     final query = _searchQuery.toLowerCase();
     final marketplace = ref.watch(marketplaceProvider);
 
+    final buyerProducts = ref.watch(buyerProductsProvider);
+
     final matchingProducts = query.isEmpty
         ? <ProductModel>[]
-        : marketplace.availableProducts.where((p) {
+        : buyerProducts.where((p) {
             return p.title.toLowerCase().contains(query) ||
                 p.category.toLowerCase().contains(query) ||
                 p.farmerName.toLowerCase().contains(query) ||

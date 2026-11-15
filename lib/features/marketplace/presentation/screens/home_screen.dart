@@ -67,7 +67,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final authState = ref.watch(authStateProvider);
     final marketplace = ref.watch(marketplaceProvider);
     final farmers = marketplace.farmers;
-    final products = marketplace.availableProducts;
+    final products = ref.watch(buyerProductsProvider);
 
     return Scaffold(
       backgroundColor: AppColors.bgPrimary,

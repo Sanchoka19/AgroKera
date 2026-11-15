@@ -9,6 +9,7 @@ import 'package:agrokera/features/cart_checkout/presentation/screens/checkout_sc
 import 'package:agrokera/features/cart_checkout/presentation/widgets/fee_breakdown_sheet.dart';
 import 'package:agrokera/features/marketplace/data/models/farmer_model.dart';
 import 'package:agrokera/features/marketplace/data/models/product_model.dart';
+import 'package:agrokera/features/marketplace/presentation/providers/marketplace_provider.dart';
 import 'package:agrokera/features/marketplace/presentation/screens/favorites_screen.dart';
 import 'package:agrokera/features/marketplace/presentation/screens/product_details_screen.dart';
 import 'package:agrokera/features/marketplace/presentation/widgets/product_details/product_delivery_info_card.dart';
@@ -497,6 +498,26 @@ void main() {
         find.textContaining('ეს თქვენი მეურნეობის პროდუქტია'),
         findsOneWidget,
       );
+    });
+
+    test('buyerProductsProvider completely hides farmer own products from marketplace feed', () {
+      final container = ProviderContainer();
+
+      // Default/Customer view: all marketplace products are visible
+      container.read(authStateProvider.notifier).login(role: UserRole.customer);
+      final customerProducts = container.read(buyerProductsProvider);
+      expect(customerProducts.any((p) => p.farmerId == 'farmer_2'), isTrue);
+
+      // Farmer 2 view: all farmer_2 products are filtered out from marketplace feed
+      container.read(authStateProvider.notifier).login(
+            role: UserRole.farmer,
+            email: 'giorgi@agrokera.ge',
+          );
+      final farmerProducts = container.read(buyerProductsProvider);
+      expect(farmerProducts.any((p) => p.farmerId == 'farmer_2'), isFalse);
+      expect(farmerProducts.any((p) => p.farmerName == 'გიორგის ფერმა'), isFalse);
+      // Products of other farmers (e.g. farmer_1) remain available
+      expect(farmerProducts.any((p) => p.farmerId == 'farmer_1'), isTrue);
     });
   });
 }

@@ -2,6 +2,7 @@
 
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/auth/auth_state_provider.dart';
 import '../../../../core/constants/app_categories.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../cart_checkout/data/models/cart_item_model.dart';
@@ -413,10 +414,23 @@ final marketplaceProvider =
   MarketplaceNotifier.new,
 );
 
+/// Filtered marketplace products visible for browsing and buying:
+/// Excludes the authenticated farmer's own products so they do not see
+/// their own listings while shopping on the marketplace.
+final buyerProductsProvider = Provider<List<ProductModel>>((ref) {
+  final allProducts = ref.watch(marketplaceProvider).availableProducts;
+  final authState = ref.watch(authStateProvider);
+
+  if (authState.role == UserRole.farmer) {
+    return allProducts.where((p) => !p.isOwnedBy(authState)).toList();
+  }
+  return allProducts;
+});
+
 /// Computes smart similar products for a given [targetProduct]
 final similarProductsProvider =
     Provider.family<List<ProductModel>, ProductModel>((ref, targetProduct) {
-  final allProducts = ref.watch(marketplaceProvider).products;
+  final allProducts = ref.watch(buyerProductsProvider);
 
   final candidates = allProducts.where((p) {
     if (p.id == targetProduct.id) return false;

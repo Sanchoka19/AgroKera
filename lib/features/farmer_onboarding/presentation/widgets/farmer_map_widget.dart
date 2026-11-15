@@ -640,7 +640,11 @@ class _FarmerMapWidgetState extends State<FarmerMapWidget> {
       widget.onLocationChanged?.call(gpsPoint);
       widget.onAddressResolved?.call(gpsPoint, quickAddress);
 
-      AppToast.success(context, 'თქვენი GPS მდებარეობა დადგენილია: $quickAddress');
+      AppToast.success(
+        context,
+        'თქვენი GPS მდებარეობა დადგენილია: $quickAddress',
+        icon: LucideIcons.mapPinCheck,
+      );
 
       GeorgianGeoLookup.fetchNominatimAddress(gpsPoint).then((onlineAddr) {
         if (!mounted) return;
@@ -787,7 +791,11 @@ class _FarmerMapWidgetState extends State<FarmerMapWidget> {
                         onPressed: () {
                           Clipboard.setData(ClipboardData(text: addressText));
                           Navigator.of(ctx).pop();
-                          AppToast.success(context, 'მისამართი დაკოპირდა!');
+                          AppToast.success(
+                            context,
+                            'მისამართი დაკოპირდა!',
+                            icon: LucideIcons.copyCheck,
+                          );
                         },
                         icon: const Icon(LucideIcons.copy, size: 16),
                         label: const Text('კოპირება'),

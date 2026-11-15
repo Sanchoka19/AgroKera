@@ -133,7 +133,11 @@ class FarmerOrderCard extends StatelessWidget {
                 ElevatedButton.icon(
                   onPressed: () {
                     Navigator.of(context).pop();
-                    AppToast.success(context, 'ზედნადები ჩამოტვირთულია PDF ფორმატში');
+                    AppToast.success(
+                      context,
+                      'ზედნადები ჩამოტვირთულია PDF ფორმატში',
+                      icon: LucideIcons.fileCheck,
+                    );
                   },
                   icon: const Icon(LucideIcons.download, size: 18),
                   label: Text(

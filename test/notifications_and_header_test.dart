@@ -220,7 +220,7 @@ void main() {
     // Verify toast contents
     expect(find.text('ბულგარული წიწაკა დამატებულია კალათაში!'), findsOneWidget);
     expect(find.text('კალათა'), findsOneWidget);
-    expect(find.byIcon(LucideIcons.check), findsOneWidget);
+    expect(find.byIcon(LucideIcons.badgeCheck), findsOneWidget);
 
     // Tap action
     await tester.tap(find.text('კალათა'));
@@ -252,7 +252,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
     expect(find.text('შეცდომა დაფიქსირდა'), findsOneWidget);
-    expect(find.byIcon(LucideIcons.x), findsOneWidget);
+    expect(find.byIcon(LucideIcons.circleX), findsOneWidget);
 
     // 2. Info toast replaces previous
     AppToast.info(testContext!, 'ინფორმაცია განახლდა');
@@ -260,7 +260,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
     expect(find.text('შეცდომა დაფიქსირდა'), findsNothing);
     expect(find.text('ინფორმაცია განახლდა'), findsOneWidget);
-    expect(find.byIcon(LucideIcons.info), findsOneWidget);
+    expect(find.byIcon(LucideIcons.badgeInfo), findsOneWidget);
 
     // 3. Manual dismiss
     AppToast.dismiss();

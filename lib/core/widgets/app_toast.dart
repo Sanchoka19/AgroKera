@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import '../theme/app_colors.dart';
 
 enum ToastType {
   success,
@@ -12,13 +11,13 @@ enum ToastType {
   warning,
 }
 
-/// Global Modern Top Toast Notification for AgroKera (Option A).
-/// Renders as a top-floating Dynamic Island style card with:
-/// - Clean white (#FFFFFF) background
-/// - Delicate micro-border (#E2E8F0) and ambient shadow
-/// - Semantic icon with soft circle badge
+/// Global Modern Top Toast Notification for AgroKera.
+/// Renders as a top-floating Dynamic Island capsule with:
+/// - Crisp white (#FFFFFF) background with subtle micro-border (#E2E8F0, 0.9px)
+/// - Ambient multi-layer elevation shadow
+/// - 3D Squircle Icon Badge with vibrant gradient and soft semantic glow
 /// - Crisp dark slate text (#0F172A)
-/// - Deep Emerald Teal (#0F766E) quick action button (e.g. "კალათა ➔")
+/// - Rounded pill quick action button (e.g. "კალათა ➔")
 /// - Smooth slide-down & fade animations, auto-dismiss, and swipe-up to dismiss.
 class AppToast {
   static OverlayEntry? _currentEntry;
@@ -28,6 +27,7 @@ class AppToast {
     BuildContext context,
     String message, {
     ToastType type = ToastType.success,
+    IconData? icon,
     String? actionLabel,
     VoidCallback? onAction,
     Duration duration = const Duration(milliseconds: 2800),
@@ -46,6 +46,7 @@ class AppToast {
       builder: (context) => _TopToastWidget(
         message: message,
         type: type,
+        icon: icon,
         actionLabel: actionLabel,
         onAction: onAction,
         duration: duration,
@@ -81,6 +82,7 @@ class AppToast {
   static void success(
     BuildContext context,
     String message, {
+    IconData? icon,
     String? actionLabel,
     VoidCallback? onAction,
     Duration duration = const Duration(milliseconds: 2800),
@@ -89,6 +91,7 @@ class AppToast {
       context,
       message,
       type: ToastType.success,
+      icon: icon,
       actionLabel: actionLabel,
       onAction: onAction,
       duration: duration,
@@ -98,6 +101,7 @@ class AppToast {
   static void error(
     BuildContext context,
     String message, {
+    IconData? icon,
     String? actionLabel,
     VoidCallback? onAction,
     Duration duration = const Duration(milliseconds: 2800),
@@ -106,6 +110,7 @@ class AppToast {
       context,
       message,
       type: ToastType.error,
+      icon: icon,
       actionLabel: actionLabel,
       onAction: onAction,
       duration: duration,
@@ -115,6 +120,7 @@ class AppToast {
   static void info(
     BuildContext context,
     String message, {
+    IconData? icon,
     String? actionLabel,
     VoidCallback? onAction,
     Duration duration = const Duration(milliseconds: 2800),
@@ -123,6 +129,7 @@ class AppToast {
       context,
       message,
       type: ToastType.info,
+      icon: icon,
       actionLabel: actionLabel,
       onAction: onAction,
       duration: duration,
@@ -132,6 +139,7 @@ class AppToast {
   static void warning(
     BuildContext context,
     String message, {
+    IconData? icon,
     String? actionLabel,
     VoidCallback? onAction,
     Duration duration = const Duration(milliseconds: 2800),
@@ -140,6 +148,7 @@ class AppToast {
       context,
       message,
       type: ToastType.warning,
+      icon: icon,
       actionLabel: actionLabel,
       onAction: onAction,
       duration: duration,
@@ -150,6 +159,7 @@ class AppToast {
 class _TopToastWidget extends StatefulWidget {
   final String message;
   final ToastType type;
+  final IconData? icon;
   final String? actionLabel;
   final VoidCallback? onAction;
   final Duration duration;
@@ -158,6 +168,7 @@ class _TopToastWidget extends StatefulWidget {
   const _TopToastWidget({
     required this.message,
     required this.type,
+    this.icon,
     this.actionLabel,
     this.onAction,
     required this.duration,
@@ -229,30 +240,30 @@ class _TopToastWidgetState extends State<_TopToastWidget>
 
   @override
   Widget build(BuildContext context) {
-    IconData icon;
-    Color iconColor;
-    Color iconBgColor;
+    final IconData effectiveIcon;
+    final List<Color> gradientColors;
+    final Color glowColor;
 
     switch (widget.type) {
       case ToastType.success:
-        icon = LucideIcons.check;
-        iconColor = AppColors.primary; // Deep Emerald Teal (#0F766E)
-        iconBgColor = const Color(0xFFCCFBF1); // Soft Mint / Teal 100
+        effectiveIcon = widget.icon ?? LucideIcons.badgeCheck;
+        gradientColors = const [Color(0xFF10B981), Color(0xFF059669)];
+        glowColor = const Color(0xFF10B981).withValues(alpha: 0.35);
         break;
       case ToastType.error:
-        icon = LucideIcons.x;
-        iconColor = const Color(0xFFDC2626);
-        iconBgColor = const Color(0xFFFEE2E2);
+        effectiveIcon = widget.icon ?? LucideIcons.circleX;
+        gradientColors = const [Color(0xFFEF4444), Color(0xFFDC2626)];
+        glowColor = const Color(0xFFEF4444).withValues(alpha: 0.35);
         break;
       case ToastType.warning:
-        icon = LucideIcons.triangleAlert;
-        iconColor = const Color(0xFFD97706);
-        iconBgColor = const Color(0xFFFEF3C7);
+        effectiveIcon = widget.icon ?? LucideIcons.circleAlert;
+        gradientColors = const [Color(0xFFF59E0B), Color(0xFFD97706)];
+        glowColor = const Color(0xFFF59E0B).withValues(alpha: 0.35);
         break;
       case ToastType.info:
-        icon = LucideIcons.info;
-        iconColor = const Color(0xFF0284C7);
-        iconBgColor = const Color(0xFFE0F2FE);
+        effectiveIcon = widget.icon ?? LucideIcons.badgeInfo;
+        gradientColors = const [Color(0xFF0EA5E9), Color(0xFF0284C7)];
+        glowColor = const Color(0xFF0EA5E9).withValues(alpha: 0.35);
         break;
     }
 
@@ -267,7 +278,7 @@ class _TopToastWidgetState extends State<_TopToastWidget>
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
           child: Center(
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 500),
+              constraints: const BoxConstraints(maxWidth: 480),
               child: SlideTransition(
                 position: _slideAnimation,
                 child: FadeTransition(
@@ -286,31 +297,27 @@ class _TopToastWidgetState extends State<_TopToastWidget>
                       },
                       child: GestureDetector(
                         onTap: () {
-                          // Tap anywhere on toast dismisses it
                           _dismissWithAnimation();
                         },
                         child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 11,
-                          ),
+                          padding: const EdgeInsets.fromLTRB(10, 8, 14, 8),
                           decoration: BoxDecoration(
                             color: Colors.white,
-                            borderRadius: BorderRadius.circular(22),
+                            borderRadius: BorderRadius.circular(28),
                             border: Border.all(
                               color: const Color(0xFFE2E8F0),
-                              width: 1.2,
+                              width: 0.9,
                             ),
                             boxShadow: [
                               BoxShadow(
                                 color: const Color(0xFF0F172A)
-                                    .withValues(alpha: 0.10),
-                                blurRadius: 18,
-                                offset: const Offset(0, 6),
+                                    .withValues(alpha: 0.08),
+                                blurRadius: 20,
+                                offset: const Offset(0, 8),
                               ),
                               BoxShadow(
                                 color: const Color(0xFF0F172A)
-                                    .withValues(alpha: 0.04),
+                                    .withValues(alpha: 0.03),
                                 blurRadius: 4,
                                 offset: const Offset(0, 2),
                               ),
@@ -318,17 +325,38 @@ class _TopToastWidgetState extends State<_TopToastWidget>
                           ),
                           child: Row(
                             children: [
-                              // Semantic Icon Badge
+                              // Modern Squircle Icon Badge with Depth & Glow
                               Container(
-                                width: 30,
-                                height: 30,
+                                width: 34,
+                                height: 34,
                                 decoration: BoxDecoration(
-                                  color: iconBgColor,
-                                  shape: BoxShape.circle,
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: gradientColors,
+                                  ),
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(
+                                    color: Colors.white.withValues(alpha: 0.25),
+                                    width: 1.0,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: glowColor,
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 3),
+                                    ),
+                                  ],
                                 ),
-                                child: Icon(icon, color: iconColor, size: 16),
+                                child: Center(
+                                  child: Icon(
+                                    effectiveIcon,
+                                    color: Colors.white,
+                                    size: 18,
+                                  ),
+                                ),
                               ),
-                              const SizedBox(width: 12),
+                              const SizedBox(width: 11),
 
                               // Message Text
                               Expanded(
@@ -346,7 +374,7 @@ class _TopToastWidgetState extends State<_TopToastWidget>
                                 ),
                               ),
 
-                              // Quick Action Button (e.g. "კალათა ➔")
+                              // Quick Action Button (Pill shape)
                               if (widget.actionLabel != null &&
                                   widget.onAction != null) ...[
                                 const SizedBox(width: 10),
@@ -357,16 +385,23 @@ class _TopToastWidgetState extends State<_TopToastWidget>
                                   },
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(
-                                      horizontal: 11,
-                                      vertical: 6,
+                                      horizontal: 12,
+                                      vertical: 7,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: AppColors.primary,
-                                      borderRadius: BorderRadius.circular(12),
+                                      gradient: const LinearGradient(
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                        colors: [
+                                          Color(0xFF0F766E),
+                                          Color(0xFF0D655E),
+                                        ],
+                                      ),
+                                      borderRadius: BorderRadius.circular(20),
                                       boxShadow: [
                                         BoxShadow(
-                                          color: AppColors.primary
-                                              .withValues(alpha: 0.25),
+                                          color: const Color(0xFF0F766E)
+                                              .withValues(alpha: 0.28),
                                           blurRadius: 6,
                                           offset: const Offset(0, 2),
                                         ),

@@ -340,7 +340,11 @@ class _FarmerOnboardingScreenState extends ConsumerState<FarmerOnboardingScreen>
         final sent = await ref.read(authStateProvider.notifier).sendEmailOtp(email);
         if (!mounted) return;
         if (sent) {
-          AppToast.success(context, 'ვერიფიკაციის კოდი გაიგზავნა: $email');
+          AppToast.success(
+            context,
+            'ვერიფიკაციის კოდი გაიგზავნა: $email',
+            icon: LucideIcons.mailCheck,
+          );
         }
       }
     } else {

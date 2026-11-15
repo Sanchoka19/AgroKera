@@ -717,6 +717,7 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                           AppToast.success(
                             context,
                             '$_quantity ${product.unit} ${product.title} დამატებულია კალათაში!',
+                            icon: LucideIcons.shoppingBag,
                             actionLabel: 'კალათა',
                             onAction: () {
                               requireAuth(

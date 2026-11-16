@@ -46,6 +46,9 @@ class _OrderPinVerificationBottomSheetState
   @override
   void initState() {
     super.initState();
+    _focusNode.addListener(() {
+      if (mounted) setState(() {});
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _focusNode.requestFocus();
     });
@@ -144,19 +147,30 @@ class _OrderPinVerificationBottomSheetState
           ),
           const SizedBox(height: 20),
 
-          // PIN Input Field
+          // PIN Input Field (Single Unified Container, No Inner Nesting)
           Container(
-            width: 200,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            width: 220,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
             decoration: BoxDecoration(
               color: const Color(0xFFF8FAFC),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: _errorMessage != null
                     ? const Color(0xFFDC2626)
-                    : const Color(0xFFCBD5E1),
-                width: 1.5,
+                    : (_focusNode.hasFocus
+                        ? AppColors.primary
+                        : const Color(0xFFCBD5E1)),
+                width: _focusNode.hasFocus || _errorMessage != null ? 2.0 : 1.5,
               ),
+              boxShadow: _focusNode.hasFocus
+                  ? [
+                      BoxShadow(
+                        color: AppColors.primary.withValues(alpha: 0.15),
+                        blurRadius: 10,
+                        offset: const Offset(0, 3),
+                      ),
+                    ]
+                  : null,
             ),
             child: TextField(
               controller: _pinController,
@@ -165,15 +179,29 @@ class _OrderPinVerificationBottomSheetState
               maxLength: 4,
               textAlign: TextAlign.center,
               style: GoogleFonts.firaCode(
-                fontSize: 26,
+                fontSize: 28,
                 fontWeight: FontWeight.w800,
-                letterSpacing: 12,
+                letterSpacing: 14,
                 color: const Color(0xFF0F172A),
               ),
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
+                isDense: true,
+                filled: false,
+                fillColor: Colors.transparent,
                 counterText: '',
                 border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                errorBorder: InputBorder.none,
+                focusedErrorBorder: InputBorder.none,
+                contentPadding: const EdgeInsets.symmetric(vertical: 12),
                 hintText: '••••',
+                hintStyle: GoogleFonts.firaCode(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 14,
+                  color: const Color(0xFFCBD5E1),
+                ),
               ),
               onChanged: (_) {
                 if (_errorMessage != null) {

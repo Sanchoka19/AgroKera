@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -18,7 +19,7 @@ class ClientOrdersScreen extends ConsumerStatefulWidget {
   ConsumerState<ClientOrdersScreen> createState() => _ClientOrdersScreenState();
 }
 
-enum ClientOrderTab { all, active, completed }
+enum ClientOrderTab { all, active, completed, cancelled }
 
 class _ClientOrdersScreenState extends ConsumerState<ClientOrdersScreen> {
   ClientOrderTab _selectedTab = ClientOrderTab.all;
@@ -57,11 +58,15 @@ class _ClientOrdersScreenState extends ConsumerState<ClientOrdersScreen> {
     final completedOrders = allOrders
         .where((o) => o.status == OrderStatus.completed)
         .toList();
+    final cancelledOrders = allOrders
+        .where((o) => o.status == OrderStatus.cancelled)
+        .toList();
 
     final orders = switch (_selectedTab) {
       ClientOrderTab.all => allOrders,
       ClientOrderTab.active => activeOrders,
       ClientOrderTab.completed => completedOrders,
+      ClientOrderTab.cancelled => cancelledOrders,
     };
 
     return Scaffold(
@@ -77,27 +82,40 @@ class _ClientOrdersScreenState extends ConsumerState<ClientOrdersScreen> {
               padding: EdgeInsets.fromLTRB(20, 12, 20, 8),
             ),
 
-            // Segmented Filter (ყველა / მიმდინარე / დასრულებული)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-              child: Row(
+            // Horizontally Scrollable Filter Chips (Zero Overflow)
+            SizedBox(
+              height: 48,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                physics: const BouncingScrollPhysics(),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
                 children: [
                   _buildTabButton(
-                    label: 'ყველა (${allOrders.length})',
+                    label: 'ყველა',
+                    count: allOrders.length,
                     isSelected: _selectedTab == ClientOrderTab.all,
                     onTap: () => setState(() => _selectedTab = ClientOrderTab.all),
                   ),
                   const SizedBox(width: 8),
                   _buildTabButton(
-                    label: 'მიმდინარე (${activeOrders.length})',
+                    label: 'მიმდინარე',
+                    count: activeOrders.length,
                     isSelected: _selectedTab == ClientOrderTab.active,
                     onTap: () => setState(() => _selectedTab = ClientOrderTab.active),
                   ),
                   const SizedBox(width: 8),
                   _buildTabButton(
-                    label: 'დასრულებული (${completedOrders.length})',
+                    label: 'დასრულებული',
+                    count: completedOrders.length,
                     isSelected: _selectedTab == ClientOrderTab.completed,
                     onTap: () => setState(() => _selectedTab = ClientOrderTab.completed),
+                  ),
+                  const SizedBox(width: 8),
+                  _buildTabButton(
+                    label: 'გაუქმებული',
+                    count: cancelledOrders.length,
+                    isSelected: _selectedTab == ClientOrderTab.cancelled,
+                    onTap: () => setState(() => _selectedTab = ClientOrderTab.cancelled),
                   ),
                 ],
               ),
@@ -136,30 +154,67 @@ class _ClientOrdersScreenState extends ConsumerState<ClientOrdersScreen> {
 
   Widget _buildTabButton({
     required String label,
+    required int count,
     required bool isSelected,
     required VoidCallback onTap,
   }) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          height: 40,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: isSelected ? AppColors.primary : Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: isSelected ? AppColors.primary : const Color(0xFFE2E8F0),
-            ),
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        onTap();
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeInOut,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.primary : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? AppColors.primary : const Color(0xFFE2E8F0),
+            width: isSelected ? 1.5 : 1.0,
           ),
-          child: Text(
-            label,
-            style: GoogleFonts.notoSansGeorgian(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: isSelected ? Colors.white : const Color(0xFF475569),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: AppColors.primary.withValues(alpha: 0.22),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ]
+              : null,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: GoogleFonts.notoSansGeorgian(
+                fontSize: 12.5,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                color: isSelected ? Colors.white : const Color(0xFF475569),
+              ),
             ),
-          ),
+            const SizedBox(width: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? Colors.white.withValues(alpha: 0.25)
+                    : const Color(0xFFF1F5F9),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                '$count',
+                style: GoogleFonts.notoSansGeorgian(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  color: isSelected ? Colors.white : const Color(0xFF64748B),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

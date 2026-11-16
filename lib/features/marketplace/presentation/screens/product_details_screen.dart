@@ -204,6 +204,9 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
       body: Stack(
         children: [
           CustomScrollView(
+            physics: const BouncingScrollPhysics(
+              parent: AlwaysScrollableScrollPhysics(),
+            ),
             slivers: [
               ProductImageGallery(product: product),
               SliverToBoxAdapter(

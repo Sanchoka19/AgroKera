@@ -35,7 +35,9 @@ class FarmerProfileScreen extends ConsumerStatefulWidget {
 class _FarmerProfileScreenState extends ConsumerState<FarmerProfileScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  late final ScrollController _scrollController;
   int _selectedTabIndex = 0;
+  double _scrollOffset = 0.0;
 
   @override
   void initState() {
@@ -46,10 +48,21 @@ class _FarmerProfileScreenState extends ConsumerState<FarmerProfileScreen>
         setState(() => _selectedTabIndex = _tabController.index);
       }
     });
+    _scrollController = ScrollController()
+      ..addListener(() {
+        if (mounted) {
+          setState(() {
+            _scrollOffset = _scrollController.hasClients
+                ? _scrollController.offset
+                : 0.0;
+          });
+        }
+      });
   }
 
   @override
   void dispose() {
+    _scrollController.dispose();
     _tabController.dispose();
     super.dispose();
   }
@@ -91,19 +104,41 @@ class _FarmerProfileScreenState extends ConsumerState<FarmerProfileScreen>
         centerTitle: true,
       ),
       body: SingleChildScrollView(
+        controller: _scrollController,
+        physics: const BouncingScrollPhysics(
+          parent: AlwaysScrollableScrollPhysics(),
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 2. Cover Photo + Half-Overlapping Profile Card
+            // 2. Cover Photo with Parallax & Stretch Zoom + Half-Overlapping Profile Card
             Stack(
               clipBehavior: Clip.none,
               alignment: Alignment.bottomCenter,
               children: [
-                // Tall Cover Photo (Thumb)
-                SizedBox(
-                  height: 240,
-                  width: double.infinity,
-                  child: _buildCoverImage(farmer.coverUrl),
+                // Tall Cover Photo with Parallax & Stretch Zoom
+                ClipRect(
+                  child: Transform.translate(
+                    offset: Offset(
+                      0,
+                      _scrollOffset > 0
+                          ? _scrollOffset * 0.45
+                          : _scrollOffset,
+                    ),
+                    child: Transform.scale(
+                      scale: _scrollOffset < 0
+                          ? 1.0 + (-_scrollOffset / 320)
+                          : 1.0,
+                      alignment: Alignment.topCenter,
+                      child: SizedBox(
+                        height: _scrollOffset < 0
+                            ? 240 + (-_scrollOffset)
+                            : 240,
+                        width: double.infinity,
+                        child: _buildCoverImage(farmer.coverUrl),
+                      ),
+                    ),
+                  ),
                 ),
 
                 // Overlapping Farmer Profile Card: half on photo, half below

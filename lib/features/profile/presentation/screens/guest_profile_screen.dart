@@ -28,6 +28,7 @@ import 'package:agrokera/features/notifications/presentation/providers/notificat
 import 'package:agrokera/features/notifications/presentation/screens/notifications_screen.dart';
 import 'package:agrokera/features/orders/presentation/screens/client_orders_screen.dart';
 import 'package:agrokera/features/orders/presentation/screens/incoming_orders_screen.dart';
+import 'package:agrokera/features/orders/presentation/screens/order_chats_list_screen.dart';
 import 'farmer_delivery_settings_screen.dart';
 import 'help_center_screen.dart';
 
@@ -39,11 +40,34 @@ class GuestProfileScreen extends ConsumerStatefulWidget {
 }
 
 class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
+  late final ScrollController _scrollController;
+  double _scrollOffset = 0.0;
   bool _notificationsEnabled = true;
   bool _darkThemeEnabled = false;
   String _selectedLanguage = 'KA'; // 'KA' or 'EN'
 
   String _detectedAddress = 'ჭავჭავაძე - თბილისი';
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController()
+      ..addListener(() {
+        if (mounted) {
+          setState(() {
+            _scrollOffset = _scrollController.hasClients
+                ? _scrollController.offset
+                : 0.0;
+          });
+        }
+      });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   Future<void> _detectUserAddressWithGps() async {
     try {
@@ -517,7 +541,7 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
                         onAuthenticated: () {
                           Navigator.of(context).push(
                             MaterialPageRoute(
-                              builder: (_) => const ClientOrdersScreen(),
+                              builder: (_) => const OrderChatsListScreen(),
                             ),
                           );
                         },
@@ -534,7 +558,10 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
               ),
             Expanded(
               child: SingleChildScrollView(
-                physics: const ClampingScrollPhysics(),
+                controller: _scrollController,
+                physics: const BouncingScrollPhysics(
+                  parent: AlwaysScrollableScrollPhysics(),
+                ),
                 padding: EdgeInsets.fromLTRB(
                   isFarmer ? 0 : 20,
                   isFarmer ? 0 : 4,
@@ -1275,17 +1302,17 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
                 width: 42,
                 height: 42,
                 decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.35),
+                  color: Colors.white.withValues(alpha: 0.92),
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.35),
+                    color: Colors.white.withValues(alpha: 0.8),
                     width: 1.2,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.25),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
+                      color: Colors.black.withValues(alpha: 0.12),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
                     ),
                   ],
                 ),
@@ -1296,21 +1323,22 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
                     Icon(
                       icon,
                       size: 20,
-                      color: Colors.white,
+                      color: const Color(0xFF0F172A),
                     ),
                     if (badgeText != null)
                       Positioned(
-                        top: 5,
-                        right: 5,
+                        top: 4,
+                        right: 4,
                         child: Container(
                           padding: const EdgeInsets.all(3),
-                          decoration: const BoxDecoration(
-                            color: Color(0xFFEF4444),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFEF4444),
                             shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 1.5),
                           ),
                           constraints: const BoxConstraints(
-                            minWidth: 15,
-                            minHeight: 15,
+                            minWidth: 16,
+                            minHeight: 16,
                           ),
                           child: Text(
                             badgeText,
@@ -1356,31 +1384,48 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
           child: Stack(
             clipBehavior: Clip.none,
             children: [
-              // 1. Cover Photo Container (Full-width, touches edges and top status bar)
+              // 1. Cover Photo Container with Parallax & Stretch Zoom
               Positioned(
-                top: 0,
+                top: _scrollOffset < 0 ? _scrollOffset : 0,
                 left: 0,
                 right: 0,
-                height: coverHeight,
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    _buildCoverImage(authState.farmCoverUrl ?? matchedFarmer?.coverUrl),
-                    Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          stops: const [0.0, 0.35, 0.65, 1.0],
-                          colors: [
-                            Colors.black.withValues(alpha: 0.55),
-                            Colors.black.withValues(alpha: 0.12),
-                            Colors.transparent,
-                            Colors.black.withValues(alpha: 0.50),
-                          ],
+                height: _scrollOffset < 0
+                    ? coverHeight + (-_scrollOffset)
+                    : coverHeight,
+                child: ClipRect(
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      Transform.translate(
+                        offset: Offset(
+                          0,
+                          _scrollOffset > 0 ? _scrollOffset * 0.45 : 0,
+                        ),
+                        child: Transform.scale(
+                          scale: _scrollOffset < 0
+                              ? 1.0 + (-_scrollOffset / 320)
+                              : 1.0,
+                          alignment: Alignment.topCenter,
+                          child: _buildCoverImage(
+                            authState.farmCoverUrl ?? matchedFarmer?.coverUrl,
+                          ),
                         ),
                       ),
-                    ),
+                      Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            stops: const [0.0, 0.35, 0.65, 1.0],
+                            colors: [
+                              Colors.black.withValues(alpha: 0.55),
+                              Colors.black.withValues(alpha: 0.12),
+                              Colors.transparent,
+                              Colors.black.withValues(alpha: 0.50),
+                            ],
+                          ),
+                        ),
+                      ),
 
                     // Top-Right: Floating Frosted Action Buttons (Chat & Notifications)
                     Positioned(
@@ -1399,7 +1444,7 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
                                 onAuthenticated: () {
                                   Navigator.of(context).push(
                                     MaterialPageRoute(
-                                      builder: (_) => const IncomingOrdersScreen(),
+                                      builder: (_) => const OrderChatsListScreen(),
                                     ),
                                   );
                                 },
@@ -1486,6 +1531,7 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
                   ],
                 ),
               ),
+            ),
 
               // 2. Overlapping Farmer Profile Card: sits inside heroHeight bounds (hit test safe)
               Positioned(

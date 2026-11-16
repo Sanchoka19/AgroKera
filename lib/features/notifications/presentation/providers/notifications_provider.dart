@@ -55,6 +55,10 @@ class NotificationsNotifier extends Notifier<List<AppNotification>> {
     ),
   ];
 
+  void addNotification(AppNotification notif) {
+    state = [notif, ...state];
+  }
+
   void markAsRead(String id) {
     state = [
       for (final notif in state)

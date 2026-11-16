@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "932583739194",
+    "project_id": "agrokera-a416a",
+    "storage_bucket": "agrokera-a416a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:932583739194:android:929c98b167a0314a9f4a03",
+        "android_client_info": {
+          "package_name": "ge.agrokera.agrokera"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDcRXsBALaiDgYK9ta4-vJqk2RUBBkM8kE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

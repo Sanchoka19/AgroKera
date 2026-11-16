@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../core/auth/auth_state_provider.dart';
 import '../../../../core/constants/app_assets.dart';
+import '../../../../core/services/push_notification_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/auth_required_bottom_sheet.dart';
 import '../../data/models/notification_model.dart';
@@ -20,6 +21,83 @@ class NotificationsScreen extends ConsumerStatefulWidget {
 
 class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
   NotificationCategory _selectedCategory = NotificationCategory.all;
+
+  void _showFcmTokenDialog(BuildContext context) {
+    final token = PushNotificationService().fcmToken;
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            const Icon(LucideIcons.bellRing, color: AppColors.primary, size: 24),
+            const SizedBox(width: 8),
+            Text(
+              'FCM Token',
+              style: GoogleFonts.notoSansGeorgian(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'ეს არის თქვენი მოწყობილობის უნიკალური ტოკენი Firebase-დან ტესტირებისთვის:',
+              style: GoogleFonts.notoSansGeorgian(
+                fontSize: 13,
+                color: const Color(0xFF64748B),
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF1F5F9),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFFCBD5E1)),
+              ),
+              child: SelectableText(
+                token ?? 'ტოკენი იტვირთება ან მიუწვდომელია (შეამოწმეთ ინტერნეტი)...',
+                style: const TextStyle(fontSize: 11, fontFamily: 'monospace'),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          if (token != null)
+            TextButton.icon(
+              onPressed: () {
+                Clipboard.setData(ClipboardData(text: token));
+                Navigator.of(ctx).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      'ტოკენი წარმატებით დაკოპირდა!',
+                      style: GoogleFonts.notoSansGeorgian(),
+                    ),
+                    backgroundColor: AppColors.primary,
+                  ),
+                );
+              },
+              icon: const Icon(LucideIcons.copy, size: 16),
+              label: Text(
+                'კოპირება',
+                style: GoogleFonts.notoSansGeorgian(fontWeight: FontWeight.bold),
+              ),
+            ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text('დახურვა', style: GoogleFonts.notoSansGeorgian()),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -49,6 +127,17 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
               color: const Color(0xFF0F172A),
             ),
           ),
+          actions: [
+            IconButton(
+              tooltip: 'FCM Token',
+              icon: const Icon(
+                LucideIcons.bellRing,
+                color: AppColors.primary,
+                size: 20,
+              ),
+              onPressed: () => _showFcmTokenDialog(context),
+            ),
+          ],
         ),
         body: Center(
           child: SingleChildScrollView(
@@ -151,6 +240,15 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
           ),
         ),
         actions: [
+          IconButton(
+            tooltip: 'FCM Token',
+            icon: const Icon(
+              LucideIcons.bellRing,
+              color: AppColors.primary,
+              size: 20,
+            ),
+            onPressed: () => _showFcmTokenDialog(context),
+          ),
           if (unreadCount > 0)
             TextButton(
               onPressed: () {

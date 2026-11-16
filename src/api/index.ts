@@ -1,4 +1,5 @@
 import prisma from "../lib/prisma.ts";
+import { sendPushNotification } from "../lib/push-notifications.ts";
 import { OrderStatus, Role, ShipmentStatus, VerificationStatus, FulfillmentType } from "@prisma/client";
 import nodemailer from "nodemailer";
 import { S3Client, PutObjectCommand, GetObjectCommand, CreateBucketCommand } from "@aws-sdk/client-s3";
@@ -277,6 +278,7 @@ export default {
           name?: string;
           farmName?: string;
           role?: string;
+          fcmToken?: string;
         };
 
         const roleEnum =
@@ -355,6 +357,14 @@ export default {
           user = await prisma.user.update({
             where: { id: user.id },
             data: { role: Role.FARMER },
+            include: { farmerProfile: true },
+          });
+        }
+
+        if (body.fcmToken && user.fcmToken !== body.fcmToken) {
+          user = await prisma.user.update({
+            where: { id: user.id },
+            data: { fcmToken: body.fcmToken },
             include: { farmerProfile: true },
           });
         }
@@ -482,6 +492,25 @@ export default {
           },
           201
         );
+      }
+
+      if (method === "POST" && path === "/api/users/fcm-token") {
+        const body = (await request.json()) as {
+          userId?: string;
+          fcmToken?: string;
+        };
+        if (!body.userId || !body.fcmToken) {
+          return errorResponse("userId and fcmToken are required", 400);
+        }
+        try {
+          const updated = await prisma.user.update({
+            where: { id: body.userId },
+            data: { fcmToken: body.fcmToken },
+          });
+          return jsonResponse({ success: true, userId: updated.id });
+        } catch (err: any) {
+          return errorResponse(`Failed to update fcmToken: ${err.message}`, 400);
+        }
       }
 
       if (path.startsWith("/api/profile/")) {
@@ -1073,6 +1102,29 @@ export default {
           });
         });
 
+        // Send Push Notification to Farmer for New Order
+        (async () => {
+          try {
+            const farmerProfile = await prisma.farmerProfile.findUnique({
+              where: { id: createdOrder.farmerId },
+              include: { user: true },
+            });
+            if (farmerProfile?.user?.fcmToken) {
+              await sendPushNotification({
+                token: farmerProfile.user.fcmToken,
+                title: "ახალი შეკვეთა მიღებულია! 📦",
+                body: `${createdOrder.contactPerson || "მომხმარებელმა"} გააფორმა შეკვეთა #${createdOrder.id.slice(-5)} (₾${createdOrder.totalAmount}).`,
+                data: {
+                  orderId: createdOrder.id,
+                  type: "order_created",
+                },
+              });
+            }
+          } catch (pushErr) {
+            console.error("[FCM Order Error]:", pushErr);
+          }
+        })();
+
         return jsonResponse(
           {
             id: createdOrder.id,
@@ -1194,6 +1246,33 @@ export default {
           });
         });
 
+        // Send Push Notification to Client about Order Status Change
+        (async () => {
+          try {
+            if (updated.client?.fcmToken) {
+              const statusMap: Record<string, string> = {
+                IN_PROGRESS: "მზადდება / მიღებულია",
+                COMPLETED: "ჩაბარებულია",
+                CANCELLED: "გაუქმებულია",
+                PENDING: "მოლოდინშია",
+              };
+              const statusText = statusMap[updated.status] || updated.status;
+              await sendPushNotification({
+                token: updated.client.fcmToken,
+                title: "შეკვეთის სტატუსი განახლდა! 🚚",
+                body: `თქვენი შეკვეთის #${updated.id.slice(-5)} სტატუსია: ${statusText}`,
+                data: {
+                  orderId: updated.id,
+                  type: "order_status_updated",
+                  status: updated.status,
+                },
+              });
+            }
+          } catch (pushErr) {
+            console.error("[FCM Client Notification Error]:", pushErr);
+          }
+        })();
+
         return jsonResponse({
           id: updated.id,
           createdAt: updated.createdAt.toISOString(),
@@ -1307,6 +1386,37 @@ export default {
             text: cleanText,
           },
         });
+
+        // Send Push Notification to recipient
+        (async () => {
+          try {
+            const order = await prisma.order.findUnique({
+              where: { id: orderId },
+              include: {
+                client: true,
+                farmer: { include: { user: true } },
+              },
+            });
+            if (!order) return;
+            const isSenderFarmer = body.senderRole === "farmer";
+            const targetToken = isSenderFarmer
+              ? order.client?.fcmToken
+              : order.farmer?.user?.fcmToken;
+            if (targetToken) {
+              await sendPushNotification({
+                token: targetToken,
+                title: `ახალი შეტყობინება (${body.senderName || "AgroKera"}) 💬`,
+                body: cleanText,
+                data: {
+                  orderId,
+                  type: "chat_message",
+                },
+              });
+            }
+          } catch (pushErr) {
+            console.error("[FCM Chat Error]:", pushErr);
+          }
+        })();
 
         return jsonResponse(
           {

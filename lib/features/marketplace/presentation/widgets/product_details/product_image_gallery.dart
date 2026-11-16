@@ -30,6 +30,7 @@ class _ProductImageGalleryState extends ConsumerState<ProductImageGallery> {
     return SliverAppBar(
       expandedHeight: 300,
       pinned: true,
+      stretch: true,
       backgroundColor: AppColors.surface,
       leading: Padding(
         padding: const EdgeInsets.all(8.0),
@@ -94,6 +95,11 @@ class _ProductImageGalleryState extends ConsumerState<ProductImageGallery> {
         ),
       ],
       flexibleSpace: FlexibleSpaceBar(
+        collapseMode: CollapseMode.parallax,
+        stretchModes: const [
+          StretchMode.zoomBackground,
+          StretchMode.blurBackground,
+        ],
         background: Stack(
           fit: StackFit.expand,
           children: [

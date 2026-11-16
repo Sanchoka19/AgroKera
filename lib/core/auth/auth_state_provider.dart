@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import '../network/api_client.dart';
+import '../services/push_notification_service.dart';
 import '../storage/secure_storage_service.dart';
 
 enum UserRole {
@@ -308,8 +309,22 @@ class AuthNotifier extends Notifier<AuthState> {
           role: role,
           kycStatus: KycStatus.fromString(saved['kycStatus']),
         );
+        unawaited(syncFcmToken());
       }
     }
+  }
+
+  Future<void> syncFcmToken([String? token]) async {
+    final effectiveToken = token ?? PushNotificationService().fcmToken;
+    final uid = state.userId;
+    if (uid == null || effectiveToken == null || effectiveToken.isEmpty) return;
+    try {
+      final api = ref.read(apiClientProvider);
+      await api.post('/api/users/fcm-token', data: {
+        'userId': uid,
+        'fcmToken': effectiveToken,
+      });
+    } catch (_) {}
   }
 
   void login({

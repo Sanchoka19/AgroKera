@@ -760,35 +760,55 @@ class _FarmerOrderDetailScreenState
                         backgroundColor: const Color(0xFFEF4444),
                         foregroundColor: Colors.white,
                         elevation: 0,
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 0),
                         minimumSize: const Size.fromHeight(44),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
-                      child: Text(
-                        cancelLabel,
-                        style: GoogleFonts.notoSansGeorgian(
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w700,
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          cancelLabel,
+                          maxLines: 1,
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.notoSansGeorgian(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ),
                     ),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
-                    child: OutlinedButton.icon(
+                    child: OutlinedButton(
                       onPressed: () => _onContactCustomer(order),
-                      icon: const Icon(LucideIcons.phone, size: 16),
-                      label: Text(
-                        'დაკავშირება',
-                        style: GoogleFonts.notoSansGeorgian(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: const Color(0xFF0F172A),
                         side: const BorderSide(color: Color(0xFFCBD5E1), width: 1.2),
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 0),
                         minimumSize: const Size.fromHeight(44),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(LucideIcons.phone, size: 15),
+                            const SizedBox(width: 5),
+                            Text(
+                              'დაკავშირება',
+                              style: GoogleFonts.notoSansGeorgian(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),

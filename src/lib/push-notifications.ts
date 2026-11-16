@@ -1,4 +1,5 @@
-import admin from "firebase-admin";
+import { cert, initializeApp, getApps } from "firebase-admin/app";
+import { getMessaging } from "firebase-admin/messaging";
 import fs from "fs";
 import path from "path";
 import prisma from "./prisma.ts";
@@ -21,9 +22,11 @@ function initFirebase(): boolean {
     const serviceAccount = JSON.parse(
       fs.readFileSync(serviceAccountPath, "utf-8")
     );
-    admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount),
-    });
+    if (getApps().length === 0) {
+      initializeApp({
+        credential: cert(serviceAccount),
+      });
+    }
     isInitialized = true;
     console.log("[FCM] Firebase Admin SDK initialized successfully.");
     return true;
@@ -72,20 +75,46 @@ export async function sendPushNotification({
     return;
   }
 
+  const stringData = Object.fromEntries(
+    Object.entries(data).map(([k, v]) => [k, String(v ?? "")])
+  );
+
+  const messaging = getMessaging();
+
   for (const targetToken of validTokens) {
     try {
-      await admin.messaging().send({
+      await messaging.send({
         token: targetToken,
         notification: {
           title,
           body,
         },
-        data,
+        data: stringData,
         android: {
           priority: "high",
           notification: {
             channelId: "agrokera_high_importance_channel",
             sound: "default",
+            defaultSound: true,
+            defaultVibrateTimings: true,
+            icon: "ic_launcher",
+            clickAction: "FLUTTER_NOTIFICATION_CLICK",
+          },
+        },
+        apns: {
+          headers: {
+            "apns-priority": "10",
+          },
+          payload: {
+            aps: {
+              alert: {
+                title,
+                body,
+              },
+              sound: "default",
+              badge: 1,
+              contentAvailable: true,
+            },
           },
         },
       });
@@ -157,6 +186,10 @@ export async function createAndSendNotification({
           ...(orderId ? { orderId } : {}),
         },
       });
+    } else {
+      console.warn(
+        `[FCM] User ${userId} has no fcmToken registered in database. Push skipped.`
+      );
     }
   } catch (err: any) {
     console.error(`[Notification FCM Error]: ${err.message || err}`);

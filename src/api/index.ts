@@ -1178,11 +1178,12 @@ export default {
               where: { id: createdOrder.farmerId },
               include: { user: true },
             });
+            const productSummary =
+              createdOrder.items.length === 1
+                ? createdOrder.items[0].product.title
+                : `${createdOrder.items[0].product.title} +${createdOrder.items.length - 1} სხვა`;
+
             if (farmerProfile?.userId) {
-              const productSummary =
-                createdOrder.items.length === 1
-                  ? createdOrder.items[0].product.title
-                  : `${createdOrder.items[0].product.title} +${createdOrder.items.length - 1} სხვა`;
               await createAndSendNotification({
                 userId: farmerProfile.userId,
                 title: "ახალი შეკვეთა მიღებულია!",
@@ -1192,6 +1193,20 @@ export default {
                 data: {
                   orderId: createdOrder.id,
                   type: "order_created",
+                },
+              });
+            }
+
+            if (createdOrder.clientId) {
+              await createAndSendNotification({
+                userId: createdOrder.clientId,
+                title: "შეკვეთა გაფორმდა! 📦",
+                body: `თქვენი შეკვეთა #${createdOrder.id.slice(-5)} (${productSummary}) გადაეცა ფერმერს დასადასტურებლად.`,
+                orderId: createdOrder.id,
+                category: "orders",
+                data: {
+                  orderId: createdOrder.id,
+                  type: "order_created_client",
                 },
               });
             }

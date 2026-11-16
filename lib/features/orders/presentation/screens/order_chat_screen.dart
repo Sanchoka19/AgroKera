@@ -119,7 +119,8 @@ class _OrderChatScreenState extends ConsumerState<OrderChatScreen> {
             widget.order.farmerId == null ||
             widget.order.clientId != auth.userId);
     final isFarmer = isOrderSeller;
-    final isActive = widget.order.status == OrderStatus.inProgress;
+    final isActive = widget.order.status == OrderStatus.inProgress ||
+        widget.order.status == OrderStatus.pending;
 
     // Scroll down when new messages arrive
     ref.listen(orderChatProvider, (previous, next) {
@@ -454,7 +455,7 @@ class _OrderChatScreenState extends ConsumerState<OrderChatScreen> {
   Widget _buildQuickReplies(bool isFarmer) {
     final replies = isFarmer
         ? ['გზაში ვარ', '10 წუთში მოვალ', 'ადგილზე ვარ', 'შლაგბაუმთან ვდგავარ']
-        : ['ადგილზე ვარ', 'სადარბაზოს კოდია', 'ჭიშკართან გელოდებით', 'მადლობა!'];
+        : ['როდის შეძლებთ გამოგზავნას?', 'ადგილზე ვარ', 'სადარბაზოს კოდია', 'ჭიშკართან გელოდებით', 'მადლობა!'];
 
     return Container(
       height: 38,
@@ -499,14 +500,17 @@ class _OrderChatScreenState extends ConsumerState<OrderChatScreen> {
           children: [
             const Icon(LucideIcons.lock, size: 15, color: Color(0xFF64748B)),
             const SizedBox(width: 8),
-            Text(
-              isCancelled
-                  ? 'შეკვეთა გაუქმებულია • ჩათი დახურულია'
-                  : 'შეკვეთა დასრულებულია • ჩათი დახურულია',
-              style: GoogleFonts.notoSansGeorgian(
-                fontSize: 12.5,
-                fontWeight: FontWeight.w600,
-                color: const Color(0xFF64748B),
+            Flexible(
+              child: Text(
+                isCancelled
+                    ? 'შეკვეთა გაუქმებულია • ჩათი დახურულია'
+                    : 'შეკვეთა დასრულებულია • ჩათი დახურულია',
+                style: GoogleFonts.notoSansGeorgian(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF64748B),
+                ),
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],

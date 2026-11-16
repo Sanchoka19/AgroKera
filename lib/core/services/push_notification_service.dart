@@ -19,7 +19,14 @@ class PushNotificationService {
   factory PushNotificationService() => _instance;
   PushNotificationService._internal();
 
-  final FirebaseMessaging _fcm = FirebaseMessaging.instance;
+  FirebaseMessaging? get _fcm {
+    try {
+      if (Firebase.apps.isEmpty) return null;
+      return FirebaseMessaging.instance;
+    } catch (_) {
+      return null;
+    }
+  }
   final FlutterLocalNotificationsPlugin _localNotifications =
       FlutterLocalNotificationsPlugin();
 
@@ -34,7 +41,16 @@ class PushNotificationService {
 
   String? _fcmToken;
   String? get fcmToken => _fcmToken;
-  void Function(String token)? onTokenUpdated;
+  void Function(String token)? _onTokenUpdated;
+  void Function(String token)? get onTokenUpdated => _onTokenUpdated;
+
+  set onTokenUpdated(void Function(String token)? handler) {
+    _onTokenUpdated = handler;
+    final token = _fcmToken;
+    if (handler != null && token != null && token.isNotEmpty) {
+      handler(token);
+    }
+  }
 
   /// Called when the user taps a notification (push or local).
   /// Receives the FCM `data` payload (orderId, type, category...).
@@ -61,11 +77,14 @@ class PushNotificationService {
   }
 
   Future<void> initialize({Function(RemoteMessage)? onForegroundMessage}) async {
+    final fcm = _fcm;
+    if (fcm == null) return;
+
     // 1. Set background messaging handler
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
     // 2. Request permissions (Android 13+ and iOS)
-    NotificationSettings settings = await _fcm.requestPermission(
+    NotificationSettings settings = await fcm.requestPermission(
       alert: true,
       announcement: false,
       badge: true,
@@ -117,7 +136,7 @@ class PushNotificationService {
     );
 
     // 5. Foreground notification presentation options
-    await _fcm.setForegroundNotificationPresentationOptions(
+    await fcm.setForegroundNotificationPresentationOptions(
       alert: true,
       badge: true,
       sound: true,
@@ -167,18 +186,15 @@ class PushNotificationService {
 
     // 7b. App was fully closed and opened by tapping a notification
     try {
-      final initialMessage = await _fcm.getInitialMessage();
+      final initialMessage = await fcm.getInitialMessage();
       if (initialMessage != null) {
         _handleTap(initialMessage.data);
       }
     } catch (_) {}
 
     // 8. Retrieve FCM registration token
-    // NOTE: register()/onRegistered return a Firebase Installation ID (FID),
-    // which is NOT an FCM registration token. Firebase Console "Send test
-    // message" and Admin SDK `token:` need the real token from getToken().
     // ignore: deprecated_member_use
-    _fcm.onTokenRefresh.listen((newToken) {
+    fcm.onTokenRefresh.listen((newToken) {
       _fcmToken = newToken;
       onTokenUpdated?.call(newToken);
       if (kDebugMode) {
@@ -193,9 +209,11 @@ class PushNotificationService {
   String? lastError;
 
   Future<String?> refreshToken() async {
+    final fcm = _fcm;
+    if (fcm == null) return null;
     try {
       // ignore: deprecated_member_use
-      final token = await _fcm.getToken();
+      final token = await fcm.getToken();
       if (token != null && token.isNotEmpty) {
         final changed = token != _fcmToken;
         _fcmToken = token;

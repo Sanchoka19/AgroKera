@@ -315,7 +315,10 @@ class AuthNotifier extends Notifier<AuthState> {
   }
 
   Future<void> syncFcmToken([String? token]) async {
-    final effectiveToken = token ?? PushNotificationService().fcmToken;
+    var effectiveToken = token ?? PushNotificationService().fcmToken;
+    if (effectiveToken == null || effectiveToken.isEmpty) {
+      effectiveToken = await PushNotificationService().refreshToken();
+    }
     final uid = state.userId;
     if (uid == null || effectiveToken == null || effectiveToken.isEmpty) return;
     try {
@@ -370,6 +373,8 @@ class AuthNotifier extends Notifier<AuthState> {
             kycStatus: KycStatus.verified.apiValue,
           ),
     );
+
+    unawaited(syncFcmToken());
 
     unawaited(_syncLoginWithBackend(
       name: resolved.name,
@@ -439,6 +444,7 @@ class AuthNotifier extends Notifier<AuthState> {
       coverUrl: coverUrl,
       role: UserRole.farmer,
     ));
+    unawaited(syncFcmToken());
   }
 
   /// Temporarily stores the user's name and email during the multi-step registration wizard
@@ -506,6 +512,7 @@ class AuthNotifier extends Notifier<AuthState> {
       farmName: resolved.farmName,
       role: role,
     ));
+    unawaited(syncFcmToken());
   }
 
   Future<void> submitKycDocuments({
@@ -782,6 +789,7 @@ class AuthNotifier extends Notifier<AuthState> {
           email: serverEmail,
           kycStatus: kycStr ?? 'VERIFIED',
         );
+        unawaited(syncFcmToken());
       }
     } catch (_) {
       // Save local session if offline
@@ -865,6 +873,7 @@ class AuthNotifier extends Notifier<AuthState> {
           email: serverEmail,
           kycStatus: kycStr ?? 'VERIFIED',
         );
+        unawaited(syncFcmToken());
       }
     } catch (_) {
       await ref.read(secureStorageProvider).saveSession(

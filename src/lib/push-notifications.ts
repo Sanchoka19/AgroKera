@@ -140,7 +140,7 @@ export async function sendPushNotification({
             sound: "default",
             defaultSound: true,
             defaultVibrateTimings: true,
-            icon: "ic_launcher",
+            icon: "ic_notification",
             clickAction: "FLUTTER_NOTIFICATION_CLICK",
           },
         },
@@ -225,6 +225,8 @@ export async function createAndSendNotification({
         body,
         data: {
           ...data,
+          title,
+          body,
           category,
           ...(orderId ? { orderId } : {}),
         },

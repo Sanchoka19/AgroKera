@@ -74,6 +74,7 @@ Future<void> main() async {
         container: container,
         orderId: data['orderId']?.toString(),
         type: data['type']?.toString(),
+        title: data['title']?.toString(),
       );
       container.read(notificationsProvider.notifier).fetchNotifications();
     });

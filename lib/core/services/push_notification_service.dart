@@ -161,7 +161,7 @@ class PushNotificationService {
               _channel.id,
               _channel.name,
               channelDescription: _channel.description,
-              icon: android?.smallIcon ?? '@mipmap/ic_launcher',
+              icon: android?.smallIcon ?? '@drawable/ic_notification',
               importance: Importance.max,
               priority: Priority.high,
               playSound: true,

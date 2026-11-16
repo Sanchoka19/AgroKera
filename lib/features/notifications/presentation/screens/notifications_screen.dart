@@ -301,17 +301,35 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
 
           // Notification List or Empty State
           Expanded(
-            child: filtered.isEmpty
-                ? _buildEmptyState()
-                : ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
-                    itemCount: filtered.length,
-                    separatorBuilder: (_, _) => const SizedBox(height: 12),
-                    itemBuilder: (context, index) {
-                      final item = filtered[index];
-                      return _buildNotificationCard(context, item);
-                    },
-                  ),
+            child: RefreshIndicator(
+              color: AppColors.primary,
+              onRefresh: () =>
+                  ref.read(notificationsProvider.notifier).fetchNotifications(),
+              child: filtered.isEmpty
+                  ? ListView(
+                      physics: const AlwaysScrollableScrollPhysics(
+                        parent: BouncingScrollPhysics(),
+                      ),
+                      children: [
+                        SizedBox(
+                          height: MediaQuery.of(context).size.height * 0.55,
+                          child: _buildEmptyState(),
+                        ),
+                      ],
+                    )
+                  : ListView.separated(
+                      physics: const AlwaysScrollableScrollPhysics(
+                        parent: BouncingScrollPhysics(),
+                      ),
+                      padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+                      itemCount: filtered.length,
+                      separatorBuilder: (_, _) => const SizedBox(height: 12),
+                      itemBuilder: (context, index) {
+                        final item = filtered[index];
+                        return _buildNotificationCard(context, item);
+                      },
+                    ),
+            ),
           ),
         ],
       ),

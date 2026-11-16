@@ -1,5 +1,5 @@
 import prisma from "../lib/prisma.ts";
-import { sendPushNotification } from "../lib/push-notifications.ts";
+import { sendPushNotification, createAndSendNotification } from "../lib/push-notifications.ts";
 import { OrderStatus, Role, ShipmentStatus, VerificationStatus, FulfillmentType } from "@prisma/client";
 import nodemailer from "nodemailer";
 import { S3Client, PutObjectCommand, GetObjectCommand, CreateBucketCommand } from "@aws-sdk/client-s3";
@@ -510,6 +510,48 @@ export default {
           return jsonResponse({ success: true, userId: updated.id });
         } catch (err: any) {
           return errorResponse(`Failed to update fcmToken: ${err.message}`, 400);
+        }
+      }
+
+      // ==========================================
+      // NOTIFICATIONS ENDPOINTS
+      // ==========================================
+      if (path === "/api/notifications" && method === "GET") {
+        const userId = url.searchParams.get("userId");
+        if (!userId) {
+          return errorResponse("userId query parameter is required", 400);
+        }
+        const notifs = await prisma.notification.findMany({
+          where: { userId },
+          orderBy: { createdAt: "desc" },
+          take: 50,
+        });
+        return jsonResponse(notifs);
+      }
+
+      if (path === "/api/notifications/read-all" && method === "PATCH") {
+        const body = (await request.json().catch(() => ({}))) as { userId?: string };
+        const userId = body.userId || url.searchParams.get("userId");
+        if (!userId) {
+          return errorResponse("userId is required", 400);
+        }
+        await prisma.notification.updateMany({
+          where: { userId, isRead: false },
+          data: { isRead: true },
+        });
+        return jsonResponse({ success: true });
+      }
+
+      if (path.startsWith("/api/notifications/") && path.endsWith("/read") && method === "PATCH") {
+        const notifId = path.replace("/api/notifications/", "").replace("/read", "");
+        try {
+          const updated = await prisma.notification.update({
+            where: { id: notifId },
+            data: { isRead: true },
+          });
+          return jsonResponse(updated);
+        } catch (err: any) {
+          return errorResponse(`Failed to mark notification as read: ${err.message}`, 400);
         }
       }
 
@@ -1102,18 +1144,20 @@ export default {
           });
         });
 
-        // Send Push Notification to Farmer for New Order
+        // Send and persist Push Notification to Farmer for New Order
         (async () => {
           try {
             const farmerProfile = await prisma.farmerProfile.findUnique({
               where: { id: createdOrder.farmerId },
               include: { user: true },
             });
-            if (farmerProfile?.user?.fcmToken) {
-              await sendPushNotification({
-                token: farmerProfile.user.fcmToken,
+            if (farmerProfile?.userId) {
+              await createAndSendNotification({
+                userId: farmerProfile.userId,
                 title: "ახალი შეკვეთა მიღებულია! 📦",
                 body: `${createdOrder.contactPerson || "მომხმარებელმა"} გააფორმა შეკვეთა #${createdOrder.id.slice(-5)} (₾${createdOrder.totalAmount}).`,
+                orderId: createdOrder.id,
+                category: "orders",
                 data: {
                   orderId: createdOrder.id,
                   type: "order_created",
@@ -1246,28 +1290,28 @@ export default {
           });
         });
 
-        // Send Push Notification to Client about Order Status Change
+        // Send and persist Push Notification to Client about Order Status Change
         (async () => {
           try {
-            if (updated.client?.fcmToken) {
-              const statusMap: Record<string, string> = {
-                IN_PROGRESS: "მზადდება / მიღებულია",
-                COMPLETED: "ჩაბარებულია",
-                CANCELLED: "გაუქმებულია",
-                PENDING: "მოლოდინშია",
-              };
-              const statusText = statusMap[updated.status] || updated.status;
-              await sendPushNotification({
-                token: updated.client.fcmToken,
-                title: "შეკვეთის სტატუსი განახლდა! 🚚",
-                body: `თქვენი შეკვეთის #${updated.id.slice(-5)} სტატუსია: ${statusText}`,
-                data: {
-                  orderId: updated.id,
-                  type: "order_status_updated",
-                  status: updated.status,
-                },
-              });
-            }
+            const statusMap: Record<string, string> = {
+              IN_PROGRESS: "მზადდება / მიღებულია",
+              COMPLETED: "ჩაბარებულია",
+              CANCELLED: "გაუქმებულია",
+              PENDING: "მოლოდინშია",
+            };
+            const statusText = statusMap[updated.status] || updated.status;
+            await createAndSendNotification({
+              userId: updated.clientId,
+              title: "შეკვეთის სტატუსი განახლდა! 🚚",
+              body: `თქვენი შეკვეთის #${updated.id.slice(-5)} სტატუსია: ${statusText}`,
+              orderId: updated.id,
+              category: "orders",
+              data: {
+                orderId: updated.id,
+                type: "order_status_updated",
+                status: updated.status,
+              },
+            });
           } catch (pushErr) {
             console.error("[FCM Client Notification Error]:", pushErr);
           }
@@ -1387,7 +1431,7 @@ export default {
           },
         });
 
-        // Send Push Notification to recipient
+        // Send and persist Push Notification to recipient
         (async () => {
           try {
             const order = await prisma.order.findUnique({
@@ -1399,14 +1443,16 @@ export default {
             });
             if (!order) return;
             const isSenderFarmer = body.senderRole === "farmer";
-            const targetToken = isSenderFarmer
-              ? order.client?.fcmToken
-              : order.farmer?.user?.fcmToken;
-            if (targetToken) {
-              await sendPushNotification({
-                token: targetToken,
+            const targetUserId = isSenderFarmer
+              ? order.clientId
+              : order.farmer?.userId;
+            if (targetUserId) {
+              await createAndSendNotification({
+                userId: targetUserId,
                 title: `ახალი შეტყობინება (${body.senderName || "AgroKera"}) 💬`,
                 body: cleanText,
+                orderId,
+                category: "orders",
                 data: {
                   orderId,
                   type: "chat_message",

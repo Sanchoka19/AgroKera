@@ -1,6 +1,7 @@
 import admin from "firebase-admin";
 import fs from "fs";
 import path from "path";
+import prisma from "./prisma.ts";
 
 let isInitialized = false;
 
@@ -105,4 +106,61 @@ export async function sendPushNotification({
     }
   }
 }
+
+export interface CreateAndSendNotificationOptions {
+  userId: string;
+  title: string;
+  body: string;
+  category?: string;
+  orderId?: string;
+  data?: Record<string, string>;
+}
+
+export async function createAndSendNotification({
+  userId,
+  title,
+  body,
+  category = "orders",
+  orderId,
+  data = {},
+}: CreateAndSendNotificationOptions): Promise<void> {
+  // 1. Persist notification to Neon Postgres
+  try {
+    await prisma.notification.create({
+      data: {
+        userId,
+        title,
+        body,
+        category,
+        orderId,
+      },
+    });
+    console.log(`[Notification] Saved notification to DB for user ${userId}`);
+  } catch (err: any) {
+    console.error(`[Notification DB Error]: ${err.message || err}`);
+  }
+
+  // 2. Fetch user's FCM token and dispatch push notification
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { fcmToken: true },
+    });
+    if (user?.fcmToken) {
+      await sendPushNotification({
+        token: user.fcmToken,
+        title,
+        body,
+        data: {
+          ...data,
+          category,
+          ...(orderId ? { orderId } : {}),
+        },
+      });
+    }
+  } catch (err: any) {
+    console.error(`[Notification FCM Error]: ${err.message || err}`);
+  }
+}
+
 

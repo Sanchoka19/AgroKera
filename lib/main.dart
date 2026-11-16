@@ -26,17 +26,22 @@ Future<void> main() async {
       onForegroundMessage: (remoteMessage) {
         final title = remoteMessage.notification?.title ?? 'AgroKera შეტყობინება';
         final body = remoteMessage.notification?.body ?? '';
+        final categoryStr = remoteMessage.data['category'] as String?;
+        final orderId = remoteMessage.data['orderId'] as String?;
         container.read(notificationsProvider.notifier).addNotification(
               AppNotification(
-                id: 'fcm-${DateTime.now().millisecondsSinceEpoch}',
+                id: remoteMessage.messageId ??
+                    'fcm-${DateTime.now().millisecondsSinceEpoch}',
                 title: title,
                 body: body,
                 timeAgo: 'ახლახანს',
                 timestamp: DateTime.now(),
-                category: NotificationCategory.orders,
+                category: AppNotification.parseCategory(categoryStr),
                 isRead: false,
+                orderId: orderId,
               ),
             );
+        container.read(notificationsProvider.notifier).fetchNotifications();
       },
     );
     PushNotificationService().onTokenUpdated = (newToken) {

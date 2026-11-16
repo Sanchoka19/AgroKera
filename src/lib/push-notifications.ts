@@ -9,19 +9,62 @@ let isInitialized = false;
 function initFirebase(): boolean {
   if (isInitialized) return true;
   try {
-    const serviceAccountPath = path.resolve(
-      process.cwd(),
-      "firebase-service-account.json"
-    );
-    if (!fs.existsSync(serviceAccountPath)) {
+    let serviceAccount: any = null;
+
+    // 1. Check Environment Variable (recommended for Render / Cloud)
+    const envValue =
+      process.env.FIREBASE_SERVICE_ACCOUNT ||
+      process.env.FIREBASE_SERVICE_ACCOUNT_JSON ||
+      process.env.FIREBASE_CONFIG_JSON;
+
+    if (envValue && envValue.trim().length > 0) {
+      try {
+        const trimmed = envValue.trim();
+        if (trimmed.startsWith("{")) {
+          serviceAccount = JSON.parse(trimmed);
+        } else {
+          // Attempt base64 decoding if not direct JSON
+          const decoded = Buffer.from(trimmed, "base64").toString("utf-8");
+          serviceAccount = JSON.parse(decoded);
+        }
+        console.log("[FCM] Loaded Firebase credentials from Environment Variable.");
+      } catch (parseErr) {
+        console.error(
+          "[FCM] Failed to parse FIREBASE_SERVICE_ACCOUNT environment variable:",
+          parseErr
+        );
+      }
+    }
+
+    // 2. Check file paths (Local or Render Secret File)
+    if (!serviceAccount) {
+      const candidatePaths = [
+        path.resolve(process.cwd(), "firebase-service-account.json"),
+        "/etc/secrets/firebase-service-account.json", // Render standard secret file mount path
+      ];
+
+      for (const p of candidatePaths) {
+        if (fs.existsSync(p)) {
+          try {
+            serviceAccount = JSON.parse(fs.readFileSync(p, "utf-8"));
+            console.log(`[FCM] Loaded Firebase credentials from file: ${p}`);
+            break;
+          } catch (fileErr) {
+            console.error(`[FCM] Error reading file ${p}:`, fileErr);
+          }
+        }
+      }
+    }
+
+    if (!serviceAccount) {
       console.warn(
-        "[FCM] firebase-service-account.json not found, push notifications disabled."
+        "[FCM] Firebase service account not found! Push notifications disabled.\n" +
+          "-> Add 'FIREBASE_SERVICE_ACCOUNT' in Render Environment Variables OR\n" +
+          "-> Upload 'firebase-service-account.json' in Render Secret Files."
       );
       return false;
     }
-    const serviceAccount = JSON.parse(
-      fs.readFileSync(serviceAccountPath, "utf-8")
-    );
+
     if (getApps().length === 0) {
       initializeApp({
         credential: cert(serviceAccount),

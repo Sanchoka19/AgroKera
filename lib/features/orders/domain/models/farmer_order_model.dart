@@ -137,6 +137,8 @@ class FarmerOrder {
   final double heavyFee;
   final double platformFee;
   final bool isPickup;
+  final String? farmerName;
+  final String? farmerAvatarUrl;
 
   const FarmerOrder({
     required this.id,
@@ -162,6 +164,8 @@ class FarmerOrder {
     this.heavyFee = 0.0,
     this.platformFee = 0.0,
     this.isPickup = false,
+    this.farmerName,
+    this.farmerAvatarUrl,
   });
 
   static String generatePinForId(String id) {
@@ -181,7 +185,7 @@ class FarmerOrder {
       status: OrderStatus.fromApi(json['status'] as String?),
       customerName: json['customerName'] as String? ?? 'მყიდველი',
       contactPerson: json['contactPerson'] as String? ?? 'მყიდველი',
-      contactPhone: json['contactPhone'] as String? ?? '+995 599 12 34 56',
+      contactPhone: json['contactPhone'] as String? ?? '',
       hasVat: json['hasVat'] as bool? ?? false,
       deliveryTimeWindow: json['deliveryTimeWindow'] as String?,
       deliveryAddress: json['deliveryAddress'] as String?,
@@ -199,6 +203,8 @@ class FarmerOrder {
       heavyFee: (json['heavyFee'] as num?)?.toDouble() ?? 0.0,
       platformFee: (json['platformFee'] as num?)?.toDouble() ?? 0.0,
       isPickup: json['isPickup'] as bool? ?? false,
+      farmerName: json['farmerName'] as String?,
+      farmerAvatarUrl: json['farmerAvatarUrl'] as String?,
       items: rawItems
           .whereType<Map<String, dynamic>>()
           .map(FarmerOrderItem.fromJson)
@@ -281,6 +287,8 @@ class FarmerOrder {
       'heavyFee': heavyFee,
       'platformFee': platformFee,
       'isPickup': isPickup,
+      if (farmerName != null) 'farmerName': farmerName,
+      if (farmerAvatarUrl != null) 'farmerAvatarUrl': farmerAvatarUrl,
       'items': items.map((i) => i.toJson()).toList(),
     };
   }
@@ -309,6 +317,8 @@ class FarmerOrder {
     double? heavyFee,
     double? platformFee,
     bool? isPickup,
+    String? farmerName,
+    String? farmerAvatarUrl,
   }) {
     return FarmerOrder(
       id: id ?? this.id,
@@ -335,6 +345,8 @@ class FarmerOrder {
       heavyFee: heavyFee ?? this.heavyFee,
       platformFee: platformFee ?? this.platformFee,
       isPickup: isPickup ?? this.isPickup,
+      farmerName: farmerName ?? this.farmerName,
+      farmerAvatarUrl: farmerAvatarUrl ?? this.farmerAvatarUrl,
     );
   }
 }

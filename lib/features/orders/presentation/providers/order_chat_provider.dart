@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:math';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/auth/auth_state_provider.dart';
+import 'package:dio/dio.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/storage/secure_storage_service.dart';
 import '../../domain/models/order_message_model.dart';
@@ -126,9 +127,17 @@ class OrderChatNotifier extends Notifier<Map<String, List<OrderMessage>>> {
         data: message.toJson(),
       );
       unawaited(syncMessages(orderId));
-    } catch (_) {
-      // Gracefully ignore network errors in tests/offline
-    }
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 403) {
+        // Chat is locked (order not yet confirmed or already completed).
+        // Roll back the optimistic message.
+        final current = state[orderId] ?? [];
+        final rolled = current.where((m) => m.id != message.id).toList();
+        state = {...state, orderId: rolled};
+        rethrow; // let the UI catch and show the reason
+      }
+      // Other network errors – silently ignore (offline, timeout, etc.)
+    } catch (_) {}
   }
 }
 

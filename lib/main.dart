@@ -9,6 +9,7 @@ import 'features/marketplace/presentation/providers/favorites_provider.dart';
 import 'features/navigation/presentation/screens/main_nav_screen.dart';
 import 'features/notifications/data/models/notification_model.dart';
 import 'features/notifications/presentation/providers/notifications_provider.dart';
+import 'features/notifications/presentation/notification_navigator.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -28,17 +29,19 @@ Future<void> main() async {
         final body = remoteMessage.notification?.body ?? '';
         final categoryStr = remoteMessage.data['category'] as String?;
         final orderId = remoteMessage.data['orderId'] as String?;
+        final type = remoteMessage.data['type'] as String?;
         container.read(notificationsProvider.notifier).addNotification(
               AppNotification(
                 id: remoteMessage.messageId ??
                     'fcm-${DateTime.now().millisecondsSinceEpoch}',
-                title: title,
+                title: AppNotification.stripEmojis(title),
                 body: body,
                 timeAgo: 'ახლახანს',
                 timestamp: DateTime.now(),
                 category: AppNotification.parseCategory(categoryStr),
                 isRead: false,
                 orderId: orderId,
+                type: type,
               ),
             );
         container.read(notificationsProvider.notifier).fetchNotifications();
@@ -63,6 +66,19 @@ Future<void> main() async {
       child: const AgroKeraApp(),
     ),
   );
+
+  // Open the related screen when a push notification is tapped
+  PushNotificationService().onNotificationTap = (data) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      NotificationNavigator.open(
+        container: container,
+        orderId: data['orderId']?.toString(),
+        type: data['type']?.toString(),
+      );
+      container.read(notificationsProvider.notifier).fetchNotifications();
+    });
+    WidgetsBinding.instance.scheduleFrame();
+  };
 }
 
 class AgroKeraApp extends StatelessWidget {
@@ -72,6 +88,7 @@ class AgroKeraApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'AgroKera',
+      navigatorKey: NotificationNavigator.navigatorKey,
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       themeMode: ThemeMode.light,

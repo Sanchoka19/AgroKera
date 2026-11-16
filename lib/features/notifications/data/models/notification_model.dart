@@ -14,6 +14,7 @@ class AppNotification {
   final NotificationCategory category;
   final bool isRead;
   final String? orderId;
+  final String? type; // order_created | order_status_updated | chat_message
 
   const AppNotification({
     required this.id,
@@ -24,6 +25,7 @@ class AppNotification {
     required this.category,
     this.isRead = false,
     this.orderId,
+    this.type,
   });
 
   AppNotification copyWith({
@@ -35,6 +37,7 @@ class AppNotification {
     NotificationCategory? category,
     bool? isRead,
     String? orderId,
+    String? type,
   }) {
     return AppNotification(
       id: id ?? this.id,
@@ -45,6 +48,7 @@ class AppNotification {
       category: category ?? this.category,
       isRead: isRead ?? this.isRead,
       orderId: orderId ?? this.orderId,
+      type: type ?? this.type,
     );
   }
 
@@ -59,6 +63,20 @@ class AppNotification {
       default:
         return NotificationCategory.orders;
     }
+  }
+
+  /// Removes emoji characters (older notifications in the DB contain them).
+  static String stripEmojis(String input) {
+    return input
+        .replaceAll(
+          RegExp(
+            r'[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{FE0F}\u{200D}]',
+            unicode: true,
+          ),
+          '',
+        )
+        .replaceAll(RegExp(r'\s{2,}'), ' ')
+        .trim();
   }
 
   static String formatTimeAgo(DateTime dt) {
@@ -76,13 +94,14 @@ class AppNotification {
         : DateTime.now();
     return AppNotification(
       id: json['id']?.toString() ?? '',
-      title: json['title']?.toString() ?? '',
+      title: stripEmojis(json['title']?.toString() ?? ''),
       body: json['body']?.toString() ?? '',
       timeAgo: formatTimeAgo(createdAt),
       timestamp: createdAt,
       category: parseCategory(json['category']?.toString()),
       isRead: json['isRead'] == true,
       orderId: json['orderId']?.toString(),
+      type: json['type']?.toString(),
     );
   }
 
@@ -94,6 +113,7 @@ class AppNotification {
       'category': category.name,
       'isRead': isRead,
       'orderId': orderId,
+      if (type != null) 'type': type,
       'createdAt': timestamp.toIso8601String(),
     };
   }

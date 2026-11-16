@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -34,6 +35,30 @@ class PushNotificationService {
   String? _fcmToken;
   String? get fcmToken => _fcmToken;
   void Function(String token)? onTokenUpdated;
+
+  /// Called when the user taps a notification (push or local).
+  /// Receives the FCM `data` payload (orderId, type, category...).
+  void Function(Map<String, dynamic> data)? _onNotificationTap;
+  Map<String, dynamic>? _pendingTapData;
+
+  set onNotificationTap(void Function(Map<String, dynamic> data)? handler) {
+    _onNotificationTap = handler;
+    final pending = _pendingTapData;
+    if (handler != null && pending != null) {
+      _pendingTapData = null;
+      handler(pending);
+    }
+  }
+
+  void _handleTap(Map<String, dynamic> data) {
+    if (data.isEmpty) return;
+    final handler = _onNotificationTap;
+    if (handler == null) {
+      _pendingTapData = data; // app not ready yet, deliver later
+    } else {
+      handler(data);
+    }
+  }
 
   Future<void> initialize({Function(RemoteMessage)? onForegroundMessage}) async {
     // 1. Set background messaging handler
@@ -79,6 +104,15 @@ class PushNotificationService {
         if (kDebugMode) {
           print('Local notification tapped: ${response.payload}');
         }
+        final payload = response.payload;
+        if (payload != null && payload.isNotEmpty) {
+          try {
+            final decoded = jsonDecode(payload);
+            if (decoded is Map) {
+              _handleTap(Map<String, dynamic>.from(decoded));
+            }
+          } catch (_) {}
+        }
       },
     );
 
@@ -114,7 +148,7 @@ class PushNotificationService {
               playSound: true,
             ),
           ),
-          payload: message.data.toString(),
+          payload: jsonEncode(message.data),
         );
       }
 
@@ -128,23 +162,45 @@ class PushNotificationService {
       if (kDebugMode) {
         print('App opened from notification: ${message.messageId}');
       }
+      _handleTap(message.data);
     });
 
-    // 8. Retrieve FCM Device Token
-    _fcm.onRegistered.listen((newToken) {
+    // 7b. App was fully closed and opened by tapping a notification
+    try {
+      final initialMessage = await _fcm.getInitialMessage();
+      if (initialMessage != null) {
+        _handleTap(initialMessage.data);
+      }
+    } catch (_) {}
+
+    // 8. Retrieve FCM registration token
+    // NOTE: register()/onRegistered return a Firebase Installation ID (FID),
+    // which is NOT an FCM registration token. Firebase Console "Send test
+    // message" and Admin SDK `token:` need the real token from getToken().
+    // ignore: deprecated_member_use
+    _fcm.onTokenRefresh.listen((newToken) {
       _fcmToken = newToken;
       onTokenUpdated?.call(newToken);
       if (kDebugMode) {
-        print('🔥 AGROKERA FCM TOKEN: $_fcmToken');
+        print('🔥 AGROKERA FCM TOKEN (refreshed): $newToken');
       }
     });
 
+    await refreshToken();
+  }
+
+  /// Fetches the FCM registration token. Safe to call multiple times.
+  String? lastError;
+
+  Future<String?> refreshToken() async {
     try {
-      await _fcm.register();
       // ignore: deprecated_member_use
-      _fcmToken ??= await _fcm.getToken();
-      if (_fcmToken != null) {
-        onTokenUpdated?.call(_fcmToken!);
+      final token = await _fcm.getToken();
+      if (token != null && token.isNotEmpty) {
+        final changed = token != _fcmToken;
+        _fcmToken = token;
+        lastError = null;
+        if (changed) onTokenUpdated?.call(token);
       }
       if (kDebugMode) {
         print('=============================================');
@@ -153,9 +209,11 @@ class PushNotificationService {
         print('=============================================');
       }
     } catch (e) {
+      lastError = e.toString();
       if (kDebugMode) {
-        print('Error registering FCM token: $e');
+        print('Error getting FCM token: $e');
       }
     }
+    return _fcmToken;
   }
 }

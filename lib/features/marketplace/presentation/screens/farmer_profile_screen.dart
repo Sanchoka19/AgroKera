@@ -445,24 +445,7 @@ class _FarmerProfileScreenState extends ConsumerState<FarmerProfileScreen>
                       style: AppTypography.bodyMedium.copyWith(height: 1.5),
                     ),
                     const SizedBox(height: 20),
-                    Text('საკონტაქტო ინფორმაცია', style: AppTypography.h2),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        const Icon(
-                          LucideIcons.phone,
-                          size: 16,
-                          color: AppColors.primary,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          farmer.phone,
-                          style: AppTypography.bodyMedium.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
+                    Text('მდებარეობა', style: AppTypography.h2),
                     const SizedBox(height: 8),
                     Row(
                       children: [

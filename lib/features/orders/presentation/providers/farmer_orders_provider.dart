@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math';
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/auth/auth_state_provider.dart';
 import '../../../../core/network/api_client.dart';
@@ -468,11 +469,18 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
     unawaited(_syncOrderStatus(id, status: OrderStatus.completed));
   }
 
-  void cancelOrder(String id, {String reason = 'მარაგის არ არსებობის გამო'}) {
+  /// Cancels an order optimistically; returns an error message if the server
+  /// rejects the request (e.g. 403 deadline passed), null on success.
+  Future<String?> cancelOrder(
+    String id, {
+    String reason = 'მარაგის არ არსებობის გამო',
+  }) async {
     final targetOrder = state.orders.where((o) => o.id == id).firstOrNull ??
         state.incomingOrders.where((o) => o.id == id).firstOrNull ??
         state.clientOrders.where((o) => o.id == id).firstOrNull;
-    if (targetOrder != null && targetOrder.status != OrderStatus.cancelled) {
+    if (targetOrder == null) return null;
+
+    if (targetOrder.status != OrderStatus.cancelled) {
       unawaited(
         ref
             .read(marketplaceProvider.notifier)
@@ -480,7 +488,8 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
       );
     }
 
-    FarmerOrder update(FarmerOrder o) {
+    // Optimistic update
+    FarmerOrder setCancelled(FarmerOrder o) {
       if (o.id == id) {
         return o.copyWith(
           status: OrderStatus.cancelled,
@@ -491,14 +500,29 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
     }
 
     state = state.copyWith(
-      orders: state.orders.map(update).toList(),
-      incomingOrders: state.incomingOrders.map(update).toList(),
-      clientOrders: state.clientOrders.map(update).toList(),
+      orders: state.orders.map(setCancelled).toList(),
+      incomingOrders: state.incomingOrders.map(setCancelled).toList(),
+      clientOrders: state.clientOrders.map(setCancelled).toList(),
     );
 
-    unawaited(
-      _syncOrderStatus(id, status: OrderStatus.cancelled, reason: reason),
+    // Sync with backend
+    final error = await _syncOrderStatus(
+      id,
+      status: OrderStatus.cancelled,
+      reason: reason,
     );
+
+    if (error != null) {
+      // Rollback optimistic state
+      FarmerOrder restore(FarmerOrder o) => o.id == id ? targetOrder : o;
+      state = state.copyWith(
+        orders: state.orders.map(restore).toList(),
+        incomingOrders: state.incomingOrders.map(restore).toList(),
+        clientOrders: state.clientOrders.map(restore).toList(),
+      );
+    }
+
+    return error;
   }
 
   /// Places a new order from the Cart & Checkout screen and syncs with Neon DB
@@ -700,24 +724,37 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
   /// Backward-compatible alias for expiring overdue pending orders
   void checkAutoConfirmation() => checkPendingOrderExpirations();
 
-  Future<void> _syncOrderStatus(
+  /// Returns an error message string on failure, null on success.
+  Future<String?> _syncOrderStatus(
     String id, {
     required OrderStatus status,
     String? reason,
   }) async {
     try {
       final api = ref.read(apiClientProvider);
+      final auth = ref.read(authStateProvider);
       await api.patch(
         '/api/orders/$id/status',
         data: {
           'status': status.apiValue,
           'cancellationReason': ?reason,
+          // Let backend know who is making the request so it can enforce rules
+          'requesterId': auth.userId,
+          'requesterFarmerId': auth.farmerId,
         },
       );
       if (status == OrderStatus.cancelled) {
         await ref.read(marketplaceProvider.notifier).refreshFromBackend();
       }
-    } catch (_) {}
+      return null;
+    } on DioException catch (e) {
+      final msg = e.response?.data is Map
+          ? (e.response!.data['error'] as String?)
+          : null;
+      return msg ?? 'სერვერის შეცდომა. სცადეთ თავიდან.';
+    } catch (_) {
+      return null; // silent for non-403 errors
+    }
   }
 }
 

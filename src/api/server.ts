@@ -1,5 +1,5 @@
 import http from "node:http";
-import apiHandler from "./index.ts";
+import apiHandler, { remindStaleOrders } from "./index.ts";
 
 const PORT = Number(process.env.PORT || 3001);
 
@@ -54,5 +54,24 @@ const server = http.createServer(async (req, res) => {
 server.listen(PORT, "0.0.0.0", () => {
   const publicUrl = process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
   console.log(`🚀 AgroKera Neon API Server running on ${publicUrl} (port ${PORT})`);
+
+  // ── Stale-order reminder cron ──────────────────────────────────────────────
+  // Runs once a day. Notifies farmer (>2 h) and client (>6 h) when an
+  // IN_PROGRESS order has not been closed via the delivery PIN.
+  // A 24-hour DB check inside remindStaleOrders() ensures at most one
+  // reminder per order per day regardless of how often the cron fires.
+  const ONE_DAY = 24 * 60 * 60 * 1000;
+  const runReminder = () => {
+    remindStaleOrders().catch((err) =>
+      console.error("[Cron] remindStaleOrders failed:", err)
+    );
+  };
+  // First run after 24 h, then repeat daily
+  setTimeout(() => {
+    runReminder();
+    setInterval(runReminder, ONE_DAY);
+  }, ONE_DAY);
+
+  console.log("[Cron] Stale-order reminder scheduled — runs daily");
 });
 

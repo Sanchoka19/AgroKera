@@ -125,78 +125,6 @@ class _FarmerOrderDetailScreenState
     }
   }
 
-  void _onContactCustomer(FarmerOrder order) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Center(
-                  child: Container(
-                    width: 38,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFCBD5E1),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'დამკვეთთან დაკავშირება',
-                  style: GoogleFonts.notoSansGeorgian(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w800,
-                    color: const Color(0xFF0F172A),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  '${order.customerName} (${order.contactPerson})',
-                  style: GoogleFonts.notoSansGeorgian(
-                    fontSize: 13.5,
-                    color: const Color(0xFF64748B),
-                  ),
-                ),
-                const SizedBox(height: 18),
-                ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                    AppToast.success(context, 'მიმდინარეობს დარეკვა: ${order.contactPhone}');
-                  },
-                  icon: const Icon(LucideIcons.phoneCall, size: 18),
-                  label: Text(
-                    'დარეკვა (${order.contactPhone})',
-                    style: GoogleFonts.notoSansGeorgian(
-                      fontSize: 14.5,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    minimumSize: const Size.fromHeight(48),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
   String _formatCountdown(Duration d) {
     final minutes = d.inMinutes.remainder(60).toString().padLeft(2, '0');
     final seconds = d.inSeconds.remainder(60).toString().padLeft(2, '0');
@@ -369,28 +297,6 @@ class _FarmerOrderDetailScreenState
             const SizedBox(height: 12),
             Row(
               children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () => _onContactCustomer(order),
-                    icon: const Icon(LucideIcons.phone, size: 14),
-                    label: Text(
-                      'დარეკვა',
-                      style: GoogleFonts.notoSansGeorgian(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: const Color(0xFF0F172A),
-                      side: const BorderSide(color: Color(0xFFCBD5E1)),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
                 Expanded(
                   child: ElevatedButton.icon(
                     onPressed: () => _onOpenChat(order),
@@ -680,10 +586,10 @@ class _FarmerOrderDetailScreenState
         ),
         child: SafeArea(
           child: OutlinedButton.icon(
-            onPressed: () => _onContactCustomer(order),
-            icon: const Icon(LucideIcons.phone, size: 18),
+            onPressed: () => _onOpenChat(order),
+            icon: const Icon(LucideIcons.messageSquare, size: 18),
             label: Text(
-              'დამკვეთთან დაკავშირება',
+              'ჩათის ისტორია',
               style: GoogleFonts.notoSansGeorgian(
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
@@ -783,7 +689,7 @@ class _FarmerOrderDetailScreenState
                   const SizedBox(width: 10),
                   Expanded(
                     child: OutlinedButton(
-                      onPressed: () => _onContactCustomer(order),
+                      onPressed: () => _onOpenChat(order),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: const Color(0xFF0F172A),
                         side: const BorderSide(color: Color(0xFFCBD5E1), width: 1.2),
@@ -798,10 +704,10 @@ class _FarmerOrderDetailScreenState
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(LucideIcons.phone, size: 15),
+                            const Icon(LucideIcons.messageSquare, size: 15),
                             const SizedBox(width: 5),
                             Text(
-                              'დაკავშირება',
+                              'ჩათი',
                               style: GoogleFonts.notoSansGeorgian(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w700,

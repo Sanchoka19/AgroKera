@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,6 +12,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/auth_required_bottom_sheet.dart';
 import '../../data/models/notification_model.dart';
 import '../providers/notifications_provider.dart';
+import '../notification_navigator.dart';
 
 class NotificationsScreen extends ConsumerStatefulWidget {
   const NotificationsScreen({super.key});
@@ -22,8 +24,10 @@ class NotificationsScreen extends ConsumerStatefulWidget {
 class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
   NotificationCategory _selectedCategory = NotificationCategory.all;
 
-  void _showFcmTokenDialog(BuildContext context) {
-    final token = PushNotificationService().fcmToken;
+  Future<void> _showFcmTokenDialog(BuildContext context) async {
+    final service = PushNotificationService();
+    final token = service.fcmToken ?? await service.refreshToken();
+    if (!context.mounted) return;
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -62,7 +66,8 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                 border: Border.all(color: const Color(0xFFCBD5E1)),
               ),
               child: SelectableText(
-                token ?? 'ტოკენი იტვირთება ან მიუწვდომელია (შეამოწმეთ ინტერნეტი)...',
+                token ??
+                    'ტოკენი მიუწვდომელია.\n\nშეცდომა: ${service.lastError ?? 'უცნობი (getToken-მა null დააბრუნა)'}',
                 style: const TextStyle(fontSize: 11, fontFamily: 'monospace'),
               ),
             ),
@@ -128,8 +133,9 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
             ),
           ),
           actions: [
-            IconButton(
-              tooltip: 'FCM Token',
+            if (kDebugMode)
+              IconButton(
+                tooltip: 'FCM Token',
               icon: const Icon(
                 LucideIcons.bellRing,
                 color: AppColors.primary,
@@ -240,8 +246,9 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
           ),
         ),
         actions: [
-          IconButton(
-            tooltip: 'FCM Token',
+          if (kDebugMode)
+            IconButton(
+              tooltip: 'FCM Token',
             icon: const Icon(
               LucideIcons.bellRing,
               color: AppColors.primary,
@@ -401,9 +408,30 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
 
     switch (item.category) {
       case NotificationCategory.orders:
-        icon = LucideIcons.package;
-        iconColor = const Color(0xFF0F766E);
-        iconBg = const Color(0xFFCCFBF1);
+        if (item.type == 'chat_message' || item.title.contains('შეტყობინება')) {
+          icon = LucideIcons.messageCircle;
+          iconColor = const Color(0xFF0369A1);
+          iconBg = const Color(0xFFE0F2FE);
+        } else if (item.type == 'order_stale_farmer' ||
+            item.type == 'order_stale_client' ||
+            item.title.contains('ვერ დაიხურება') ||
+            item.title.contains('ჯერ არ დასრულება')) {
+          icon = LucideIcons.clockAlert;
+          iconColor = const Color(0xFFD97706);
+          iconBg = const Color(0xFFFEF3C7);
+        } else if (item.type == 'order_status_updated' ||
+            item.title.contains('სტატუს') ||
+            item.title.contains('ჩაბარდა') ||
+            item.title.contains('გაუქმდა') ||
+            item.title.contains('დადასტურდა')) {
+          icon = LucideIcons.truck;
+          iconColor = const Color(0xFF0F766E);
+          iconBg = const Color(0xFFCCFBF1);
+        } else {
+          icon = LucideIcons.package;
+          iconColor = const Color(0xFF0F766E);
+          iconBg = const Color(0xFFCCFBF1);
+        }
         break;
       case NotificationCategory.promotions:
         icon = LucideIcons.tag;
@@ -442,6 +470,15 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
         onTap: () {
           if (!item.isRead) {
             ref.read(notificationsProvider.notifier).markAsRead(item.id);
+          }
+          if (item.orderId != null) {
+            NotificationNavigator.open(
+              container: ProviderScope.containerOf(context, listen: false),
+              navigator: Navigator.of(context),
+              orderId: item.orderId,
+              type: item.type,
+              title: item.title,
+            );
           }
         },
         child: Container(

@@ -96,6 +96,10 @@ class _OrderChatScreenState extends ConsumerState<OrderChatScreen> {
             senderRole: isOrderSeller ? UserRole.farmer : UserRole.customer,
             senderName: senderName,
           );
+    } catch (e) {
+      if (mounted) {
+        AppToast.error(context, 'ჩათი ჯერ ხელმიუწვდომელია');
+      }
     } finally {
       if (mounted) {
         setState(() => _isSending = false);
@@ -104,9 +108,6 @@ class _OrderChatScreenState extends ConsumerState<OrderChatScreen> {
     }
   }
 
-  void _makePhoneCall() {
-    AppToast.info(context, 'საკონტაქტო ნომერი: ${widget.order.contactPhone}');
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -118,8 +119,7 @@ class _OrderChatScreenState extends ConsumerState<OrderChatScreen> {
             widget.order.farmerId == null ||
             widget.order.clientId != auth.userId);
     final isFarmer = isOrderSeller;
-    final isActive = widget.order.status == OrderStatus.pending ||
-        widget.order.status == OrderStatus.inProgress;
+    final isActive = widget.order.status == OrderStatus.inProgress;
 
     // Scroll down when new messages arrive
     ref.listen(orderChatProvider, (previous, next) {
@@ -131,7 +131,7 @@ class _OrderChatScreenState extends ConsumerState<OrderChatScreen> {
 
     final partnerName = isOrderSeller
         ? widget.order.customerName
-        : 'ფერმერი (${widget.order.items.firstOrNull?.name ?? "შეკვეთა"})';
+        : (widget.order.farmerName ?? 'ფერმერი');
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
@@ -188,12 +188,31 @@ class _OrderChatScreenState extends ConsumerState<OrderChatScreen> {
           ],
         ),
         actions: [
-          IconButton(
-            icon: const Icon(LucideIcons.phone, color: AppColors.primary),
-            tooltip: 'დარეკვა',
-            onPressed: _makePhoneCall,
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: Builder(
+              builder: (ctx) {
+                final avatarUrl = widget.order.farmerAvatarUrl;
+                return CircleAvatar(
+                  radius: 18,
+                  backgroundColor: const Color(0xFFE6F4EA),
+                  backgroundImage: (!isFarmer && avatarUrl != null && avatarUrl.isNotEmpty)
+                      ? NetworkImage(avatarUrl)
+                      : null,
+                  child: (isFarmer || avatarUrl == null || avatarUrl.isEmpty)
+                      ? Text(
+                          partnerName.isNotEmpty ? partnerName[0].toUpperCase() : '?',
+                          style: const TextStyle(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 14,
+                          ),
+                        )
+                      : null,
+                );
+              },
+            ),
           ),
-          const SizedBox(width: 8),
         ],
         bottom: const PreferredSize(
           preferredSize: Size.fromHeight(1),
@@ -204,7 +223,10 @@ class _OrderChatScreenState extends ConsumerState<OrderChatScreen> {
         child: Column(
           children: [
             // Pinned Security Banner
-            _buildSecurityBanner(isFarmer),
+            if (widget.order.status == OrderStatus.pending)
+              _buildPendingBanner()
+            else
+              _buildSecurityBanner(isFarmer),
 
             // Messages List
             Expanded(
@@ -253,6 +275,30 @@ class _OrderChatScreenState extends ConsumerState<OrderChatScreen> {
             _buildBottomBar(isActive),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildPendingBanner() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      color: const Color(0xFFFFF7ED),
+      child: Row(
+        children: [
+          const Icon(LucideIcons.lock, size: 16, color: Color(0xFFEA580C)),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'ჩათი გაიხსნება ფერმერის მიერ შეკვეთის დადასტურების შემდეგ',
+              style: GoogleFonts.notoSansGeorgian(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF9A3412),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -407,12 +453,8 @@ class _OrderChatScreenState extends ConsumerState<OrderChatScreen> {
 
   Widget _buildQuickReplies(bool isFarmer) {
     final replies = isFarmer
-        ? (widget.order.status == OrderStatus.pending
-            ? ['შეკვეთა მიღებულია', 'დღესვე გამოგიგზავნით', 'მისამართს ვაზუსტებ', 'გამარჯობა!']
-            : ['გზაში ვარ', '10 წუთში მოვალ', 'ადგილზე ვარ', 'შლაგბაუმთან ვდგავარ'])
-        : (widget.order.status == OrderStatus.pending
-            ? ['როდის შეძლებთ გამოგზავნას?', 'მისამართი დავაზუსტე', 'გელოდებით', 'მადლობა!']
-            : ['ადგილზე ვარ', 'სადარბაზოს კოდია', 'ჭიშკართან გელოდებით', 'მადლობა!']);
+        ? ['გზაში ვარ', '10 წუთში მოვალ', 'ადგილზე ვარ', 'შლაგბაუმთან ვდგავარ']
+        : ['ადგილზე ვარ', 'სადარბაზოს კოდია', 'ჭიშკართან გელოდებით', 'მადლობა!'];
 
     return Container(
       height: 38,

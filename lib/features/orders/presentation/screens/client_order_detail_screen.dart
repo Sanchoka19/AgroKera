@@ -880,13 +880,18 @@ class _ClientOrderDetailScreenState
                 ],
               );
               if (reason != null && mounted) {
-                ref
+                final error = await ref
                     .read(farmerOrdersProvider.notifier)
                     .cancelOrder(order.id, reason: reason);
-                AppToast.info(
-                  context,
-                  'შეკვეთა #${order.id} გაუქმებულია ($reason)',
-                );
+                if (!mounted) return;
+                if (error != null) {
+                  AppToast.error(context, error);
+                } else {
+                  AppToast.info(
+                    context,
+                    'შეკვეთა #${order.id} გაუქმებულია ($reason)',
+                  );
+                }
               }
             },
             style: TextButton.styleFrom(

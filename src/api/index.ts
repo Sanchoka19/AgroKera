@@ -53,6 +53,19 @@ export default {
       }
 
       // ==========================================
+      // INTERNAL CRON — remind stale IN_PROGRESS orders
+      // ==========================================
+      if (method === "POST" && path === "/api/cron/remind-stale-orders") {
+        const secret = request.headers.get("x-cron-secret");
+        const expected = process.env.CRON_SECRET;
+        if (!expected || secret !== expected) {
+          return errorResponse("Unauthorized", 401);
+        }
+        const result = await remindStaleOrders();
+        return jsonResponse(result);
+      }
+
+      // ==========================================
       // 1.5 CLOUDFLARE R2 IMAGE UPLOAD & SERVE
       // ==========================================
       if ((method === "GET" || method === "HEAD") && path.startsWith("/api/assets/")) {
@@ -651,7 +664,7 @@ export default {
             f.coverUrl ||
             "https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=1000&auto=format&fit=crop&q=80",
           about: f.about || "",
-          phone: f.user.phoneNumber || "+995 599 11 22 33",
+          phone: "", // phone numbers are never exposed publicly
         }));
 
         return jsonResponse(formatted);
@@ -981,15 +994,29 @@ export default {
           orderBy: { createdAt: "desc" },
         });
 
+        const farmerIds = [
+          ...new Set(orders.map((o) => o.farmerId).filter((x): x is string => !!x)),
+        ];
+        const farmerProfiles = farmerIds.length
+          ? await prisma.farmerProfile.findMany({
+              where: { id: { in: farmerIds } },
+              select: { id: true, farmName: true, avatarUrl: true },
+            })
+          : [];
+        const farmerById = new Map(farmerProfiles.map((f) => [f.id, f]));
+
         const formatted = orders.map((o) => ({
           id: o.id,
           farmerId: o.farmerId,
+          farmerName: o.farmerId ? farmerById.get(o.farmerId)?.farmName ?? null : null,
+          farmerAvatarUrl: o.farmerId ? farmerById.get(o.farmerId)?.avatarUrl ?? null : null,
           clientId: o.clientId,
           createdAt: o.createdAt.toISOString(),
           status: o.status,
           customerName: o.client.fullName,
           contactPerson: o.contactPerson || o.client.fullName,
-          contactPhone: o.contactPhone || o.client.phoneNumber || "+995 599 12 34 56",
+          // Phone numbers are never shared between client and farmer
+          contactPhone: null,
           hasVat: o.hasVat,
           totalAmount: o.totalAmount,
           fulfillmentType: o.fulfillmentType,
@@ -1152,10 +1179,14 @@ export default {
               include: { user: true },
             });
             if (farmerProfile?.userId) {
+              const productSummary =
+                createdOrder.items.length === 1
+                  ? createdOrder.items[0].product.title
+                  : `${createdOrder.items[0].product.title} +${createdOrder.items.length - 1} სხვა`;
               await createAndSendNotification({
                 userId: farmerProfile.userId,
-                title: "ახალი შეკვეთა მიღებულია! 📦",
-                body: `${createdOrder.contactPerson || "მომხმარებელმა"} გააფორმა შეკვეთა #${createdOrder.id.slice(-5)} (₾${createdOrder.totalAmount}).`,
+                title: "ახალი შეკვეთა მიღებულია!",
+                body: `${createdOrder.contactPerson || "მომხმარებელი"}: ${productSummary} — ₾${createdOrder.totalAmount}. დაადასტურეთ რაც შეიძლება მალე.`,
                 orderId: createdOrder.id,
                 category: "orders",
                 data: {
@@ -1168,7 +1199,6 @@ export default {
             console.error("[FCM Order Error]:", pushErr);
           }
         })();
-
         return jsonResponse(
           {
             id: createdOrder.id,
@@ -1178,10 +1208,7 @@ export default {
             status: createdOrder.status,
             customerName: createdOrder.contactPerson || createdOrder.client.fullName,
             contactPerson: createdOrder.contactPerson || createdOrder.client.fullName,
-            contactPhone:
-              createdOrder.contactPhone ||
-              createdOrder.client.phoneNumber ||
-              "+995 599 12 34 56",
+            contactPhone: null,
             hasVat: createdOrder.hasVat,
             totalAmount: createdOrder.totalAmount,
             fulfillmentType: createdOrder.fulfillmentType,
@@ -1215,7 +1242,64 @@ export default {
           status: OrderStatus;
           cancellationReason?: string;
           shipmentStatus?: ShipmentStatus;
+          requesterId?: string;       // userId of the caller (client or farmer user)
+          requesterFarmerId?: string; // farmerId if caller is a farmer
         };
+
+        // ── Cancellation permission check ──────────────────────────────────
+        if (body.status === OrderStatus.CANCELLED) {
+          const orderToCheck = await prisma.order.findUnique({
+            where: { id: orderId },
+            select: {
+              clientId: true,
+              farmerId: true,
+              status: true,
+              cancellationDeadline: true,
+            },
+          });
+
+          if (!orderToCheck) {
+            return errorResponse("Order not found", 404);
+          }
+
+          const isAlreadyCancelled = orderToCheck.status === OrderStatus.CANCELLED;
+          if (isAlreadyCancelled) {
+            return errorResponse("Order is already cancelled", 409);
+          }
+
+          const isClient = body.requesterId === orderToCheck.clientId;
+          const isFarmer =
+            body.requesterFarmerId &&
+            body.requesterFarmerId === orderToCheck.farmerId;
+
+          if (!isClient && !isFarmer) {
+            // If neither matches (e.g. requester fields missing), still allow
+            // but log the anomaly — conservative approach during migration
+            console.warn(`[Cancel] requesterId=${body.requesterId} farmerId=${body.requesterFarmerId} orderId=${orderId} — no match, allowing`);
+          }
+
+          if (isClient && !isFarmer) {
+            // Client cancellation rules:
+            //  • PENDING → always allowed
+            //  • IN_PROGRESS → only within the 30-min window
+            if (orderToCheck.status === OrderStatus.IN_PROGRESS) {
+              const deadline = orderToCheck.cancellationDeadline;
+              if (!deadline || new Date() > deadline) {
+                return errorResponse(
+                  "გაუქმების ვადა გავიდა. შეკვეთა IN_PROGRESS სტატუსშია — პირდაპირ გაუქმება ვეღარ შეიძლება.",
+                  403
+                );
+              }
+            } else if (orderToCheck.status !== OrderStatus.PENDING) {
+              return errorResponse(
+                "კლიენტს შეუძლია გაუქმება მხოლოდ PENDING ან IN_PROGRESS (30 წთ-ის განმავლობაში) სტატუსებში.",
+                403
+              );
+            }
+          }
+          // Farmer can cancel any active (non-completed) order — no extra check needed
+        }
+        // ──────────────────────────────────────────────────────────────────
 
         const mappedShipmentStatus =
           body.shipmentStatus ??
@@ -1293,17 +1377,35 @@ export default {
         // Send and persist Push Notification to Client about Order Status Change
         (async () => {
           try {
-            const statusMap: Record<string, string> = {
-              IN_PROGRESS: "მზადდება / მიღებულია",
-              COMPLETED: "ჩაბარებულია",
-              CANCELLED: "გაუქმებულია",
-              PENDING: "მოლოდინშია",
+            // Skip PENDING — that's the initial state; client gets no spurious ping
+            if (updated.status === "PENDING") return;
+
+            const notifications: Record<string, { title: string; body: string }> = {
+              IN_PROGRESS: {
+                title: "შეკვეთა დადასტურდა!",
+                body: `ფერმერი შეკვეთის #${updated.id.slice(-5)} მომზადებას იწყებს. ჩათი ახლა ხელმისაწვდომია.`,
+              },
+              CONFIRMED: {
+                title: "შეკვეთა დადასტურდა!",
+                body: `ფერმერი შეკვეთის #${updated.id.slice(-5)} მომზადებას იწყებს. ჩათი ახლა ხელმისაწვდომია.`,
+              },
+              COMPLETED: {
+                title: "შეკვეთა ჩაბარდა!",
+                body: `შეკვეთა #${updated.id.slice(-5)} წარმატებით დასრულდა. გმადლობთ AgroKera-ს გამოყენებისთვის!`,
+              },
+              CANCELLED: {
+                title: "შეკვეთა გაუქმდა",
+                body: `სამწუხაროდ, შეკვეთა #${updated.id.slice(-5)} გაუქმდა.${updated.cancellationReason ? " მიზეზი: " + updated.cancellationReason : ""}`,
+              },
             };
-            const statusText = statusMap[updated.status] || updated.status;
+
+            const notif = notifications[updated.status];
+            if (!notif) return; // unknown status — skip
+
             await createAndSendNotification({
               userId: updated.clientId,
-              title: "შეკვეთის სტატუსი განახლდა! 🚚",
-              body: `თქვენი შეკვეთის #${updated.id.slice(-5)} სტატუსია: ${statusText}`,
+              title: notif.title,
+              body: notif.body,
               orderId: updated.id,
               category: "orders",
               data: {
@@ -1323,10 +1425,7 @@ export default {
           status: updated.status,
           customerName: updated.contactPerson || updated.client.fullName,
           contactPerson: updated.contactPerson || updated.client.fullName,
-          contactPhone:
-            updated.contactPhone ||
-            updated.client.phoneNumber ||
-            "+995 599 12 34 56",
+          contactPhone: null,
           hasVat: updated.hasVat,
           totalAmount: updated.totalAmount,
           fulfillmentType: updated.fulfillmentType,
@@ -1408,10 +1507,30 @@ export default {
           createdAt?: string;
         };
 
-        const cleanText = (body.text || "").trim();
-        if (!cleanText) {
+        const rawText = (body.text || "").trim();
+        if (!rawText) {
           return errorResponse("Message text cannot be empty", 400);
         }
+
+        // Chat is open only after the farmer confirmed the order and
+        // closes as soon as the order is completed or cancelled.
+        const chatOrder = await prisma.order.findUnique({
+          where: { id: orderId },
+          select: { status: true },
+        });
+        if (!chatOrder) {
+          return errorResponse("Order not found", 404);
+        }
+        if (!body.isSystem && chatOrder.status !== "IN_PROGRESS" && chatOrder.status !== "CONFIRMED") {
+          const reason =
+            chatOrder.status === "PENDING"
+              ? "ჩათი გაიხსნება ფერმერის მიერ შეკვეთის დადასტურების შემდეგ"
+              : "შეკვეთა დასრულებულია • ჩათი დახურულია";
+          return errorResponse(reason, 403);
+        }
+
+        // Do not allow sharing phone numbers through chat
+        const cleanText = maskPhoneNumbers(rawText);
 
         const msgId = body.id || `msg_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
         const message = await prisma.orderMessage.upsert({
@@ -1436,20 +1555,23 @@ export default {
           try {
             const order = await prisma.order.findUnique({
               where: { id: orderId },
-              include: {
-                client: true,
-                farmer: { include: { user: true } },
-              },
+              select: { clientId: true, farmerId: true },
             });
             if (!order) return;
+            const farmerProfile = order.farmerId
+              ? await prisma.farmerProfile.findUnique({
+                  where: { id: order.farmerId },
+                  select: { userId: true },
+                })
+              : null;
             const isSenderFarmer = body.senderRole === "farmer";
             const targetUserId = isSenderFarmer
               ? order.clientId
-              : order.farmer?.userId;
+              : farmerProfile?.userId;
             if (targetUserId) {
               await createAndSendNotification({
                 userId: targetUserId,
-                title: `ახალი შეტყობინება (${body.senderName || "AgroKera"}) 💬`,
+                title: `ახალი შეტყობინება (${body.senderName || "AgroKera"})`,
                 body: cleanText,
                 orderId,
                 category: "orders",
@@ -1488,3 +1610,93 @@ export default {
   },
 };
 
+/**
+ * Replaces phone numbers in chat messages so that client and farmer
+ * cannot exchange numbers (e.g. "599 12 34 56", "+995599123456", "5-99-12-34-56").
+ */
+function maskPhoneNumbers(text: string): string {
+  return text.replace(/\+?\d(?:[\s\-().]*\d){8,}/g, "[ნომერი დამალულია]");
+}
+
+// ============================================================
+// CRON JOB: remind stale IN_PROGRESS orders
+// POST /api/cron/remind-stale-orders  (called by server.ts setInterval)
+// Header: x-cron-secret: <CRON_SECRET>
+//
+// Sends push to FARMER when order is IN_PROGRESS for > 2 h and not completed:
+//   "PIN კოდი ჯერ არ ჩაწერია — შეკვეთა ვერ დაიხურება"
+// Sends push to CLIENT when order is IN_PROGRESS for > 6 h:
+//   "გთხოვთ გადასცეთ PIN ფერმერს შეკვეთის დასასრულებლად"
+// ============================================================
+export async function remindStaleOrders(): Promise<{ reminded: number }> {
+  const now = new Date();
+  const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+  // All orders stuck in IN_PROGRESS
+  const staleOrders = await prisma.order.findMany({
+    where: { status: "IN_PROGRESS" },
+    select: {
+      id: true,
+      clientId: true,
+      farmerId: true,
+      updatedAt: true,
+      cancellationReason: true,
+    },
+  });
+
+  let reminded = 0;
+
+  for (const order of staleOrders) {
+    const ageMs = now.getTime() - order.updatedAt.getTime();
+    const ageHours = ageMs / (1000 * 60 * 60);
+    const shortId = order.id.slice(-5);
+
+    // Check if we already sent a reminder for this order in the last 24 h
+    const recentReminder = await prisma.notification.findFirst({
+      where: {
+        orderId: order.id,
+        title: { in: ["შეკვეთა ვერ დაიხურება!", "შეკვეთა ჯერ არ დასრულებულა"] },
+        createdAt: { gte: oneDayAgo },
+      },
+      select: { id: true },
+    });
+
+    // Already reminded today — skip entirely
+    if (recentReminder) continue;
+
+    // --- Remind farmer after 2 h ---
+    if (ageHours >= 2 && order.farmerId) {
+      const farmerProfile = await prisma.farmerProfile.findUnique({
+        where: { id: order.farmerId },
+        select: { userId: true },
+      });
+      if (farmerProfile?.userId) {
+        await createAndSendNotification({
+          userId: farmerProfile.userId,
+          title: "შეკვეთა ვერ დაიხურება!",
+          body: `შეკვეთა #${shortId} დიდი ხანია მიმდინარეა. PIN კოდი ჯერ არ ჩაწერია — სთხოვეთ კლიენტს.`,
+          orderId: order.id,
+          category: "orders",
+          data: { orderId: order.id, type: "order_stale_farmer" },
+        }).catch(() => {});
+        reminded++;
+      }
+    }
+
+    // --- Remind client after 6 h ---
+    if (ageHours >= 6) {
+      await createAndSendNotification({
+        userId: order.clientId,
+        title: "შეკვეთა ჯერ არ დასრულებულა",
+        body: `შეკვეთა #${shortId} ჯერ ღიაა. გთხოვთ გადასცეთ PIN კოდი ფერმერს პროდუქციის ჩაბარებისთანავე.`,
+        orderId: order.id,
+        category: "orders",
+        data: { orderId: order.id, type: "order_stale_client" },
+      }).catch(() => {});
+      reminded++;
+    }
+  }
+
+  console.log(`[Cron] remindStaleOrders: checked ${staleOrders.length}, reminded ${reminded}`);
+  return { reminded };
+}

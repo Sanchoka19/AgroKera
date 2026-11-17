@@ -334,14 +334,6 @@ class _ProductQuantitySectionState extends State<ProductQuantitySection> {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(
-                                LucideIcons.tag,
-                                size: 12,
-                                color: isBulkActive
-                                    ? Colors.white
-                                    : AppColors.primaryDark,
-                              ),
-                              const SizedBox(width: 4),
                               Text(
                                 'საბითუმო (${product.bulkDiscountMinQty!.toInt()} ${product.unit})',
                                 style: GoogleFonts.notoSansGeorgian(

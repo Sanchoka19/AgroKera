@@ -176,12 +176,6 @@ class FarmerRoleScreen extends ConsumerWidget {
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Icon(
-                                  LucideIcons.gem,
-                                  size: 13,
-                                  color: Colors.white,
-                                ),
-                                const SizedBox(width: 5),
                                 Text(
                                   'AgroKera Partner',
                                   style: GoogleFonts.notoSansGeorgian(

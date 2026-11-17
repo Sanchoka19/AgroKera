@@ -337,7 +337,7 @@ class ProductStep2Pricing extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       const Icon(
-                        LucideIcons.sparkles,
+                        LucideIcons.tag,
                         size: 14,
                         color: AppColors.primary,
                       ),
@@ -441,7 +441,7 @@ class ProductStep2Pricing extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       const Icon(
-                        LucideIcons.sparkles,
+                        LucideIcons.tag,
                         size: 14,
                         color: AppColors.primary,
                       ),

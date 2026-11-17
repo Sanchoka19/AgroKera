@@ -277,7 +277,7 @@ class CustomerRoleScreen extends ConsumerWidget {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Icon(
-                      LucideIcons.sparkles,
+                      LucideIcons.gem,
                       size: 16,
                       color: AppColors.primary,
                     ),
@@ -392,7 +392,7 @@ class CustomerRoleScreen extends ConsumerWidget {
                           label: 'ფერმერების მხარდაჭერა',
                         ),
                         _BenefitPill(
-                          icon: LucideIcons.sparkles,
+                          icon: LucideIcons.gem,
                           label: 'პრემიუმ ასორტიმენტი',
                         ),
                         _BenefitPill(

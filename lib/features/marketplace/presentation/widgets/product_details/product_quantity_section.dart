@@ -335,7 +335,7 @@ class _ProductQuantitySectionState extends State<ProductQuantitySection> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(
-                                LucideIcons.sparkles,
+                                LucideIcons.tag,
                                 size: 12,
                                 color: isBulkActive
                                     ? Colors.white

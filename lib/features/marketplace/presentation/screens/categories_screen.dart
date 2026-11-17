@@ -110,7 +110,7 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   const Icon(
-                                    LucideIcons.sparkles,
+                                    LucideIcons.leaf,
                                     size: 13,
                                     color: AppColors.primary,
                                   ),

@@ -177,7 +177,7 @@ class FarmerRoleScreen extends ConsumerWidget {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 const Icon(
-                                  LucideIcons.sparkles,
+                                  LucideIcons.gem,
                                   size: 13,
                                   color: Colors.white,
                                 ),

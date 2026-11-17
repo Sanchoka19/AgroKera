@@ -136,7 +136,7 @@ class OrderDetailsSheet extends ConsumerWidget {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            '${item.totalWeight.toStringAsFixed(1)}კგ',
+                            '${item.quantity} ${item.unit}',
                             style: AppTypography.caption.copyWith(
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
@@ -156,12 +156,12 @@ class OrderDetailsSheet extends ConsumerWidget {
           const Divider(color: Color(0xFFF3F4F6), height: 1),
           const SizedBox(height: 16),
 
-          // Total Weight Row
+          // Total Quantity Row
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'ჯამური წონა:',
+                'პროდუქტების რაოდენობა:',
                 style: AppTypography.bodyMedium.copyWith(
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
@@ -169,7 +169,7 @@ class OrderDetailsSheet extends ConsumerWidget {
                 ),
               ),
               Text(
-                '${totalWeight.toStringAsFixed(1)} კგ',
+                '${cartItems.fold(0, (sum, i) => sum + i.quantity)} ერთეული',
                 style: AppTypography.bodyMedium.copyWith(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,

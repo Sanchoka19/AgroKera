@@ -783,7 +783,7 @@ class _CartScreenState extends ConsumerState<CartScreen>
                                         ),
                                         const SizedBox(width: 4),
                                         Text(
-                                          '${item.totalWeight.toStringAsFixed(1)}კგ',
+                                          '${item.quantity} ${item.unit}',
                                           style: AppTypography.caption.copyWith(
                                             fontSize: 10,
                                             fontWeight: FontWeight.w600,
@@ -803,21 +803,21 @@ class _CartScreenState extends ConsumerState<CartScreen>
                             child: Divider(color: Color(0xFFF3F4F6), height: 16),
                           ),
 
-                          // Total Weight Row
+                          // Total Quantity Row
                           Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 3),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Text(
-                                  'ჯამური წონა:',
+                                  'პროდუქტების რაოდენობა:',
                                   style: AppTypography.bodyMedium.copyWith(
                                     fontSize: 15,
                                     color: AppColors.textPrimary,
                                   ),
                                 ),
                                 Text(
-                                  '${totalWeight.toStringAsFixed(1)} კგ',
+                                  '${cartItems.fold(0, (sum, i) => sum + i.quantity)} ერთეული',
                                   style: AppTypography.bodyMedium.copyWith(
                                     fontSize: 15,
                                     fontWeight: FontWeight.w700,

@@ -387,130 +387,79 @@ class _ClientOrderDetailScreenState
               ],
 
               // ==========================================
-              // 3. HANDOVER PIN CARD OR CASH INFO (Only when In Progress)
+              // 3. HANDOVER PIN CARD (Only when In Progress)
               // ==========================================
               if (order.status == OrderStatus.inProgress) ...[
-                if (order.isBankTransfer) ...[
-                  _buildCard(
-                    color: const Color(0xFFEFF6FF),
-                    borderColor: const Color(0xFFBFDBFE),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Row(
-                            children: [
-                              const Icon(
-                                LucideIcons.keyRound,
-                                size: 16,
-                                color: Color(0xFF2563EB),
-                              ),
-                              const SizedBox(width: 8),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'ჩაბარების PIN კოდი',
-                                    style: GoogleFonts.notoSansGeorgian(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w600,
-                                      color: const Color(0xFF64748B),
-                                    ),
+                _buildCard(
+                  color: const Color(0xFFEFF6FF),
+                  borderColor: const Color(0xFFBFDBFE),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Row(
+                          children: [
+                            const Icon(
+                              LucideIcons.keyRound,
+                              size: 16,
+                              color: Color(0xFF2563EB),
+                            ),
+                            const SizedBox(width: 8),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'ჩაბარების PIN კოდი',
+                                  style: GoogleFonts.notoSansGeorgian(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: const Color(0xFF64748B),
                                   ),
-                                  Text(
-                                    order.deliveryPin,
-                                    style: GoogleFonts.firaCode(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w900,
-                                      color: const Color(0xFF1E3A8A),
-                                      letterSpacing: 2,
-                                    ),
+                                ),
+                                Text(
+                                  order.deliveryPin,
+                                  style: GoogleFonts.firaCode(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w900,
+                                    color: const Color(0xFF1E3A8A),
+                                    letterSpacing: 2,
                                   ),
-                                ],
-                              ),
-                            ],
-                          ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
-                        InkWell(
-                          onTap: () {
-                            Clipboard.setData(
-                              ClipboardData(text: order.deliveryPin),
-                            );
-                            AppToast.success(context, 'PIN დაკოპირდა!');
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 5,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: const Color(0xFF93C5FD)),
-                            ),
-                            child: Text(
-                              'კოპირება',
-                              style: GoogleFonts.notoSansGeorgian(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                                color: const Color(0xFF2563EB),
-                              ),
-                            ),
+                      ),
+                      InkWell(
+                        onTap: () {
+                          Clipboard.setData(
+                            ClipboardData(text: order.deliveryPin),
+                          );
+                          AppToast.success(context, 'PIN დაკოპირდა!');
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 5,
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ] else ...[
-                  _buildCard(
-                    color: const Color(0xFFF0FDF4),
-                    borderColor: const Color(0xFFBBF7D0),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(7),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFDCFCE7),
+                            color: Colors.white,
                             borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: const Color(0xFF93C5FD)),
                           ),
-                          child: const Icon(
-                            LucideIcons.banknote,
-                            size: 18,
-                            color: Color(0xFF16A34A),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'ნაღდი ანგარიშსწორება',
-                                style: GoogleFonts.notoSansGeorgian(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w700,
-                                  color: const Color(0xFF166534),
-                                ),
-                              ),
-                              const SizedBox(height: 3),
-                              Text(
-                                order.isPickup
-                                    ? 'გთხოვთ, თანხა (₾${order.totalAmount.toStringAsFixed(2)}) გადასცეთ ფერმერს ადგილზე პროდუქტის გატანისას. PIN კოდი საჭირო არ არის.'
-                                    : 'გთხოვთ, თანხა (₾${order.totalAmount.toStringAsFixed(2)}) გადასცეთ ფერმერს/კურიერს შეკვეთის ჩაბარებისას. PIN კოდი საჭირო არ არის.',
-                                style: GoogleFonts.notoSansGeorgian(
-                                  fontSize: 11.5,
-                                  color: const Color(0xFF15803D),
-                                  height: 1.35,
-                                ),
-                              ),
-                            ],
+                          child: Text(
+                            'კოპირება',
+                            style: GoogleFonts.notoSansGeorgian(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: const Color(0xFF2563EB),
+                            ),
                           ),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
                 const SizedBox(height: 12),
               ],
 

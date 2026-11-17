@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:math';
-import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/auth/auth_state_provider.dart';
 import '../../../../core/network/api_client.dart';
@@ -8,7 +7,14 @@ import '../../../../core/storage/secure_storage_service.dart';
 import '../../../cart_checkout/data/models/cart_item_model.dart';
 import '../../../cart_checkout/presentation/providers/cart_provider.dart';
 import '../../../marketplace/presentation/providers/marketplace_provider.dart';
+import '../../data/orders_mock_data.dart';
+import '../../data/orders_repository.dart';
 import '../../domain/models/farmer_order_model.dart';
+
+final ordersRepositoryProvider = Provider<OrdersRepository>((ref) {
+  final api = ref.watch(apiClientProvider);
+  return OrdersRepository(api);
+});
 
 /// State of the farmer & client orders screen
 class FarmerOrdersState {
@@ -68,6 +74,8 @@ class FarmerOrdersState {
 class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
   final Set<String> _reportedPaymentOrderIds = {};
 
+  OrdersRepository get _repo => ref.read(ordersRepositoryProvider);
+
   @override
   FarmerOrdersState build() {
     unawaited(_loadReportedPayments());
@@ -82,7 +90,9 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
     unawaited(Future.microtask(refreshFromBackend));
 
     final auth = ref.read(authStateProvider);
-    final initialList = isFlutterTestEnv ? _testOrders : const <FarmerOrder>[];
+    final initialList = isFlutterTestEnv
+        ? OrdersMockData.testOrders
+        : const <FarmerOrder>[];
     final (initialIncoming, initialClient) =
         _initialPartition(initialList, auth);
 
@@ -98,8 +108,6 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
     AuthState auth,
   ) {
     if (auth.role == UserRole.farmer) {
-      // In Farmer mode:
-      // incomingOrders are orders received by this farm (where this user is the seller)
       final incoming = list.where((o) {
         if (auth.userId != null && o.clientId == auth.userId) return false;
         if (auth.farmerId != null && o.farmerId != null) {
@@ -108,7 +116,6 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
         return true;
       }).toList();
 
-      // clientOrders are purchases made by this farmer from other farmers (where this user is the client)
       final client = list.where((o) {
         if (auth.farmerId != null && o.farmerId == auth.farmerId) return false;
         if (auth.userId != null && o.clientId != null) {
@@ -119,10 +126,8 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
 
       return (incoming, client);
     } else if (auth.role == UserRole.customer) {
-      // Regular customer: no incoming orders; client purchases are in clientOrders
       return (const <FarmerOrder>[], list);
     } else {
-      // Guest or Test fallback: both receive sample list for isolated widget testing
       return (list, list);
     }
   }
@@ -133,7 +138,7 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
       ...state.orders,
       ...state.incomingOrders,
       ...state.clientOrders,
-      if (isFlutterTestEnv) ..._testOrders,
+      if (isFlutterTestEnv) ...OrdersMockData.testOrders,
     ]) {
       allKnown[o.id] = o;
     }
@@ -168,174 +173,20 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
     } catch (_) {}
   }
 
-  static List<FarmerOrder> get _testOrders {
-    final now = DateTime.now();
-    return [
-      FarmerOrder(
-        id: '12345',
-        createdAt: now.subtract(const Duration(hours: 4)),
-        status: OrderStatus.completed,
-        customerName: 'შპს "გემრიელი რესტორანი"',
-        contactPerson: 'საბა ევგენიძე',
-        contactPhone: '+995 599 12 34 56',
-        hasVat: true,
-        deliveryTimeWindow: 'ივლ 29, 10:00 - 13:00',
-        deliveryAddress: '32 ჭავჭავაძე, ბათუმი',
-        trackingNumber: 'AK-12345',
-        items: const [
-          FarmerOrderItem(
-            name: 'ორგანული პომიდორი',
-            quantityText: '5კგ',
-            price: 10.00,
-          ),
-          FarmerOrderItem(
-            name: 'ახალი კარტოფილი',
-            quantityText: '15კგ',
-            price: 15.00,
-          ),
-          FarmerOrderItem(
-            name: 'მანგო',
-            quantityText: '3კგ',
-            price: 25.00,
-          ),
-        ],
-      ),
-      FarmerOrder(
-        id: '12346',
-        createdAt: now.subtract(const Duration(minutes: 5)),
-        status: OrderStatus.inProgress,
-        customerName: 'შპს "მწვანე ბაღი"',
-        contactPerson: 'გიორგი მაისურაძე',
-        contactPhone: '+995 577 44 55 66',
-        hasVat: false,
-        deliveryTimeWindow: 'დღეს, 16:00 - 18:00',
-        deliveryAddress: 'რუსთაველის გამზ. 14, თბილისი',
-        cancellationDeadline: now.add(const Duration(minutes: 24, seconds: 59)),
-        trackingNumber: 'AK-12346',
-        items: const [
-          FarmerOrderItem(
-            name: 'ლობიო (წითელი)',
-            quantityText: '10კგ',
-            price: 45.00,
-          ),
-          FarmerOrderItem(
-            name: 'მწვანილი (ასორტი)',
-            quantityText: '2კგ',
-            price: 12.00,
-          ),
-        ],
-      ),
-      FarmerOrder(
-        id: '12347',
-        createdAt: now.subtract(const Duration(hours: 1, minutes: 15)),
-        status: OrderStatus.inProgress,
-        customerName: 'შპს "გემრიელი რესტორანი"',
-        contactPerson: 'საბა ევგენიძე',
-        contactPhone: '+995 599 12 34 56',
-        hasVat: true,
-        deliveryTimeWindow: 'ხვალ, 11:00 - 14:00',
-        deliveryAddress: 'ჭავჭავაძის გამზ. 32, ბათუმი',
-        cancellationDeadline: now.subtract(const Duration(minutes: 45)),
-        trackingNumber: 'AK-12347',
-        items: const [
-          FarmerOrderItem(
-            name: 'ორგანული პომიდორი',
-            quantityText: '5კგ',
-            price: 10.00,
-          ),
-          FarmerOrderItem(
-            name: 'ახალი კარტოფილი',
-            quantityText: '15კგ',
-            price: 15.00,
-          ),
-          FarmerOrderItem(
-            name: 'მანგო',
-            quantityText: '3კგ',
-            price: 25.00,
-          ),
-        ],
-      ),
-      FarmerOrder(
-        id: '12348',
-        createdAt: now.subtract(const Duration(days: 1)),
-        status: OrderStatus.cancelled,
-        customerName: 'შპს "გემრიელი რესტორანი"',
-        contactPerson: 'საბა ევგენიძე',
-        contactPhone: '+995 599 12 34 56',
-        cancellationReason: 'მარაგის არ არსებობის გამო',
-        hasVat: true,
-        trackingNumber: 'AK-12348',
-        items: const [
-          FarmerOrderItem(
-            name: 'ახალი კარტოფილი',
-            quantityText: '40კგ',
-            price: 40.00,
-          ),
-        ],
-      ),
-      FarmerOrder(
-        id: '12349',
-        createdAt: now.subtract(const Duration(minutes: 2)),
-        status: OrderStatus.pending,
-        customerName: 'შპს "ორგანული ბაზარი"',
-        contactPerson: 'ნინო დავითაშვილი',
-        contactPhone: '+995 591 99 88 77',
-        hasVat: false,
-        deliveryTimeWindow: 'დღეს, 18:00 - 20:00',
-        deliveryAddress: 'ვაჟა-ფშაველას გამზ. 45, თბილისი',
-        cancellationDeadline: now.add(const Duration(minutes: 28)),
-        trackingNumber: 'AK-12349',
-        items: const [
-          FarmerOrderItem(
-            name: 'ნატურალური მაისის თაფლი',
-            quantityText: '3 ქილა (3კგ)',
-            price: 75.00,
-          ),
-        ],
-      ),
-    ];
-  }
-
   /// Fetches live orders from Neon PostgreSQL backend with strict Farmer/Customer isolation
   Future<void> refreshFromBackend() async {
     try {
       final auth = ref.read(authStateProvider);
-      final api = ref.read(apiClientProvider);
-
       List<FarmerOrder>? fetchedIncoming;
       List<FarmerOrder>? fetchedClient;
 
       if (auth.isAuthenticated) {
-        // 1. If farmer, fetch incoming orders received by this farm
         if (auth.role == UserRole.farmer && auth.farmerId != null) {
-          try {
-            final res = await api.get<List<dynamic>>(
-              '/api/orders',
-              queryParameters: {'farmerId': auth.farmerId},
-            );
-            if (res.data != null) {
-              fetchedIncoming = res.data!
-                  .whereType<Map<String, dynamic>>()
-                  .map(FarmerOrder.fromJson)
-                  .toList();
-            }
-          } catch (_) {}
+          fetchedIncoming =
+              await _repo.fetchOrdersForFarmer(auth.farmerId!);
         }
-
-        // 2. Fetch personal client purchases placed by this user (farmer or customer)
         if (auth.userId != null) {
-          try {
-            final res = await api.get<List<dynamic>>(
-              '/api/orders',
-              queryParameters: {'clientId': auth.userId},
-            );
-            if (res.data != null) {
-              fetchedClient = res.data!
-                  .whereType<Map<String, dynamic>>()
-                  .map(FarmerOrder.fromJson)
-                  .toList();
-            }
-          } catch (_) {}
+          fetchedClient = await _repo.fetchOrdersForClient(auth.userId!);
         }
       }
 
@@ -384,9 +235,7 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
         orders: combinedOrders,
       );
       checkPendingOrderExpirations();
-    } catch (_) {
-      // Gracefully keep local state when offline or in widget tests
-    }
+    } catch (_) {}
   }
 
   void setFilter(OrderStatus? filter) {
@@ -411,7 +260,7 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
       clientOrders: state.clientOrders.map(update).toList(),
     );
 
-    unawaited(_syncOrderStatus(id, status: OrderStatus.inProgress));
+    unawaited(_syncStatus(id, status: OrderStatus.inProgress));
   }
 
   /// Called by the customer after completing wire transfer in their mobile bank
@@ -466,11 +315,10 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
       clientOrders: state.clientOrders.map(update).toList(),
     );
 
-    unawaited(_syncOrderStatus(id, status: OrderStatus.completed));
+    unawaited(_syncStatus(id, status: OrderStatus.completed));
   }
 
-  /// Cancels an order optimistically; returns an error message if the server
-  /// rejects the request (e.g. 403 deadline passed), null on success.
+  /// Cancels an order optimistically; returns an error message if server rejects request
   Future<String?> cancelOrder(
     String id, {
     String reason = 'მარაგის არ არსებობის გამო',
@@ -488,7 +336,6 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
       );
     }
 
-    // Optimistic update
     FarmerOrder setCancelled(FarmerOrder o) {
       if (o.id == id) {
         return o.copyWith(
@@ -505,15 +352,13 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
       clientOrders: state.clientOrders.map(setCancelled).toList(),
     );
 
-    // Sync with backend
-    final error = await _syncOrderStatus(
+    final error = await _syncStatus(
       id,
       status: OrderStatus.cancelled,
       reason: reason,
     );
 
     if (error != null) {
-      // Rollback optimistic state
       FarmerOrder restore(FarmerOrder o) => o.id == id ? targetOrder : o;
       state = state.copyWith(
         orders: state.orders.map(restore).toList(),
@@ -525,7 +370,7 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
     return error;
   }
 
-  /// Places a new order from the Cart & Checkout screen and syncs with Neon DB
+  /// Places a new order from Cart & Checkout screen and syncs with Neon DB
   Future<FarmerOrder> createOrderFromCart({
     required List<CartItemModel> cartItems,
     required String deliveryAddress,
@@ -628,55 +473,45 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
         .deductStockForCartItems(cartItems);
 
     unawaited(() async {
-      try {
-        final api = ref.read(apiClientProvider);
-        final response = await api.post<Map<String, dynamic>>(
-          '/api/orders',
-          data: {
-            'clientId': auth.userId ?? 'user_client_1',
-            'clientEmail': ?auth.userEmail,
-            'contactPerson': effectiveName,
-            'contactPhone': effectivePhone,
-            'deliveryAddress': deliveryAddress,
-            'deliveryTimeWindow': deliveryTimeWindow,
-            'paymentMethod': paymentMethod,
-            'hasVat': resolvedHasVat,
-            'deliveryFee': deliveryFee,
-            'heavyFee': heavyFee,
-            'platformFee': platformFee,
-            'isPickup': isPickup,
-            'totalAmount': newOrder.totalAmount,
-            'items': cartItems
-                .map(
-                  (ci) => {
-                    'productId': ci.id,
-                    'quantity': ci.quantity,
-                    'pricePerUnit': ci.pricePerUnit,
-                  },
-                )
-                .toList(),
-          },
+      final serverOrder = await _repo.createOrder({
+        'clientId': auth.userId ?? 'user_client_1',
+        'clientEmail': ?auth.userEmail,
+        'contactPerson': effectiveName,
+        'contactPhone': effectivePhone,
+        'deliveryAddress': deliveryAddress,
+        'deliveryTimeWindow': deliveryTimeWindow,
+        'paymentMethod': paymentMethod,
+        'hasVat': resolvedHasVat,
+        'deliveryFee': deliveryFee,
+        'heavyFee': heavyFee,
+        'platformFee': platformFee,
+        'isPickup': isPickup,
+        'totalAmount': newOrder.totalAmount,
+        'items': cartItems
+            .map(
+              (ci) => {
+                'productId': ci.id,
+                'quantity': ci.quantity,
+                'pricePerUnit': ci.pricePerUnit,
+              },
+            )
+            .toList(),
+      });
+      if (serverOrder != null) {
+        FarmerOrder replace(FarmerOrder o) =>
+            o.id == generatedId ? serverOrder : o;
+        state = state.copyWith(
+          orders: state.orders.map(replace).toList(),
+          clientOrders: state.clientOrders.map(replace).toList(),
+          incomingOrders: state.incomingOrders.map(replace).toList(),
         );
-        if (response.data != null) {
-          final serverOrder = FarmerOrder.fromJson(response.data!);
-          FarmerOrder replace(FarmerOrder o) =>
-              o.id == generatedId ? serverOrder : o;
-          state = state.copyWith(
-            orders: state.orders.map(replace).toList(),
-            clientOrders: state.clientOrders.map(replace).toList(),
-            incomingOrders: state.incomingOrders.map(replace).toList(),
-          );
-        }
-      } catch (_) {
-        // Offline resilient fallback
       }
     }());
 
     return newOrder;
   }
 
-  /// Automatically cancels and expires pending orders whose review window has elapsed
-  /// without farmer confirmation, restoring reserved stock to inventory with zero refund friction.
+  /// Automatically cancels pending orders whose review window has elapsed
   void checkPendingOrderExpirations() {
     final now = DateTime.now();
     bool hasChanges = false;
@@ -685,14 +520,13 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
           o.cancellationDeadline != null &&
           now.isAfter(o.cancellationDeadline!)) {
         hasChanges = true;
-        // Restore inventory stock because farmer didn't confirm
         unawaited(
           ref
               .read(marketplaceProvider.notifier)
               .restoreStockForOrderItems(o.items),
         );
         unawaited(
-          _syncOrderStatus(
+          _syncStatus(
             o.id,
             status: OrderStatus.cancelled,
             reason:
@@ -721,40 +555,25 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
     }
   }
 
-  /// Backward-compatible alias for expiring overdue pending orders
   void checkAutoConfirmation() => checkPendingOrderExpirations();
 
-  /// Returns an error message string on failure, null on success.
-  Future<String?> _syncOrderStatus(
+  Future<String?> _syncStatus(
     String id, {
     required OrderStatus status,
     String? reason,
   }) async {
-    try {
-      final api = ref.read(apiClientProvider);
-      final auth = ref.read(authStateProvider);
-      await api.patch(
-        '/api/orders/$id/status',
-        data: {
-          'status': status.apiValue,
-          'cancellationReason': ?reason,
-          // Let backend know who is making the request so it can enforce rules
-          'requesterId': auth.userId,
-          'requesterFarmerId': auth.farmerId,
-        },
-      );
-      if (status == OrderStatus.cancelled) {
-        await ref.read(marketplaceProvider.notifier).refreshFromBackend();
-      }
-      return null;
-    } on DioException catch (e) {
-      final msg = e.response?.data is Map
-          ? (e.response!.data['error'] as String?)
-          : null;
-      return msg ?? 'სერვერის შეცდომა. სცადეთ თავიდან.';
-    } catch (_) {
-      return null; // silent for non-403 errors
+    final auth = ref.read(authStateProvider);
+    final error = await _repo.syncOrderStatus(
+      id,
+      status: status,
+      reason: reason,
+      requesterId: auth.userId,
+      requesterFarmerId: auth.farmerId,
+    );
+    if (error == null && status == OrderStatus.cancelled) {
+      await ref.read(marketplaceProvider.notifier).refreshFromBackend();
     }
+    return error;
   }
 }
 

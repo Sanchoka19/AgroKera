@@ -73,3 +73,4 @@ class CheckoutDeliverySlotCard extends StatelessWidget {
     );
   }
 }
+

@@ -1,22 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import '../../../../core/auth/auth_state_provider.dart';
-import '../../../../core/constants/app_categories.dart';
-import '../../../../core/theme/app_colors.dart';
-import '../../../../core/widgets/app_confirmation_bottom_sheet.dart';
-import '../../../../core/widgets/app_toast.dart';
-import '../../../../core/widgets/primary_button.dart';
+import 'package:agrokera/core/auth/auth_state_provider.dart';
+import 'package:agrokera/core/constants/app_categories.dart';
+import 'package:agrokera/core/theme/app_colors.dart';
+import 'package:agrokera/core/widgets/app_confirmation_bottom_sheet.dart';
+import 'package:agrokera/core/widgets/app_toast.dart';
 import '../../../marketplace/data/models/product_model.dart';
 import '../providers/farmer_inventory_provider.dart';
 import '../providers/product_form_validator.dart';
 import '../widgets/product_steps/product_photo_entry.dart';
+import '../widgets/product_steps/product_photo_picker_sheet.dart';
 import '../widgets/product_steps/product_step1_identity.dart';
 import '../widgets/product_steps/product_step2_pricing.dart';
 import '../widgets/product_steps/product_step3_review.dart';
+import '../widgets/product_steps/product_wizard_bottom_bar.dart';
+import '../widgets/product_steps/product_wizard_progress_bar.dart';
 
 /// Clean 3-Step Wizard Screen Orchestrator for Adding/Editing a Product.
 /// Steps are cleanly decomposed into separate presentation widgets:
@@ -179,107 +180,12 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
   // --- Photo Picker Handling ---
 
   Future<void> _openPhotoSourceSheet() async {
-    if (_remainingPhotoSlots <= 0) {
-      AppToast.info(
-        context,
-        'მაქსიმუმ ${FarmerInventoryNotifier.maxProductPhotos} ფოტოს დამატებაა შესაძლებელი',
-      );
-      return;
-    }
-
-    await showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'პროდუქტის ფოტოს დამატება (${_selectedPhotos.length}/${FarmerInventoryNotifier.maxProductPhotos})',
-                style: GoogleFonts.notoSansGeorgian(
-                  fontSize: 16.5,
-                  fontWeight: FontWeight.w800,
-                  color: const Color(0xFF0F172A),
-                ),
-              ),
-              const SizedBox(height: 12),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFE8F7EE),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(
-                    LucideIcons.camera,
-                    color: AppColors.primary,
-                    size: 20,
-                  ),
-                ),
-                title: Text(
-                  'კამერით გადაღება',
-                  style: GoogleFonts.notoSansGeorgian(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                subtitle: Text(
-                  'გახსნის კამერას ფოტოს გადასაღებად',
-                  style: GoogleFonts.notoSansGeorgian(
-                    fontSize: 12,
-                    color: const Color(0xFF64748B),
-                  ),
-                ),
-                onTap: () async {
-                  Navigator.pop(ctx);
-                  await _handlePickCamera();
-                },
-              ),
-              const Divider(height: 12, color: Color(0xFFF1F5F9)),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFE8F7EE),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(
-                    LucideIcons.image,
-                    color: AppColors.primary,
-                    size: 20,
-                  ),
-                ),
-                title: Text(
-                  'გალერეიდან არჩევა',
-                  style: GoogleFonts.notoSansGeorgian(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                subtitle: Text(
-                  'აირჩიეთ 1 ან რამდენიმე ფოტო (დარჩენილია $_remainingPhotoSlots ადგილი)',
-                  style: GoogleFonts.notoSansGeorgian(
-                    fontSize: 12,
-                    color: const Color(0xFF64748B),
-                  ),
-                ),
-                onTap: () async {
-                  Navigator.pop(ctx);
-                  await _handlePickGallery();
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
+    await ProductPhotoPickerSheet.show(
+      context,
+      currentPhotoCount: _selectedPhotos.length,
+      remainingPhotoSlots: _remainingPhotoSlots,
+      onPickCamera: _handlePickCamera,
+      onPickGallery: _handlePickGallery,
     );
   }
 
@@ -524,7 +430,7 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
           ),
           onPressed: _onBack,
         ),
-        title: _buildProgressBar(),
+        title: ProductWizardProgressBar(currentStep: _currentStep),
         centerTitle: true,
         actions: [
           IconButton(
@@ -541,7 +447,7 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
         child: Column(
           children: [
             Expanded(
-              // Anchored to Alignment.topCenter so there is NO awkward top white space!
+              // Anchored to Alignment.topCenter so there is NO awkward top white space
               child: AnimatedSwitcher(
                 duration: const Duration(milliseconds: 320),
                 switchInCurve: Curves.easeInOutCubic,
@@ -678,124 +584,15 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
                 ),
               ),
             ),
-            _buildBottomBar(),
+            ProductWizardBottomBar(
+              currentStep: _currentStep,
+              isExisting: widget.existing != null,
+              isSaving: _isSaving,
+              onBack: _onBack,
+              onNext: _onNext,
+            ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildProgressBar() {
-    return Row(
-      children: [
-        Expanded(
-          child: Row(
-            children: List.generate(3, (index) {
-              final isCompletedOrActive = index < _currentStep;
-              return Expanded(
-                child: Padding(
-                  padding: EdgeInsets.only(right: index < 2 ? 6.0 : 0.0),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 320),
-                    curve: Curves.easeInOutCubic,
-                    height: 5,
-                    decoration: BoxDecoration(
-                      color: isCompletedOrActive
-                          ? AppColors.primary
-                          : const Color(0xFFE2E8F0),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                  ),
-                ),
-              );
-            }),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
-          decoration: BoxDecoration(
-            color: const Color(0xFFF1F5F9),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 250),
-            child: Text(
-              '$_currentStep/3',
-              key: ValueKey<int>(_currentStep),
-              style: const TextStyle(
-                color: AppColors.primary,
-                fontSize: 12.5,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.2,
-                height: 1.1,
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildBottomBar() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: Color(0xFFF1F5F9), width: 1)),
-      ),
-      child: Row(
-        children: [
-          if (_currentStep > 1) ...[
-            InkWell(
-              onTap: _onBack,
-              borderRadius: BorderRadius.circular(12),
-              child: Container(
-                height: 52,
-                padding: const EdgeInsets.symmetric(horizontal: 18),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF8FAFC),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  'უკან',
-                  style: GoogleFonts.notoSansGeorgian(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: const Color(0xFF475569),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-          ],
-          Expanded(
-            child: PrimaryButton(
-              text: _currentStep == 1
-                  ? 'შემდეგი: ფასი და მარაგი'
-                  : _currentStep == 2
-                      ? 'შემდეგი: გადახედვა'
-                      : (widget.existing == null
-                          ? 'პროდუქტის გამოქვეყნება'
-                          : 'ცვლილებების შენახვა'),
-              icon: Icon(
-                _currentStep == 3
-                    ? (widget.existing == null
-                        ? LucideIcons.send
-                        : LucideIcons.check)
-                    : LucideIcons.arrowRight,
-                size: 18,
-                color: Colors.white,
-              ),
-              height: 52,
-              borderRadius: BorderRadius.circular(12),
-              isLoading: _isSaving,
-              onPressed: _isSaving ? null : _onNext,
-            ),
-          ),
-        ],
       ),
     );
   }

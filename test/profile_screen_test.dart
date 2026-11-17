@@ -6,6 +6,7 @@ import 'package:agrokera/core/auth/auth_state_provider.dart';
 import 'package:agrokera/features/marketplace/data/models/farmer_model.dart';
 import 'package:agrokera/features/marketplace/presentation/screens/farmer_profile_screen.dart';
 import 'package:agrokera/features/profile/presentation/screens/farmer_delivery_settings_screen.dart';
+import 'package:agrokera/features/profile/presentation/screens/farm_address_screen.dart';
 import 'package:agrokera/features/profile/presentation/screens/guest_profile_screen.dart';
 import 'package:agrokera/features/profile/presentation/screens/my_addresses_screen.dart';
 import 'package:agrokera/features/profile/domain/models/user_address_model.dart';
@@ -225,6 +226,16 @@ void main() {
     await tester.pump(const Duration(milliseconds: 200));
 
     expect(find.text('ჩემი მისამართები'), findsOneWidget);
+  });
+
+  testWidgets('FarmAddressScreen renders farm info card and save CTA', (WidgetTester tester) async {
+    await tester.pumpWidget(wrapWithScaffold(const FarmAddressScreen(farmerId: 'farmer_1')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+
+    expect(find.text('ფერმის მისამართი'), findsOneWidget);
+    expect(find.text('ფერმის მისამართის შენახვა'), findsOneWidget);
+    expect(find.text('თვითგატანის წერტილი (საჯარო)'), findsOneWidget);
   });
 }
 

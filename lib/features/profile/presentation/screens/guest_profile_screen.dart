@@ -22,7 +22,9 @@ import '../widgets/farmer_profile_hero.dart';
 import '../widgets/profile_row_item.dart';
 import '../widgets/profile_settings_card.dart';
 import '../providers/user_address_provider.dart';
+import 'farm_address_screen.dart';
 import 'my_addresses_screen.dart';
+import '../../../marketplace/presentation/providers/marketplace_provider.dart';
 import 'farmer_delivery_settings_screen.dart';
 import 'help_center_screen.dart';
 
@@ -117,13 +119,20 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
           ),
           const ProfileRowDivider(),
           ProfileRowItem(
-            icon: LucideIcons.mapPin,
-            title: 'ჩემი მისამართი',
-            subtitle: ref.watch(userAddressProvider).activeAddress,
+            icon: LucideIcons.tractor,
+            title: 'ფერმის მისამართი',
+            subtitle: () {
+              final farmers = ref.watch(marketplaceProvider).farmers;
+              final f = farmers.where((x) => x.id == authState.farmerId).firstOrNull;
+              final loc = f?.location.isNotEmpty == true ? f!.location : 'თვითგატანის წერტილი';
+              return 'საჯარო თვითგატანის წერტილი ($loc)';
+            }(),
             onTap: () {
               Navigator.of(context).push(
                 MaterialPageRoute(
-                  builder: (context) => const MyAddressesScreen(),
+                  builder: (context) => FarmAddressScreen(
+                    farmerId: authState.farmerId,
+                  ),
                 ),
               );
             },
@@ -201,13 +210,19 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
               }
             },
           ),
-          if (!isFarmer) ...[
-            const ProfileRowDivider(),
-            ProfileRowItem(
-              icon: LucideIcons.mapPin,
-              title: 'ჩემი მისამართი',
-              subtitle: ref.watch(userAddressProvider).activeAddress,
-              onTap: () {
+          const ProfileRowDivider(),
+          ProfileRowItem(
+            icon: LucideIcons.mapPin,
+            title: isFarmer ? 'ჩემი პირადი მისამართი' : 'ჩემი მისამართი',
+            subtitle: 'მიტანის მისამართი შეკვეთებისთვის (${ref.watch(userAddressProvider).activeAddress})',
+            onTap: () {
+              if (isFarmer) {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const MyAddressesScreen(),
+                  ),
+                );
+              } else {
                 requireAuth(
                   context,
                   ref: ref,
@@ -219,9 +234,9 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
                     );
                   },
                 );
-              },
-            ),
-          ],
+              }
+            },
+          ),
         ],
       ),
     );

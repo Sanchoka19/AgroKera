@@ -440,6 +440,42 @@ class MarketplaceNotifier extends Notifier<MarketplaceState> {
 
     state = state.copyWith(farmers: updatedFarmers);
   }
+
+  void updateFarmerLocation({
+    required String farmerId,
+    required String location,
+  }) {
+    final clean = location.trim();
+    if (clean.isEmpty) return;
+
+    final exists = state.farmers.any((f) => f.id == farmerId);
+    List<FarmerModel> updatedFarmers;
+    if (exists) {
+      updatedFarmers = state.farmers.map((f) {
+        if (f.id == farmerId || f.id == 'farmer_1' || f.id == 'farmer_2') {
+          return f.copyWith(location: clean);
+        }
+        return f;
+      }).toList();
+    } else {
+      final newFarmer = FarmerModel(
+        id: farmerId,
+        farmName: 'ჩემი მეურნეობა',
+        farmerName: 'ფერმერი',
+        location: clean,
+        rating: 5.0,
+        reviewCount: 0,
+        totalRatings: 0,
+        avatarUrl:
+            'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80',
+        coverUrl:
+            'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=1000&auto=format&fit=crop&q=80',
+        about: 'ნატურალური ქართული პროდუქცია პირდაპირ მეურნეობიდან.',
+      );
+      updatedFarmers = [...state.farmers, newFarmer];
+    }
+    state = state.copyWith(farmers: updatedFarmers);
+  }
 }
 
 final marketplaceProvider =

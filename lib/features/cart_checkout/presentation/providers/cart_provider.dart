@@ -352,6 +352,19 @@ class CartNotifier extends Notifier<List<CartItemModel>> {
     _persistCart();
   }
 
+  /// Restores a previously removed cart item (e.g. from an Undo action).
+  void restoreItem(CartItemModel item, [int? atIndex]) {
+    final list = List<CartItemModel>.from(state);
+    if (list.any((it) => it.id == item.id)) return;
+    if (atIndex != null && atIndex >= 0 && atIndex <= list.length) {
+      list.insert(atIndex, item);
+    } else {
+      list.add(item);
+    }
+    state = list;
+    _persistCart();
+  }
+
   void updateQuantity(String id, int quantity) {
     if (quantity <= 0) {
       removeItem(id);

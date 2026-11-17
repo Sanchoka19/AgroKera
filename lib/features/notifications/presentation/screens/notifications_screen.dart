@@ -460,11 +460,54 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
           color: const Color(0xFFEF4444),
           borderRadius: BorderRadius.circular(16),
         ),
-        child: const Icon(LucideIcons.trash2, color: Colors.white, size: 22),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(LucideIcons.trash2, color: Colors.white, size: 20),
+            const SizedBox(width: 8),
+            Text(
+              'წაშლა',
+              style: GoogleFonts.notoSansGeorgian(
+                color: Colors.white,
+                fontSize: 13.5,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
       ),
       onDismissed: (_) {
-        HapticFeedback.lightImpact();
-        ref.read(notificationsProvider.notifier).removeNotification(item.id);
+        HapticFeedback.mediumImpact();
+        final removedNotif = item;
+        ref.read(notificationsProvider.notifier).removeNotification(removedNotif.id);
+
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'შეტყობინება წაიშალა',
+              style: GoogleFonts.notoSansGeorgian(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+              ),
+            ),
+            backgroundColor: const Color(0xFF1E293B),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            duration: const Duration(seconds: 4),
+            action: SnackBarAction(
+              label: 'გაუქმება',
+              textColor: const Color(0xFF34D399),
+              onPressed: () {
+                HapticFeedback.lightImpact();
+                ref.read(notificationsProvider.notifier).addNotification(removedNotif);
+              },
+            ),
+          ),
+        );
       },
       child: GestureDetector(
         onTap: () {

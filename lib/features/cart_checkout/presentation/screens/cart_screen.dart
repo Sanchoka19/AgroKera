@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -13,6 +14,7 @@ import '../../../../core/widgets/app_toast.dart';
 import '../../../../core/widgets/auth_required_bottom_sheet.dart';
 import '../../../marketplace/presentation/providers/marketplace_provider.dart';
 import '../../../navigation/presentation/screens/main_nav_screen.dart';
+import '../../data/models/cart_item_model.dart';
 import '../providers/cart_provider.dart';
 import 'checkout_screen.dart';
 
@@ -28,6 +30,39 @@ class _CartScreenState extends ConsumerState<CartScreen>
   late final AnimationController _animController;
   late final Animation<double> _expandAnimation;
   bool _isDetailsExpanded = false;
+  static bool _hasSeenCartSwipeHint = false;
+
+  void _showRemovedSnackBar(CartItemModel item, int index) {
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          '„${item.title}“ წაიშალა კალათიდან',
+          style: GoogleFonts.notoSansGeorgian(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        backgroundColor: const Color(0xFF1E293B),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        duration: const Duration(seconds: 4),
+        action: SnackBarAction(
+          label: 'გაუქმება',
+          textColor: const Color(0xFF34D399),
+          onPressed: () {
+            HapticFeedback.lightImpact();
+            ref.read(cartProvider.notifier).restoreItem(item, index);
+          },
+        ),
+      ),
+    );
+  }
 
   @override
   void initState() {
@@ -275,7 +310,7 @@ class _CartScreenState extends ConsumerState<CartScreen>
                         final isOwn = ref
                             .watch(authStateProvider)
                             .isOwnerOfCartItem(item);
-                        return Container(
+                        final itemCard = Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
                             color: Colors.white,
@@ -336,7 +371,11 @@ class _CartScreenState extends ConsumerState<CartScreen>
                                         ),
                                         GestureDetector(
                                           onTap: () {
-                                            ref.read(cartProvider.notifier).removeItem(item.id);
+                                            HapticFeedback.lightImpact();
+                                            final removedItem = item;
+                                            final removedIndex = index;
+                                            ref.read(cartProvider.notifier).removeItem(removedItem.id);
+                                            _showRemovedSnackBar(removedItem, removedIndex);
                                           },
                                           child: const Padding(
                                             padding: EdgeInsets.all(2.0),
@@ -521,6 +560,55 @@ class _CartScreenState extends ConsumerState<CartScreen>
                               ),
                             ],
                           ),
+                        );
+
+                        return Dismissible(
+                          key: ValueKey(item.id),
+                          direction: DismissDirection.endToStart,
+                          background: Container(
+                            alignment: Alignment.centerRight,
+                            padding: const EdgeInsets.only(right: 20),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFEF4444),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  LucideIcons.trash2,
+                                  color: Colors.white,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'წაშლა',
+                                  style: GoogleFonts.notoSansGeorgian(
+                                    color: Colors.white,
+                                    fontSize: 13.5,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          onDismissed: (_) {
+                            HapticFeedback.mediumImpact();
+                            final removedItem = item;
+                            final removedIndex = index;
+                            ref
+                                .read(cartProvider.notifier)
+                                .removeItem(removedItem.id);
+                            _showRemovedSnackBar(removedItem, removedIndex);
+                          },
+                          child: (index == 0 && !_hasSeenCartSwipeHint)
+                              ? _SwipeToDismissHint(
+                                  onHintCompleted: () {
+                                    _hasSeenCartSwipeHint = true;
+                                  },
+                                  child: itemCard,
+                                )
+                              : itemCard,
                         );
                       },
                     ),
@@ -990,6 +1078,75 @@ class _CartScreenState extends ConsumerState<CartScreen>
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Subtle "Peek" hint animation that slides the first item slightly left
+/// to reveal the delete action, then bounces back, teaching the user the swipe gesture.
+class _SwipeToDismissHint extends StatefulWidget {
+  final Widget child;
+  final VoidCallback? onHintCompleted;
+
+  const _SwipeToDismissHint({
+    required this.child,
+    this.onHintCompleted,
+  });
+
+  @override
+  State<_SwipeToDismissHint> createState() => _SwipeToDismissHintState();
+}
+
+class _SwipeToDismissHintState extends State<_SwipeToDismissHint>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<Offset> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 650),
+    );
+
+    _animation = TweenSequence<Offset>([
+      TweenSequenceItem(
+        tween: Tween<Offset>(
+          begin: Offset.zero,
+          end: const Offset(-0.09, 0.0),
+        ).chain(CurveTween(curve: Curves.easeOutCubic)),
+        weight: 40,
+      ),
+      TweenSequenceItem(
+        tween: Tween<Offset>(
+          begin: const Offset(-0.09, 0.0),
+          end: Offset.zero,
+        ).chain(CurveTween(curve: Curves.easeInCubic)),
+        weight: 60,
+      ),
+    ]).animate(_controller);
+
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (mounted) {
+        _controller.forward().then((_) {
+          widget.onHintCompleted?.call();
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SlideTransition(
+      position: _animation,
+      child: widget.child,
     );
   }
 }

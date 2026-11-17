@@ -389,41 +389,66 @@ class _ClientOrdersScreenState extends ConsumerState<ClientOrdersScreen> {
               ),
             ),
 
-            // Contextual chip (PIN or remaining time or cancelled reason)
+            // Contextual chip (PIN, Cash, or remaining time or cancelled reason)
             if (order.status == OrderStatus.inProgress) ...[
               const SizedBox(height: 10),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEFF6FF),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: const Color(0xFFBFDBFE)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(LucideIcons.keyRound, size: 13, color: Color(0xFF2563EB)),
-                    const SizedBox(width: 6),
-                    Text(
-                      'ჩაბარების PIN: ',
-                      style: GoogleFonts.notoSansGeorgian(
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w600,
-                        color: const Color(0xFF1E40AF),
+              if (order.isBankTransfer)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEFF6FF),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xFFBFDBFE)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(LucideIcons.keyRound, size: 13, color: Color(0xFF2563EB)),
+                      const SizedBox(width: 6),
+                      Text(
+                        'ჩაბარების PIN: ',
+                        style: GoogleFonts.notoSansGeorgian(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF1E40AF),
+                        ),
                       ),
-                    ),
-                    Text(
-                      order.deliveryPin,
-                      style: GoogleFonts.firaCode(
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w800,
-                        color: const Color(0xFF1E3A8A),
-                        letterSpacing: 1.5,
+                      Text(
+                        order.deliveryPin,
+                        style: GoogleFonts.firaCode(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w800,
+                          color: const Color(0xFF1E3A8A),
+                          letterSpacing: 1.5,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
+                )
+              else
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF0FDF4),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xFFBBF7D0)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(LucideIcons.banknote, size: 13, color: Color(0xFF16A34A)),
+                      const SizedBox(width: 6),
+                      Text(
+                        'ნაღდი ფული: ₾${order.totalAmount.toStringAsFixed(2)}',
+                        style: GoogleFonts.notoSansGeorgian(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF166534),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
             ] else if (order.status == OrderStatus.pending &&
                 order.remainingCancellationTime.inMinutes > 0) ...[
               const SizedBox(height: 10),

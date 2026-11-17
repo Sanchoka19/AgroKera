@@ -305,22 +305,46 @@ class _OrderChatScreenState extends ConsumerState<OrderChatScreen> {
   }
 
   Widget _buildSecurityBanner(bool isFarmer) {
-    if (isFarmer) {
+    if (widget.order.isBankTransfer) {
+      if (isFarmer) {
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          color: const Color(0xFFEFF6FF),
+          child: Row(
+            children: [
+              const Icon(LucideIcons.shieldCheck, size: 16, color: Color(0xFF2563EB)),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'ჩაბარების 4-ნიშნა PIN კოდი გამოართვით მყიდველს პირისპირ, პროდუქციის გადაცემის შემდეგ.',
+                  style: GoogleFonts.notoSansGeorgian(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF1E40AF),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+
       return Container(
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        color: const Color(0xFFEFF6FF),
+        color: const Color(0xFFFEF3C7),
         child: Row(
           children: [
-            const Icon(LucideIcons.shieldCheck, size: 16, color: Color(0xFF2563EB)),
+            const Icon(LucideIcons.shieldAlert, size: 16, color: Color(0xFFD97706)),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                'ჩაბარების 4-ნიშნა PIN კოდი გამოართვით მყიდველს პირისპირ, პროდუქციის გადაცემის შემდეგ.',
+                'უსაფრთხოებისთვის: თქვენი ჩაბარების PIN კოდი (${widget.order.deliveryPin}) უთხარით ფერმერს მხოლოდ პროდუქტის შემოწმებისა და ჩაბარებისას. ნუ გაუგზავნით კოდს ჩათში წინასწარ!',
                 style: GoogleFonts.notoSansGeorgian(
                   fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: const Color(0xFF1E40AF),
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF92400E),
                 ),
               ),
             ),
@@ -329,21 +353,24 @@ class _OrderChatScreenState extends ConsumerState<OrderChatScreen> {
       );
     }
 
+    // Cash payment banner
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      color: const Color(0xFFFEF3C7),
+      color: const Color(0xFFF0FDF4),
       child: Row(
         children: [
-          const Icon(LucideIcons.shieldAlert, size: 16, color: Color(0xFFD97706)),
+          const Icon(LucideIcons.banknote, size: 16, color: Color(0xFF16A34A)),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              'უსაფრთხოებისთვის: თქვენი ჩაბარების PIN კოდი (${widget.order.deliveryPin}) უთხარით ფერმერს მხოლოდ პროდუქტის შემოწმებისა და ჩაბარებისას. ნუ გაუგზავნით კოდს ჩათში წინასწარ!',
+              isFarmer
+                  ? 'ნაღდი ანგარიშსწორება: თანხა (₾${widget.order.totalAmount.toStringAsFixed(2)}) ჩაიბარეთ პირისპირ პროდუქციის გადაცემისას.'
+                  : 'ნაღდი ანგარიშსწორება: თანხა (₾${widget.order.totalAmount.toStringAsFixed(2)}) გადაუხადეთ ფერმერს პირისპირ პროდუქციის ჩაბარებისას.',
               style: GoogleFonts.notoSansGeorgian(
                 fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: const Color(0xFF92400E),
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF166534),
               ),
             ),
           ),

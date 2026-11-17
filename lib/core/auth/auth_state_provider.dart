@@ -193,7 +193,7 @@ class AuthNotifier extends Notifier<AuthState> {
   }) {
     final normalizedEmail = email.trim().toLowerCase();
     if (role == UserRole.farmer) {
-      if (normalizedEmail.contains('lana')) {
+      if (normalizedEmail == 'lana@agrokera.ge') {
         return _ResolvedAccountIdentity(
           userId: 'user_farmer_1',
           farmerId: 'farmer_1',
@@ -206,7 +206,7 @@ class AuthNotifier extends Notifier<AuthState> {
               'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=1000&auto=format&fit=crop&q=80',
         );
       }
-      if (normalizedEmail.contains('giorgi')) {
+      if (normalizedEmail == 'giorgi@agrokera.ge') {
         return _ResolvedAccountIdentity(
           userId: 'user_farmer_2',
           farmerId: 'farmer_2',
@@ -219,7 +219,7 @@ class AuthNotifier extends Notifier<AuthState> {
               'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=1000&auto=format&fit=crop&q=80',
         );
       }
-      if (normalizedEmail.contains('davit')) {
+      if (normalizedEmail == 'davit@agrokera.ge') {
         return _ResolvedAccountIdentity(
           userId: 'user_farmer_3',
           farmerId: 'farmer_3',
@@ -257,7 +257,7 @@ class AuthNotifier extends Notifier<AuthState> {
       );
     }
 
-    if (normalizedEmail.contains('client@agrokera.ge')) {
+    if (normalizedEmail == 'client@agrokera.ge') {
       return _ResolvedAccountIdentity(
         userId: 'user_client_1',
         name: explicitName ?? 'შპს "გემრიელი რესტორანი"',

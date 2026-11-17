@@ -172,9 +172,9 @@ void main() {
     await tester.tap(find.text('ფერმის შესახებ'));
     await tester.pumpAndSettle();
 
-    // Check history, contact, and delivery info
+    // Check history, location, and delivery info
     expect(find.text('ფერმის ისტორია'), findsOneWidget);
-    expect(find.text('საკონტაქტო ინფორმაცია'), findsOneWidget);
+    expect(find.text('მდებარეობა'), findsOneWidget);
     expect(find.text('მიწოდების პირობები'), findsOneWidget);
     expect(find.text('მიწოდება და თვითგატანა'), findsOneWidget);
     expect(find.text('დეტალები'), findsOneWidget);

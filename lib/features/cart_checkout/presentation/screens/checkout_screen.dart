@@ -928,67 +928,67 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     ),
                   ],
                   const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      // Delivery option
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: isWeightExceeded
-                              ? () {
-                                  AppToast.warning(
-                                    context,
-                                    'წონა (${totalWeight.toStringAsFixed(1)} კგ) აჭარბებს საკურიერო მიტანის ლიმიტს (250 კგ). ხელმისაწვდომია მხოლოდ თვითგატანა.',
-                                  );
-                                }
-                              : (isCovered
-                                  ? () =>
-                                      setState(() => _isPickupSelected = false)
-                                  : () {
-                                      AppToast.warning(
-                                        context,
-                                        'ფერმერი ამ მისამართზე მიტანას ვერ უზრუნველყოფს',
-                                      );
-                                    }),
-                          child: Opacity(
-                            opacity:
-                                (!isWeightExceeded && isCovered) ? 1.0 : 0.45,
-                            child: Container(
-                              padding: const EdgeInsets.all(12),
+                  // Delivery Options (Full Horizontal Cards)
+                  // 1. Delivery Service (საკურიერო მიტანა)
+                  GestureDetector(
+                    onTap: isWeightExceeded
+                        ? () {
+                            AppToast.warning(
+                              context,
+                              'წონა (${totalWeight.toStringAsFixed(1)} კგ) აჭარბებს საკურიერო მიტანის ლიმიტს (250 კგ). ხელმისაწვდომია მხოლოდ თვითგატანა.',
+                            );
+                          }
+                        : (isCovered
+                            ? () => setState(() => _isPickupSelected = false)
+                            : () {
+                                AppToast.warning(
+                                  context,
+                                  'ფერმერი ამ მისამართზე მიტანას ვერ უზრუნველყოფს',
+                                );
+                              }),
+                    child: Opacity(
+                      opacity: (!isWeightExceeded && isCovered) ? 1.0 : 0.45,
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 12,
+                        ),
+                        decoration: BoxDecoration(
+                          color: (!isPickup && isCovered)
+                              ? AppColors.primaryLight
+                              : const Color(0xFFF9FAFB),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: (!isPickup && isCovered)
+                                ? AppColors.primary
+                                : const Color(0xFFE5E7EB),
+                            width: (!isPickup && isCovered) ? 1.5 : 1,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(9),
                               decoration: BoxDecoration(
                                 color: (!isPickup && isCovered)
-                                    ? AppColors.primaryLight
-                                    : const Color(0xFFF9FAFB),
+                                    ? Colors.white
+                                    : const Color(0xFFF1F5F9),
                                 borderRadius: BorderRadius.circular(10),
-                                border: Border.all(
-                                  color: (!isPickup && isCovered)
-                                      ? AppColors.primary
-                                      : const Color(0xFFE5E7EB),
-                                  width: (!isPickup && isCovered) ? 1.5 : 1,
-                                ),
                               ),
+                              child: const Icon(
+                                LucideIcons.truck,
+                                size: 20,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      const Icon(
-                                        LucideIcons.truck,
-                                        size: 18,
-                                        color: AppColors.primary,
-                                      ),
-                                      if (!isPickup && isCovered)
-                                        const Icon(
-                                          LucideIcons.checkCircle,
-                                          size: 16,
-                                          color: AppColors.primary,
-                                        ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 8),
                                   Text(
-                                    'მიტანა',
+                                    'მიტანის სერვისი',
                                     style: AppTypography.bodyMedium.copyWith(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w700,
@@ -1000,12 +1000,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                     isWeightExceeded
                                         ? '>250 კგ (შეუძლებელია)'
                                         : (isCovered
-                                            ? '${matchedZone.value.toInt()} ₾'
-                                            : 'მიუწვდომელია'),
+                                            ? '${matchedZone.value.toInt()} ₾ • საკურიერო მიწოდება'
+                                            : 'მიუწვდომელია ამ მისამართზე'),
                                     style: AppTypography.caption.copyWith(
                                       fontSize: 12,
-                                      fontWeight: FontWeight.w700,
-                                      color: isCovered
+                                      fontWeight: FontWeight.w600,
+                                      color: isCovered && !isWeightExceeded
                                           ? AppColors.primaryDark
                                           : AppColors.textSecondary,
                                     ),
@@ -1013,49 +1013,73 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                 ],
                               ),
                             ),
-                          ),
+                            if (!isPickup && isCovered)
+                              const Icon(
+                                LucideIcons.checkCircle,
+                                size: 20,
+                                color: AppColors.primary,
+                              )
+                            else
+                              Container(
+                                width: 20,
+                                height: 20,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: const Color(0xFFCBD5E1),
+                                    width: 1.5,
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
                       ),
-                      const SizedBox(width: 10),
-                      // Self-pickup option
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: () => setState(() => _isPickupSelected = true),
-                          child: Container(
-                            padding: const EdgeInsets.all(12),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+
+                  // 2. Self-Pickup Option (თვითგატანა)
+                  GestureDetector(
+                    onTap: () => setState(() => _isPickupSelected = true),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 12,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isPickup
+                            ? AppColors.primaryLight
+                            : const Color(0xFFF9FAFB),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isPickup
+                              ? AppColors.primary
+                              : const Color(0xFFE5E7EB),
+                          width: isPickup ? 1.5 : 1,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(9),
                             decoration: BoxDecoration(
                               color: isPickup
-                                  ? AppColors.primaryLight
-                                  : const Color(0xFFF9FAFB),
+                                  ? Colors.white
+                                  : const Color(0xFFF1F5F9),
                               borderRadius: BorderRadius.circular(10),
-                              border: Border.all(
-                                color: isPickup
-                                    ? AppColors.primary
-                                    : const Color(0xFFE5E7EB),
-                                width: isPickup ? 1.5 : 1,
-                              ),
                             ),
+                            child: const Icon(
+                              LucideIcons.store,
+                              size: 20,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    const Icon(
-                                      LucideIcons.store,
-                                      size: 18,
-                                      color: AppColors.primary,
-                                    ),
-                                    if (isPickup)
-                                      const Icon(
-                                        LucideIcons.checkCircle,
-                                        size: 16,
-                                        color: AppColors.primary,
-                                      ),
-                                  ],
-                                ),
-                                const SizedBox(height: 8),
                                 Text(
                                   'თვითგატანა',
                                   style: AppTypography.bodyMedium.copyWith(
@@ -1066,7 +1090,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  '0 ₾ • უფასო',
+                                  '0 ₾ • უფასო (მეურნეობიდან გატანა)',
                                   style: AppTypography.caption.copyWith(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w700,
@@ -1076,34 +1100,64 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                               ],
                             ),
                           ),
-                        ),
+                          if (isPickup)
+                            const Icon(
+                              LucideIcons.checkCircle,
+                              size: 20,
+                              color: AppColors.primary,
+                            )
+                          else
+                            Container(
+                              width: 20,
+                              height: 20,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: const Color(0xFFCBD5E1),
+                                  width: 1.5,
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
                   if (isPickup) ...[
                     const SizedBox(height: 10),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Padding(
-                          padding: EdgeInsets.only(top: 2),
-                          child: Icon(
-                            LucideIcons.mapPin,
-                            size: 14,
-                            color: AppColors.primary,
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Expanded(
-                          child: Text(
-                            'მეურნეობის ლოკაცია: ${farmer.farmName} — ${farmer.location}',
-                            style: AppTypography.caption.copyWith(
-                              fontSize: 12,
-                              color: AppColors.textSecondary,
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF0FDF4),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: const Color(0xFFBBF7D0)),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Padding(
+                            padding: EdgeInsets.only(top: 2),
+                            child: Icon(
+                              LucideIcons.mapPin,
+                              size: 15,
+                              color: Color(0xFF16A34A),
                             ),
                           ),
-                        ),
-                      ],
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'მეურნეობის ლოკაცია: ${farmer.farmName} — ${farmer.location}',
+                              style: AppTypography.caption.copyWith(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: const Color(0xFF166534),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ],

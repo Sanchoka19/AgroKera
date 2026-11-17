@@ -162,6 +162,29 @@ class AddressCardTile extends StatelessWidget {
                   ),
                 ),
 
+                // Map coordinates indicator
+                if (address.latitude != null && address.longitude != null) ...[
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      const Icon(
+                        LucideIcons.mapPinCheck,
+                        size: 13,
+                        color: AppColors.primary,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'ზუსტი GPS კოორდინატები მონიშნულია',
+                        style: GoogleFonts.notoSansGeorgian(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.primaryDark,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+
                 // Optional courier note
                 if (address.note != null && address.note!.trim().isNotEmpty) ...[
                   const SizedBox(height: 8),

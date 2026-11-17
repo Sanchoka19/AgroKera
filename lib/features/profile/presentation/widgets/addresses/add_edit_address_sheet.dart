@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:agrokera/core/theme/app_colors.dart';
 import 'package:agrokera/core/widgets/app_toast.dart';
+import 'package:agrokera/features/farmer_onboarding/presentation/widgets/farmer_map_widget.dart';
 import 'package:agrokera/features/profile/domain/models/user_address_model.dart';
 
-/// Modal bottom sheet for adding or editing a delivery / farm address.
+/// Modal bottom sheet for adding or editing a delivery / farm address with Map & GPS.
 class AddEditAddressSheet extends StatefulWidget {
   final UserAddress? initialAddress;
   final Future<String?> Function() onDetectGps;
@@ -52,6 +55,7 @@ class _AddEditAddressSheetState extends State<AddEditAddressSheet> {
   late final TextEditingController _detailsController;
   late final TextEditingController _noteController;
   late bool _isDefault;
+  LatLng? _pinnedPoint;
   bool _isGpsLoading = false;
 
   static const _tagOptions = ['სახლი', 'სამსახური', 'მეურნეობა', 'აგარაკი', 'სხვა'];
@@ -67,6 +71,9 @@ class _AddEditAddressSheetState extends State<AddEditAddressSheet> {
     _detailsController = TextEditingController(text: init?.details ?? '');
     _noteController = TextEditingController(text: init?.note ?? '');
     _isDefault = init?.isDefault ?? false;
+    if (init?.latitude != null && init?.longitude != null) {
+      _pinnedPoint = LatLng(init!.latitude!, init.longitude!);
+    }
   }
 
   @override
@@ -80,25 +87,64 @@ class _AddEditAddressSheetState extends State<AddEditAddressSheet> {
   Future<void> _handleGps() async {
     setState(() => _isGpsLoading = true);
     try {
-      final resolved = await widget.onDetectGps();
+      final pos = await Geolocator.getCurrentPosition();
+      final point = LatLng(pos.latitude, pos.longitude);
+      final resolved = GeorgianGeoLookup.resolveInstantAddress(point);
       if (!mounted) return;
-      if (resolved != null && resolved.isNotEmpty) {
-        setState(() {
-          _addressLineController.text = resolved;
-          for (final city in _quickCities) {
-            if (resolved.contains(city)) {
-              _selectedCity = city;
-              break;
-            }
+      setState(() {
+        _pinnedPoint = point;
+        _addressLineController.text = resolved;
+        for (final city in _quickCities) {
+          if (resolved.contains(city)) {
+            _selectedCity = city;
+            break;
           }
-        });
-        AppToast.success(context, 'მდებარეობა დადგინდა: $resolved');
+        }
+      });
+      AppToast.success(context, 'GPS-ით დადგინდა: $resolved');
+    } catch (_) {
+      final fallback = await widget.onDetectGps();
+      if (!mounted) return;
+      if (fallback != null && fallback.isNotEmpty) {
+        setState(() => _addressLineController.text = fallback);
+        AppToast.success(context, 'მდებარეობა დადგინდა: $fallback');
       } else {
         AppToast.error(context, 'GPS მდებარეობა ვერ დადგინდა');
       }
     } finally {
       if (mounted) setState(() => _isGpsLoading = false);
     }
+  }
+
+  void _openMapPicker() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (context) => FarmerMapWidget(
+          isFullScreen: true,
+          locationText: _addressLineController.text.isNotEmpty
+              ? _addressLineController.text
+              : 'თბილისი, საქართველო',
+          initialLocation: _pinnedPoint,
+          onLocationChanged: (point) {
+            _pinnedPoint = point;
+          },
+          onAddressResolved: (point, address) {
+            setState(() {
+              _pinnedPoint = point;
+              _addressLineController.text = address;
+              for (final city in _quickCities) {
+                if (address.contains(city)) {
+                  _selectedCity = city;
+                  break;
+                }
+              }
+            });
+            AppToast.success(context, 'რუკაზე არჩეულია: $address');
+          },
+        ),
+      ),
+    );
   }
 
   void _submit() {
@@ -117,6 +163,8 @@ class _AddEditAddressSheetState extends State<AddEditAddressSheet> {
       details: details.isNotEmpty ? details : null,
       note: note.isNotEmpty ? note : null,
       isDefault: _isDefault,
+      latitude: _pinnedPoint?.latitude ?? widget.initialAddress?.latitude,
+      longitude: _pinnedPoint?.longitude ?? widget.initialAddress?.longitude,
       createdAt: widget.initialAddress?.createdAt ?? DateTime.now(),
     );
 
@@ -246,7 +294,7 @@ class _AddEditAddressSheetState extends State<AddEditAddressSheet> {
                 ),
                 const SizedBox(height: 14),
 
-                // 3. Address line input with GPS button
+                // 3. Address line input with GPS and Map buttons
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -258,26 +306,50 @@ class _AddEditAddressSheetState extends State<AddEditAddressSheet> {
                         color: const Color(0xFF475569),
                       ),
                     ),
-                    TextButton.icon(
-                      onPressed: _isGpsLoading ? null : _handleGps,
-                      icon: _isGpsLoading
-                          ? const SizedBox(
-                              width: 12,
-                              height: 12,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Icon(LucideIcons.locateFixed, size: 14),
-                      label: Text(
-                        'GPS ავტოდადგენა',
-                        style: GoogleFonts.notoSansGeorgian(
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w600,
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // GPS Button
+                        TextButton.icon(
+                          onPressed: _isGpsLoading ? null : _handleGps,
+                          icon: _isGpsLoading
+                              ? const SizedBox(
+                                  width: 12,
+                                  height: 12,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              : const Icon(LucideIcons.locateFixed, size: 14),
+                          label: Text(
+                            'GPS',
+                            style: GoogleFonts.notoSansGeorgian(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          style: TextButton.styleFrom(
+                            visualDensity: VisualDensity.compact,
+                            foregroundColor: AppColors.primary,
+                            padding: const EdgeInsets.symmetric(horizontal: 6),
+                          ),
                         ),
-                      ),
-                      style: TextButton.styleFrom(
-                        visualDensity: VisualDensity.compact,
-                        foregroundColor: AppColors.primary,
-                      ),
+                        // Map Picker Button
+                        TextButton.icon(
+                          onPressed: _openMapPicker,
+                          icon: const Icon(LucideIcons.map, size: 14),
+                          label: Text(
+                            'რუკაზე არჩევა',
+                            style: GoogleFonts.notoSansGeorgian(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          style: TextButton.styleFrom(
+                            visualDensity: VisualDensity.compact,
+                            foregroundColor: AppColors.primaryDark,
+                            padding: const EdgeInsets.symmetric(horizontal: 6),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -301,6 +373,17 @@ class _AddEditAddressSheetState extends State<AddEditAddressSheet> {
                       size: 18,
                       color: Color(0xFF64748B),
                     ),
+                    suffixIcon: _pinnedPoint != null
+                        ? IconButton(
+                            icon: const Icon(
+                              LucideIcons.mapPinCheck,
+                              size: 18,
+                              color: AppColors.primary,
+                            ),
+                            tooltip: 'რუკაზე ნახვა',
+                            onPressed: _openMapPicker,
+                          )
+                        : null,
                     filled: true,
                     fillColor: const Color(0xFFF8FAFC),
                     contentPadding: const EdgeInsets.symmetric(
@@ -324,6 +407,38 @@ class _AddEditAddressSheetState extends State<AddEditAddressSheet> {
                     ),
                   ),
                 ),
+
+                // Indicator if pinned on map
+                if (_pinnedPoint != null) ...[
+                  const SizedBox(height: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF0FDF4),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: const Color(0xFFBBF7D0)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(LucideIcons.checkCheck, size: 13, color: AppColors.primary),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            'ზუსტი კოორდინატები მონიშნულია (${_pinnedPoint!.latitude.toStringAsFixed(4)}, ${_pinnedPoint!.longitude.toStringAsFixed(4)})',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.notoSansGeorgian(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.primaryDark,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 12),
 
                 // 4. Details: Apartment / Entrance / Floor

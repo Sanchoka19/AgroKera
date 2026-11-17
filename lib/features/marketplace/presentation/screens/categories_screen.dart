@@ -109,7 +109,13 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                                  Text(
+                                  const Icon(
+                                    LucideIcons.leaf,
+                                    size: 13,
+                                    color: AppColors.primary,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
                                     '100% ორგანული',
                                     style: GoogleFonts.notoSansGeorgian(
                                       fontSize: 11.5,

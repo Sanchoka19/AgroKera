@@ -115,6 +115,7 @@ class _Step1FarmInfoWidgetState extends ConsumerState<Step1FarmInfoWidget> {
                   },
                 ),
                 ListTile(
+                  leading: const Icon(LucideIcons.image, color: AppColors.primary),
                   title: Text(
                     'სანიმუშო აგრო-გარეკანის არჩევა',
                     style: GoogleFonts.notoSansGeorgian(fontWeight: FontWeight.w600),

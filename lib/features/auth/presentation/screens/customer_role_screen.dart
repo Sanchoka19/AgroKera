@@ -180,6 +180,12 @@ class CustomerRoleScreen extends ConsumerWidget {
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
+                                const Icon(
+                                  LucideIcons.leaf,
+                                  size: 13,
+                                  color: Colors.white,
+                                ),
+                                const SizedBox(width: 5),
                                 Text(
                                   '100% ნატურალური',
                                   style: GoogleFonts.notoSansGeorgian(
@@ -269,6 +275,18 @@ class CustomerRoleScreen extends ConsumerWidget {
                     decoration: BoxDecoration(
                       color: AppColors.primaryLight,
                       borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryLight,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      LucideIcons.gem,
+                      size: 16,
+                      color: AppColors.primary,
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -381,7 +399,7 @@ class CustomerRoleScreen extends ConsumerWidget {
                           label: 'ფერმერების მხარდაჭერა',
                         ),
                         _BenefitPill(
-                          icon: LucideIcons.shoppingBag,
+                          icon: LucideIcons.gem,
                           label: 'პრემიუმ ასორტიმენტი',
                         ),
                         _BenefitPill(

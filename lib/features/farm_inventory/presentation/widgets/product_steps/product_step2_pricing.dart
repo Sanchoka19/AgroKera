@@ -336,6 +336,12 @@ class ProductStep2Pricing extends StatelessWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      const Icon(
+                        LucideIcons.tag,
+                        size: 14,
+                        color: AppColors.primary,
+                      ),
+                      const SizedBox(width: 6),
                       Flexible(
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -434,6 +440,12 @@ class ProductStep2Pricing extends StatelessWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      const Icon(
+                        LucideIcons.tag,
+                        size: 14,
+                        color: AppColors.primary,
+                      ),
+                      const SizedBox(width: 6),
                       Flexible(
                         child: Text(
                           '${bulkMinQtyController.text} $selectedUnit-დან: ₾${bulkUnitPrice.toStringAsFixed(2)}/$selectedUnit (-${bulkDiscountController.text}%)',

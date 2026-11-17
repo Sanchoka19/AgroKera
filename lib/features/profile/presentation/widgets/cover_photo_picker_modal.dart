@@ -237,6 +237,8 @@ class CoverPhotoPickerModal extends StatelessWidget {
                   },
                 ),
                 ListTile(
+                  leading: const Icon(LucideIcons.image,
+                      color: AppColors.primary),
                   title: Text(
                     'სანიმუშო აგრო-გარეკანის არჩევა',
                     style: GoogleFonts.notoSansGeorgian(

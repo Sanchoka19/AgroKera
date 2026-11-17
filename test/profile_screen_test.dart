@@ -7,6 +7,8 @@ import 'package:agrokera/features/marketplace/data/models/farmer_model.dart';
 import 'package:agrokera/features/marketplace/presentation/screens/farmer_profile_screen.dart';
 import 'package:agrokera/features/profile/presentation/screens/farmer_delivery_settings_screen.dart';
 import 'package:agrokera/features/profile/presentation/screens/guest_profile_screen.dart';
+import 'package:agrokera/features/profile/presentation/screens/my_addresses_screen.dart';
+import 'package:agrokera/features/profile/domain/models/user_address_model.dart';
 import 'test_helper.dart';
 
 void main() {
@@ -192,6 +194,37 @@ void main() {
 
     await tester.tap(find.text('გასაგებია'));
     await tester.pumpAndSettle();
+  });
+
+  test('UserAddress model formats address and handles details correctly', () {
+    final addr1 = UserAddress(
+      id: '1',
+      title: 'სახლი',
+      city: 'თბილისი',
+      addressLine: 'ი. ჭავჭავაძის გამზ. 24',
+      details: 'სად. 2, ბ. 15',
+      isDefault: true,
+      createdAt: DateTime.now(),
+    );
+    expect(addr1.formattedAddress, 'თბილისი, ი. ჭავჭავაძის გამზ. 24, სად. 2, ბ. 15');
+
+    final addr2 = UserAddress(
+      id: '2',
+      title: 'ფერმა',
+      city: 'გორი',
+      addressLine: 'გორი, სოფ. შინდისი',
+      isDefault: false,
+      createdAt: DateTime.now(),
+    );
+    expect(addr2.formattedAddress, 'გორი, სოფ. შინდისი');
+  });
+
+  testWidgets('MyAddressesScreen renders header and address list', (WidgetTester tester) async {
+    await tester.pumpWidget(wrapWithScaffold(const MyAddressesScreen()));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+
+    expect(find.text('ჩემი მისამართები'), findsOneWidget);
   });
 }
 

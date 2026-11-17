@@ -39,6 +39,7 @@ class AuthNotifier extends Notifier<AuthState> {
     if (role == UserRole.guest) return;
 
     final savedEmail = saved['email'] ?? 'example@gmail.com';
+    final savedAddress = await _storage.readActiveAddress();
     final fallback = MockAccountResolver.resolve(
       email: savedEmail,
       role: role,
@@ -56,6 +57,7 @@ class AuthNotifier extends Notifier<AuthState> {
       userEmail: savedEmail,
       farmCoverUrl: saved['farmCoverUrl'],
       userAvatarUrl: saved['userAvatarUrl'] ?? fallback.avatarUrl,
+      userAddress: savedAddress,
       role: role,
       kycStatus: KycStatus.fromString(saved['kycStatus']),
     );
@@ -339,6 +341,16 @@ class AuthNotifier extends Notifier<AuthState> {
   void updateEmail(String newEmail) {
     state = state.copyWith(userEmail: newEmail.trim());
     unawaited(_resaveSession());
+  }
+
+  /// Updates current user address in auth state and persists to secure storage and backend
+  void updateUserAddress(String newAddress) {
+    final clean = newAddress.trim();
+    state = state.copyWith(userAddress: clean);
+    unawaited(_storage.saveActiveAddress(clean));
+    if (state.isAuthenticated) {
+      unawaited(_patchProfileSilently({'address': clean}));
+    }
   }
 
   // ---------------------------------------------------------------------------

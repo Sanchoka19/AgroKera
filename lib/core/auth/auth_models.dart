@@ -90,6 +90,7 @@ class AuthState {
   final String? userEmail;
   final String? userAvatarUrl;
   final String? farmCoverUrl;
+  final String? userAddress;
   final UserRole role;
   final KycStatus kycStatus;
 
@@ -103,6 +104,7 @@ class AuthState {
     this.userEmail,
     this.userAvatarUrl,
     this.farmCoverUrl,
+    this.userAddress,
     this.role = UserRole.guest,
     this.kycStatus = KycStatus.verified,
   });
@@ -117,6 +119,7 @@ class AuthState {
     String? userEmail,
     String? userAvatarUrl,
     String? farmCoverUrl,
+    String? userAddress,
     UserRole? role,
     KycStatus? kycStatus,
   }) {
@@ -130,6 +133,7 @@ class AuthState {
       userEmail: userEmail ?? this.userEmail,
       userAvatarUrl: userAvatarUrl ?? this.userAvatarUrl,
       farmCoverUrl: farmCoverUrl ?? this.farmCoverUrl,
+      userAddress: userAddress ?? this.userAddress,
       role: role ?? this.role,
       kycStatus: kycStatus ?? this.kycStatus,
     );

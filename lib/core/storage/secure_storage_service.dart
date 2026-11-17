@@ -17,6 +17,8 @@ class SecureStorageService {
   static const _cartJsonKey = 'agrokera_cart_json';
   static const _favoritesJsonKey = 'agrokera_favorites_json';
   static const _reportedPaymentOrdersKey = 'agrokera_reported_payment_orders';
+  static const _activeAddressKey = 'agrokera_active_address';
+  static const _addressesJsonKey = 'agrokera_addresses_json';
 
   final FlutterSecureStorage _storage;
 
@@ -192,6 +194,34 @@ class SecureStorageService {
   Future<String?> readOrderMessagesJson(String orderId) async {
     try {
       return await _storage.read(key: 'agrokera_order_chat_$orderId');
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> saveActiveAddress(String address) async {
+    try {
+      await _storage.write(key: _activeAddressKey, value: address);
+    } catch (_) {}
+  }
+
+  Future<String?> readActiveAddress() async {
+    try {
+      return await _storage.read(key: _activeAddressKey);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> saveAddressesJson(String json) async {
+    try {
+      await _storage.write(key: _addressesJsonKey, value: json);
+    } catch (_) {}
+  }
+
+  Future<String?> readAddressesJson() async {
+    try {
+      return await _storage.read(key: _addressesJsonKey);
     } catch (_) {
       return null;
     }

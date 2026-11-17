@@ -1,13 +1,9 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:latlong2/latlong.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../core/auth/auth_state_provider.dart';
-import '../../../../core/services/georgian_geo_lookup_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_confirmation_bottom_sheet.dart';
 import '../../../../core/widgets/app_header.dart';
@@ -25,6 +21,8 @@ import '../widgets/farmer_kpi_card.dart';
 import '../widgets/farmer_profile_hero.dart';
 import '../widgets/profile_row_item.dart';
 import '../widgets/profile_settings_card.dart';
+import '../providers/user_address_provider.dart';
+import 'my_addresses_screen.dart';
 import 'farmer_delivery_settings_screen.dart';
 import 'help_center_screen.dart';
 
@@ -41,7 +39,6 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
   bool _notificationsEnabled = true;
   bool _darkThemeEnabled = false;
   String _selectedLanguage = 'KA'; // 'KA' or 'EN'
-  String _detectedAddress = 'ჭავჭავაძე - თბილისი';
 
   @override
   void initState() {
@@ -61,44 +58,6 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
   void dispose() {
     _scrollController.dispose();
     super.dispose();
-  }
-
-  Future<void> _detectUserAddressWithGps() async {
-    try {
-      LocationPermission perm = await Geolocator.checkPermission();
-      if (perm == LocationPermission.denied) {
-        perm = await Geolocator.requestPermission();
-        if (perm == LocationPermission.denied) {
-          if (!mounted) return;
-          AppToast.error(
-            context,
-            'მდებარეობაზე წვდომის ნებართვა უარყოფილია',
-          );
-          return;
-        }
-      }
-      if (perm == LocationPermission.deniedForever) {
-        if (!mounted) return;
-        AppToast.error(
-          context,
-          'მდებარეობის ნებართვა დაბლოკილია პარამეტრებიდან',
-        );
-        return;
-      }
-      final pos = await Geolocator.getCurrentPosition();
-      if (!mounted) return;
-      final resolved = GeorgianGeoLookup.resolveInstantAddress(
-        LatLng(pos.latitude, pos.longitude),
-      );
-      setState(() => _detectedAddress = resolved);
-      AppToast.success(context, 'თქვენი მისამართი განახლდა: $resolved');
-    } catch (_) {
-      if (!mounted) return;
-      AppToast.error(
-        context,
-        'GPS მდებარეობის დადგენა ვერ მოხერხდა. შეამოწმეთ ნებართვა.',
-      );
-    }
   }
 
   Widget _buildFarmerActivitySection(AuthState authState) {
@@ -160,8 +119,14 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
           ProfileRowItem(
             icon: LucideIcons.mapPin,
             title: 'ჩემი მისამართი',
-            subtitle: 'ფერმის ლოკაციის GPS-ით განახლება ($_detectedAddress)',
-            onTap: _detectUserAddressWithGps,
+            subtitle: ref.watch(userAddressProvider).activeAddress,
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const MyAddressesScreen(),
+                ),
+              );
+            },
           ),
         ],
       ),
@@ -241,12 +206,18 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
             ProfileRowItem(
               icon: LucideIcons.mapPin,
               title: 'ჩემი მისამართი',
-              subtitle: 'GPS-ით დადგენა ($_detectedAddress)',
+              subtitle: ref.watch(userAddressProvider).activeAddress,
               onTap: () {
                 requireAuth(
                   context,
                   ref: ref,
-                  onAuthenticated: _detectUserAddressWithGps,
+                  onAuthenticated: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const MyAddressesScreen(),
+                      ),
+                    );
+                  },
                 );
               },
             ),

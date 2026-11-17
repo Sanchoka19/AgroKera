@@ -23,6 +23,7 @@ import '../widgets/checkout/delivery_fee_explanation_sheet.dart';
 import '../widgets/checkout/delivery_slot_bottom_sheet.dart';
 import '../widgets/payment/order_placed_dialog.dart';
 import '../widgets/payment/payment_method_card.dart';
+import '../../../profile/presentation/providers/user_address_provider.dart';
 
 class CheckoutScreen extends ConsumerStatefulWidget {
   const CheckoutScreen({super.key});
@@ -32,9 +33,15 @@ class CheckoutScreen extends ConsumerStatefulWidget {
 }
 
 class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
-  String _address = 'ჭავჭავაძე - თბილისი';
+  late String _address;
   String? _deliverySlot;
   bool _isPickupSelected = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _address = ref.read(userAddressProvider).activeAddress;
+  }
 
   void _showAddressDialog() {
     DeliveryAddressBottomSheet.show(
@@ -42,6 +49,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       currentAddress: _address,
       onAddressSelected: (newAddress) {
         setState(() => _address = newAddress);
+        ref.read(userAddressProvider.notifier).setActiveAddress(newAddress);
       },
     );
   }

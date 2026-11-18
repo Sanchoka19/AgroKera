@@ -149,10 +149,6 @@ class ProductHeaderInfo extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: const Color(0xFFF0FDF4),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: AppColors.primary.withValues(alpha: 0.25),
-                    width: 1,
-                  ),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,

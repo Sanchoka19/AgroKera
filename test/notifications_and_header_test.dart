@@ -8,6 +8,10 @@ import 'package:agrokera/core/widgets/app_header.dart';
 import 'package:agrokera/core/widgets/app_search_bar.dart';
 import 'package:agrokera/core/widgets/app_toast.dart';
 import 'package:agrokera/core/widgets/auth_required_bottom_sheet.dart';
+import 'package:agrokera/features/notifications/data/models/notification_model.dart';
+import 'package:agrokera/features/notifications/domain/models/notification_settings_model.dart';
+import 'package:agrokera/features/notifications/presentation/providers/notification_settings_provider.dart';
+import 'package:agrokera/features/notifications/presentation/screens/notification_settings_screen.dart';
 import 'package:agrokera/features/notifications/presentation/providers/notifications_provider.dart';
 import 'package:agrokera/features/notifications/presentation/screens/notifications_screen.dart';
 import 'package:agrokera/features/marketplace/data/mock_data.dart';
@@ -379,6 +383,126 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('დახურვა'), findsNothing);
+  });
+
+  test('Notifications grouping collapses multiple chat messages for same order into one card', () {
+    final now = DateTime.now();
+    final items = [
+      AppNotification(
+        id: 'msg-3',
+        title: 'ახალი შეტყობინება • გიორგი',
+        body: 'ჭიშკართან ვდგავარ',
+        timeAgo: 'ახლახანს',
+        timestamp: now,
+        category: NotificationCategory.orders,
+        orderId: 'order-999',
+        type: 'chat_message',
+        isRead: false,
+      ),
+      AppNotification(
+        id: 'msg-2',
+        title: 'ახალი შეტყობინება • გიორგი',
+        body: 'მოვედი უკვე',
+        timeAgo: '1 წთ წინ',
+        timestamp: now.subtract(const Duration(minutes: 1)),
+        category: NotificationCategory.orders,
+        orderId: 'order-999',
+        type: 'chat_message',
+        isRead: false,
+      ),
+      AppNotification(
+        id: 'msg-1',
+        title: 'ახალი შეტყობინება • გიორგი',
+        body: 'გამარჯობა',
+        timeAgo: '3 წთ წინ',
+        timestamp: now.subtract(const Duration(minutes: 3)),
+        category: NotificationCategory.orders,
+        orderId: 'order-999',
+        type: 'chat_message',
+        isRead: false,
+      ),
+      AppNotification(
+        id: 'promo-1',
+        title: 'სეზონური ფასდაკლება 20%',
+        body: 'აქცია ახალ მოსავალზე',
+        timeAgo: '1 სთ წინ',
+        timestamp: now.subtract(const Duration(hours: 1)),
+        category: NotificationCategory.promotions,
+        isRead: true,
+      ),
+    ];
+
+    final grouped = NotificationsNotifier.groupNotifications(items);
+
+    // Should have only 1 chat card for order-999 + 1 promo card = 2 cards total
+    expect(grouped.length, 2);
+
+    final chatCard = grouped.firstWhere((n) => n.orderId == 'order-999');
+    expect(chatCard.body, 'ჭიშკართან ვდგავარ'); // Latest message
+    expect(chatCard.unreadCount, 3); // 3 unread messages
+    expect(chatCard.title, contains('(3)'));
+    expect(chatCard.title, contains('გიორგი'));
+  });
+
+  test('NotificationSettings model correctly serializes and filters notification types', () {
+    const defaultSettings = NotificationSettings();
+    expect(defaultSettings.ordersEnabled, isTrue);
+    expect(defaultSettings.chatEnabled, isTrue);
+    expect(defaultSettings.promotionsEnabled, isTrue);
+    expect(defaultSettings.inAppToastEnabled, isTrue);
+
+    // Test shouldDeliver
+    expect(defaultSettings.shouldDeliver(category: 'orders'), isTrue);
+    expect(defaultSettings.shouldDeliver(type: 'chat_message'), isTrue);
+    expect(defaultSettings.shouldDeliver(category: 'promotions'), isTrue);
+
+    final modified = defaultSettings.copyWith(
+      chatEnabled: false,
+      promotionsEnabled: false,
+    );
+    expect(modified.shouldDeliver(category: 'orders'), isTrue);
+    expect(modified.shouldDeliver(type: 'chat_message'), isFalse);
+    expect(modified.shouldDeliver(category: 'promotions'), isFalse);
+
+    // Json round-trip
+    final json = modified.toJson();
+    final restored = NotificationSettings.fromJson(json);
+    expect(restored.ordersEnabled, isTrue);
+    expect(restored.chatEnabled, isFalse);
+    expect(restored.promotionsEnabled, isFalse);
+    expect(restored.inAppToastEnabled, isTrue);
+  });
+
+  testWidgets('NotificationSettingsScreen renders all setting tiles and responds to toggle',
+      (WidgetTester tester) async {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+
+    await tester.pumpWidget(
+      wrapWithScaffold(
+        const NotificationSettingsScreen(),
+        container,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Verify title and sections
+    expect(find.text('შეტყობინებების პარამეტრები'), findsOneWidget);
+    expect(find.text('შეკვეთების შეტყობინებები'), findsOneWidget);
+    expect(find.text('ჩათის შეტყობინებები'), findsOneWidget);
+    expect(find.text('ფასდაკლებები და აქციები'), findsOneWidget);
+    expect(find.text('In-App მცურავი ბანერი'), findsOneWidget);
+
+    // Verify 4 switches exist
+    expect(find.byType(Switch), findsNWidgets(4));
+
+    // Toggle chat switch
+    final chatSwitch = find.byType(Switch).at(1);
+    await tester.tap(chatSwitch);
+    await tester.pumpAndSettle();
+
+    final currentSettings = container.read(notificationSettingsProvider);
+    expect(currentSettings.chatEnabled, isFalse);
   });
 }
 

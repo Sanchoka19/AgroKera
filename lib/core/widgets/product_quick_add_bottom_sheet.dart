@@ -1,0 +1,483 @@
+import 'dart:ui';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_typography.dart';
+import '../../features/marketplace/data/models/product_model.dart';
+import 'app_toast.dart';
+
+/// Modal Bottom Sheet that prompts the user to select / confirm quantity
+/// when a product has a minimum order requirement (`minOrderQuantity > 1`)
+/// or when quick-adding from any product card.
+class ProductQuickAddBottomSheet extends StatefulWidget {
+  final ProductModel product;
+  final void Function(int quantity) onConfirm;
+  final VoidCallback? onOpenDetails;
+
+  const ProductQuickAddBottomSheet({
+    super.key,
+    required this.product,
+    required this.onConfirm,
+    this.onOpenDetails,
+  });
+
+  static Future<void> show({
+    required BuildContext context,
+    required ProductModel product,
+    required void Function(int quantity) onConfirm,
+    VoidCallback? onOpenDetails,
+  }) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withValues(alpha: 0.55),
+      builder: (ctx) => BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 4, sigmaY: 4),
+        child: ProductQuickAddBottomSheet(
+          product: product,
+          onConfirm: onConfirm,
+          onOpenDetails: onOpenDetails,
+        ),
+      ),
+    );
+  }
+
+  @override
+  State<ProductQuickAddBottomSheet> createState() =>
+      _ProductQuickAddBottomSheetState();
+}
+
+class _ProductQuickAddBottomSheetState
+    extends State<ProductQuickAddBottomSheet> {
+  late int _quantity;
+  late final int _minLimit;
+  late final int _maxStock;
+
+  @override
+  void initState() {
+    super.initState();
+    _minLimit = widget.product.minOrderQuantity.toInt().clamp(1, 99999);
+    _maxStock = widget.product.stockQuantity.toInt().clamp(1, 99999);
+    _quantity = _minLimit;
+  }
+
+  void _decrement() {
+    if (_quantity <= _minLimit) {
+      HapticFeedback.lightImpact();
+      AppToast.info(
+        context,
+        'მინიმალური შეკვეთის რაოდენობაა ${widget.product.minOrderDisplay}',
+        icon: LucideIcons.info,
+      );
+      return;
+    }
+    HapticFeedback.selectionClick();
+    setState(() {
+      _quantity--;
+    });
+  }
+
+  void _increment() {
+    if (_quantity >= _maxStock) {
+      HapticFeedback.lightImpact();
+      AppToast.info(context, 'მარაგში მეტი აღარ არის');
+      return;
+    }
+    HapticFeedback.selectionClick();
+    setState(() {
+      _quantity++;
+    });
+  }
+
+  double _calculateSubtotal() {
+    final product = widget.product;
+    if (product.hasBulkDiscount &&
+        product.bulkDiscountMinQty != null &&
+        product.bulkDiscountPercent != null &&
+        _quantity >= product.bulkDiscountMinQty!) {
+      final discountFactor = (100 - product.bulkDiscountPercent!) / 100.0;
+      return (_quantity * product.price * discountFactor);
+    }
+    return _quantity * product.price;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final product = widget.product;
+    final subtotal = _calculateSubtotal();
+    final hasBulkDiscountApplied = product.hasBulkDiscount &&
+        product.bulkDiscountMinQty != null &&
+        _quantity >= product.bulkDiscountMinQty!;
+
+    return SafeArea(
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: AppColors.border, width: 1),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.12),
+              blurRadius: 24,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Handle bar
+            Center(
+              child: Container(
+                width: 38,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 14),
+                decoration: BoxDecoration(
+                  color: AppColors.border,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+
+            // Product Header Row
+            Row(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(14),
+                  child: Container(
+                    width: 64,
+                    height: 64,
+                    color: AppColors.surfaceInput,
+                    child: product.imageUrl.startsWith('assets/')
+                        ? Image.asset(
+                            product.imageUrl,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) =>
+                                const Icon(
+                              LucideIcons.image,
+                              color: AppColors.textSecondary,
+                            ),
+                          )
+                        : Image.network(
+                            product.imageUrl,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) => const Icon(
+                              LucideIcons.image,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        product.title,
+                        style: GoogleFonts.notoSansGeorgian(
+                          fontSize: 16.5,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 3),
+                      Row(
+                        children: [
+                          const Icon(
+                            LucideIcons.store,
+                            size: 13,
+                            color: AppColors.textSecondary,
+                          ),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              product.farmerName,
+                              style: AppTypography.caption.copyWith(
+                                color: AppColors.textSecondary,
+                                fontSize: 12.5,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Text(
+                            '₾${product.price.toStringAsFixed(0)}',
+                            style: GoogleFonts.notoSansGeorgian(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                          Text(
+                            '/${product.unit}',
+                            style: AppTypography.caption.copyWith(
+                              fontSize: 12,
+                              color: const Color(0xFF64748B),
+                            ),
+                          ),
+                          if (product.effectiveOriginalPrice != null) ...[
+                            const SizedBox(width: 6),
+                            Text(
+                              '₾${product.effectiveOriginalPrice!.toStringAsFixed(0)}',
+                              style: AppTypography.caption.copyWith(
+                                fontSize: 11,
+                                color: AppColors.textSecondary,
+                                decoration: TextDecoration.lineThrough,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 16),
+
+            // Minimum order notice banner
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFEF3C7),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFFDE68A)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    LucideIcons.info,
+                    size: 18,
+                    color: Color(0xFFD97706),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'ფერმერის მიერ განსაზღვრული მინიმალური შეკვეთაა ${product.minOrderDisplay}.',
+                      style: GoogleFonts.notoSansGeorgian(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF92400E),
+                        height: 1.35,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Bulk discount highlight (if configured)
+            if (product.hasBulkDiscount) ...[
+              const SizedBox(height: 8),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: hasBulkDiscountApplied
+                      ? const Color(0xFFECFDF5)
+                      : const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: hasBulkDiscountApplied
+                        ? const Color(0xFFA7F3D0)
+                        : const Color(0xFFE2E8F0),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      hasBulkDiscountApplied
+                          ? LucideIcons.checkCircle2
+                          : LucideIcons.flame,
+                      size: 15,
+                      color: hasBulkDiscountApplied
+                          ? AppColors.primary
+                          : const Color(0xFFE11D48),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        hasBulkDiscountApplied
+                          ? 'გააქტიურებულია ${product.bulkDiscountPercent}% საბითუმო ფასდაკლება!'
+                          : '${product.bulkDiscountMinQty?.toInt()} ${product.unit}-დან მოქმედებს ${product.bulkDiscountPercent}% საბითუმო ფასდაკლება.',
+                        style: GoogleFonts.notoSansGeorgian(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: hasBulkDiscountApplied
+                              ? const Color(0xFF065F46)
+                              : const Color(0xFF475569),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+
+            const SizedBox(height: 20),
+
+            // Quantity Selection Stepper Row
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'შესაკვეთი რაოდენობა:',
+                  style: GoogleFonts.notoSansGeorgian(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                Container(
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: AppColors.border, width: 1),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 4,
+                  ),
+                  child: Row(
+                    children: [
+                      // Minus Button
+                      InkWell(
+                        onTap: _decrement,
+                        borderRadius: BorderRadius.circular(10),
+                        child: Container(
+                          width: 34,
+                          height: 34,
+                          decoration: BoxDecoration(
+                            color: _quantity <= _minLimit
+                                ? const Color(0xFFE2E8F0)
+                                : Colors.white,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: const Color(0xFFCBD5E1),
+                              width: 1,
+                            ),
+                          ),
+                          alignment: Alignment.center,
+                          child: Icon(
+                            LucideIcons.minus,
+                            size: 16,
+                            color: _quantity <= _minLimit
+                                ? const Color(0xFF94A3B8)
+                                : AppColors.textPrimary,
+                          ),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 14),
+                        child: Text(
+                          '$_quantity ${product.unit}',
+                          style: GoogleFonts.notoSansGeorgian(
+                            fontSize: 15.5,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                      ),
+                      // Plus Button
+                      InkWell(
+                        onTap: _increment,
+                        borderRadius: BorderRadius.circular(10),
+                        child: Container(
+                          width: 34,
+                          height: 34,
+                          decoration: BoxDecoration(
+                            color: _quantity >= _maxStock
+                                ? const Color(0xFFE2E8F0)
+                                : AppColors.primary,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          alignment: Alignment.center,
+                          child: Icon(
+                            LucideIcons.plus,
+                            size: 16,
+                            color: _quantity >= _maxStock
+                                ? const Color(0xFF94A3B8)
+                                : Colors.white,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 22),
+
+            // Add to Cart Button
+            ElevatedButton(
+              onPressed: () {
+                HapticFeedback.mediumImpact();
+                Navigator.of(context).pop();
+                widget.onConfirm(_quantity);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(vertical: 15),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(LucideIcons.shoppingBag, size: 18),
+                  const SizedBox(width: 8),
+                  Text(
+                    'კალათაში დამატება • ₾${subtotal.toStringAsFixed(2)}',
+                    style: GoogleFonts.notoSansGeorgian(
+                      fontSize: 15.5,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            if (widget.onOpenDetails != null) ...[
+              const SizedBox(height: 10),
+              Center(
+                child: TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    widget.onOpenDetails!();
+                  },
+                  child: Text(
+                    'სრული დეტალების ნახვა',
+                    style: GoogleFonts.notoSansGeorgian(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}

@@ -12,6 +12,7 @@ import '../../../../core/widgets/app_toast.dart';
 import '../widgets/google_sign_in_sheet.dart';
 import 'login_screen.dart';
 import 'role_selection_screen.dart';
+import 'sms_verification_screen.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
@@ -24,9 +25,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _confirmPasswordController = TextEditingController();
   bool _obscurePassword = true;
-  bool _obscureConfirmPassword = true;
 
   @override
   void initState() {
@@ -47,7 +46,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
-    _confirmPasswordController.dispose();
     super.dispose();
   }
 
@@ -56,7 +54,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     final name = _nameController.text.trim();
     final email = _emailController.text.trim();
     final password = _passwordController.text;
-    final confirmPassword = _confirmPasswordController.text;
 
     if (name.isEmpty) {
       AppToast.error(context, 'გთხოვთ შეიყვანოთ სრული სახელი');
@@ -70,14 +67,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       AppToast.error(context, 'პაროლი უნდა შედგებოდეს მინიმუმ 6 სიმბოლოსგან');
       return;
     }
-    if (confirmPassword.isEmpty) {
-      AppToast.error(context, 'გთხოვთ გაიმეოროთ პაროლი');
-      return;
-    }
-    if (password != confirmPassword) {
-      AppToast.error(context, 'პაროლები ერთმანეთს არ ემთხვევა');
-      return;
-    }
 
     ref.read(authStateProvider.notifier).savePendingRegistrationDraft(
       name: name,
@@ -86,7 +75,18 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => const RoleSelectionScreen(),
+        builder: (context) => SmsVerificationScreen(
+          email: email,
+          title: 'ელ-ფოსტის დადასტურება',
+          subtitle: 'შეიყვანეთ დამადასტურებელი კოდი',
+          onVerified: (ctx) async {
+            Navigator.of(ctx).pushReplacement(
+              MaterialPageRoute(
+                builder: (_) => const RoleSelectionScreen(),
+              ),
+            );
+          },
+        ),
       ),
     );
   }
@@ -232,9 +232,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 builder: (context, constraints) {
                   return SingleChildScrollView(
                     physics: const ClampingScrollPhysics(),
-                    padding: const EdgeInsets.fromLTRB(24, 12, 24, 20),
+                    padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
                     child: ConstrainedBox(
-                      constraints: BoxConstraints(minHeight: constraints.maxHeight - 32),
+                      constraints: BoxConstraints(minHeight: constraints.maxHeight - 44),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -242,19 +242,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              // Drag Handle Pill
-                              Center(
-                                child: Container(
-                                  width: 44,
-                                  height: 4,
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFE2E8F0),
-                                    borderRadius: BorderRadius.circular(2),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 14),
-
                               // Title
                               Text(
                                 'რეგისტრაცია',
@@ -318,28 +305,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                   },
                                 ),
                               ),
-                              const SizedBox(height: 10),
-
-                              // Field 4: Confirm Password
-                              _buildFieldLabel('გაიმეორეთ პაროლი'),
-                              const SizedBox(height: 6),
-                              _buildInputField(
-                                controller: _confirmPasswordController,
-                                hintText: 'გაიმეორეთ პაროლი',
-                                prefixIcon: LucideIcons.lock,
-                                obscureText: _obscureConfirmPassword,
-                                suffixIcon: IconButton(
-                                  icon: Icon(
-                                    _obscureConfirmPassword ? LucideIcons.eyeOff : LucideIcons.eye,
-                                    color: const Color(0xFF94A3B8),
-                                    size: 19,
-                                  ),
-                                  onPressed: () {
-                                    setState(() => _obscureConfirmPassword = !_obscureConfirmPassword);
-                                  },
-                                ),
-                              ),
-                              const SizedBox(height: 16),
+                              const SizedBox(height: 18),
 
                               // Main Sign Up Button
                               SizedBox(

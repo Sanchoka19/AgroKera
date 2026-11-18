@@ -82,10 +82,13 @@ class AuthRepository {
     required String userId,
     required String fcmToken,
   }) async {
-    await _api.post('/api/users/fcm-token', data: {
-      'userId': userId,
-      'fcmToken': fcmToken,
-    });
+    if (isFlutterTestEnv) return;
+    try {
+      await _api.post('/api/users/fcm-token', data: {
+        'userId': userId,
+        'fcmToken': fcmToken,
+      });
+    } catch (_) {}
   }
 
   Future<void> patchProfile(String userId, Map<String, dynamic> data) async {

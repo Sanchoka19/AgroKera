@@ -17,6 +17,7 @@ import '../../../notifications/presentation/screens/notifications_screen.dart';
 import '../../../orders/presentation/screens/order_chats_list_screen.dart';
 import 'avatar_picker_modal.dart';
 import 'cover_photo_picker_modal.dart';
+import 'edit_profile_bottom_sheet.dart';
 
 /// Parallax hero header for Farmer profile with cover, frosted action icons and farm card.
 class FarmerProfileHero extends ConsumerWidget {
@@ -293,53 +294,61 @@ class FarmerProfileHero extends ConsumerWidget {
                         ),
                       ),
 
-                      // Bottom-Right: Change Cover Photo Button
+                      // Top-Left: Change Cover Photo Button
                       Positioned(
-                        bottom: 12,
-                        right: 16,
+                        top: topInset + 8,
+                        left: 16,
                         child: Material(
                           color: Colors.transparent,
                           child: InkWell(
                             onTap: () => CoverPhotoPickerModal.show(context),
                             borderRadius: BorderRadius.circular(20),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 11,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.black.withValues(alpha: 0.65),
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(
-                                  color: Colors.white.withValues(alpha: 0.4),
-                                  width: 1,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.25),
-                                    blurRadius: 6,
-                                    offset: const Offset(0, 2),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(20),
+                              child: BackdropFilter(
+                                filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 11,
+                                    vertical: 6,
                                   ),
-                                ],
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Icon(
-                                    LucideIcons.camera,
-                                    color: Colors.white,
-                                    size: 14,
-                                  ),
-                                  const SizedBox(width: 5),
-                                  Text(
-                                    'შეცვლა',
-                                    style: GoogleFonts.notoSansGeorgian(
-                                      color: Colors.white,
-                                      fontSize: 11.5,
-                                      fontWeight: FontWeight.w700,
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withValues(alpha: 0.55),
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(
+                                      color:
+                                          Colors.white.withValues(alpha: 0.4),
+                                      width: 1,
                                     ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black
+                                            .withValues(alpha: 0.25),
+                                        blurRadius: 6,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
                                   ),
-                                ],
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(
+                                        LucideIcons.camera,
+                                        color: Colors.white,
+                                        size: 14,
+                                      ),
+                                      const SizedBox(width: 5),
+                                      Text(
+                                        'შეცვლა',
+                                        style: GoogleFonts.notoSansGeorgian(
+                                          color: Colors.white,
+                                          fontSize: 11.5,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               ),
                             ),
                           ),
@@ -436,65 +445,104 @@ class FarmerProfileHero extends ConsumerWidget {
 
                       // Farmer Name and Farm Name
                       Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Row(
+                        child: InkWell(
+                          onTap: () => EditProfileBottomSheet.show(context),
+                          borderRadius: BorderRadius.circular(10),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 2,
+                              horizontal: 2,
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
                               children: [
-                                Expanded(
-                                  child: Text(
-                                    authState.userName ?? 'რევაზ ბერიძე',
-                                    style: GoogleFonts.notoSansGeorgian(
-                                      fontSize: 17,
-                                      fontWeight: FontWeight.w800,
-                                      color: const Color(0xFF0F172A),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        authState.userName ?? 'რევაზ ბერიძე',
+                                        style: GoogleFonts.notoSansGeorgian(
+                                          fontSize: 16.5,
+                                          fontWeight: FontWeight.w800,
+                                          color: const Color(0xFF0F172A),
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
                                     ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
+                                    const SizedBox(width: 4),
+                                    Tooltip(
+                                      message: 'ვერიფიცირებული ფერმერი',
+                                      child: SvgPicture.asset(
+                                        AppAssets.verifiedBadge,
+                                        width: 18,
+                                        height: 18,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                const SizedBox(width: 6),
-                                Tooltip(
-                                  message: 'ვერიფიცირებული ფერმერი',
-                                  child: SvgPicture.asset(
-                                    AppAssets.verifiedBadge,
-                                    width: 20,
-                                    height: 20,
-                                  ),
+                                const SizedBox(height: 4),
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    const Icon(
+                                      LucideIcons.sprout,
+                                      size: 14,
+                                      color: AppColors.primary,
+                                    ),
+                                    const SizedBox(width: 5),
+                                    Expanded(
+                                      child: Text(
+                                        (authState.farmName != null &&
+                                                authState
+                                                    .farmName!.trim().isNotEmpty)
+                                            ? authState.farmName!
+                                            : 'ჩემი მეურნეობა',
+                                        style: GoogleFonts.notoSansGeorgian(
+                                          fontSize: 13,
+                                          color: const Color(0xFF475569),
+                                          fontWeight: FontWeight.w600,
+                                          height: 1.25,
+                                        ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.visible,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 5),
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                const Icon(
-                                  LucideIcons.sprout,
-                                  size: 15,
-                                  color: AppColors.primary,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+
+                      // Edit Profile Button
+                      Material(
+                        color: Colors.transparent,
+                        child: Tooltip(
+                          message: 'პროფილის რედაქტირება',
+                          child: InkWell(
+                            onTap: () => EditProfileBottomSheet.show(context),
+                            borderRadius: BorderRadius.circular(10),
+                            child: Container(
+                              padding: const EdgeInsets.all(7),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF8FAFC),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                  color: const Color(0xFFE2E8F0),
+                                  width: 1,
                                 ),
-                                const SizedBox(width: 6),
-                                Expanded(
-                                  child: Text(
-                                    (authState.farmName != null &&
-                                            authState
-                                                .farmName!.trim().isNotEmpty)
-                                        ? authState.farmName!
-                                        : 'ჩემი მეურნეობა',
-                                    style: GoogleFonts.notoSansGeorgian(
-                                      fontSize: 13.5,
-                                      color: const Color(0xFF475569),
-                                      fontWeight: FontWeight.w600,
-                                      height: 1.25,
-                                    ),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.visible,
-                                  ),
-                                ),
-                              ],
+                              ),
+                              child: const Icon(
+                                LucideIcons.pencil,
+                                size: 14,
+                                color: Color(0xFF475569),
+                              ),
                             ),
-                          ],
+                          ),
                         ),
                       ),
                     ],

@@ -11,6 +11,7 @@ class CustomerProfileHeader extends StatelessWidget {
   final String userName;
   final String userEmail;
   final VoidCallback onAvatarTap;
+  final VoidCallback? onEditTap;
 
   const CustomerProfileHeader({
     super.key,
@@ -18,6 +19,7 @@ class CustomerProfileHeader extends StatelessWidget {
     required this.userName,
     required this.userEmail,
     required this.onAvatarTap,
+    this.onEditTap,
   });
 
   Widget _buildAvatarImage(String? url, [double size = 42]) {
@@ -120,16 +122,42 @@ class CustomerProfileHeader extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 14),
-          SizedBox(
-            width: double.infinity,
-            child: Text(
-              userName,
-              textAlign: TextAlign.center,
-              style: GoogleFonts.notoSansGeorgian(
-                fontSize: 22,
-                fontWeight: FontWeight.w800,
-                color: const Color(0xFF0F172A),
-              ),
+          GestureDetector(
+            onTap: onEditTap,
+            behavior: HitTestBehavior.opaque,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Flexible(
+                  child: Text(
+                    userName,
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.notoSansGeorgian(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                      color: const Color(0xFF0F172A),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                if (onEditTap != null) ...[
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.all(5),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFF1F5F9),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      LucideIcons.pencil,
+                      size: 13,
+                      color: Color(0xFF475569),
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
           const SizedBox(height: 4),

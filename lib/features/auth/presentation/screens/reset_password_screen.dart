@@ -38,7 +38,19 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     final p1 = _newPasswordController.text;
     final p2 = _confirmPasswordController.text;
 
-    if (p1.isNotEmpty && p2.isNotEmpty && p1 != p2) {
+    if (p1.isEmpty) {
+      AppToast.error(context, 'გთხოვთ შეიყვანოთ ახალი პაროლი');
+      return;
+    }
+    if (p1.length < 6) {
+      AppToast.error(context, 'პაროლი უნდა შედგებოდეს მინიმუმ 6 სიმბოლოსგან');
+      return;
+    }
+    if (p2.isEmpty) {
+      AppToast.error(context, 'გთხოვთ გაიმეოროთ ახალი პაროლი');
+      return;
+    }
+    if (p1 != p2) {
       AppToast.error(context, 'პაროლები ერთმანეთს არ ემთხვევა.');
       return;
     }

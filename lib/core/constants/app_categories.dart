@@ -10,6 +10,7 @@ abstract final class AppCategories {
       name: 'ხილი',
       productCount: 0,
       imageUrl: AppAssets.categoryFruit,
+      svgUrl: AppAssets.categorySvgFruit,
       backgroundColor: Color(0xFF7CB342),
     ),
     CategoryModel(
@@ -17,6 +18,7 @@ abstract final class AppCategories {
       name: 'ციტრუსი',
       productCount: 0,
       imageUrl: AppAssets.categoryCitrus,
+      svgUrl: AppAssets.categorySvgCitrus,
       backgroundColor: Color(0xFFE5A93C),
     ),
     CategoryModel(
@@ -24,6 +26,7 @@ abstract final class AppCategories {
       name: 'კენკრა',
       productCount: 0,
       imageUrl: AppAssets.categoryBerry,
+      svgUrl: AppAssets.categorySvgBerry,
       backgroundColor: Color(0xFF8B263E),
     ),
     CategoryModel(
@@ -31,6 +34,7 @@ abstract final class AppCategories {
       name: 'ბოსტნეული',
       productCount: 0,
       imageUrl: AppAssets.categoryVegetable,
+      svgUrl: AppAssets.categorySvgVegetable,
       backgroundColor: Color(0xFF1E7B54),
     ),
     CategoryModel(
@@ -38,6 +42,7 @@ abstract final class AppCategories {
       name: 'ცხოველური პროდუქტები',
       productCount: 0,
       imageUrl: AppAssets.categoryMilk,
+      svgUrl: AppAssets.categorySvgMilk,
       backgroundColor: Color(0xFFDE8D1D),
     ),
     CategoryModel(
@@ -45,6 +50,7 @@ abstract final class AppCategories {
       name: 'მარცვლეული და პარკოსანი',
       productCount: 0,
       imageUrl: AppAssets.categoryBean,
+      svgUrl: AppAssets.categorySvgBean,
       backgroundColor: Color(0xFFC78F52),
     ),
     CategoryModel(
@@ -52,6 +58,7 @@ abstract final class AppCategories {
       name: 'თაფლი და მეფუტკრეობა',
       productCount: 0,
       imageUrl: AppAssets.categoryHoney,
+      svgUrl: AppAssets.categorySvgHoney,
       backgroundColor: Color(0xFFD97706),
     ),
     CategoryModel(
@@ -59,6 +66,7 @@ abstract final class AppCategories {
       name: 'მეღვინეობა და სასმელები',
       productCount: 0,
       imageUrl: AppAssets.categoryWine,
+      svgUrl: AppAssets.categorySvgWine,
       backgroundColor: Color(0xFF9D174D),
     ),
   ];

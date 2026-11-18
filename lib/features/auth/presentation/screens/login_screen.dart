@@ -202,9 +202,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 builder: (context, constraints) {
                   return SingleChildScrollView(
                     physics: const ClampingScrollPhysics(),
-                    padding: const EdgeInsets.fromLTRB(24, 12, 24, 20),
+                    padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
                     child: ConstrainedBox(
-                      constraints: BoxConstraints(minHeight: constraints.maxHeight - 32),
+                      constraints: BoxConstraints(minHeight: constraints.maxHeight - 44),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -212,19 +212,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              // Drag Handle Pill
-                              Center(
-                                child: Container(
-                                  width: 44,
-                                  height: 4,
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFE2E8F0),
-                                    borderRadius: BorderRadius.circular(2),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 14),
-
                               // Title
                               Text(
                                 'სისტემაში შესვლა',

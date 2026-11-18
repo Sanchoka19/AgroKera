@@ -1,0 +1,63 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="orangeGrad" x1="16" y1="18" x2="44" y2="52" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFA726" />
+      <stop offset="60%" stop-color="#FF9800" />
+      <stop offset="100%" stop-color="#F57C00" />
+    </linearGradient>
+    <linearGradient id="slicePulpGrad" x1="28" y1="28" x2="54" y2="54" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFB74D" />
+      <stop offset="100%" stop-color="#FF9800" />
+    </linearGradient>
+    <linearGradient id="citrusLeaf" x1="22" y1="8" x2="36" y2="20" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#81C784" />
+      <stop offset="100%" stop-color="#388E3C" />
+    </linearGradient>
+  </defs>
+
+  <!-- Ambient Floor Shadow -->
+  <ellipse cx="32" cy="57" rx="22" ry="4" fill="#0F172A" fill-opacity="0.12" />
+
+  <!-- Whole Orange Behind -->
+  <g id="wholeOrange">
+    <circle cx="25" cy="36" r="16" fill="url(#orangeGrad)" />
+    <!-- Citrus Skin Texture Pores / Dimples -->
+    <circle cx="16" cy="32" r="0.8" fill="#F57C00" opacity="0.6" />
+    <circle cx="20" cy="27" r="0.8" fill="#F57C00" opacity="0.6" />
+    <circle cx="18" cy="40" r="0.8" fill="#F57C00" opacity="0.6" />
+    <circle cx="23" cy="45" r="0.8" fill="#F57C00" opacity="0.6" />
+    <!-- Gloss Highlight -->
+    <path d="M15 28C13 32 14 38 17 42" stroke="#FFE0B2" stroke-width="2.5" stroke-linecap="round" opacity="0.75" />
+    <!-- Stem & Leaf -->
+    <path d="M25 20C26 17 28 15 30 14" stroke="#5D4037" stroke-width="2" stroke-linecap="round" />
+    <path d="M26 18C31 14 38 16 38 20C34 22 29 21 26 18Z" fill="url(#citrusLeaf)" />
+  </g>
+
+  <!-- Citrus Slice in Front -->
+  <g id="citrusSlice">
+    <!-- Outer Rind -->
+    <circle cx="43" cy="43" r="13" fill="#FB8C00" />
+    <!-- White Pith -->
+    <circle cx="43" cy="43" r="11.5" fill="#FFF8E1" />
+    <!-- Inner Pulp Base -->
+    <circle cx="43" cy="43" r="10" fill="url(#slicePulpGrad)" />
+
+    <!-- Citrus Segments (Triangular wedges) -->
+    <!-- Wedge 1 (top) -->
+    <path d="M43 41.5L41.5 35C42.5 34.6 43.5 34.6 44.5 35L43 41.5Z" fill="#FFA726" />
+    <!-- Wedge 2 (top right) -->
+    <path d="M44.5 42L49.5 37.5C50.2 38.3 50.7 39.2 51 40.2L44.5 42Z" fill="#FFA726" />
+    <!-- Wedge 3 (bottom right) -->
+    <path d="M44.5 44L51 45.8C50.7 46.8 50.2 47.7 49.5 48.5L44.5 44Z" fill="#FFA726" />
+    <!-- Wedge 4 (bottom) -->
+    <path d="M43 44.5L44.5 51C43.5 51.4 42.5 51.4 41.5 51L43 44.5Z" fill="#FFA726" />
+    <!-- Wedge 5 (bottom left) -->
+    <path d="M41.5 44L36.5 48.5C35.8 47.7 35.3 46.8 35 45.8L41.5 44Z" fill="#FFA726" />
+    <!-- Wedge 6 (top left) -->
+    <path d="M41.5 42L35 40.2C35.3 39.2 35.8 38.3 36.5 37.5L41.5 42Z" fill="#FFA726" />
+
+    <!-- Center Core -->
+    <circle cx="43" cy="43" r="1.5" fill="#FFF8E1" />
+  </g>
+</svg>
+

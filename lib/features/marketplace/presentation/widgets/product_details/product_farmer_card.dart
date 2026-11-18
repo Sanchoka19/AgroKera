@@ -31,11 +31,10 @@ class ProductFarmerCard extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
             boxShadow: [
               BoxShadow(
                 color: const Color(0xFF0F172A).withValues(alpha: 0.04),
-                blurRadius: 10,
+                blurRadius: 12,
                 offset: const Offset(0, 3),
               ),
             ],

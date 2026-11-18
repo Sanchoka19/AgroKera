@@ -86,13 +86,17 @@ class DraggableFloatingCartState extends ConsumerState<DraggableFloatingCart>
     final screenHeight = media.size.height;
     final bottomBarHeight = media.padding.bottom + widget.bottomOffset;
     final keyboardHeight = media.viewInsets.bottom;
-    final topSafe = media.padding.top + kToolbarHeight;
+    final hasAppBar = Scaffold.maybeOf(context)?.hasAppBar ?? false;
+    final topSafe = hasAppBar ? 12.0 : (media.padding.top + kToolbarHeight);
+    final availableHeight = hasAppBar
+        ? (screenHeight - (media.padding.top + kToolbarHeight))
+        : screenHeight;
     final maxBottom =
-        screenHeight - bottomBarHeight - keyboardHeight - widget.size - 12.0;
+        availableHeight - bottomBarHeight - keyboardHeight - widget.size - 12.0;
 
     if (!_isInitialized) {
       _cartX = screenWidth - widget.size - 16.0;
-      _cartY = maxBottom > topSafe ? maxBottom : topSafe + 50.0;
+      _cartY = maxBottom > topSafe ? maxBottom : topSafe + 20.0;
       _isInitialized = true;
     } else if (_cartY != null && _cartY! > maxBottom) {
       _cartY = maxBottom > topSafe ? maxBottom : topSafe;
@@ -185,8 +189,13 @@ class DraggableFloatingCartState extends ConsumerState<DraggableFloatingCart>
           final screenHeight = media.size.height;
           final bottomBarHeight = media.padding.bottom + widget.bottomOffset;
           final keyboardHeight = media.viewInsets.bottom;
-          final topSafe = media.padding.top + kToolbarHeight;
-          final maxBottom = screenHeight -
+          final hasAppBar = Scaffold.maybeOf(context)?.hasAppBar ?? false;
+          final topSafe =
+              hasAppBar ? 12.0 : (media.padding.top + kToolbarHeight);
+          final availableHeight = hasAppBar
+              ? (screenHeight - (media.padding.top + kToolbarHeight))
+              : screenHeight;
+          final maxBottom = availableHeight -
               bottomBarHeight -
               keyboardHeight -
               widget.size -
@@ -197,7 +206,7 @@ class DraggableFloatingCartState extends ConsumerState<DraggableFloatingCart>
             _cartX = (_cartX! + details.delta.dx)
                 .clamp(16.0, screenWidth - widget.size - 16.0);
             _cartY = (_cartY! + details.delta.dy)
-                .clamp(topSafe, maxBottom > topSafe ? maxBottom : topSafe + 50.0);
+                .clamp(topSafe, maxBottom > topSafe ? maxBottom : topSafe + 20.0);
           });
         },
         onPanEnd: (details) {

@@ -9,6 +9,7 @@ import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/auth_required_bottom_sheet.dart';
 import '../../../../core/widgets/primary_button.dart';
 import '../../../../core/widgets/product_card.dart';
+import '../../../../core/widgets/product_cart_helper.dart';
 import '../../data/models/farmer_model.dart';
 import '../providers/marketplace_provider.dart';
 import '../widgets/product_details/product_delivery_info_card.dart';
@@ -420,14 +421,14 @@ class _FarmerProfileScreenState extends ConsumerState<FarmerProfileScreen>
                             ),
                           );
                         },
-                        onAddPressed: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  ProductDetailsScreen(product: product),
-                            ),
-                          );
-                        },
+                        onAddWithContext: isOwner
+                            ? null
+                            : (btnContext) => ProductCartHelper.handleAddToCart(
+                                  context: context,
+                                  ref: ref,
+                                  product: product,
+                                  buttonContext: btnContext,
+                                ),
                       );
                     },
                   ),

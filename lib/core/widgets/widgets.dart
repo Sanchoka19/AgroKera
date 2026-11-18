@@ -1,4 +1,6 @@
 export 'address_required_bottom_sheet.dart';
+export 'app_confirmation_bottom_sheet.dart';
+export 'app_filter_tab.dart';
 export 'app_logo.dart';
 export 'auth_required_bottom_sheet.dart';
 export 'custom_text_field.dart';
@@ -6,4 +8,6 @@ export 'draggable_floating_cart.dart';
 export 'fly_to_cart_animator.dart';
 export 'primary_button.dart';
 export 'product_card.dart';
+export 'product_cart_helper.dart';
+export 'product_quick_add_bottom_sheet.dart';
 export 'status_badge.dart';

@@ -25,6 +25,23 @@ class Step1FarmInfoWidget extends ConsumerStatefulWidget {
 
 class _Step1FarmInfoWidgetState extends ConsumerState<Step1FarmInfoWidget> {
   final _imagePicker = ImagePicker();
+  late final TextEditingController _addressController;
+  late final TextEditingController _landmarkController;
+
+  @override
+  void initState() {
+    super.initState();
+    final state = ref.read(farmerOnboardingProvider);
+    _addressController = TextEditingController(text: state.dynamicAddress);
+    _landmarkController = TextEditingController(text: state.landmark);
+  }
+
+  @override
+  void dispose() {
+    _addressController.dispose();
+    _landmarkController.dispose();
+    super.dispose();
+  }
 
   Future<void> _pickFarmPhoto() async {
     showModalBottomSheet(
@@ -237,6 +254,9 @@ class _Step1FarmInfoWidgetState extends ConsumerState<Step1FarmInfoWidget> {
       final resolved =
           await ref.read(farmerOnboardingProvider.notifier).detectGpsLocation();
       if (!mounted) return;
+      setState(() {
+        _addressController.text = resolved;
+      });
       AppToast.success(context, 'მისამართი დადგენილია: $resolved');
     } catch (e) {
       if (!mounted) return;
@@ -265,6 +285,9 @@ class _Step1FarmInfoWidgetState extends ConsumerState<Step1FarmInfoWidget> {
                   point,
                   address: address,
                 );
+            setState(() {
+              _addressController.text = address;
+            });
           },
           onToggleFullScreen: () => Navigator.of(context).pop(),
         ),
@@ -495,6 +518,8 @@ class _Step1FarmInfoWidgetState extends ConsumerState<Step1FarmInfoWidget> {
               items: FarmerOnboardingState.regions,
               onChanged: (val) {
                 ref.read(farmerOnboardingProvider.notifier).setRegion(val);
+                final updatedState = ref.read(farmerOnboardingProvider);
+                _addressController.text = updatedState.dynamicAddress;
               },
             ),
             const SizedBox(height: 16),
@@ -506,6 +531,8 @@ class _Step1FarmInfoWidgetState extends ConsumerState<Step1FarmInfoWidget> {
               items: availableCities,
               onChanged: (val) {
                 ref.read(farmerOnboardingProvider.notifier).setCity(val);
+                final updatedState = ref.read(farmerOnboardingProvider);
+                _addressController.text = updatedState.dynamicAddress;
               },
             ),
             const SizedBox(height: 16),
@@ -545,8 +572,105 @@ class _Step1FarmInfoWidgetState extends ConsumerState<Step1FarmInfoWidget> {
                       point,
                       address: address,
                     );
+                setState(() {
+                  _addressController.text = address;
+                });
               },
               onToggleFullScreen: () => _openFullScreenMap(state),
+            ),
+            const SizedBox(height: 16),
+
+            // 1. Exact Address Line Input
+            const OnboardingFieldLabel('მეურნეობის ზუსტი მისამართი (სოფელი, ქუჩა, ნომერი) *'),
+            const SizedBox(height: 8),
+            TextFormField(
+              controller: _addressController,
+              onChanged: (val) {
+                ref.read(farmerOnboardingProvider.notifier).setDynamicAddress(val);
+              },
+              style: GoogleFonts.notoSansGeorgian(fontSize: 14),
+              decoration: InputDecoration(
+                hintText: 'მაგ: კახეთი, გურჯაანი, სოფ. ვაზისუბანი',
+                hintStyle: GoogleFonts.notoSansGeorgian(
+                  fontSize: 13,
+                  color: const Color(0xFF94A3B8),
+                ),
+                prefixIcon: const Icon(
+                  LucideIcons.mapPin,
+                  size: 18,
+                  color: AppColors.primary,
+                ),
+                filled: true,
+                fillColor: const Color(0xFFF8FAFC),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(
+                    color: AppColors.primary,
+                    width: 1.5,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // 2. Optional Landmark Input
+            const OnboardingFieldLabel('ორიენტირი / როგორ მოვიდეთ (არასავალდებულო)'),
+            const SizedBox(height: 8),
+            TextFormField(
+              controller: _landmarkController,
+              onChanged: (val) {
+                ref.read(farmerOnboardingProvider.notifier).setLandmark(val);
+              },
+              maxLines: 2,
+              style: GoogleFonts.notoSansGeorgian(fontSize: 13.5),
+              decoration: InputDecoration(
+                hintText: 'მაგ: სოფლის ცენტრთან, წითელი ჭიშკარი, მეურნეობა #3',
+                hintStyle: GoogleFonts.notoSansGeorgian(
+                  fontSize: 12.5,
+                  color: const Color(0xFF94A3B8),
+                ),
+                prefixIcon: const Padding(
+                  padding: EdgeInsets.only(bottom: 24),
+                  child: Icon(
+                    LucideIcons.signpost,
+                    size: 18,
+                    color: Color(0xFF64748B),
+                  ),
+                ),
+                filled: true,
+                fillColor: const Color(0xFFF8FAFC),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(
+                    color: AppColors.primary,
+                    width: 1.5,
+                  ),
+                ),
+              ),
             ),
           ],
         ),

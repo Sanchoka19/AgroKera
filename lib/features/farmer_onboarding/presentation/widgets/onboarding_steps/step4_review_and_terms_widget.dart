@@ -155,8 +155,13 @@ class Step4ReviewAndTermsWidget extends ConsumerWidget {
                 'მისამართი:',
                 state.dynamicAddress.isNotEmpty
                     ? state.dynamicAddress
-                    : '${state.selectedRegion}, ${state.selectedCity}, 1 რაიონი',
+                    : '${state.selectedRegion}, ${state.selectedCity}',
               ),
+              if (state.landmark.trim().isNotEmpty)
+                OnboardingReviewRow(
+                  'ორიენტირი:',
+                  state.landmark.trim(),
+                ),
               OnboardingReviewRow('ბანკი:', state.selectedBank),
               OnboardingReviewRow('IBAN:', maskedIban),
               OnboardingReviewRow(

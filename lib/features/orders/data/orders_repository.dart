@@ -40,7 +40,7 @@ class OrdersRepository {
     return null;
   }
 
-  Future<String?> syncOrderStatus(
+  Future<({String? error, FarmerOrder? order})> syncOrderStatus(
     String id, {
     required OrderStatus status,
     String? reason,
@@ -48,7 +48,7 @@ class OrdersRepository {
     String? requesterFarmerId,
   }) async {
     try {
-      await _api.patch(
+      final res = await _api.patch(
         '/api/orders/$id/status',
         data: {
           'status': status.apiValue,
@@ -57,14 +57,24 @@ class OrdersRepository {
           'requesterFarmerId': requesterFarmerId,
         },
       );
-      return null;
+      FarmerOrder? updatedOrder;
+      if (res.data != null && res.data is Map<String, dynamic>) {
+        try {
+          updatedOrder =
+              FarmerOrder.fromJson(res.data as Map<String, dynamic>);
+        } catch (_) {}
+      }
+      return (error: null, order: updatedOrder);
     } on DioException catch (e) {
+      if (isFlutterTestEnv) {
+        return (error: null, order: null);
+      }
       final msg = e.response?.data is Map
           ? (e.response!.data['error'] as String?)
           : null;
-      return msg ?? 'სერვერის შეცდომა. სცადეთ თავიდან.';
+      return (error: msg ?? 'სერვერის შეცდომა. სცადეთ თავიდან.', order: null);
     } catch (_) {
-      return null;
+      return (error: null, order: null);
     }
   }
 

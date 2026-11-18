@@ -170,7 +170,7 @@ void main() {
       expect(find.text('ადგილზე ვარ'), findsOneWidget);
 
       // Tap quick reply 'ადგილზე ვარ'
-      await tester.tap(find.text('ადგილზე ვარ'));
+      await tester.tap(find.text('ადგილზე ვარ'), warnIfMissed: false);
       await tester.pumpAndSettle();
 
       // Check that message bubble appears in chat

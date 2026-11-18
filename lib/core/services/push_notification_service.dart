@@ -30,6 +30,37 @@ class PushNotificationService {
   final FlutterLocalNotificationsPlugin _localNotifications =
       FlutterLocalNotificationsPlugin();
 
+  /// When user is viewing a chat, this holds the orderId so foreground notifications
+  /// for that same order are suppressed from showing a pop-up head-up banner.
+  static String? activeChatOrderId;
+
+  static const AndroidNotificationChannel _ordersChannel =
+      AndroidNotificationChannel(
+    'agrokera_orders_channel',
+    'შეკვეთების შეტყობინებები',
+    description: 'შეკვეთების მიღება, სტატუსის ცვლილებები და PIN კოდი',
+    importance: Importance.max,
+    playSound: true,
+  );
+
+  static const AndroidNotificationChannel _chatChannel =
+      AndroidNotificationChannel(
+    'agrokera_chat_channel',
+    'ჩათის შეტყობინებები',
+    description: 'შეტყობინებები ფერმერთან და კლიენტთან ჩათიდან',
+    importance: Importance.high,
+    playSound: true,
+  );
+
+  static const AndroidNotificationChannel _promotionsChannel =
+      AndroidNotificationChannel(
+    'agrokera_promotions_channel',
+    'სიახლეები და აქციები',
+    description: 'სეზონური ფასდაკლებები და შეთავაზებები',
+    importance: Importance.defaultImportance,
+    playSound: false,
+  );
+
   static const AndroidNotificationChannel _channel =
       AndroidNotificationChannel(
     'agrokera_high_importance_channel',
@@ -98,12 +129,15 @@ class PushNotificationService {
       print('FCM Permission status: ${settings.authorizationStatus}');
     }
 
-    // 3. Setup Android notification channel for head-up notifications
+    // 3. Setup Android notification channels for head-up notifications
     if (Platform.isAndroid) {
-      await _localNotifications
+      final androidPlugin = _localNotifications
           .resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin>()
-          ?.createNotificationChannel(_channel);
+              AndroidFlutterLocalNotificationsPlugin>();
+      await androidPlugin?.createNotificationChannel(_ordersChannel);
+      await androidPlugin?.createNotificationChannel(_chatChannel);
+      await androidPlugin?.createNotificationChannel(_promotionsChannel);
+      await androidPlugin?.createNotificationChannel(_channel);
     }
 
     // 4. Initialize flutter_local_notifications (18.x API)
@@ -148,23 +182,48 @@ class PushNotificationService {
         print('Foreground message received: ${message.notification?.title}');
       }
 
+      final type = message.data['type']?.toString();
+      final orderId = message.data['orderId']?.toString();
+
+      // If the user is currently looking at this order's chat screen, suppress heads-up push banner
+      if (type == 'chat_message' &&
+          orderId != null &&
+          orderId == activeChatOrderId) {
+        if (kDebugMode) {
+          print('Foreground chat message suppressed for active order: $orderId');
+        }
+        if (onForegroundMessage != null) onForegroundMessage(message);
+        return;
+      }
+
       final RemoteNotification? notification = message.notification;
       final AndroidNotification? android = message.notification?.android;
 
       if (notification != null && Platform.isAndroid) {
+        final isChat = type == 'chat_message' ||
+            (notification.title?.contains('შეტყობინება') ?? false);
+        final isPromo = message.data['category'] == 'promotions';
+
+        final targetChannel = isChat
+            ? _chatChannel
+            : isPromo
+                ? _promotionsChannel
+                : _ordersChannel;
+
         _localNotifications.show(
           notification.hashCode,
           notification.title,
           notification.body,
           NotificationDetails(
             android: AndroidNotificationDetails(
-              _channel.id,
-              _channel.name,
-              channelDescription: _channel.description,
+              targetChannel.id,
+              targetChannel.name,
+              channelDescription: targetChannel.description,
               icon: android?.smallIcon ?? '@drawable/ic_notification',
-              importance: Importance.max,
-              priority: Priority.high,
-              playSound: true,
+              importance: targetChannel.importance,
+              priority: isPromo ? Priority.defaultPriority : Priority.high,
+              playSound: targetChannel.playSound,
+              tag: isChat && orderId != null ? 'order_chat_$orderId' : null,
             ),
           ),
           payload: jsonEncode(message.data),

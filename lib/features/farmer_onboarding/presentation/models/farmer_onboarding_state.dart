@@ -37,6 +37,7 @@ class FarmerOnboardingState {
   final String selectedRegion;
   final String selectedCity;
   final String dynamicAddress;
+  final String landmark;
   final LatLng? selectedLocation;
 
   // Step 2: Legal Status
@@ -83,6 +84,7 @@ class FarmerOnboardingState {
     this.selectedRegion = 'კახეთი',
     this.selectedCity = 'გურჯაანი',
     this.dynamicAddress = 'კახეთი, გურჯაანი',
+    this.landmark = '',
     this.selectedLocation,
     this.selectedStatus = LegalStatus.physical,
     this.idNumber = '',
@@ -196,6 +198,7 @@ class FarmerOnboardingState {
     String? selectedRegion,
     String? selectedCity,
     String? dynamicAddress,
+    String? landmark,
     LatLng? selectedLocation,
     LegalStatus? selectedStatus,
     String? idNumber,
@@ -232,6 +235,7 @@ class FarmerOnboardingState {
       selectedRegion: selectedRegion ?? this.selectedRegion,
       selectedCity: selectedCity ?? this.selectedCity,
       dynamicAddress: dynamicAddress ?? this.dynamicAddress,
+      landmark: landmark ?? this.landmark,
       selectedLocation: selectedLocation ?? this.selectedLocation,
       selectedStatus: selectedStatus ?? this.selectedStatus,
       idNumber: idNumber ?? this.idNumber,

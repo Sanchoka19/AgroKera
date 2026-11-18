@@ -59,6 +59,11 @@ class AddressRepository {
     } catch (_) {}
   }
 
+  /// Clears stored delivery addresses from persistent storage
+  Future<void> clearAddresses() async {
+    await _storage.clearAddresses();
+  }
+
   /// Synchronizes address with the remote backend user profile if authenticated
   Future<void> syncAddressWithBackend({
     required String? userId,

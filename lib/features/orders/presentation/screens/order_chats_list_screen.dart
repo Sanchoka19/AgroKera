@@ -2,10 +2,13 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../core/auth/auth_state_provider.dart';
+import '../../../../core/constants/app_assets.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/app_filter_tab.dart';
 import '../../../../core/widgets/app_header.dart';
 import '../../domain/models/farmer_order_model.dart';
 import '../../domain/models/order_message_model.dart';
@@ -153,24 +156,27 @@ class _OrderChatsListScreenState extends ConsumerState<OrderChatsListScreen> {
                 physics: const BouncingScrollPhysics(),
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
                 children: [
-                  _buildTabButton(
+                  AppFilterTab(
                     label: 'აქტიური',
-                    badgeCount: activeOrders.length,
+                    count: activeOrders.length,
+                    showZeroCount: true,
                     isSelected: _selectedTab == OrderChatTab.active,
                     onTap: () =>
                         setState(() => _selectedTab = OrderChatTab.active),
                   ),
                   const SizedBox(width: 8),
-                  _buildTabButton(
+                  AppFilterTab(
                     label: 'ძველი',
-                    badgeCount: oldOrders.length,
+                    count: oldOrders.length,
+                    showZeroCount: true,
                     isSelected: _selectedTab == OrderChatTab.old,
                     onTap: () => setState(() => _selectedTab = OrderChatTab.old),
                   ),
                   const SizedBox(width: 8),
-                  _buildTabButton(
+                  AppFilterTab(
                     label: 'ყველა',
-                    badgeCount: allOrders.length,
+                    count: allOrders.length,
+                    showZeroCount: true,
                     isSelected: _selectedTab == OrderChatTab.all,
                     onTap: () => setState(() => _selectedTab = OrderChatTab.all),
                   ),
@@ -191,7 +197,20 @@ class _OrderChatsListScreenState extends ConsumerState<OrderChatsListScreen> {
                   _preloadOrderMessages();
                 },
                 child: displayedOrders.isEmpty
-                    ? _buildEmptyState()
+                    ? LayoutBuilder(
+                        builder: (context, constraints) => SingleChildScrollView(
+                          physics: const AlwaysScrollableScrollPhysics(
+                            parent: BouncingScrollPhysics(),
+                          ),
+                          child: ConstrainedBox(
+                            constraints: BoxConstraints(
+                              minHeight: constraints.maxHeight,
+                              minWidth: constraints.maxWidth,
+                            ),
+                            child: _buildEmptyState(),
+                          ),
+                        ),
+                      )
                     : ListView.separated(
                         physics: const AlwaysScrollableScrollPhysics(
                           parent: ClampingScrollPhysics(),
@@ -212,74 +231,6 @@ class _OrderChatsListScreenState extends ConsumerState<OrderChatsListScreen> {
     );
   }
 
-  Widget _buildTabButton({
-    required String label,
-    required int badgeCount,
-    required bool isSelected,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: () {
-        HapticFeedback.lightImpact();
-        onTap();
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        curve: Curves.easeInOut,
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary : Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSelected ? AppColors.primary : const Color(0xFFE2E8F0),
-            width: isSelected ? 1.5 : 1.0,
-          ),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.22),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3),
-                  ),
-                ]
-              : null,
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              label,
-              style: GoogleFonts.notoSansGeorgian(
-                fontSize: 12.5,
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                color: isSelected ? Colors.white : const Color(0xFF475569),
-              ),
-            ),
-            const SizedBox(width: 6),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? Colors.white.withValues(alpha: 0.25)
-                    : const Color(0xFFF1F5F9),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text(
-                '$badgeCount',
-                style: GoogleFonts.notoSansGeorgian(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w800,
-                  color: isSelected ? Colors.white : const Color(0xFF64748B),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   Widget _buildChatCard(FarmerOrder order, bool isFarmer) {
     final chatMap = ref.watch(orderChatProvider);
@@ -498,22 +449,17 @@ class _OrderChatsListScreenState extends ConsumerState<OrderChatsListScreen> {
   Widget _buildEmptyState() {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Container(
-              width: 76,
-              height: 76,
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.08),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                LucideIcons.messageSquareQuote,
-                size: 38,
-                color: AppColors.primary,
-              ),
+            SvgPicture.asset(
+              AppAssets.emptyChats,
+              width: 200,
+              height: 200,
+              fit: BoxFit.contain,
             ),
             const SizedBox(height: 20),
             Text(
@@ -522,8 +468,8 @@ class _OrderChatsListScreenState extends ConsumerState<OrderChatsListScreen> {
                   : 'ჩათები არ მოიძებნა',
               textAlign: TextAlign.center,
               style: GoogleFonts.notoSansGeorgian(
-                fontSize: 17,
-                fontWeight: FontWeight.w700,
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
                 color: const Color(0xFF0F172A),
               ),
             ),
@@ -532,7 +478,7 @@ class _OrderChatsListScreenState extends ConsumerState<OrderChatsListScreen> {
               'შეკვეთის გაფორმების შემდეგ აქ გამოჩნდება პირდაპირი ჩატი ფერმერთან დეტალების დასაზუსტებლად.',
               textAlign: TextAlign.center,
               style: GoogleFonts.notoSansGeorgian(
-                fontSize: 13,
+                fontSize: 13.5,
                 color: const Color(0xFF64748B),
                 height: 1.45,
               ),

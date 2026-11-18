@@ -5,6 +5,7 @@ class CategoryModel {
   final String name;
   final int productCount;
   final String imageUrl;
+  final String? svgUrl;
   final Color backgroundColor;
 
   const CategoryModel({
@@ -12,6 +13,7 @@ class CategoryModel {
     required this.name,
     required this.productCount,
     required this.imageUrl,
+    this.svgUrl,
     required this.backgroundColor,
   });
 }

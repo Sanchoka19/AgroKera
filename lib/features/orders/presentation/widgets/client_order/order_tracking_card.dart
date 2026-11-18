@@ -215,7 +215,7 @@ class _OrderTrackingCardState extends State<OrderTrackingCard> {
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
-                        'ფერმერის დადასტურების ვადა: ~${order.remainingCancellationTime.inMinutes} წთ',
+                        'ფერმერის დადასტურების ვადა: ${order.formattedRemainingCancellationTime}',
                         style: GoogleFonts.notoSansGeorgian(
                           fontSize: 11.5,
                           fontWeight: FontWeight.w600,

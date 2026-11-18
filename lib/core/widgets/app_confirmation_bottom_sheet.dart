@@ -121,6 +121,26 @@ class AppConfirmationBottomSheet extends StatelessWidget {
     );
   }
 
+  /// Preset for deleting a saved delivery or farm address
+  static Future<bool> showDeleteAddress({
+    required BuildContext context,
+    required String addressTitle,
+    String? addressDetails,
+  }) {
+    final detailsText = addressDetails != null && addressDetails.isNotEmpty
+        ? ' ($addressDetails)'
+        : '';
+    return show(
+      context: context,
+      title: 'მისამართის წაშლა',
+      message: 'ნამდვილად გსურთ "$addressTitle"$detailsText მისამართის წაშლა?',
+      confirmText: 'წაშლა',
+      cancelText: 'უკან',
+      type: ConfirmationType.destructive,
+      icon: LucideIcons.trash2,
+    );
+  }
+
   /// Preset for completing an order
   static Future<bool> showCompleteOrder({
     required BuildContext context,

@@ -8,6 +8,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/auth_required_bottom_sheet.dart';
 import '../../../../core/widgets/product_card.dart';
+import '../../../../core/widgets/product_cart_helper.dart';
 import '../providers/favorites_provider.dart';
 import '../providers/marketplace_provider.dart';
 import 'product_details_screen.dart';
@@ -203,9 +204,10 @@ class FavoritesScreen extends ConsumerWidget {
               itemCount: favoriteProducts.length,
               itemBuilder: (context, index) {
                 final product = favoriteProducts[index];
+                final isOwner = product.isOwnedBy(authState);
                 return ProductCard(
                   product: product,
-                  isOwner: product.isOwnedBy(authState),
+                  isOwner: isOwner,
                   onTap: () {
                     Navigator.of(context).push(
                       MaterialPageRoute(
@@ -213,6 +215,14 @@ class FavoritesScreen extends ConsumerWidget {
                       ),
                     );
                   },
+                  onAddWithContext: isOwner
+                      ? null
+                      : (btnContext) => ProductCartHelper.handleAddToCart(
+                            context: context,
+                            ref: ref,
+                            product: product,
+                            buttonContext: btnContext,
+                          ),
                 );
               },
             ),

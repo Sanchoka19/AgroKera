@@ -70,6 +70,39 @@ void main() {
       expect(order.cancellationReason, equals('მყიდველის თხოვნით'));
     });
 
+    test('acceptOrder preserves inProgress status during backend refresh until server confirms', () async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final notifier = container.read(farmerOrdersProvider.notifier);
+      final initialOrder = container
+          .read(farmerOrdersProvider)
+          .orders
+          .firstWhere((o) => o.status == OrderStatus.pending);
+
+      // Accept order optimistically
+      await notifier.acceptOrder(initialOrder.id);
+      expect(
+        container
+            .read(farmerOrdersProvider)
+            .orders
+            .firstWhere((o) => o.id == initialOrder.id)
+            .status,
+        equals(OrderStatus.inProgress),
+      );
+
+      // Trigger refreshFromBackend while sync is in-flight/reconciling
+      await notifier.refreshFromBackend();
+      expect(
+        container
+            .read(farmerOrdersProvider)
+            .orders
+            .firstWhere((o) => o.id == initialOrder.id)
+            .status,
+        equals(OrderStatus.inProgress),
+      );
+    });
+
     test('cancelOrder restores deducted stock back to marketplaceProvider inventory', () async {
       final container = ProviderContainer();
       addTearDown(container.dispose);
@@ -231,6 +264,108 @@ void main() {
         container.read(marketplaceProvider).products.firstWhere((p) => p.id == 'prod_1').stockQuantity,
         equals(initialStock),
       );
+    });
+
+    test('FarmerOrder.calculatePendingOrderDeadline respects working hours, quiet hours and delivery window', () {
+      // 1. Same day within working hours (e.g. 14:00 Georgia time / 10:00 UTC)
+      final middayUtc = DateTime.utc(2026, 6, 15, 10, 0); // 14:00 Georgia time
+      final dl1 = FarmerOrder.calculatePendingOrderDeadline(
+        now: middayUtc,
+        deliveryTimeWindow: 'დღეს, 18:00 - 20:00',
+      );
+      // Expected: +45 min -> 10:45 UTC
+      expect(dl1.toUtc(), equals(DateTime.utc(2026, 6, 15, 10, 45)));
+
+      // 2. Next-day delivery ("ხვალ") within working hours
+      final dl2 = FarmerOrder.calculatePendingOrderDeadline(
+        now: middayUtc,
+        deliveryTimeWindow: 'ხვალ, 12:00',
+      );
+      // Expected: +120 min (2 h) -> 12:00 UTC (16:00 Georgia)
+      expect(dl2.toUtc(), equals(DateTime.utc(2026, 6, 15, 12, 0)));
+
+      // 3. Late night quiet hours (23:00 Georgia / 19:00 UTC)
+      final nightUtc = DateTime.utc(2026, 6, 15, 19, 0); // 23:00 Georgia
+      final dl3 = FarmerOrder.calculatePendingOrderDeadline(
+        now: nightUtc,
+        deliveryTimeWindow: 'დღეს',
+      );
+      // Starts tomorrow at 08:00 Georgia (04:00 UTC) + 45 min = 08:45 Georgia (04:45 UTC)
+      expect(dl3.toUtc(), equals(DateTime.utc(2026, 6, 16, 4, 45)));
+
+      // 4. Early morning quiet hours (05:00 Georgia / 01:00 UTC)
+      final earlyUtc = DateTime.utc(2026, 6, 15, 1, 0); // 05:00 Georgia
+      final dl4 = FarmerOrder.calculatePendingOrderDeadline(
+        now: earlyUtc,
+        deliveryTimeWindow: 'დღეს',
+      );
+      // Starts today at 08:00 Georgia (04:00 UTC) + 45 min = 08:45 Georgia (04:45 UTC)
+      expect(dl4.toUtc(), equals(DateTime.utc(2026, 6, 15, 4, 45)));
+
+      // 5. Overflow at end of working day (20:30 Georgia / 16:30 UTC) with 45 min
+      // 30 min left today until 21:00 Georgia, remaining 15 min overflow to tomorrow 08:15 Georgia (04:15 UTC)
+      final eveningUtc = DateTime.utc(2026, 6, 15, 16, 30);
+      final dl5 = FarmerOrder.calculatePendingOrderDeadline(
+        now: eveningUtc,
+        deliveryTimeWindow: 'დღეს',
+      );
+      expect(dl5.toUtc(), equals(DateTime.utc(2026, 6, 16, 4, 15)));
+    });
+
+    test('acceptOrder restricts direct cancellation window to 10 minutes', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final notifier = container.read(farmerOrdersProvider.notifier);
+      final beforeAccept = DateTime.now();
+      notifier.acceptOrder('12349');
+
+      final order = container
+          .read(farmerOrdersProvider)
+          .orders
+          .firstWhere((o) => o.id == '12349');
+
+      expect(order.status, equals(OrderStatus.inProgress));
+      expect(order.cancellationDeadline, isNotNull);
+
+      final diffSec = order.cancellationDeadline!.difference(beforeAccept).inSeconds;
+      // Should be ~600 seconds (10 minutes)
+      expect(diffSec, greaterThanOrEqualTo(590));
+      expect(diffSec, lessThanOrEqualTo(615));
+      expect(order.canDirectlyCancel, isTrue);
+
+      // Once 10 minutes pass, direct cancellation is blocked
+      final expiredOrder = order.copyWith(
+        cancellationDeadline: DateTime.now().subtract(const Duration(seconds: 1)),
+      );
+      expect(expiredOrder.canDirectlyCancel, isFalse);
+    });
+
+    test('formattedRemainingCancellationTime formats hours and minutes cleanly', () {
+      final now = DateTime.now();
+      final orderWithHours = FarmerOrder(
+        id: '990',
+        createdAt: now,
+        status: OrderStatus.pending,
+        customerName: 'ტესტერი',
+        contactPerson: 'ტესტერი',
+        contactPhone: '+995599000000',
+        items: const [],
+        cancellationDeadline: now.add(const Duration(hours: 2, minutes: 15)),
+      );
+      expect(orderWithHours.formattedRemainingCancellationTime, contains('2 სთ'));
+
+      final orderWithMinutes = FarmerOrder(
+        id: '991',
+        createdAt: now,
+        status: OrderStatus.pending,
+        customerName: 'ტესტერი',
+        contactPerson: 'ტესტერი',
+        contactPhone: '+995599000000',
+        items: const [],
+        cancellationDeadline: now.add(const Duration(minutes: 25)),
+      );
+      expect(orderWithMinutes.formattedRemainingCancellationTime, equals('~25 წთ'));
     });
 
     test('FarmerOrder payment method helpers correctly identify BankTransfer vs Cash', () {

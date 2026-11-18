@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:agrokera/core/auth/auth_state_provider.dart';
+import 'package:agrokera/core/storage/secure_storage_service.dart';
 import 'package:agrokera/features/marketplace/presentation/providers/marketplace_provider.dart';
 import '../models/farmer_onboarding_state.dart';
 import '../widgets/farmer_map_widget.dart';
@@ -100,6 +101,14 @@ class FarmerOnboardingNotifier extends Notifier<FarmerOnboardingState> {
     );
   }
 
+  void setDynamicAddress(String address) {
+    state = state.copyWith(dynamicAddress: address);
+  }
+
+  void setLandmark(String landmark) {
+    state = state.copyWith(landmark: landmark);
+  }
+
   Future<String> detectGpsLocation() async {
     LocationPermission permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
@@ -119,7 +128,7 @@ class FarmerOnboardingNotifier extends Notifier<FarmerOnboardingState> {
       ),
     );
     final point = LatLng(pos.latitude, pos.longitude);
-    final resolved = GeorgianGeoLookup.resolveInstantAddress(point);
+    final resolved = await GeorgianGeoLookup.resolveDetailedAddress(point);
     state = state.copyWith(
       selectedLocation: point,
       dynamicAddress: resolved,
@@ -301,15 +310,32 @@ class FarmerOnboardingNotifier extends Notifier<FarmerOnboardingState> {
   void completeOnboarding() {
     final effectiveCover = state.farmPhotoPath ??
         'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=1000&auto=format&fit=crop&q=80';
+    final effectiveAddress = state.dynamicAddress.trim().isNotEmpty
+        ? state.dynamicAddress.trim()
+        : '${state.selectedCity}, ${state.selectedRegion}';
+
     ref.read(authStateProvider.notifier).completeFarmerOnboarding(
       farmName: state.farmName,
       region: state.selectedRegion,
       city: state.selectedCity,
-      address: state.dynamicAddress.isNotEmpty
-          ? state.dynamicAddress
-          : '${state.selectedCity}, ${state.selectedRegion}',
+      address: effectiveAddress,
       coverUrl: effectiveCover,
     );
+
+    // Persist farm location & optional landmark immediately to secure storage
+    unawaited(ref.read(secureStorageProvider).saveFarmLocation(effectiveAddress));
+    if (state.landmark.trim().isNotEmpty) {
+      unawaited(
+        ref.read(secureStorageProvider).saveFarmLandmark(state.landmark.trim()),
+      );
+    }
+
+    // Sync location into live marketplace state for immediate profile consistency
+    final currentFid = ref.read(authStateProvider).farmerId ?? 'farmer_1';
+    ref.read(marketplaceProvider.notifier).updateFarmerLocation(
+          farmerId: currentFid,
+          location: effectiveAddress,
+        );
 
     unawaited(ref.read(marketplaceProvider.notifier).refreshFromBackend());
   }

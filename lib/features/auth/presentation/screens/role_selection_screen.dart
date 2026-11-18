@@ -56,12 +56,11 @@ class RoleSelectionScreen extends StatelessWidget {
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.08),
+                          color: Colors.black.withValues(alpha: 0.06),
                           blurRadius: 10,
                           offset: const Offset(0, 3),
                         ),
                       ],
-                      border: Border.all(color: const Color(0xFFF1F5F9), width: 2.5),
                     ),
                     child: ClipOval(
                       child: SvgPicture.asset(
@@ -98,12 +97,11 @@ class RoleSelectionScreen extends StatelessWidget {
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.08),
+                          color: Colors.black.withValues(alpha: 0.06),
                           blurRadius: 10,
                           offset: const Offset(0, 3),
                         ),
                       ],
-                      border: Border.all(color: const Color(0xFFF1F5F9), width: 2.5),
                     ),
                     child: ClipOval(
                       child: Image.asset(
@@ -141,15 +139,21 @@ class RoleSelectionScreen extends StatelessWidget {
     return Material(
       color: Colors.white,
       borderRadius: BorderRadius.circular(22),
-      elevation: 1,
-      shadowColor: Colors.black.withValues(alpha: 0.06),
+      elevation: 0,
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(22),
         child: Container(
           decoration: BoxDecoration(
+            color: Colors.white,
             borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: const Color(0xFFE2E8F0), width: 1.2),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 14,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
           child: Column(

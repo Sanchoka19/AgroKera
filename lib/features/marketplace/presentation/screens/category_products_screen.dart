@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../core/auth/auth_state_provider.dart';
+import '../../../../core/constants/app_assets.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
-import '../../../../core/widgets/app_confirmation_bottom_sheet.dart';
-import '../../../../core/widgets/app_toast.dart';
 import '../../../../core/widgets/draggable_floating_cart.dart';
-import '../../../../core/widgets/fly_to_cart_animator.dart';
 import '../../../../core/widgets/product_card.dart';
+import '../../../../core/widgets/product_cart_helper.dart';
 import '../../data/models/category_model.dart';
 import '../../data/models/product_model.dart';
 import '../../../cart_checkout/presentation/providers/cart_provider.dart';
@@ -59,103 +60,20 @@ class _CategoryProductsScreenState
     );
   }
 
-  Future<void> _handleDifferentFarmer(
-    AddToCartDifferentFarmer diff,
-    ProductModel product,
-    BuildContext btnContext,
-  ) async {
-    final confirmed = await AppConfirmationBottomSheet.showDifferentFarmerCart(
-      context: context,
-      currentFarmerName: diff.currentFarmerName,
-      newFarmerName: diff.newFarmerName,
-    );
-
-    if (confirmed && mounted && btnContext.mounted) {
-      final retryResult = ref.read(cartProvider.notifier).addProduct(
-            product,
-            diff.quantity,
-            forceReplaceFarmer: true,
-          );
-      _handleAddToCartResult(retryResult, product, btnContext);
-    }
-  }
-
-  void _handleAddToCartResult(
-    AddToCartResult result,
-    ProductModel product,
-    BuildContext btnContext,
-  ) {
-    switch (result) {
-      case AddToCartOwnerForbidden():
-        AppToast.error(context, 'საკუთარი პროდუქტის დამატება შეუძლებელია');
-      case AddToCartOutOfStock():
-        AppToast.info(context, 'მარაგში მეტი აღარ არის');
-      case AddToCartAlreadyMax(:final maxStock):
-        AppToast.info(
-          context,
-          'ეს პროდუქტი უკვე მაქსიმალური რაოდენობით ($maxStock ${product.unit}) გაქვთ კალათაში',
-        );
-      case AddToCartDifferentFarmer():
-        _handleDifferentFarmer(result, product, btnContext);
-      case AddToCartSuccess(
-          :final isCapped,
-          :final addedQuantity,
-          :final maxStock,
-          :final minOrderAdjusted,
-          :final hasBulkUpsell,
-          :final remainingForBulkDiscount,
-          :final bulkDiscountPercent,
-          :final bulkDiscountApplied,
-        ):
-        if (minOrderAdjusted) {
-          AppToast.info(
-            context,
-            'მინიმალური შეკვეთაა ${product.minOrderDisplay}. კალათაში დაემატა მინიმალური რაოდენობა.',
-            icon: LucideIcons.info,
-          );
-        } else if (isCapped) {
-          AppToast.info(
-            context,
-            'მარაგის ლიმიტის გამო დაემატა $addedQuantity ${product.unit} (სულ კალათაში: $maxStock ${product.unit})',
-            icon: LucideIcons.alertCircle,
-          );
-        } else if (hasBulkUpsell) {
-          AppToast.info(
-            context,
-            'დაამატეთ კიდევ $remainingForBulkDiscount ${product.unit} და მიიღეთ $bulkDiscountPercent%-იანი საბითუმო ფასდაკლება!',
-            icon: LucideIcons.flame,
-          );
-        } else if (bulkDiscountApplied) {
-          AppToast.success(
-            context,
-            'გააქტიურდა $bulkDiscountPercent%-იანი საბითუმო ფასდაკლება!',
-            icon: LucideIcons.percent,
-          );
-        }
-
-        FlyToCartAnimator.run(
-          context: context,
-          fromContext: btnContext,
-          toKey: _floatingCartKey,
-          quantity: addedQuantity,
-          onComplete: () => _floatingCartKey.currentState?.bounce(),
-        );
-    }
-  }
-
   void _onAddToCart(ProductModel product, BuildContext btnContext) {
-    if (ref.read(authStateProvider).isOwnerOfProduct(product)) {
-      AppToast.error(context, 'საკუთარი პროდუქტის დამატება შეუძლებელია');
-      return;
-    }
-    final addQty = product.minOrderQuantity.toInt().clamp(1, 99999);
-    final result = ref.read(cartProvider.notifier).addProduct(product, addQty);
-    _handleAddToCartResult(result, product, btnContext);
+    ProductCartHelper.handleAddToCart(
+      context: context,
+      ref: ref,
+      product: product,
+      floatingCartKey: _floatingCartKey,
+      buttonContext: btnContext,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final allProducts = ref.watch(buyerProductsProvider);
+    final cartCount = ref.watch(cartProvider).length;
     // Filter products
     List<ProductModel> products = allProducts.where((p) {
       final matchesSearch = p.title.toLowerCase().contains(
@@ -277,10 +195,42 @@ class _CategoryProductsScreenState
               Expanded(
                 child: products.isEmpty
                     ? Center(
-                        child: Text(
-                          'პროდუქტები ვერ მოიძებნა',
-                          style: AppTypography.bodyMedium.copyWith(
-                            color: AppColors.textSecondary,
+                        child: SingleChildScrollView(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 32,
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              SvgPicture.asset(
+                                AppAssets.emptyProducts,
+                                width: 170,
+                                height: 170,
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'პროდუქტები ვერ მოიძებნა',
+                                textAlign: TextAlign.center,
+                                style: GoogleFonts.notoSansGeorgian(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                _searchQuery.isNotEmpty
+                                    ? '„$_searchQuery“-ის შესაბამისი პროდუქცია ამ კატეგორიაში არ მოიძებნა.'
+                                    : 'ამ კატეგორიაში შესაბამისი პროდუქცია არ მოიძებნა.',
+                                textAlign: TextAlign.center,
+                                style: GoogleFonts.notoSansGeorgian(
+                                  fontSize: 13.5,
+                                  color: AppColors.textSecondary,
+                                  height: 1.4,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       )
@@ -324,6 +274,7 @@ class _CategoryProductsScreenState
       ),
       DraggableFloatingCart(
         key: _floatingCartKey,
+        cartCount: cartCount,
         bottomOffset: 24.0,
         onTap: _openCart,
       ),

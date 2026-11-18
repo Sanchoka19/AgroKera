@@ -52,6 +52,7 @@ abstract final class GeorgianGeoLookup {
   }
 
   /// Online reverse geocoding via OpenStreetMap Nominatim with Georgian localization
+  /// Extracts exact road, house number, neighborhood, and city/village.
   static Future<String?> fetchNominatimAddress(LatLng point) async {
     final cacheKey =
         '${point.latitude.toStringAsFixed(4)}_${point.longitude.toStringAsFixed(4)}';
@@ -75,30 +76,70 @@ abstract final class GeorgianGeoLookup {
       if (response.statusCode == 200 && response.data != null) {
         final address = response.data!['address'] as Map<String, dynamic>?;
         if (address != null) {
-          final settlement = address['village'] ??
-              address['hamlet'] ??
-              address['town'] ??
-              address['city'] ??
-              address['suburb'] ??
-              address['municipality'];
+          final road = address['road']?.toString().trim();
+          final houseNumber = address['house_number']?.toString().trim();
+          final neighbourhood = address['neighbourhood']?.toString().trim() ??
+              address['suburb']?.toString().trim();
+          final settlement = address['village']?.toString().trim() ??
+              address['hamlet']?.toString().trim() ??
+              address['town']?.toString().trim() ??
+              address['city']?.toString().trim() ??
+              address['municipality']?.toString().trim();
+          final region = address['county']?.toString().trim() ??
+              address['state']?.toString().trim() ??
+              address['region']?.toString().trim();
 
-          final region =
-              address['county'] ?? address['state'] ?? address['region'];
+          final parts = <String>[];
 
-          if (settlement != null) {
-            final formatted = region != null && region != settlement
-                ? '$settlement, $region'
-                : settlement.toString();
+          // 1. Street and house number (e.g. "ჭავჭავაძის გამზირი 9ა")
+          if (road != null && road.isNotEmpty) {
+            if (houseNumber != null && houseNumber.isNotEmpty) {
+              parts.add('$road $houseNumber');
+            } else {
+              parts.add(road);
+            }
+          }
+
+          // 2. Settlement / City / Village (e.g. "თბილისი" or "გურჯაანი")
+          if (settlement != null && settlement.isNotEmpty) {
+            if (!parts.any((p) => p.contains(settlement))) {
+              parts.add(settlement);
+            }
+          } else if (neighbourhood != null && neighbourhood.isNotEmpty) {
+            if (!parts.any((p) => p.contains(neighbourhood))) {
+              parts.add(neighbourhood);
+            }
+          } else if (region != null && region.isNotEmpty) {
+            if (!parts.any((p) => p.contains(region))) {
+              parts.add(region);
+            }
+          }
+
+          if (parts.isNotEmpty) {
+            final formatted = parts.join(', ');
             _cache[cacheKey] = formatted;
             return formatted;
           }
         }
       }
     } catch (_) {
-      // Offline fallback: handled by resolveInstantAddress
+      // Fallback handled by caller
     }
 
     return null;
+  }
+
+  /// High-accuracy reverse geocoder: attempts online exact street & house number lookup,
+  /// falling back seamlessly to offline nearest settlement resolution.
+  static Future<String> resolveDetailedAddress(LatLng point) async {
+    try {
+      final online = await fetchNominatimAddress(point);
+      if (online != null && online.trim().isNotEmpty) {
+        return online.trim();
+      }
+    } catch (_) {}
+
+    return resolveInstantAddress(point);
   }
 }
 

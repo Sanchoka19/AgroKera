@@ -20,6 +20,11 @@ abstract final class AppAssets {
   static const String emptyNotifications =
       'assets/illustrations/empty_notifications.svg';
   static const String emptyOrders = 'assets/illustrations/empty_orders.svg';
+  static const String emptyChats = 'assets/illustrations/empty_chats.svg';
+  static const String emptyAddresses =
+      'assets/illustrations/empty_addresses.svg';
+  static const String emptyProducts = 'assets/illustrations/empty_products.svg';
+  static const String emptySearch = 'assets/illustrations/empty_products.svg';
 
   // Categories (3D Bento Illustrations)
   static const String categoryFruit =
@@ -38,4 +43,22 @@ abstract final class AppAssets {
       'assets/illustrations/categories/honey.png';
   static const String categoryWine =
       'assets/illustrations/categories/wine.png';
+
+  // Categories (Vector SVGs)
+  static const String categorySvgFruit =
+      'assets/illustrations/categories/cat_fruit.svg';
+  static const String categorySvgCitrus =
+      'assets/illustrations/categories/cat_citrus.svg';
+  static const String categorySvgBerry =
+      'assets/illustrations/categories/cat_berry.svg';
+  static const String categorySvgVegetable =
+      'assets/illustrations/categories/cat_vegetable.svg';
+  static const String categorySvgMilk =
+      'assets/illustrations/categories/cat_dairy.svg';
+  static const String categorySvgBean =
+      'assets/illustrations/categories/cat_grain.svg';
+  static const String categorySvgHoney =
+      'assets/illustrations/categories/cat_honey.svg';
+  static const String categorySvgWine =
+      'assets/illustrations/categories/cat_wine.svg';
 }

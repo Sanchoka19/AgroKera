@@ -60,18 +60,18 @@ void main() {
       ),
       findsOneWidget,
     );
-    expect(find.text('გაიმეორეთ პაროლი'), findsWidgets);
+    expect(find.text('პაროლი'), findsWidgets);
+    expect(find.byType(TextField), findsNWidgets(3));
   });
 
-  testWidgets('RegisterScreen validates confirm password matching and rejects mismatch', (WidgetTester tester) async {
+  testWidgets('RegisterScreen validates password minimum length', (WidgetTester tester) async {
     await tester.pumpWidget(wrapWithScaffold(const RegisterScreen()));
     await tester.pumpAndSettle();
 
-    // Enter name and email
+    // Enter name, email, and too short password (<6 chars)
     await tester.enterText(find.byType(TextField).at(0), 'გიორგი ბერიძე');
     await tester.enterText(find.byType(TextField).at(1), 'giorgi@agrokera.ge');
-    await tester.enterText(find.byType(TextField).at(2), 'password123');
-    await tester.enterText(find.byType(TextField).at(3), 'mismatch123');
+    await tester.enterText(find.byType(TextField).at(2), '12345');
     await tester.pumpAndSettle();
 
     // Tap register button
@@ -80,7 +80,7 @@ void main() {
     await tester.pump();
 
     // Verify error toast
-    expect(find.text('პაროლები ერთმანეთს არ ემთხვევა'), findsOneWidget);
+    expect(find.text('პაროლი უნდა შედგებოდეს მინიმუმ 6 სიმბოლოსგან'), findsOneWidget);
   });
 
   testWidgets('SmsVerificationScreen renders PIN boxes and countdown', (WidgetTester tester) async {

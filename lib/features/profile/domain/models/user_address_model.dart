@@ -126,6 +126,16 @@ class UserAddressState {
     }
   }
 
+  /// Returns the UserAddress model corresponding to the activeAddress string or default
+  UserAddress? get activeAddressModel {
+    if (activeAddress.trim().isEmpty) return defaultAddress;
+    try {
+      return addresses.firstWhere((a) => a.formattedAddress == activeAddress);
+    } catch (_) {
+      return defaultAddress;
+    }
+  }
+
   UserAddressState copyWith({
     List<UserAddress>? addresses,
     String? activeAddress,

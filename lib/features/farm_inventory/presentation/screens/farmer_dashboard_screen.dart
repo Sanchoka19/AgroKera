@@ -26,12 +26,15 @@ class FarmerDashboardScreen extends ConsumerStatefulWidget {
 }
 
 class _FarmerDashboardScreenState extends ConsumerState<FarmerDashboardScreen> {
-  void _onAcceptOrder(FarmerOrder order) {
-    ref.read(farmerOrdersProvider.notifier).acceptOrder(order.id);
+  Future<void> _onAcceptOrder(FarmerOrder order) async {
     AppToast.success(
       context,
       'შეკვეთა #${order.id} დადასტურებულია და გადავიდა პროცესში!',
     );
+    final error = await ref.read(farmerOrdersProvider.notifier).acceptOrder(order.id);
+    if (error != null && mounted) {
+      AppToast.error(context, error);
+    }
   }
 
   Future<void> _onCancelOrder(FarmerOrder order) async {
@@ -362,6 +365,8 @@ class _FarmerDashboardScreenState extends ConsumerState<FarmerDashboardScreen> {
   /// Single Order Card
   Widget _buildOrderCard(FarmerOrder order) {
     final isNew = order.status == OrderStatus.pending;
+    final isUpdating =
+        ref.watch(farmerOrdersProvider).isOrderUpdating(order.id);
 
     return Material(
       color: Colors.white,
@@ -494,23 +499,34 @@ class _FarmerDashboardScreenState extends ConsumerState<FarmerDashboardScreen> {
                     // "დათანხმება" Button
                     Expanded(
                       child: InkWell(
-                        onTap: () => _onAcceptOrder(order),
+                        onTap: isUpdating ? null : () => _onAcceptOrder(order),
                         borderRadius: BorderRadius.circular(12),
                         child: Container(
                           height: 44,
                           decoration: BoxDecoration(
-                            color: AppColors.primary,
+                            color: isUpdating
+                                ? AppColors.primary.withValues(alpha: 0.6)
+                                : AppColors.primary,
                             borderRadius: BorderRadius.circular(12),
                           ),
                           alignment: Alignment.center,
-                          child: Text(
-                            'დათანხმება',
-                            style: GoogleFonts.notoSansGeorgian(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white,
-                            ),
-                          ),
+                          child: isUpdating
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : Text(
+                                  'დათანხმება',
+                                  style: GoogleFonts.notoSansGeorgian(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.white,
+                                  ),
+                                ),
                         ),
                       ),
                     ),

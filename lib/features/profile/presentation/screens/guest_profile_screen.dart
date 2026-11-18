@@ -17,6 +17,7 @@ import '../../../orders/presentation/screens/incoming_orders_screen.dart';
 import '../../../orders/presentation/screens/order_chats_list_screen.dart';
 import '../widgets/avatar_picker_modal.dart';
 import '../widgets/customer_profile_header.dart';
+import '../widgets/edit_profile_bottom_sheet.dart';
 import '../widgets/farmer_kpi_card.dart';
 import '../widgets/farmer_profile_hero.dart';
 import '../widgets/profile_row_item.dart';
@@ -27,6 +28,7 @@ import 'my_addresses_screen.dart';
 import '../../../marketplace/presentation/providers/marketplace_provider.dart';
 import 'farmer_delivery_settings_screen.dart';
 import 'help_center_screen.dart';
+import '../../../notifications/presentation/screens/notification_settings_screen.dart';
 
 class GuestProfileScreen extends ConsumerStatefulWidget {
   const GuestProfileScreen({super.key});
@@ -120,7 +122,7 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
           const ProfileRowDivider(),
           ProfileRowItem(
             icon: LucideIcons.tractor,
-            title: 'ფერმის მისამართი',
+            title: 'ფერმის ლოკაცია და თვითგატანა',
             subtitle: () {
               final farmers = ref.watch(marketplaceProvider).farmers;
               final f = farmers.where((x) => x.id == authState.farmerId).firstOrNull;
@@ -217,8 +219,8 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
             subtitle: () {
               final addr = ref.watch(userAddressProvider);
               return addr.hasAddress
-                  ? 'მიტანის მისამართი შეკვეთებისთვის (${addr.activeAddress})'
-                  : 'დაამატეთ მიტანის მისამართი შეკვეთებისთვის';
+                  ? addr.activeAddress
+                  : 'დაამატეთ მისამართი';
             }(),
             onTap: () {
               if (isFarmer) {
@@ -289,9 +291,15 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
                   context: context,
                 );
                 if (confirmed) {
+                  if (_scrollController.hasClients) {
+                    _scrollController.jumpTo(0);
+                  }
                   ref.read(authStateProvider.notifier).logout();
                   if (mounted) {
-                    AppToast.info(context, 'თქვენ გამოხვედით ანგარიშიდან');
+                    AppToast.info(
+                      context,
+                      'თქვენ გამოხვედით ანგარიშიდან. სასიამოვნო შოპინგს გისურვებთ!',
+                    );
                   }
                 }
               },
@@ -376,6 +384,7 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
                             'sabaevgenidze0919@gmail.com',
                         onAvatarTap: () =>
                             AvatarPickerModal.show(context, ref),
+                        onEditTap: () => EditProfileBottomSheet.show(context),
                       ),
                       const SizedBox(height: 16),
                     ],
@@ -412,6 +421,14 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
                                 setState(() => _notificationsEnabled = val),
                             onLanguageChanged: (lang) =>
                                 setState(() => _selectedLanguage = lang),
+                            onOpenNotificationSettings: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      const NotificationSettingsScreen(),
+                                ),
+                              );
+                            },
                           ),
                           const SizedBox(height: 24),
                           const ProfileSectionHeader('დახმარება და მხარდაჭერა'),

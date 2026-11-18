@@ -1,5 +1,8 @@
 import http from "node:http";
-import apiHandler, { remindStaleOrders } from "./index.ts";
+import apiHandler, {
+  remindStaleOrders,
+  processOrderExpirations,
+} from "./index.ts";
 
 const PORT = Number(process.env.PORT || 3001);
 
@@ -54,6 +57,21 @@ const server = http.createServer(async (req, res) => {
 server.listen(PORT, "0.0.0.0", () => {
   const publicUrl = process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
   console.log(`🚀 AgroKera Neon API Server running on ${publicUrl} (port ${PORT})`);
+
+  // ── Auto-cancellation & Pre-expiry Warning Cron ───────────────────────────
+  // Runs every 60 seconds to:
+  // 1. Auto-cancel pending orders past their cancellationDeadline and restore stock
+  // 2. Send high-priority pre-expiry warning push notification to farmers when <= 10 min left
+  const EXPIRATION_INTERVAL = 60 * 1000;
+  const runExpirations = () => {
+    processOrderExpirations().catch((err) =>
+      console.error("[Cron] processOrderExpirations failed:", err)
+    );
+  };
+  // Run immediately on server boot, then repeat every minute
+  runExpirations();
+  setInterval(runExpirations, EXPIRATION_INTERVAL);
+  console.log("[Cron] Order auto-expiration & warning monitor scheduled — runs every 60 seconds");
 
   // ── Stale-order reminder cron ──────────────────────────────────────────────
   // Runs once a day. Notifies farmer (>2 h) and client (>6 h) when an

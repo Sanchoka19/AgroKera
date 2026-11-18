@@ -94,6 +94,9 @@ class AuthState {
   final UserRole role;
   final KycStatus kycStatus;
 
+  bool get isFarmer => role == UserRole.farmer;
+  bool get isCustomer => role == UserRole.customer;
+
   const AuthState({
     this.isAuthenticated = false,
     this.userId,
@@ -120,6 +123,7 @@ class AuthState {
     String? userAvatarUrl,
     String? farmCoverUrl,
     String? userAddress,
+    bool clearUserAddress = false,
     UserRole? role,
     KycStatus? kycStatus,
   }) {
@@ -133,7 +137,7 @@ class AuthState {
       userEmail: userEmail ?? this.userEmail,
       userAvatarUrl: userAvatarUrl ?? this.userAvatarUrl,
       farmCoverUrl: farmCoverUrl ?? this.farmCoverUrl,
-      userAddress: userAddress ?? this.userAddress,
+      userAddress: clearUserAddress ? null : (userAddress ?? this.userAddress),
       role: role ?? this.role,
       kycStatus: kycStatus ?? this.kycStatus,
     );

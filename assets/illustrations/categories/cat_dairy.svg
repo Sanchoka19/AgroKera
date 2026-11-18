@@ -1,0 +1,59 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="cheeseGrad" x1="28" y1="32" x2="56" y2="54" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFD54F" />
+      <stop offset="60%" stop-color="#FFC107" />
+      <stop offset="100%" stop-color="#FFA000" />
+    </linearGradient>
+    <linearGradient id="bottleGrad" x1="14" y1="18" x2="36" y2="54" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="70%" stop-color="#F1F5F9" />
+      <stop offset="100%" stop-color="#E2E8F0" />
+    </linearGradient>
+    <linearGradient id="capGrad" x1="18" y1="14" x2="28" y2="18" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#42A5F5" />
+      <stop offset="100%" stop-color="#1E88E5" />
+    </linearGradient>
+  </defs>
+
+  <!-- Ambient Floor Shadow -->
+  <ellipse cx="32" cy="57" rx="22" ry="4" fill="#0F172A" fill-opacity="0.12" />
+
+  <!-- Milk Bottle Left -->
+  <g id="milkBottle">
+    <!-- Bottle Body -->
+    <path d="M19 22C19 20 20 18 20 17H26C26 18 27 20 27 22L30 26C32 29 32 32 32 36V49C32 52 30 54 27 54H19C16 54 14 52 14 49V36C14 32 14 29 16 26L19 22Z" fill="url(#bottleGrad)" stroke="#CBD5E1" stroke-width="1.2" />
+    
+    <!-- Milk Level Liquid -->
+    <path d="M15.5 32C18 31 28 31 30.5 32V49C30.5 51 29 52.5 27 52.5H19C17 52.5 15.5 51 15.5 49V32Z" fill="#FFFFFF" />
+    
+    <!-- Blue Label Band -->
+    <path d="M15 37H31V44H15V37Z" fill="#E0F2FE" />
+    <path d="M19 40.5C21 39.5 25 39.5 27 40.5" stroke="#38BDF8" stroke-width="1.5" stroke-linecap="round" />
+
+    <!-- Glass Reflection Highlight -->
+    <path d="M17 28L19 24" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round" />
+    <path d="M17 33V47" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round" opacity="0.8" />
+
+    <!-- Bottle Cap -->
+    <rect x="19.5" y="14" width="7" height="3.5" rx="1" fill="url(#capGrad)" />
+  </g>
+
+  <!-- Cheese Wedge Right -->
+  <g id="cheeseWedge">
+    <!-- Top Slanted Face -->
+    <path d="M30 42L48 30L56 36L38 48L30 42Z" fill="#FFE082" />
+    <!-- Front Vertical Side -->
+    <path d="M30 42L38 48V54L30 48V42Z" fill="url(#cheeseGrad)" />
+    <!-- Right Curved Back/Side -->
+    <path d="M38 48L56 36V42L38 54V48Z" fill="#FFA000" />
+
+    <!-- Swiss Cheese Holes -->
+    <ellipse cx="44" cy="38" rx="2.5" ry="1.5" fill="#FFB300" opacity="0.8" />
+    <ellipse cx="50" cy="34" rx="1.8" ry="1.2" fill="#FFB300" opacity="0.8" />
+    <circle cx="34" cy="45" r="1.5" fill="#FF8F00" opacity="0.7" />
+    <circle cx="44" cy="47" r="2.2" fill="#E65100" opacity="0.5" />
+    <circle cx="51" cy="40" r="1.6" fill="#E65100" opacity="0.5" />
+  </g>
+</svg>
+

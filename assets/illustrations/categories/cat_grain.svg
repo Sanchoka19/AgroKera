@@ -1,0 +1,81 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="wheatGrad" x1="24" y1="12" x2="44" y2="48" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFE082" />
+      <stop offset="60%" stop-color="#FFCA28" />
+      <stop offset="100%" stop-color="#FFA000" />
+    </linearGradient>
+    <linearGradient id="beanGrad" x1="18" y1="42" x2="48" y2="56" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#BCAAA4" />
+      <stop offset="70%" stop-color="#8D6E63" />
+      <stop offset="100%" stop-color="#5D4037" />
+    </linearGradient>
+    <linearGradient id="stemWheatGrad" x1="28" y1="20" x2="36" y2="56" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFD54F" />
+      <stop offset="100%" stop-color="#FF8F00" />
+    </linearGradient>
+  </defs>
+
+  <!-- Ambient Floor Shadow -->
+  <ellipse cx="32" cy="57" rx="22" ry="4" fill="#0F172A" fill-opacity="0.12" />
+
+  <!-- Center Wheat Ear / Stalk -->
+  <g id="wheatStalk">
+    <!-- Main Stem -->
+    <path d="M32 14V53" stroke="url(#stemWheatGrad)" stroke-width="2.2" stroke-linecap="round" />
+
+    <!-- Wheat Grains Alternating Left & Right -->
+    <!-- Top Tip Grain -->
+    <path d="M32 14C30 11 34 11 32 14Z" fill="url(#wheatGrad)" />
+    <!-- Awns / Whiskers Top -->
+    <path d="M32 12L32 6" stroke="#FFA000" stroke-width="1.2" stroke-linecap="round" />
+    <path d="M31 13L27 7" stroke="#FFA000" stroke-width="1.2" stroke-linecap="round" />
+    <path d="M33 13L37 7" stroke="#FFA000" stroke-width="1.2" stroke-linecap="round" />
+
+    <!-- Pair 1 -->
+    <ellipse cx="28.5" cy="18" rx="4.5" ry="2.5" transform="rotate(-30 28.5 18)" fill="url(#wheatGrad)" />
+    <path d="M26 17L20 13" stroke="#FFA000" stroke-width="1.2" stroke-linecap="round" />
+    
+    <ellipse cx="35.5" cy="18" rx="4.5" ry="2.5" transform="rotate(30 35.5 18)" fill="url(#wheatGrad)" />
+    <path d="M38 17L44 13" stroke="#FFA000" stroke-width="1.2" stroke-linecap="round" />
+
+    <!-- Pair 2 -->
+    <ellipse cx="27" cy="24" rx="5" ry="2.8" transform="rotate(-30 27 24)" fill="url(#wheatGrad)" />
+    <path d="M24 23L17 19" stroke="#FFA000" stroke-width="1.2" stroke-linecap="round" />
+
+    <ellipse cx="37" cy="24" rx="5" ry="2.8" transform="rotate(30 37 24)" fill="url(#wheatGrad)" />
+    <path d="M40 23L47 19" stroke="#FFA000" stroke-width="1.2" stroke-linecap="round" />
+
+    <!-- Pair 3 -->
+    <ellipse cx="26.5" cy="30" rx="5.2" ry="3" transform="rotate(-30 26.5 30)" fill="url(#wheatGrad)" />
+    <path d="M23 29L16 26" stroke="#FFA000" stroke-width="1.2" stroke-linecap="round" />
+
+    <ellipse cx="37.5" cy="30" rx="5.2" ry="3" transform="rotate(30 37.5 30)" fill="url(#wheatGrad)" />
+    <path d="M41 29L48 26" stroke="#FFA000" stroke-width="1.2" stroke-linecap="round" />
+
+    <!-- Pair 4 -->
+    <ellipse cx="27" cy="36" rx="5" ry="2.8" transform="rotate(-30 27 36)" fill="url(#wheatGrad)" />
+    <ellipse cx="37" cy="36" rx="5" ry="2.8" transform="rotate(30 37 36)" fill="url(#wheatGrad)" />
+
+    <!-- Pair 5 -->
+    <ellipse cx="28" cy="42" rx="4.5" ry="2.5" transform="rotate(-30 28 42)" fill="url(#wheatGrad)" />
+    <ellipse cx="36" cy="42" rx="4.5" ry="2.5" transform="rotate(30 36 42)" fill="url(#wheatGrad)" />
+  </g>
+
+  <!-- Organic Beans / Legumes at Base -->
+  <g id="beans">
+    <!-- Bean 1 Left -->
+    <path d="M19 49C16 46 17 43 21 44C24 45 25 48 23 51C21 53 19 51 19 49Z" fill="url(#beanGrad)" />
+    <!-- Bean Hilum / Eye -->
+    <path d="M20 46C20.5 46.5 21.5 47 22 47" stroke="#FFFFFF" stroke-width="0.8" stroke-linecap="round" opacity="0.8" />
+
+    <!-- Bean 2 Center -->
+    <path d="M30 52C28 49 30 46 33 46C36 47 37 50 35 53C33 55 31 54 30 52Z" fill="url(#beanGrad)" />
+    <path d="M32 49C32.5 49.5 33.5 50 34 50" stroke="#FFFFFF" stroke-width="0.8" stroke-linecap="round" opacity="0.8" />
+
+    <!-- Bean 3 Right -->
+    <path d="M43 48C40 46 41 43 44 43C47 44 48 47 46 50C45 52 43 50 43 48Z" fill="url(#beanGrad)" />
+    <path d="M44 45C44.5 45.5 45.5 46 46 46" stroke="#FFFFFF" stroke-width="0.8" stroke-linecap="round" opacity="0.8" />
+  </g>
+</svg>
+

@@ -52,6 +52,19 @@ class AppNotification {
     );
   }
 
+  /// Whether this notification represents an order chat message
+  bool get isChat => type == 'chat_message' || title.contains('შეტყობინება');
+
+  /// Resolves the unread messages count if this is a grouped chat notification
+  int get unreadCount {
+    if (isRead) return 0;
+    final match = RegExp(r'\((\d+)\)').firstMatch(title);
+    if (match != null) {
+      return int.tryParse(match.group(1) ?? '1') ?? 1;
+    }
+    return 1;
+  }
+
   static NotificationCategory parseCategory(String? cat) {
     switch (cat?.toLowerCase()) {
       case 'promotions':
@@ -95,7 +108,7 @@ class AppNotification {
     return AppNotification(
       id: json['id']?.toString() ?? '',
       title: stripEmojis(json['title']?.toString() ?? ''),
-      body: json['body']?.toString() ?? '',
+      body: stripEmojis(json['body']?.toString() ?? ''),
       timeAgo: formatTimeAgo(createdAt),
       timestamp: createdAt,
       category: parseCategory(json['category']?.toString()),

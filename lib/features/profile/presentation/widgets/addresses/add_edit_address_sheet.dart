@@ -89,7 +89,7 @@ class _AddEditAddressSheetState extends State<AddEditAddressSheet> {
     try {
       final pos = await Geolocator.getCurrentPosition();
       final point = LatLng(pos.latitude, pos.longitude);
-      final resolved = GeorgianGeoLookup.resolveInstantAddress(point);
+      final resolved = await GeorgianGeoLookup.resolveDetailedAddress(point);
       if (!mounted) return;
       setState(() {
         _pinnedPoint = point;

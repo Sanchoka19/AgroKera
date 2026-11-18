@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import '../../../../core/widgets/app_filter_tab.dart';
 import '../../../../core/widgets/app_toast.dart';
 import '../../domain/models/farmer_order_model.dart';
 import '../providers/farmer_orders_provider.dart';
@@ -42,6 +43,69 @@ class _IncomingOrdersScreenState extends ConsumerState<IncomingOrdersScreen> {
     super.dispose();
   }
 
+  Widget _buildSectionHeader(OrderStatus status, int count) {
+    IconData icon;
+    Color color;
+    String label;
+
+    switch (status) {
+      case OrderStatus.pending:
+        icon = LucideIcons.bellRing;
+        color = const Color(0xFFD97706);
+        label = 'საჭიროებს რეაგირებას';
+        break;
+      case OrderStatus.inProgress:
+        icon = LucideIcons.truck;
+        color = const Color(0xFF2563EB);
+        label = 'აქტიური / მიმდინარე';
+        break;
+      case OrderStatus.completed:
+        icon = LucideIcons.checkCheck;
+        color = const Color(0xFF16A34A);
+        label = 'დასრულებული შეკვეთები';
+        break;
+      case OrderStatus.cancelled:
+        icon = LucideIcons.archive;
+        color = const Color(0xFF64748B);
+        label = 'გაუქმებული შეკვეთები';
+        break;
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 8, bottom: 8),
+      child: Row(
+        children: [
+          Icon(icon, size: 15, color: color),
+          const SizedBox(width: 8),
+          Text(
+            label,
+            style: GoogleFonts.notoSansGeorgian(
+              fontSize: 13,
+              fontWeight: FontWeight.w800,
+              color: color,
+            ),
+          ),
+          const SizedBox(width: 6),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(
+              '$count',
+              style: GoogleFonts.notoSansGeorgian(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: color,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final ordersState = ref.watch(farmerOrdersProvider);
@@ -77,42 +141,47 @@ class _IncomingOrdersScreenState extends ConsumerState<IncomingOrdersScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
               child: Row(
                 children: [
-                  _buildFilterChip(
+                  AppFilterTab(
                     key: const ValueKey('chip_all'),
                     label: 'ყველა',
                     count: ordersState.countForStatus(null),
+                    showZeroCount: true,
                     isSelected: ordersState.selectedFilter == null,
                     onTap: () => ordersNotifier.setFilter(null),
                   ),
                   const SizedBox(width: 8),
-                  _buildFilterChip(
+                  AppFilterTab(
                     key: const ValueKey('chip_pending'),
                     label: OrderStatus.pending.label,
                     count: ordersState.countForStatus(OrderStatus.pending),
+                    showZeroCount: true,
                     isSelected: ordersState.selectedFilter == OrderStatus.pending,
                     onTap: () => ordersNotifier.setFilter(OrderStatus.pending),
                   ),
                   const SizedBox(width: 8),
-                  _buildFilterChip(
+                  AppFilterTab(
                     key: const ValueKey('chip_inProgress'),
                     label: OrderStatus.inProgress.label,
                     count: ordersState.countForStatus(OrderStatus.inProgress),
+                    showZeroCount: true,
                     isSelected: ordersState.selectedFilter == OrderStatus.inProgress,
                     onTap: () => ordersNotifier.setFilter(OrderStatus.inProgress),
                   ),
                   const SizedBox(width: 8),
-                  _buildFilterChip(
+                  AppFilterTab(
                     key: const ValueKey('chip_completed'),
                     label: OrderStatus.completed.label,
                     count: ordersState.countForStatus(OrderStatus.completed),
+                    showZeroCount: true,
                     isSelected: ordersState.selectedFilter == OrderStatus.completed,
                     onTap: () => ordersNotifier.setFilter(OrderStatus.completed),
                   ),
                   const SizedBox(width: 8),
-                  _buildFilterChip(
+                  AppFilterTab(
                     key: const ValueKey('chip_cancelled'),
                     label: OrderStatus.cancelled.label,
                     count: ordersState.countForStatus(OrderStatus.cancelled),
+                    showZeroCount: true,
                     isSelected: ordersState.selectedFilter == OrderStatus.cancelled,
                     onTap: () => ordersNotifier.setFilter(OrderStatus.cancelled),
                   ),
@@ -135,15 +204,24 @@ class _IncomingOrdersScreenState extends ConsumerState<IncomingOrdersScreen> {
                 separatorBuilder: (context, index) => const SizedBox(height: 10),
                 itemBuilder: (context, index) {
                   final order = filteredOrders[index];
-                  return FarmerOrderCard(
+                  final isUpdating = ordersState.isOrderUpdating(order.id);
+                  final showSectionHeader = ordersState.selectedFilter == null &&
+                      (index == 0 ||
+                          filteredOrders[index - 1].status != order.status);
+
+                  final card = FarmerOrderCard(
                     key: ValueKey('farmer_order_${order.id}'),
                     order: order,
-                    onAccept: () {
-                      ordersNotifier.acceptOrder(order.id);
+                    isUpdating: isUpdating,
+                    onAccept: () async {
                       AppToast.success(
                         context,
                         'შეკვეთა #${order.id} დადასტურებულია და გადავიდა მიმდინარეში!',
                       );
+                      final error = await ordersNotifier.acceptOrder(order.id);
+                      if (error != null && context.mounted) {
+                        AppToast.error(context, error);
+                      }
                     },
                     onCancel: (reason) {
                       ordersNotifier.cancelOrder(order.id, reason: reason);
@@ -153,66 +231,24 @@ class _IncomingOrdersScreenState extends ConsumerState<IncomingOrdersScreen> {
                       );
                     },
                   );
+
+                  if (showSectionHeader) {
+                    final sectionCount =
+                        ordersState.countForStatus(order.status);
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildSectionHeader(order.status, sectionCount),
+                        card,
+                      ],
+                    );
+                  }
+
+                  return card;
                 },
               ),
       ),
     );
   }
 
-  Widget _buildFilterChip({
-    Key? key,
-    required String label,
-    required int count,
-    required bool isSelected,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      key: key,
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF64748B) : Colors.white,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: isSelected ? const Color(0xFF64748B) : const Color(0xFFCBD5E1),
-            width: 1.2,
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              label,
-              style: GoogleFonts.notoSansGeorgian(
-                fontSize: 13,
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                color: isSelected ? Colors.white : const Color(0xFF334155),
-              ),
-            ),
-            if (count > 0) ...[
-              const SizedBox(width: 6),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
-                decoration: BoxDecoration(
-                  color: isSelected ? Colors.white.withValues(alpha: 0.25) : const Color(0xFFF1F5F9),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  '$count',
-                  style: GoogleFonts.notoSansGeorgian(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: isSelected ? Colors.white : const Color(0xFF64748B),
-                  ),
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
 }

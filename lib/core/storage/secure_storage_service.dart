@@ -19,7 +19,9 @@ class SecureStorageService {
   static const _reportedPaymentOrdersKey = 'agrokera_reported_payment_orders';
   static const _activeAddressKey = 'agrokera_active_address';
   static const _farmLocationKey = 'agrokera_farm_location';
+  static const _farmLandmarkKey = 'agrokera_farm_landmark';
   static const _addressesJsonKey = 'agrokera_addresses_json';
+  static const _notificationSettingsKey = 'agrokera_notification_settings_json';
 
   final FlutterSecureStorage _storage;
 
@@ -132,6 +134,8 @@ class SecureStorageService {
         _storage.delete(key: _phoneKey),
         _storage.delete(key: _emailKey),
         _storage.delete(key: _kycStatusKey),
+        _storage.delete(key: _activeAddressKey),
+        _storage.delete(key: _addressesJsonKey),
       ]);
     } catch (_) {}
   }
@@ -228,6 +232,20 @@ class SecureStorageService {
     }
   }
 
+  Future<void> saveFarmLandmark(String landmark) async {
+    try {
+      await _storage.write(key: _farmLandmarkKey, value: landmark);
+    } catch (_) {}
+  }
+
+  Future<String?> readFarmLandmark() async {
+    try {
+      return await _storage.read(key: _farmLandmarkKey);
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<void> saveAddressesJson(String json) async {
     try {
       await _storage.write(key: _addressesJsonKey, value: json);
@@ -240,6 +258,29 @@ class SecureStorageService {
     } catch (_) {
       return null;
     }
+  }
+
+  Future<void> saveNotificationSettingsJson(String json) async {
+    try {
+      await _storage.write(key: _notificationSettingsKey, value: json);
+    } catch (_) {}
+  }
+
+  Future<String?> readNotificationSettingsJson() async {
+    try {
+      return await _storage.read(key: _notificationSettingsKey);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> clearAddresses() async {
+    try {
+      await Future.wait([
+        _storage.delete(key: _activeAddressKey),
+        _storage.delete(key: _addressesJsonKey),
+      ]);
+    } catch (_) {}
   }
 }
 

@@ -18,18 +18,28 @@ class UserAddressNotifier extends Notifier<UserAddressState> {
   }
 
   Future<void> _init() async {
+    if (!ref.mounted) return;
     state = state.copyWith(isLoading: true);
     try {
       final addresses = await _repo.loadAddresses();
       final active = await _repo.loadActiveAddress();
+      if (!ref.mounted) return;
       state = state.copyWith(
         addresses: addresses,
         activeAddress: active,
         isLoading: false,
       );
     } catch (e) {
+      if (!ref.mounted) return;
       state = state.copyWith(isLoading: false, errorMessage: e.toString());
     }
+  }
+
+  /// Clears in-memory addresses and persistent storage (e.g. on logout or new registration)
+  Future<void> clearAddresses() async {
+    state = const UserAddressState();
+    await _repo.clearAddresses();
+    ref.read(authStateProvider.notifier).updateUserAddress('');
   }
 
   /// Sets active address across the entire application (Checkout, Profile, Orders)
@@ -150,7 +160,7 @@ class UserAddressNotifier extends Notifier<UserAddressState> {
       if (perm == LocationPermission.deniedForever) return null;
 
       final pos = await Geolocator.getCurrentPosition();
-      return GeorgianGeoLookup.resolveInstantAddress(
+      return await GeorgianGeoLookup.resolveDetailedAddress(
         LatLng(pos.latitude, pos.longitude),
       );
     } catch (_) {

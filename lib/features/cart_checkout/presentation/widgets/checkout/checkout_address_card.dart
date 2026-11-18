@@ -68,7 +68,7 @@ class CheckoutAddressCard extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            address,
+            address.trim().isNotEmpty ? address : 'მისამართი არ არის მითითებული',
             style: AppTypography.bodyMedium.copyWith(
               fontSize: 14,
               color: AppColors.textSecondary,

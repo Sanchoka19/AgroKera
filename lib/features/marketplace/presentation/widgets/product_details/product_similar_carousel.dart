@@ -5,6 +5,7 @@ import 'package:agrokera/core/auth/auth_state_provider.dart';
 import 'package:agrokera/core/theme/app_colors.dart';
 import 'package:agrokera/core/theme/app_typography.dart';
 import 'package:agrokera/core/widgets/product_card.dart';
+import 'package:agrokera/core/widgets/product_cart_helper.dart';
 import 'package:agrokera/features/marketplace/data/models/product_model.dart';
 import 'package:agrokera/features/marketplace/presentation/screens/product_details_screen.dart';
 
@@ -75,13 +76,14 @@ class ProductSimilarCarousel extends ConsumerWidget {
                       ),
                     );
                   },
-                  onAddPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => ProductDetailsScreen(product: item),
-                      ),
-                    );
-                  },
+                  onAddWithContext: isOwner
+                      ? null
+                      : (btnContext) => ProductCartHelper.handleAddToCart(
+                            context: context,
+                            ref: ref,
+                            product: item,
+                            buttonContext: btnContext,
+                          ),
                 ),
               );
             },

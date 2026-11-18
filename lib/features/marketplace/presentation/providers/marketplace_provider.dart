@@ -476,6 +476,38 @@ class MarketplaceNotifier extends Notifier<MarketplaceState> {
     }
     state = state.copyWith(farmers: updatedFarmers);
   }
+
+  void updateFarmerNames({
+    required String? farmerId,
+    String? farmName,
+    String? farmerName,
+  }) {
+    final cleanFarm = farmName?.trim();
+    final cleanFarmer = farmerName?.trim();
+    if ((cleanFarm == null || cleanFarm.isEmpty) &&
+        (cleanFarmer == null || cleanFarmer.isEmpty)) {
+      return;
+    }
+
+    final updatedFarmers = state.farmers.map((f) {
+      final matches = (farmerId != null && f.id == farmerId) ||
+          f.id == 'farmer_1' ||
+          f.id == 'farmer_2';
+      if (matches) {
+        return f.copyWith(
+          farmName: (cleanFarm != null && cleanFarm.isNotEmpty)
+              ? cleanFarm
+              : f.farmName,
+          farmerName: (cleanFarmer != null && cleanFarmer.isNotEmpty)
+              ? cleanFarmer
+              : f.farmerName,
+        );
+      }
+      return f;
+    }).toList();
+
+    state = state.copyWith(farmers: updatedFarmers);
+  }
 }
 
 final marketplaceProvider =

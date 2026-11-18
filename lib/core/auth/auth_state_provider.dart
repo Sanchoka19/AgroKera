@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import '../services/push_notification_service.dart';
 import '../storage/secure_storage_service.dart';
+import '../../features/profile/presentation/providers/user_address_provider.dart';
 import 'auth_models.dart';
 import 'auth_repository.dart';
 import 'mock_account_resolver.dart';
@@ -189,6 +190,7 @@ class AuthNotifier extends Notifier<AuthState> {
       role: UserRole.guest,
       userName: name,
       userEmail: email,
+      clearUserAddress: true,
     );
   }
 
@@ -209,6 +211,11 @@ class AuthNotifier extends Notifier<AuthState> {
     final initialKyc =
         role == UserRole.farmer ? KycStatus.pendingReview : KycStatus.verified;
 
+    // Ensure clients never inherit a leftover or default delivery address
+    if (role == UserRole.customer) {
+      unawaited(ref.read(userAddressProvider.notifier).clearAddresses());
+    }
+
     state = state.copyWith(
       isAuthenticated: true,
       userId: resolved.userId,
@@ -219,6 +226,7 @@ class AuthNotifier extends Notifier<AuthState> {
       userEmail: email,
       role: role,
       kycStatus: initialKyc,
+      clearUserAddress: role == UserRole.customer,
     );
 
     // Immediately persist session so reopening the app never loses auth state
@@ -240,8 +248,13 @@ class AuthNotifier extends Notifier<AuthState> {
   }
 
   void logout() {
+    final oldUid = state.userId;
     state = const AuthState(isAuthenticated: false);
     unawaited(_storage.clearSession());
+    unawaited(ref.read(userAddressProvider.notifier).clearAddresses());
+    if (oldUid != null && oldUid.isNotEmpty) {
+      unawaited(_repo.syncFcmToken(userId: oldUid, fcmToken: ''));
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -353,6 +366,38 @@ class AuthNotifier extends Notifier<AuthState> {
     }
   }
 
+  /// Updates user name and optionally farm name in state, secure storage and backend
+  Future<void> updateProfileNames({
+    String? userName,
+    String? farmName,
+  }) async {
+    final cleanUserName = userName?.trim();
+    final cleanFarmName = farmName?.trim();
+
+    state = state.copyWith(
+      userName: (cleanUserName != null && cleanUserName.isNotEmpty)
+          ? cleanUserName
+          : state.userName,
+      farmName: (cleanFarmName != null && cleanFarmName.isNotEmpty)
+          ? cleanFarmName
+          : state.farmName,
+    );
+
+    await _resaveSession();
+
+    final patchData = <String, dynamic>{};
+    if (cleanUserName != null && cleanUserName.isNotEmpty) {
+      patchData['name'] = cleanUserName;
+    }
+    if (cleanFarmName != null && cleanFarmName.isNotEmpty) {
+      patchData['farmName'] = cleanFarmName;
+    }
+
+    if (patchData.isNotEmpty) {
+      await _patchProfileSilently(patchData, fallbackUserId: 'user_farmer_2');
+    }
+  }
+
   // ---------------------------------------------------------------------------
   // Private helpers
   // ---------------------------------------------------------------------------
@@ -417,15 +462,15 @@ class AuthNotifier extends Notifier<AuthState> {
     await _storage.saveSession(
       token: saved['token'] ?? '',
       userId: userId,
-      farmerId: saved['farmerId'] ?? state.farmerId,
-      farmName: saved['farmName'] ?? state.farmName,
+      farmerId: state.farmerId ?? saved['farmerId'],
+      farmName: state.farmName ?? saved['farmName'],
       farmCoverUrl: state.farmCoverUrl ?? saved['farmCoverUrl'],
       userAvatarUrl: state.userAvatarUrl ?? saved['userAvatarUrl'],
-      role: saved['role'] ?? state.role.name,
-      name: saved['name'] ?? state.userName ?? '',
-      phone: saved['phone'] ?? state.userPhone ?? '',
+      role: state.role.name,
+      name: state.userName ?? saved['name'] ?? '',
+      phone: state.userPhone ?? saved['phone'] ?? '',
       email: state.userEmail ?? saved['email'],
-      kycStatus: saved['kycStatus'] ?? state.kycStatus.apiValue,
+      kycStatus: state.kycStatus.apiValue,
     );
   }
 

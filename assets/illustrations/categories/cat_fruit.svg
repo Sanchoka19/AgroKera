@@ -1,0 +1,52 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="appleGrad" x1="16" y1="18" x2="48" y2="58" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FF5252" />
+      <stop offset="60%" stop-color="#E53935" />
+      <stop offset="100%" stop-color="#B71C1C" />
+    </linearGradient>
+    <linearGradient id="leafGrad" x1="28" y1="8" x2="44" y2="20" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#81C784" />
+      <stop offset="100%" stop-color="#388E3C" />
+    </linearGradient>
+    <linearGradient id="stemGrad" x1="31" y1="12" x2="33" y2="22" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#8D6E63" />
+      <stop offset="100%" stop-color="#5D4037" />
+    </linearGradient>
+    <linearGradient id="peachGrad" x1="36" y1="28" x2="56" y2="54" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFA726" />
+      <stop offset="65%" stop-color="#FF7043" />
+      <stop offset="100%" stop-color="#D84315" />
+    </linearGradient>
+    <filter id="shadow" x="6" y="52" width="52" height="10" filterUnits="userSpaceOnUse">
+      <feGaussianBlur stdDeviation="2" />
+    </filter>
+  </defs>
+
+  <!-- Ambient Floor Shadow -->
+  <ellipse cx="32" cy="57" rx="22" ry="4" fill="#0F172A" fill-opacity="0.12" />
+
+  <!-- Peach / Pear behind Apple on right -->
+  <g id="peach">
+    <ellipse cx="44" cy="42" rx="13" ry="14" fill="url(#peachGrad)" />
+    <!-- Peach Highlight -->
+    <path d="M47 32C52 35 54 42 53 46" stroke="#FFE0B2" stroke-width="2" stroke-linecap="round" opacity="0.6" />
+  </g>
+
+  <!-- Apple Body -->
+  <g id="apple">
+    <path d="M31 22C27 18 17 18 14 26C11 35 15 48 24 53C28 55 30 55 31 53C32 55 34 55 38 53C47 48 51 35 48 26C45 18 35 18 31 22Z" fill="url(#appleGrad)" />
+    
+    <!-- Apple Gloss Highlight -->
+    <path d="M19 26C16 30 16 38 20 44" stroke="#FFCDD2" stroke-width="2.5" stroke-linecap="round" opacity="0.75" />
+    <circle cx="21" cy="24" r="1.5" fill="#FFFFFF" opacity="0.8" />
+  </g>
+
+  <!-- Apple Stem -->
+  <path d="M31 22C31.5 17 33.5 13 36 11" stroke="url(#stemGrad)" stroke-width="2.5" stroke-linecap="round" />
+
+  <!-- Fresh Green Leaf -->
+  <path d="M32 18C37 14 45 15 46 19C45 24 37 23 32 18Z" fill="url(#leafGrad)" />
+  <path d="M33 18C38 17 42 18 45 19" stroke="#C8E6C9" stroke-width="0.8" stroke-linecap="round" opacity="0.7" />
+</svg>
+

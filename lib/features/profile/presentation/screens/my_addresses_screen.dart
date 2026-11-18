@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:agrokera/core/theme/app_colors.dart';
+import 'package:agrokera/core/widgets/app_confirmation_bottom_sheet.dart';
 import 'package:agrokera/core/widgets/app_toast.dart';
 import 'package:agrokera/features/profile/domain/models/user_address_model.dart';
 import 'package:agrokera/features/profile/presentation/providers/user_address_provider.dart';
@@ -36,59 +37,23 @@ class MyAddressesScreen extends ConsumerWidget {
     );
   }
 
-  void _confirmDelete(
+  Future<void> _confirmDelete(
     BuildContext context,
     WidgetRef ref,
     UserAddress address,
-  ) {
-    showDialog(
+  ) async {
+    final confirmed = await AppConfirmationBottomSheet.showDeleteAddress(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(
-          'მისამართის წაშლა',
-          style: GoogleFonts.notoSansGeorgian(
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        content: Text(
-          'ნამდვილად გსურთ "${address.title}" (${address.formattedAddress}) მისამართის წაშლა?',
-          style: GoogleFonts.notoSansGeorgian(
-            fontSize: 13.5,
-            color: const Color(0xFF475569),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(
-              'გაუქმება',
-              style: GoogleFonts.notoSansGeorgian(
-                fontWeight: FontWeight.w600,
-                color: const Color(0xFF64748B),
-              ),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              ref.read(userAddressProvider.notifier).deleteAddress(address.id);
-              AppToast.info(context, 'მისამართი წაიშალა');
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFEF4444),
-              foregroundColor: Colors.white,
-              elevation: 0,
-            ),
-            child: Text(
-              'წაშლა',
-              style: GoogleFonts.notoSansGeorgian(fontWeight: FontWeight.w700),
-            ),
-          ),
-        ],
-      ),
+      addressTitle: address.title,
+      addressDetails: address.formattedAddress,
     );
+
+    if (!confirmed || !context.mounted) return;
+
+    ref.read(userAddressProvider.notifier).deleteAddress(address.id);
+    if (context.mounted) {
+      AppToast.info(context, 'მისამართი წაიშალა');
+    }
   }
 
   @override
@@ -114,13 +79,6 @@ class MyAddressesScreen extends ConsumerWidget {
             color: const Color(0xFF0F172A),
           ),
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(LucideIcons.plus, color: AppColors.primary),
-            tooltip: 'ახალი მისამართი',
-            onPressed: () => _openAddEditSheet(context, ref),
-          ),
-        ],
       ),
       body: addressState.isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -129,60 +87,8 @@ class MyAddressesScreen extends ConsumerWidget {
                   onAddAddress: () => _openAddEditSheet(context, ref),
                 )
               : ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
                   children: [
-                    // Dynamic active address indicator card
-                    Container(
-                      margin: const EdgeInsets.only(bottom: 16),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 12,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.primaryLight,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: AppColors.primary.withValues(alpha: 0.3),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            LucideIcons.mapPin,
-                            size: 18,
-                            color: AppColors.primaryDark,
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'მიმდინარე აქტიური მისამართი:',
-                                  style: GoogleFonts.notoSansGeorgian(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.primaryDark,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  addressState.activeAddress,
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: GoogleFonts.notoSansGeorgian(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w700,
-                                    color: const Color(0xFF0F172A),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
                     // List of address cards
                     ...addressState.addresses.map((addr) {
                       return AddressCardTile(
@@ -201,18 +107,44 @@ class MyAddressesScreen extends ConsumerWidget {
                     }),
                   ],
                 ),
-      floatingActionButton: addressState.addresses.isNotEmpty
-          ? FloatingActionButton.extended(
-              onPressed: () => _openAddEditSheet(context, ref),
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              elevation: 2,
-              icon: const Icon(LucideIcons.plus, size: 18),
-              label: Text(
-                'ახალი მისამართი',
-                style: GoogleFonts.notoSansGeorgian(
-                  fontSize: 13.5,
-                  fontWeight: FontWeight.w700,
+      bottomNavigationBar: addressState.addresses.isNotEmpty
+          ? Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.04),
+                    blurRadius: 12,
+                    offset: const Offset(0, -3),
+                  ),
+                ],
+              ),
+              child: SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                  child: SizedBox(
+                    width: double.infinity,
+                    height: 52,
+                    child: ElevatedButton.icon(
+                      onPressed: () => _openAddEditSheet(context, ref),
+                      icon: const Icon(LucideIcons.plus, size: 18),
+                      label: Text(
+                        'ახალი მისამართის დამატება',
+                        style: GoogleFonts.notoSansGeorgian(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
               ),
             )

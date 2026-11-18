@@ -1,5 +1,6 @@
 import prisma from "../lib/prisma.ts";
 import { sendPushNotification, createAndSendNotification } from "../lib/push-notifications.ts";
+import { NotificationTemplates } from "../lib/notification-templates.ts";
 import { OrderStatus, Role, ShipmentStatus, VerificationStatus, FulfillmentType } from "@prisma/client";
 import nodemailer from "nodemailer";
 import { S3Client, PutObjectCommand, GetObjectCommand, CreateBucketCommand } from "@aws-sdk/client-s3";
@@ -62,6 +63,19 @@ export default {
           return errorResponse("Unauthorized", 401);
         }
         const result = await remindStaleOrders();
+        return jsonResponse(result);
+      }
+
+      // ==========================================
+      // INTERNAL CRON — process expired pending orders & pre-expiry warnings
+      // ==========================================
+      if ((method === "POST" || method === "GET") && path === "/api/cron/process-expirations") {
+        const secret = request.headers.get("x-cron-secret");
+        const expected = process.env.CRON_SECRET;
+        if (expected && secret !== expected) {
+          return errorResponse("Unauthorized", 401);
+        }
+        const result = await processOrderExpirations();
         return jsonResponse(result);
       }
 
@@ -301,14 +315,14 @@ export default {
         // 1. Always look up by email first (strict account isolation)
         let user = normalizedEmail
           ? await prisma.user.findFirst({
-              where: {
-                email: {
-                  equals: normalizedEmail,
-                  mode: "insensitive",
-                },
+            where: {
+              email: {
+                equals: normalizedEmail,
+                mode: "insensitive",
               },
-              include: { farmerProfile: true },
-            })
+            },
+            include: { farmerProfile: true },
+          })
           : null;
 
         // 2. Only fall back to phone lookup if no email was provided
@@ -338,18 +352,18 @@ export default {
               verificationStatus: VerificationStatus.VERIFIED,
               ...(roleEnum === Role.FARMER
                 ? {
-                    farmerProfile: {
-                      create: {
-                        id: `farmer_${slug}`,
-                        farmName:
-                          body.farmName ||
-                          `${body.name || "ახალი ფერმერი"}-ის მეურნეობა`,
-                        region: "კახეთი",
-                        city: "თელავი",
-                        address: "თელავი, კახეთი",
-                      },
+                  farmerProfile: {
+                    create: {
+                      id: `farmer_${slug}`,
+                      farmName:
+                        body.farmName ||
+                        `${body.name || "ახალი ფერმერი"}-ის მეურნეობა`,
+                      region: "კახეთი",
+                      city: "თელავი",
+                      address: "თელავი, კახეთი",
                     },
-                  }
+                  },
+                }
                 : {}),
             },
             include: { farmerProfile: true },
@@ -411,14 +425,14 @@ export default {
 
         let existingUser = normalizedEmail
           ? await prisma.user.findFirst({
-              where: {
-                email: {
-                  equals: normalizedEmail,
-                  mode: "insensitive",
-                },
+            where: {
+              email: {
+                equals: normalizedEmail,
+                mode: "insensitive",
               },
-              include: { farmerProfile: true },
-            })
+            },
+            include: { farmerProfile: true },
+          })
           : null;
 
         let user;
@@ -430,55 +444,21 @@ export default {
               role: roleEnum,
               ...(roleEnum === Role.FARMER
                 ? {
-                    farmerProfile: existingUser.farmerProfile
-                      ? {
-                          update: {
-                            ...(body.farmName ? { farmName: body.farmName } : {}),
-                            ...(body.region ? { region: body.region } : {}),
-                            ...(body.city ? { city: body.city } : {}),
-                            ...(body.address ? { address: body.address } : {}),
-                            ...(body.isVatPayer !== undefined
-                                ? { isVatPayer: body.isVatPayer }
-                                : {}),
-                            ...(body.coverUrl ? { coverUrl: body.coverUrl } : {}),
-                            ...(body.avatarUrl ? { avatarUrl: body.avatarUrl } : {}),
-                          },
-                        }
-                      : {
-                          create: {
-                            id: `farmer_${slug}`,
-                            farmName:
-                              body.farmName || `${body.fullName}-ის მეურნეობა`,
-                            region: body.region || "კახეთი",
-                            city: body.city || "თელავი",
-                            address: body.address || "თელავი, კახეთი",
-                            coverUrl: body.coverUrl,
-                            avatarUrl: body.avatarUrl,
-                            isVatPayer: body.isVatPayer ?? false,
-                          },
-                        },
-                  }
-                : {}),
-            },
-            include: { farmerProfile: true },
-          });
-        } else {
-          user = await prisma.user.create({
-            data: {
-              id: roleEnum === Role.FARMER ? `user_farmer_${slug}` : `user_client_${slug}`,
-              fullName: body.fullName || "ახალი მომხმარებელი",
-              phoneNumber:
-                body.phoneNumber &&
-                body.phoneNumber !== "+995 599 12 34 56" &&
-                body.phoneNumber !== "+995 599 00 00 00"
-                  ? body.phoneNumber
-                  : `+995599${Math.floor(100000 + Math.random() * 900000)}`,
-              email: normalizedEmail || `user_${Date.now()}@agrokera.ge`,
-              role: roleEnum,
-              verificationStatus: VerificationStatus.VERIFIED,
-              ...(roleEnum === Role.FARMER
-                ? {
-                    farmerProfile: {
+                  farmerProfile: existingUser.farmerProfile
+                    ? {
+                      update: {
+                        ...(body.farmName ? { farmName: body.farmName } : {}),
+                        ...(body.region ? { region: body.region } : {}),
+                        ...(body.city ? { city: body.city } : {}),
+                        ...(body.address ? { address: body.address } : {}),
+                        ...(body.isVatPayer !== undefined
+                          ? { isVatPayer: body.isVatPayer }
+                          : {}),
+                        ...(body.coverUrl ? { coverUrl: body.coverUrl } : {}),
+                        ...(body.avatarUrl ? { avatarUrl: body.avatarUrl } : {}),
+                      },
+                    }
+                    : {
                       create: {
                         id: `farmer_${slug}`,
                         farmName:
@@ -491,7 +471,41 @@ export default {
                         isVatPayer: body.isVatPayer ?? false,
                       },
                     },
-                  }
+                }
+                : {}),
+            },
+            include: { farmerProfile: true },
+          });
+        } else {
+          user = await prisma.user.create({
+            data: {
+              id: roleEnum === Role.FARMER ? `user_farmer_${slug}` : `user_client_${slug}`,
+              fullName: body.fullName || "ახალი მომხმარებელი",
+              phoneNumber:
+                body.phoneNumber &&
+                  body.phoneNumber !== "+995 599 12 34 56" &&
+                  body.phoneNumber !== "+995 599 00 00 00"
+                  ? body.phoneNumber
+                  : `+995599${Math.floor(100000 + Math.random() * 900000)}`,
+              email: normalizedEmail || `user_${Date.now()}@agrokera.ge`,
+              role: roleEnum,
+              verificationStatus: VerificationStatus.VERIFIED,
+              ...(roleEnum === Role.FARMER
+                ? {
+                  farmerProfile: {
+                    create: {
+                      id: `farmer_${slug}`,
+                      farmName:
+                        body.farmName || `${body.fullName}-ის მეურნეობა`,
+                      region: body.region || "კახეთი",
+                      city: body.city || "თელავი",
+                      address: body.address || "თელავი, კახეთი",
+                      coverUrl: body.coverUrl,
+                      avatarUrl: body.avatarUrl,
+                      isVatPayer: body.isVatPayer ?? false,
+                    },
+                  },
+                }
                 : {}),
             },
             include: { farmerProfile: true },
@@ -508,19 +522,23 @@ export default {
       }
 
       if (method === "POST" && path === "/api/users/fcm-token") {
-        const body = (await request.json()) as {
+        const body = (await request.json().catch(() => ({}))) as {
           userId?: string;
-          fcmToken?: string;
+          fcmToken?: string | null;
         };
-        if (!body.userId || !body.fcmToken) {
-          return errorResponse("userId and fcmToken are required", 400);
+        if (!body.userId || body.fcmToken === undefined) {
+          return errorResponse("userId is required and fcmToken must be provided (or null to clear)", 400);
         }
         try {
+          const tokenValue =
+            body.fcmToken && typeof body.fcmToken === "string" && body.fcmToken.trim().length > 0
+              ? body.fcmToken.trim()
+              : null;
           const updated = await prisma.user.update({
             where: { id: body.userId },
-            data: { fcmToken: body.fcmToken },
+            data: { fcmToken: tokenValue },
           });
-          return jsonResponse({ success: true, userId: updated.id });
+          return jsonResponse({ success: true, userId: updated.id, fcmTokenCleared: tokenValue === null });
         } catch (err: any) {
           return errorResponse(`Failed to update fcmToken: ${err.message}`, 400);
         }
@@ -568,6 +586,20 @@ export default {
         }
       }
 
+      if (path === "/api/notifications/read-order" && method === "PATCH") {
+        const body = (await request.json().catch(() => ({}))) as { userId?: string; orderId?: string };
+        const userId = body.userId || url.searchParams.get("userId");
+        const orderId = body.orderId || url.searchParams.get("orderId");
+        if (!userId || !orderId) {
+          return errorResponse("userId and orderId are required", 400);
+        }
+        await prisma.notification.updateMany({
+          where: { userId, orderId, isRead: false },
+          data: { isRead: true },
+        });
+        return jsonResponse({ success: true });
+      }
+
       if (path.startsWith("/api/profile/")) {
         const userId = path.replace("/api/profile/", "");
         if (method === "GET") {
@@ -602,33 +634,33 @@ export default {
                 ? { verificationStatus: body.verificationStatus }
                 : {}),
               ...(body.farmName ||
-              body.region ||
-              body.address ||
-              body.idCardFrontUrl ||
-              body.idCardBackUrl ||
-              body.coverUrl ||
-              body.avatarUrl ||
-              body.isVatPayer !== undefined
+                body.region ||
+                body.address ||
+                body.idCardFrontUrl ||
+                body.idCardBackUrl ||
+                body.coverUrl ||
+                body.avatarUrl ||
+                body.isVatPayer !== undefined
                 ? {
-                    farmerProfile: {
-                      update: {
-                        ...(body.farmName ? { farmName: body.farmName } : {}),
-                        ...(body.region ? { region: body.region } : {}),
-                        ...(body.address ? { address: body.address } : {}),
-                        ...(body.idCardFrontUrl
-                          ? { idCardFrontUrl: body.idCardFrontUrl }
-                          : {}),
-                        ...(body.idCardBackUrl
-                          ? { idCardBackUrl: body.idCardBackUrl }
-                          : {}),
-                        ...(body.coverUrl ? { coverUrl: body.coverUrl } : {}),
-                        ...(body.avatarUrl ? { avatarUrl: body.avatarUrl } : {}),
-                        ...(body.isVatPayer !== undefined
-                          ? { isVatPayer: body.isVatPayer }
-                          : {}),
-                      },
+                  farmerProfile: {
+                    update: {
+                      ...(body.farmName ? { farmName: body.farmName } : {}),
+                      ...(body.region ? { region: body.region } : {}),
+                      ...(body.address ? { address: body.address } : {}),
+                      ...(body.idCardFrontUrl
+                        ? { idCardFrontUrl: body.idCardFrontUrl }
+                        : {}),
+                      ...(body.idCardBackUrl
+                        ? { idCardBackUrl: body.idCardBackUrl }
+                        : {}),
+                      ...(body.coverUrl ? { coverUrl: body.coverUrl } : {}),
+                      ...(body.avatarUrl ? { avatarUrl: body.avatarUrl } : {}),
+                      ...(body.isVatPayer !== undefined
+                        ? { isVatPayer: body.isVatPayer }
+                        : {}),
                     },
-                  }
+                  },
+                }
                 : {}),
             },
             include: { farmerProfile: true },
@@ -683,12 +715,12 @@ export default {
             ...(!includeUnavailable ? { isAvailable: true } : {}),
             ...(search
               ? {
-                  OR: [
-                    { title: { contains: search, mode: "insensitive" } },
-                    { description: { contains: search, mode: "insensitive" } },
-                    { category: { contains: search, mode: "insensitive" } },
-                  ],
-                }
+                OR: [
+                  { title: { contains: search, mode: "insensitive" } },
+                  { description: { contains: search, mode: "insensitive" } },
+                  { category: { contains: search, mode: "insensitive" } },
+                ],
+              }
               : {}),
           },
           include: { farmer: true },
@@ -720,8 +752,8 @@ export default {
               p.stockQuantity <= 0
                 ? "ამოწურულია"
                 : p.stockQuantity < 20
-                ? "იწურება"
-                : p.stockStatus || "მარაგშია",
+                  ? "იწურება"
+                  : p.stockStatus || "მარაგშია",
             imageUrl: primaryImage,
             images: imageList,
             description: p.description || "",
@@ -798,8 +830,8 @@ export default {
           Array.isArray(body.images) && body.images.length > 0
             ? body.images.slice(0, 5)
             : body.imageUrl
-            ? [body.imageUrl]
-            : [
+              ? [body.imageUrl]
+              : [
                 "https://images.unsplash.com/photo-1542838132-92c53300491e?w=600&auto=format&fit=crop&q=80",
               ];
         const primaryImage = body.imageUrl || normalizedImages[0];
@@ -897,15 +929,15 @@ export default {
               ...(body.unit !== undefined ? { unit: body.unit } : {}),
               ...(stockQty !== undefined
                 ? {
-                    stockQuantity: stockQty,
-                    stockStatus:
-                      stockQty <= 0
-                        ? "ამოწურულია"
-                        : stockQty < 20
+                  stockQuantity: stockQty,
+                  stockStatus:
+                    stockQty <= 0
+                      ? "ამოწურულია"
+                      : stockQty < 20
                         ? "იწურება"
                         : "მარაგშია",
-                    isAvailable: stockQty > 0 ? (body.isAvailable ?? true) : false,
-                  }
+                  isAvailable: stockQty > 0 ? (body.isAvailable ?? true) : false,
+                }
                 : {}),
               ...(body.isAvailable !== undefined && stockQty === undefined
                 ? { isAvailable: body.isAvailable }
@@ -915,17 +947,17 @@ export default {
                 : {}),
               ...(body.bulkDiscountMinQty !== undefined
                 ? {
-                    bulkDiscountMinQty: body.bulkDiscountMinQty
-                      ? Number(body.bulkDiscountMinQty)
-                      : null,
-                  }
+                  bulkDiscountMinQty: body.bulkDiscountMinQty
+                    ? Number(body.bulkDiscountMinQty)
+                    : null,
+                }
                 : {}),
               ...(body.bulkDiscountPercent !== undefined
                 ? {
-                    bulkDiscountPercent: body.bulkDiscountPercent
-                      ? Number(body.bulkDiscountPercent)
-                      : null,
-                  }
+                  bulkDiscountPercent: body.bulkDiscountPercent
+                    ? Number(body.bulkDiscountPercent)
+                    : null,
+                }
                 : {}),
               ...(body.description !== undefined
                 ? { description: body.description }
@@ -933,11 +965,11 @@ export default {
               ...(body.imageUrl !== undefined ? { imageUrl: body.imageUrl } : {}),
               ...(normalizedImages !== undefined
                 ? {
-                    images: normalizedImages,
-                    ...(body.imageUrl === undefined
-                      ? { imageUrl: normalizedImages[0] }
-                      : {}),
-                  }
+                  images: normalizedImages,
+                  ...(body.imageUrl === undefined
+                    ? { imageUrl: normalizedImages[0] }
+                    : {}),
+                }
                 : {}),
             },
             include: { farmer: true },
@@ -999,9 +1031,9 @@ export default {
         ];
         const farmerProfiles = farmerIds.length
           ? await prisma.farmerProfile.findMany({
-              where: { id: { in: farmerIds } },
-              select: { id: true, farmName: true, avatarUrl: true },
-            })
+            where: { id: { in: farmerIds } },
+            select: { id: true, farmName: true, avatarUrl: true },
+          })
           : [];
         const farmerById = new Map(farmerProfiles.map((f) => [f.id, f]));
 
@@ -1120,8 +1152,8 @@ export default {
                     newStock <= 0
                       ? "ამოწურულია"
                       : newStock < 20
-                      ? "იწურება"
-                      : "მარაგშია",
+                        ? "იწურება"
+                        : "მარაგშია",
                   isAvailable: newStock > 0,
                 },
               });
@@ -1152,7 +1184,10 @@ export default {
               deliveryAddress: body.deliveryAddress || "თბილისი, რუსთაველის 14",
               deliveryTimeWindow: body.deliveryTimeWindow || "დღეს, 16:00 - 19:00",
               deliveryNotes: body.deliveryNotes,
-              cancellationDeadline: new Date(Date.now() + 30 * 60 * 1000),
+              cancellationDeadline: calculatePendingOrderDeadline(
+                new Date(),
+                body.deliveryTimeWindow
+              ),
               items: {
                 create: resolvedItems,
               },
@@ -1184,30 +1219,34 @@ export default {
                 : `${createdOrder.items[0].product.title} +${createdOrder.items.length - 1} სხვა`;
 
             if (farmerProfile?.userId) {
+              const tmpl = NotificationTemplates.orderCreatedForFarmer({
+                orderId: createdOrder.id,
+                contactName: createdOrder.contactPerson || "მომხმარებელი",
+                productSummary,
+                totalAmount: createdOrder.totalAmount,
+              });
               await createAndSendNotification({
                 userId: farmerProfile.userId,
-                title: "ახალი შეკვეთა მიღებულია!",
-                body: `${createdOrder.contactPerson || "მომხმარებელი"}: ${productSummary} — ₾${createdOrder.totalAmount}. დაადასტურეთ რაც შეიძლება მალე.`,
+                title: tmpl.title,
+                body: tmpl.body,
                 orderId: createdOrder.id,
-                category: "orders",
-                data: {
-                  orderId: createdOrder.id,
-                  type: "order_created",
-                },
+                category: tmpl.category,
+                data: tmpl.data,
               });
             }
 
             if (createdOrder.clientId) {
+              const tmpl = NotificationTemplates.orderCreatedForClient({
+                orderId: createdOrder.id,
+                productSummary,
+              });
               await createAndSendNotification({
                 userId: createdOrder.clientId,
-                title: "შეკვეთა გაფორმდა! 📦",
-                body: `თქვენი შეკვეთა #${createdOrder.id.slice(-5)} (${productSummary}) გადაეცა ფერმერს დასადასტურებლად.`,
+                title: tmpl.title,
+                body: tmpl.body,
                 orderId: createdOrder.id,
-                category: "orders",
-                data: {
-                  orderId: createdOrder.id,
-                  type: "order_created_client",
-                },
+                category: tmpl.category,
+                data: tmpl.data,
               });
             }
           } catch (pushErr) {
@@ -1296,18 +1335,18 @@ export default {
           if (isClient && !isFarmer) {
             // Client cancellation rules:
             //  • PENDING → always allowed
-            //  • IN_PROGRESS → only within the 30-min window
+            //  • IN_PROGRESS → only within the 10-min window
             if (orderToCheck.status === OrderStatus.IN_PROGRESS) {
               const deadline = orderToCheck.cancellationDeadline;
               if (!deadline || new Date() > deadline) {
                 return errorResponse(
-                  "გაუქმების ვადა გავიდა. შეკვეთა IN_PROGRESS სტატუსშია — პირდაპირ გაუქმება ვეღარ შეიძლება.",
+                  "პირდაპირი გაუქმების ვადა (10 წუთი) გავიდა. შეკვეთა უკვე მზადდება — გასაუქმებლად დაუკავშირდით ფერმერს ან მხარდაჭერას.",
                   403
                 );
               }
             } else if (orderToCheck.status !== OrderStatus.PENDING) {
               return errorResponse(
-                "კლიენტს შეუძლია გაუქმება მხოლოდ PENDING ან IN_PROGRESS (30 წთ-ის განმავლობაში) სტატუსებში.",
+                "კლიენტს შეუძლია პირდაპირი გაუქმება მხოლოდ PENDING ან IN_PROGRESS (დასტურიდან 10 წთ-ის განმავლობაში) სტატუსებში.",
                 403
               );
             }
@@ -1321,8 +1360,8 @@ export default {
           (body.status === OrderStatus.IN_PROGRESS
             ? ShipmentStatus.IN_TRANSIT
             : body.status === OrderStatus.COMPLETED
-            ? ShipmentStatus.CONFIRMED
-            : ShipmentStatus.PENDING);
+              ? ShipmentStatus.CONFIRMED
+              : ShipmentStatus.PENDING);
 
         const updated = await prisma.$transaction(async (tx) => {
           const existingOrder = await tx.order.findUnique({
@@ -1350,8 +1389,8 @@ export default {
                       restoredStock <= 0
                         ? "ამოწურულია"
                         : restoredStock < 20
-                        ? "იწურება"
-                        : "მარაგშია",
+                          ? "იწურება"
+                          : "მარაგშია",
                     isAvailable: restoredStock > 0,
                   },
                 });
@@ -1367,7 +1406,7 @@ export default {
                 ? { cancellationReason: body.cancellationReason }
                 : {}),
               ...(body.status === OrderStatus.IN_PROGRESS
-                ? { cancellationDeadline: new Date(Date.now() + 30 * 60 * 1000) }
+                ? { cancellationDeadline: new Date(Date.now() + 10 * 60 * 1000) }
                 : {}),
               shipment: {
                 upsert: {
@@ -1395,39 +1434,20 @@ export default {
             // Skip PENDING — that's the initial state; client gets no spurious ping
             if (updated.status === "PENDING") return;
 
-            const notifications: Record<string, { title: string; body: string }> = {
-              IN_PROGRESS: {
-                title: "შეკვეთა დადასტურდა!",
-                body: `ფერმერი შეკვეთის #${updated.id.slice(-5)} მომზადებას იწყებს. ჩათი ახლა ხელმისაწვდომია.`,
-              },
-              CONFIRMED: {
-                title: "შეკვეთა დადასტურდა!",
-                body: `ფერმერი შეკვეთის #${updated.id.slice(-5)} მომზადებას იწყებს. ჩათი ახლა ხელმისაწვდომია.`,
-              },
-              COMPLETED: {
-                title: "შეკვეთა ჩაბარდა!",
-                body: `შეკვეთა #${updated.id.slice(-5)} წარმატებით დასრულდა. გმადლობთ AgroKera-ს გამოყენებისთვის!`,
-              },
-              CANCELLED: {
-                title: "შეკვეთა გაუქმდა",
-                body: `სამწუხაროდ, შეკვეთა #${updated.id.slice(-5)} გაუქმდა.${updated.cancellationReason ? " მიზეზი: " + updated.cancellationReason : ""}`,
-              },
-            };
-
-            const notif = notifications[updated.status];
-            if (!notif) return; // unknown status — skip
+            const tmpl = NotificationTemplates.orderStatusUpdated({
+              orderId: updated.id,
+              status: updated.status,
+              cancellationReason: updated.cancellationReason,
+            });
+            if (!tmpl) return;
 
             await createAndSendNotification({
               userId: updated.clientId,
-              title: notif.title,
-              body: notif.body,
+              title: tmpl.title,
+              body: tmpl.body,
               orderId: updated.id,
-              category: "orders",
-              data: {
-                orderId: updated.id,
-                type: "order_status_updated",
-                status: updated.status,
-              },
+              category: tmpl.category,
+              data: tmpl.data,
             });
           } catch (pushErr) {
             console.error("[FCM Client Notification Error]:", pushErr);
@@ -1575,9 +1595,9 @@ export default {
             if (!order) return;
             const farmerProfile = order.farmerId
               ? await prisma.farmerProfile.findUnique({
-                  where: { id: order.farmerId },
-                  select: { userId: true },
-                })
+                where: { id: order.farmerId },
+                select: { userId: true },
+              })
               : null;
             const isSenderFarmer = body.senderRole === "farmer";
             const targetUserId = isSenderFarmer
@@ -1590,9 +1610,11 @@ export default {
                 body: cleanText,
                 orderId,
                 category: "orders",
+                senderName: body.senderName || "AgroKera",
                 data: {
                   orderId,
                   type: "chat_message",
+                  senderName: body.senderName || "AgroKera",
                 },
               });
             }
@@ -1686,32 +1708,299 @@ export async function remindStaleOrders(): Promise<{ reminded: number }> {
         select: { userId: true },
       });
       if (farmerProfile?.userId) {
+        const tmpl = NotificationTemplates.staleReminderFarmer(order.id);
         await createAndSendNotification({
           userId: farmerProfile.userId,
-          title: "შეკვეთა ვერ დაიხურება!",
-          body: `შეკვეთა #${shortId} დიდი ხანია მიმდინარეა. PIN კოდი ჯერ არ ჩაწერია — სთხოვეთ კლიენტს.`,
+          title: tmpl.title,
+          body: tmpl.body,
           orderId: order.id,
-          category: "orders",
-          data: { orderId: order.id, type: "order_stale_farmer" },
-        }).catch(() => {});
+          category: tmpl.category,
+          data: tmpl.data,
+        }).catch(() => { });
         reminded++;
       }
     }
 
     // --- Remind client after 6 h ---
     if (ageHours >= 6) {
+      const tmpl = NotificationTemplates.staleReminderClient(order.id);
       await createAndSendNotification({
         userId: order.clientId,
-        title: "შეკვეთა ჯერ არ დასრულებულა",
-        body: `შეკვეთა #${shortId} ჯერ ღიაა. გთხოვთ გადასცეთ PIN კოდი ფერმერს პროდუქციის ჩაბარებისთანავე.`,
+        title: tmpl.title,
+        body: tmpl.body,
         orderId: order.id,
-        category: "orders",
-        data: { orderId: order.id, type: "order_stale_client" },
-      }).catch(() => {});
+        category: tmpl.category,
+        data: tmpl.data,
+      }).catch(() => { });
       reminded++;
     }
   }
 
   console.log(`[Cron] remindStaleOrders: checked ${staleOrders.length}, reminded ${reminded}`);
   return { reminded };
+}
+
+// ============================================================
+// WORKING HOURS & ORDER EXPIRATION MONITOR
+// ============================================================
+
+/**
+ * Calculates the pending order review deadline based on Georgia time (UTC+4):
+ * - Working hours: 08:00 - 21:00 GET
+ * - Urgent/same-day ("დღეს"): 45 min
+ * - Scheduled/future ("ხვალ"/"ზეგ"): 120 min (2 h)
+ * - Default: 60 min
+ * - If created during quiet hours (21:00 - 08:00), the deadline starts from next 08:00.
+ */
+export function calculatePendingOrderDeadline(
+  now: Date = new Date(),
+  deliveryTimeWindow?: string | null
+): Date {
+  const georgiaOffsetMs = 4 * 60 * 60 * 1000;
+  const georgiaTime = new Date(now.getTime() + georgiaOffsetMs);
+  const gHours = georgiaTime.getUTCHours();
+  const gMinutes = georgiaTime.getUTCMinutes();
+
+  const windowStr = (deliveryTimeWindow || "").toLowerCase();
+  let durationMinutes = 60;
+  if (windowStr.includes("დღეს") || windowStr.includes("today")) {
+    durationMinutes = 45;
+  } else if (
+    windowStr.includes("ხვალ") ||
+    windowStr.includes("tomorrow") ||
+    windowStr.includes("ზეგ")
+  ) {
+    durationMinutes = 120;
+  }
+
+  // Quiet Hours Check: 21:00 - 08:00 Georgia time
+  if (gHours < 8) {
+    // Before working hours today -> Start at today 08:00 GET
+    const targetGeorgiaMs =
+      Date.UTC(
+        georgiaTime.getUTCFullYear(),
+        georgiaTime.getUTCMonth(),
+        georgiaTime.getUTCDate(),
+        8,
+        0,
+        0
+      ) + durationMinutes * 60 * 1000;
+    return new Date(targetGeorgiaMs - georgiaOffsetMs);
+  } else if (gHours >= 21) {
+    // After working hours today -> Start at tomorrow 08:00 GET
+    const targetGeorgiaMs =
+      Date.UTC(
+        georgiaTime.getUTCFullYear(),
+        georgiaTime.getUTCMonth(),
+        georgiaTime.getUTCDate() + 1,
+        8,
+        0,
+        0
+      ) + durationMinutes * 60 * 1000;
+    return new Date(targetGeorgiaMs - georgiaOffsetMs);
+  } else {
+    // During working hours (08:00 - 21:00)
+    const remainingWorkMinToday = (21 - gHours) * 60 - gMinutes;
+    if (durationMinutes <= remainingWorkMinToday) {
+      return new Date(now.getTime() + durationMinutes * 60 * 1000);
+    } else {
+      // Overflows past 21:00 into tomorrow 08:00
+      const overflowMin = durationMinutes - remainingWorkMinToday;
+      const targetGeorgiaMs =
+        Date.UTC(
+          georgiaTime.getUTCFullYear(),
+          georgiaTime.getUTCMonth(),
+          georgiaTime.getUTCDate() + 1,
+          8,
+          0,
+          0
+        ) + overflowMin * 60 * 1000;
+      return new Date(targetGeorgiaMs - georgiaOffsetMs);
+    }
+  }
+}
+
+/**
+ * CRON JOB: Process pending order auto-expirations and pre-expiry warning notifications.
+ *
+ * 1. Overdue pending orders (now > cancellationDeadline):
+ *    - Status set to CANCELLED
+ *    - Reserved stock restored
+ *    - Push notifications sent to client & farmer
+ *
+ * 2. Pre-expiry warning (remaining <= 10 min):
+ *    - High-priority push sent to farmer before deadline expires
+ */
+export async function processOrderExpirations(): Promise<{
+  cancelled: number;
+  warned: number;
+}> {
+  const now = new Date();
+  let cancelled = 0;
+  let warned = 0;
+
+  // 1. Auto-cancel expired pending orders
+  const expiredOrders = await prisma.order.findMany({
+    where: {
+      status: OrderStatus.PENDING,
+      cancellationDeadline: {
+        not: null,
+        lte: now,
+      },
+    },
+    include: {
+      items: true,
+      client: true,
+    },
+  });
+
+  for (const order of expiredOrders) {
+    try {
+      await prisma.$transaction(async (tx) => {
+        const current = await tx.order.findUnique({
+          where: { id: order.id },
+          select: { status: true },
+        });
+        if (current?.status !== OrderStatus.PENDING) return;
+
+        // Restore reserved product stock
+        for (const item of order.items) {
+          const prod = await tx.product.findUnique({
+            where: { id: item.productId },
+          });
+          if (prod) {
+            const restoredStock = prod.quantity + item.quantity;
+            await tx.product.update({
+              where: { id: item.productId },
+              data: {
+                quantity: restoredStock,
+                isAvailable: restoredStock > 0,
+              },
+            });
+          }
+        }
+
+        // Mark order cancelled
+        await tx.order.update({
+          where: { id: order.id },
+          data: {
+            status: OrderStatus.CANCELLED,
+            cancellationReason:
+              "ფერმერმა შეკვეთა დადგენილ დროში ვერ დაადასტურა (ვადა ამოიწურა)",
+            shipment: {
+              upsert: {
+                create: {
+                  status: ShipmentStatus.PENDING,
+                  trackingNumber: `AK-${order.id}`,
+                },
+                update: {
+                  status: ShipmentStatus.PENDING,
+                },
+              },
+            },
+          },
+        });
+      });
+
+      cancelled++;
+      const shortId = order.id.slice(-5);
+
+      // Notify client
+      if (order.clientId) {
+        const tmpl = NotificationTemplates.autoCancelled(order.id, false);
+        await createAndSendNotification({
+          userId: order.clientId,
+          title: tmpl.title,
+          body: tmpl.body,
+          orderId: order.id,
+          category: tmpl.category,
+          data: tmpl.data,
+        }).catch(() => { });
+      }
+
+      // Notify farmer
+      if (order.farmerId) {
+        const farmerProfile = await prisma.farmerProfile.findUnique({
+          where: { id: order.farmerId },
+          select: { userId: true },
+        });
+        if (farmerProfile?.userId) {
+          const tmpl = NotificationTemplates.autoCancelled(order.id, true);
+          await createAndSendNotification({
+            userId: farmerProfile.userId,
+            title: tmpl.title,
+            body: tmpl.body,
+            orderId: order.id,
+            category: tmpl.category,
+            data: tmpl.data,
+          }).catch(() => { });
+        }
+      }
+    } catch (err) {
+      console.error(`[Cron] Failed to auto-cancel order ${order.id}:`, err);
+    }
+  }
+
+  // 2. Pre-expiry warning to farmer (<= 10 minutes remaining)
+  const pendingOrders = await prisma.order.findMany({
+    where: {
+      status: OrderStatus.PENDING,
+      cancellationDeadline: {
+        not: null,
+        gt: now,
+      },
+    },
+    select: {
+      id: true,
+      farmerId: true,
+      cancellationDeadline: true,
+    },
+  });
+
+  for (const order of pendingOrders) {
+    if (!order.cancellationDeadline || !order.farmerId) continue;
+    const diffMs = order.cancellationDeadline.getTime() - now.getTime();
+    const remainingMinutes = diffMs / (60 * 1000);
+
+    if (remainingMinutes <= 10 && remainingMinutes > 0) {
+      const alreadyWarned = await prisma.notification.findFirst({
+        where: {
+          orderId: order.id,
+          OR: [
+            { title: { contains: "მალე გაუქმდება" } },
+            { title: { contains: "დარჩენილია" } },
+          ],
+        },
+        select: { id: true },
+      });
+
+      if (!alreadyWarned) {
+        const farmerProfile = await prisma.farmerProfile.findUnique({
+          where: { id: order.farmerId },
+          select: { userId: true },
+        });
+        if (farmerProfile?.userId) {
+          const tmpl = NotificationTemplates.expiryWarningFarmer(order.id, remainingMinutes);
+          await createAndSendNotification({
+            userId: farmerProfile.userId,
+            title: tmpl.title,
+            body: tmpl.body,
+            orderId: order.id,
+            category: tmpl.category,
+            data: tmpl.data,
+          });
+            },
+          }).catch(() => { });
+          warned++;
+        }
+      }
+    }
+  }
+
+  if (cancelled > 0 || warned > 0) {
+    console.log(
+      `[Cron] processOrderExpirations: cancelled ${cancelled}, warned ${warned}`
+    );
+  }
+  return { cancelled, warned };
 }

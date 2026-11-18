@@ -12,6 +12,7 @@ class ProfileSettingsCard extends StatelessWidget {
   final ValueChanged<bool> onDarkThemeChanged;
   final ValueChanged<bool> onNotificationsChanged;
   final ValueChanged<String> onLanguageChanged;
+  final VoidCallback? onOpenNotificationSettings;
 
   const ProfileSettingsCard({
     super.key,
@@ -21,6 +22,7 @@ class ProfileSettingsCard extends StatelessWidget {
     required this.onDarkThemeChanged,
     required this.onNotificationsChanged,
     required this.onLanguageChanged,
+    this.onOpenNotificationSettings,
   });
 
   Widget _buildLanguagePill(String text, bool isSelected) {
@@ -122,10 +124,11 @@ class ProfileSettingsCard extends StatelessWidget {
                 onNotificationsChanged(val);
               },
             ),
-            onTap: () {
-              HapticFeedback.lightImpact();
-              onNotificationsChanged(!notificationsEnabled);
-            },
+            onTap: onOpenNotificationSettings ??
+                () {
+                  HapticFeedback.lightImpact();
+                  onNotificationsChanged(!notificationsEnabled);
+                },
           ),
         ],
       ),

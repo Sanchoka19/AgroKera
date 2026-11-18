@@ -262,6 +262,84 @@ class FarmerOrder {
     return remaining.isNegative ? Duration.zero : remaining;
   }
 
+  /// Formats the remaining review/cancellation duration for UI display
+  String get formattedRemainingCancellationTime {
+    final d = remainingCancellationTime;
+    if (d == Duration.zero) return '0 წთ';
+    final totalMinutes = (d.inSeconds + 30) ~/ 60;
+    if (totalMinutes >= 60) {
+      final hours = totalMinutes ~/ 60;
+      final remMin = totalMinutes % 60;
+      return remMin > 0 ? '~$hours სთ $remMin წთ' : '~$hours სთ';
+    }
+    return '~${totalMinutes > 0 ? totalMinutes : 1} წთ';
+  }
+
+  /// Calculates the pending review deadline based on Georgia time (UTC+4):
+  /// - Working hours: 08:00 - 21:00 GET
+  /// - Urgent / same-day ("დღეს"): 45 min
+  /// - Scheduled / future ("ხვალ" / "ზეგ"): 120 min (2 h)
+  /// - Default: 60 min
+  /// - Quiet hours (21:00 - 08:00): starts next morning from 08:00 GET.
+  static DateTime calculatePendingOrderDeadline({
+    DateTime? now,
+    String? deliveryTimeWindow,
+  }) {
+    final effectiveNow = now ?? DateTime.now();
+    const georgiaOffset = Duration(hours: 4);
+    final georgiaTime = effectiveNow.toUtc().add(georgiaOffset);
+    final gHours = georgiaTime.hour;
+    final gMinutes = georgiaTime.minute;
+
+    final windowStr = (deliveryTimeWindow ?? '').toLowerCase();
+    int durationMinutes = 60;
+    if (windowStr.contains('დღეს') || windowStr.contains('today')) {
+      durationMinutes = 45;
+    } else if (windowStr.contains('ხვალ') ||
+        windowStr.contains('tomorrow') ||
+        windowStr.contains('ზეგ')) {
+      durationMinutes = 120;
+    }
+
+    if (gHours < 8) {
+      // Early morning before working hours -> starts today at 08:00 GET
+      final targetGeorgia = DateTime.utc(
+        georgiaTime.year,
+        georgiaTime.month,
+        georgiaTime.day,
+        8,
+        0,
+      ).add(Duration(minutes: durationMinutes));
+      return targetGeorgia.subtract(georgiaOffset).toLocal();
+    } else if (gHours >= 21) {
+      // Night after working hours -> starts tomorrow at 08:00 GET
+      final targetGeorgia = DateTime.utc(
+        georgiaTime.year,
+        georgiaTime.month,
+        georgiaTime.day + 1,
+        8,
+        0,
+      ).add(Duration(minutes: durationMinutes));
+      return targetGeorgia.subtract(georgiaOffset).toLocal();
+    } else {
+      // During working hours (08:00 - 21:00 GET)
+      final remainingWorkMinToday = (21 - gHours) * 60 - gMinutes;
+      if (durationMinutes <= remainingWorkMinToday) {
+        return effectiveNow.add(Duration(minutes: durationMinutes));
+      } else {
+        final overflowMin = durationMinutes - remainingWorkMinToday;
+        final targetGeorgia = DateTime.utc(
+          georgiaTime.year,
+          georgiaTime.month,
+          georgiaTime.day + 1,
+          8,
+          0,
+        ).add(Duration(minutes: overflowMin));
+        return targetGeorgia.subtract(georgiaOffset).toLocal();
+      }
+    }
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,

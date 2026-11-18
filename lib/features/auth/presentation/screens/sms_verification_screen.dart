@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -10,15 +9,22 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/app_toast.dart';
 import '../../../../core/widgets/primary_button.dart';
+import '../widgets/otp_deck/animated_otp_card_deck.dart';
 import 'reset_password_screen.dart';
 
 /// Screen 2: SMS დადასტურება (OTP / SMS Verification Screen)
 class SmsVerificationScreen extends ConsumerStatefulWidget {
   final String email;
+  final String? title;
+  final String? subtitle;
+  final FutureOr<void> Function(BuildContext context)? onVerified;
 
   const SmsVerificationScreen({
     super.key,
     this.email = 'ajariswyali123@gmail.com',
+    this.title,
+    this.subtitle,
+    this.onVerified,
   });
 
   @override
@@ -27,10 +33,9 @@ class SmsVerificationScreen extends ConsumerStatefulWidget {
 
 class _SmsVerificationScreenState extends ConsumerState<SmsVerificationScreen> {
   static const int _pinLength = 5;
-  final List<TextEditingController> _controllers =
-      List.generate(_pinLength, (_) => TextEditingController());
-  final List<FocusNode> _focusNodes =
-      List.generate(_pinLength, (_) => FocusNode());
+  final GlobalKey<AnimatedOtpCardDeckState> _deckKey =
+      GlobalKey<AnimatedOtpCardDeckState>();
+  String _currentPin = '';
 
   int _secondsRemaining = 540; // 09:00 minutes
   Timer? _timer;
@@ -65,30 +70,30 @@ class _SmsVerificationScreenState extends ConsumerState<SmsVerificationScreen> {
   @override
   void dispose() {
     _timer?.cancel();
-    for (final c in _controllers) {
-      c.dispose();
-    }
-    for (final f in _focusNodes) {
-      f.dispose();
-    }
     super.dispose();
   }
 
-  Future<void> _onVerify() async {
-    final otpCode = _controllers.map((c) => c.text.trim()).join();
-    if (otpCode.length < _pinLength) {
-      AppToast.error(context, 'გთხოვთ სრულად შეიყვანოთ $_pinLength-ნიშნა SMS კოდი');
-      return;
-    }
+  /// Pure async verification called by the deck
+  Future<bool> _verifyPin(String code) async {
     final error = await ref.read(authStateProvider.notifier).verifyEmailOtp(
           email: widget.email,
-          code: otpCode,
+          code: code,
         );
-    if (!mounted) return;
+    if (!mounted) return false;
     if (error != null) {
       AppToast.error(context, error);
+      return false;
+    }
+    return true;
+  }
+
+  /// Success transition called after the elastic checkmark animation finishes
+  Future<void> _handleSuccess() async {
+    if (widget.onVerified != null) {
+      await widget.onVerified!(context);
       return;
     }
+    if (!mounted) return;
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => const ResetPasswordScreen(),
@@ -109,7 +114,7 @@ class _SmsVerificationScreenState extends ConsumerState<SmsVerificationScreen> {
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
-          'SMS დადასტურება',
+          widget.title ?? 'SMS დადასტურება',
           style: AppTypography.h1.copyWith(
             fontSize: 20,
             fontWeight: FontWeight.w700,
@@ -137,7 +142,7 @@ class _SmsVerificationScreenState extends ConsumerState<SmsVerificationScreen> {
 
               // Title
               Text(
-                'შეიყვანეთ SMS კოდი',
+                widget.subtitle ?? 'შეიყვანეთ SMS კოდი',
                 style: AppTypography.h1.copyWith(
                   fontSize: 22,
                   fontWeight: FontWeight.w800,
@@ -158,59 +163,16 @@ class _SmsVerificationScreenState extends ConsumerState<SmsVerificationScreen> {
               ),
               const SizedBox(height: 32),
 
-              // 5-digit PIN input row
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: List.generate(_pinLength, (index) {
-                  return SizedBox(
-                    width: 54,
-                    height: 58,
-                    child: TextField(
-                      controller: _controllers[index],
-                      focusNode: _focusNodes[index],
-                      keyboardType: TextInputType.number,
-                      textAlign: TextAlign.center,
-                      maxLength: 1,
-                      style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF64748B),
-                      ),
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                      decoration: InputDecoration(
-                        counterText: '',
-                        hintText: '8',
-                        hintStyle: const TextStyle(
-                          color: Color(0xFF94A3B8),
-                          fontSize: 22,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        filled: true,
-                        fillColor: Colors.white,
-                        contentPadding: EdgeInsets.zero,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Color(0xFFCBD5E1), width: 1.2),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Color(0xFFCBD5E1), width: 1.2),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: AppColors.primary, width: 1.8),
-                        ),
-                      ),
-                      onChanged: (value) {
-                        if (value.isNotEmpty && index < _pinLength - 1) {
-                          _focusNodes[index + 1].requestFocus();
-                        } else if (value.isEmpty && index > 0) {
-                          _focusNodes[index - 1].requestFocus();
-                        }
-                      },
-                    ),
-                  );
-                }),
+              // Animated Card Deck OTP Component
+              Center(
+                child: AnimatedOtpCardDeck(
+                  key: _deckKey,
+                  pinLength: _pinLength,
+                  accentColor: AppColors.primary,
+                  onVerify: _verifyPin,
+                  onSuccess: _handleSuccess,
+                  onPinChanged: (val) => _currentPin = val,
+                ),
               ),
               const SizedBox(height: 28),
 
@@ -275,7 +237,13 @@ class _SmsVerificationScreenState extends ConsumerState<SmsVerificationScreen> {
                 text: 'დადასტურება',
                 borderRadius: BorderRadius.circular(12),
                 height: 52,
-                onPressed: _onVerify,
+                onPressed: () {
+                  if (_currentPin.length < _pinLength) {
+                    AppToast.error(context, 'გთხოვთ სრულად შეიყვანოთ $_pinLength-ნიშნა კოდი');
+                    return;
+                  }
+                  _deckKey.currentState?.triggerVerification(_currentPin);
+                },
               ),
               const SizedBox(height: 24),
             ],

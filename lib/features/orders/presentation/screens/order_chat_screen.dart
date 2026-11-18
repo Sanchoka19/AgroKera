@@ -4,11 +4,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../core/auth/auth_state_provider.dart';
+import '../../../../core/services/push_notification_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_toast.dart';
 import '../../domain/models/farmer_order_model.dart';
 import '../../domain/models/order_message_model.dart';
+import '../controllers/order_chat_actions_controller.dart';
 import '../providers/order_chat_provider.dart';
+import '../widgets/order_chat/order_chat_bank_dialog.dart';
+import '../widgets/order_chat/order_chat_card_bubble.dart';
+import '../widgets/order_chat/order_chat_intercom_dialog.dart';
+import '../widgets/order_chat/order_chat_pin_dialog.dart';
+import '../widgets/order_chat/order_chat_quick_actions_sheet.dart';
+import '../../../notifications/presentation/providers/notifications_provider.dart';
 
 /// Live Order Communication Chat Screen between Farmer & Customer
 class OrderChatScreen extends ConsumerStatefulWidget {
@@ -32,12 +40,14 @@ class _OrderChatScreenState extends ConsumerState<OrderChatScreen> {
   @override
   void initState() {
     super.initState();
+    PushNotificationService.activeChatOrderId = widget.order.id;
     unawaited(
-      Future.microtask(
-        () => ref
-            .read(orderChatProvider.notifier)
-            .loadMessages(widget.order.id),
-      ),
+      Future.microtask(() {
+        ref.read(orderChatProvider.notifier).loadMessages(widget.order.id);
+        ref
+            .read(notificationsProvider.notifier)
+            .markOrderChatNotificationsAsRead(widget.order.id);
+      }),
     );
 
     // Live polling for incoming messages every 2.5 seconds
@@ -50,6 +60,9 @@ class _OrderChatScreenState extends ConsumerState<OrderChatScreen> {
 
   @override
   void dispose() {
+    if (PushNotificationService.activeChatOrderId == widget.order.id) {
+      PushNotificationService.activeChatOrderId = null;
+    }
     _liveSyncTimer?.cancel();
     _textController.dispose();
     _scrollController.dispose();
@@ -107,7 +120,6 @@ class _OrderChatScreenState extends ConsumerState<OrderChatScreen> {
       }
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -189,6 +201,18 @@ class _OrderChatScreenState extends ConsumerState<OrderChatScreen> {
           ],
         ),
         actions: [
+          if (widget.order.contactPhone.trim().isNotEmpty)
+            IconButton(
+              icon: const Icon(
+                LucideIcons.phone,
+                size: 19,
+                color: Color(0xFF16A34A),
+              ),
+              tooltip: 'ნომრის კოპირება / დარეკვა',
+              onPressed: () => ref
+                  .read(orderChatActionsControllerProvider)
+                  .copyPhoneNumber(context, widget.order.contactPhone),
+            ),
           Padding(
             padding: const EdgeInsets.only(right: 12),
             child: Builder(
@@ -197,12 +221,16 @@ class _OrderChatScreenState extends ConsumerState<OrderChatScreen> {
                 return CircleAvatar(
                   radius: 18,
                   backgroundColor: const Color(0xFFE6F4EA),
-                  backgroundImage: (!isFarmer && avatarUrl != null && avatarUrl.isNotEmpty)
+                  backgroundImage: (!isFarmer &&
+                          avatarUrl != null &&
+                          avatarUrl.isNotEmpty)
                       ? NetworkImage(avatarUrl)
                       : null,
                   child: (isFarmer || avatarUrl == null || avatarUrl.isEmpty)
                       ? Text(
-                          partnerName.isNotEmpty ? partnerName[0].toUpperCase() : '?',
+                          partnerName.isNotEmpty
+                              ? partnerName[0].toUpperCase()
+                              : '?',
                           style: const TextStyle(
                             color: AppColors.primary,
                             fontWeight: FontWeight.w700,
@@ -264,16 +292,25 @@ class _OrderChatScreenState extends ConsumerState<OrderChatScreen> {
                           return _buildSystemMessage(msg);
                         }
 
+                        if (msg.type != OrderMessageType.text) {
+                          return OrderChatCardBubble(
+                            message: msg,
+                            isMe: isMe,
+                            order: widget.order,
+                            isFarmer: isFarmer,
+                          );
+                        }
+
                         return _buildMessageBubble(msg, isMe);
                       },
                     ),
             ),
 
-            // Quick replies (only if active)
+            // Quick replies and actions (only if active)
             if (isActive) _buildQuickReplies(isFarmer),
 
             // Input Bar
-            _buildBottomBar(isActive),
+            _buildBottomBar(isActive, isFarmer),
           ],
         ),
       ),
@@ -313,7 +350,8 @@ class _OrderChatScreenState extends ConsumerState<OrderChatScreen> {
           color: const Color(0xFFEFF6FF),
           child: Row(
             children: [
-              const Icon(LucideIcons.shieldCheck, size: 16, color: Color(0xFF2563EB)),
+              const Icon(LucideIcons.shieldCheck,
+                  size: 16, color: Color(0xFF2563EB)),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -336,7 +374,8 @@ class _OrderChatScreenState extends ConsumerState<OrderChatScreen> {
         color: const Color(0xFFFEF3C7),
         child: Row(
           children: [
-            const Icon(LucideIcons.shieldAlert, size: 16, color: Color(0xFFD97706)),
+            const Icon(LucideIcons.shieldAlert,
+                size: 16, color: Color(0xFFD97706)),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
@@ -360,7 +399,8 @@ class _OrderChatScreenState extends ConsumerState<OrderChatScreen> {
       color: const Color(0xFFF0FDF4),
       child: Row(
         children: [
-          const Icon(LucideIcons.banknote, size: 16, color: Color(0xFF16A34A)),
+          const Icon(LucideIcons.banknote,
+              size: 16, color: Color(0xFF16A34A)),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
@@ -480,42 +520,252 @@ class _OrderChatScreenState extends ConsumerState<OrderChatScreen> {
   }
 
   Widget _buildQuickReplies(bool isFarmer) {
-    final replies = isFarmer
+    final controller = ref.read(orderChatActionsControllerProvider);
+    final hasPin = widget.order.deliveryPin.trim().isNotEmpty;
+    final isEscrow = widget.order.isBankTransfer;
+
+    final standardReplies = isFarmer
         ? ['გზაში ვარ', '10 წუთში მოვალ', 'ადგილზე ვარ', 'შლაგბაუმთან ვდგავარ']
-        : ['როდის შეძლებთ გამოგზავნას?', 'ადგილზე ვარ', 'სადარბაზოს კოდია', 'ჭიშკართან გელოდებით', 'მადლობა!'];
+        : ['როდის შეძლებთ გამოგზავნას?', 'ადგილზე ვარ', 'ჭიშკართან გელოდებით', 'მადლობა!'];
 
     return Container(
       height: 38,
       margin: const EdgeInsets.only(bottom: 6),
-      child: ListView.separated(
+      child: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 16),
         scrollDirection: Axis.horizontal,
-        itemCount: replies.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 8),
-        itemBuilder: (context, i) {
-          final reply = replies[i];
-          return ActionChip(
-            label: Text(
-              reply,
-              style: GoogleFonts.notoSansGeorgian(
-                fontSize: 11.5,
-                fontWeight: FontWeight.w600,
-                color: const Color(0xFF334155),
+        children: [
+          // Standard conversational replies
+          ...standardReplies.map((reply) {
+            return Container(
+              margin: const EdgeInsets.only(right: 6),
+              child: ActionChip(
+                label: Text(
+                  reply,
+                  style: GoogleFonts.notoSansGeorgian(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF334155),
+                  ),
+                ),
+                backgroundColor: Colors.white,
+                side: const BorderSide(color: Color(0xFFCBD5E1)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                onPressed: () => _sendMessage(reply),
+              ),
+            );
+          }),
+
+          if (isFarmer) ...[
+            // Farmer Action 1: PIN Request
+            ActionChip(
+              avatar: const Icon(
+                LucideIcons.shieldCheck,
+                size: 14,
+                color: Color(0xFF2563EB),
+              ),
+              label: Text(
+                'PIN-ის მოთხოვნა',
+                style: GoogleFonts.notoSansGeorgian(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF1D4ED8),
+                ),
+              ),
+              backgroundColor: const Color(0xFFEFF6FF),
+              side: const BorderSide(color: Color(0xFFBFDBFE)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              onPressed: () => controller.requestDeliveryPin(
+                context: context,
+                order: widget.order,
               ),
             ),
-            backgroundColor: Colors.white,
-            side: const BorderSide(color: Color(0xFFCBD5E1)),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
+            const SizedBox(width: 8),
+
+            // Farmer Action 2: Bank details / IBAN
+            ActionChip(
+              avatar: const Icon(
+                LucideIcons.creditCard,
+                size: 14,
+                color: Color(0xFF0D9488),
+              ),
+              label: Text(
+                'საბანკო რეკვიზიტები',
+                style: GoogleFonts.notoSansGeorgian(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF0F766E),
+                ),
+              ),
+              backgroundColor: const Color(0xFFCCFBF1),
+              side: const BorderSide(color: Color(0xFF99F6E4)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              onPressed: () {
+                final auth = ref.read(authStateProvider);
+                showDialog<void>(
+                  context: context,
+                  builder: (_) => OrderChatBankDialog(
+                    initialBank: 'თიბისი ბანკი (TBC Bank)',
+                    initialIban: '',
+                    initialBeneficiary:
+                        auth.farmName ?? auth.userName ?? 'აგროკერა ფერმერი',
+                    onSend: ({
+                      required String bankName,
+                      required String iban,
+                      required String beneficiary,
+                    }) {
+                      controller.sendBankDetails(
+                        context: context,
+                        order: widget.order,
+                        bankName: bankName,
+                        iban: iban,
+                        beneficiaryName: beneficiary,
+                      );
+                    },
+                  ),
+                );
+              },
             ),
-            onPressed: () => _sendMessage(reply),
-          );
-        },
+            const SizedBox(width: 8),
+          ] else ...[
+            // Customer Action 1: Delivery Address
+            ActionChip(
+              avatar: const Icon(
+                LucideIcons.mapPin,
+                size: 14,
+                color: Color(0xFF0284C7),
+              ),
+              label: Text(
+                'მისამართი',
+                style: GoogleFonts.notoSansGeorgian(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF0369A1),
+                ),
+              ),
+              backgroundColor: const Color(0xFFF0F9FF),
+              side: const BorderSide(color: Color(0xFFBAE6FD)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              onPressed: () => controller.sendDeliveryAddress(
+                context: context,
+                order: widget.order,
+              ),
+            ),
+            const SizedBox(width: 8),
+
+            // Customer Action 2: GPS Location
+            ActionChip(
+              avatar: const Icon(
+                LucideIcons.navigation,
+                size: 14,
+                color: Color(0xFF2563EB),
+              ),
+              label: Text(
+                'GPS ლოკაცია',
+                style: GoogleFonts.notoSansGeorgian(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF1D4ED8),
+                ),
+              ),
+              backgroundColor: const Color(0xFFEFF6FF),
+              side: const BorderSide(color: Color(0xFFBFDBFE)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              onPressed: () => controller.sendCurrentGpsLocation(
+                context: context,
+                order: widget.order,
+              ),
+            ),
+            const SizedBox(width: 8),
+
+            // Customer Action 3: Intercom Code
+            ActionChip(
+              avatar: const Icon(
+                LucideIcons.doorOpen,
+                size: 14,
+                color: Color(0xFF7C3AED),
+              ),
+              label: Text(
+                'სადარბაზო',
+                style: GoogleFonts.notoSansGeorgian(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF6D28D9),
+                ),
+              ),
+              backgroundColor: const Color(0xFFF5F3FF),
+              side: const BorderSide(color: Color(0xFFDDD6FE)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              onPressed: () {
+                showDialog<void>(
+                  context: context,
+                  builder: (_) => OrderChatIntercomDialog(
+                    onSend: (code) => controller.sendIntercomCode(
+                      context: context,
+                      order: widget.order,
+                      codeDetails: code,
+                    ),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(width: 8),
+
+            // Customer Action 4: Delivery PIN (Only client & escrow)
+            if (hasPin && isEscrow) ...[
+              ActionChip(
+                avatar: const Icon(
+                  LucideIcons.keyRound,
+                  size: 14,
+                  color: Color(0xFFD97706),
+                ),
+                label: Text(
+                  'PIN კოდი',
+                  style: GoogleFonts.notoSansGeorgian(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFFB45309),
+                  ),
+                ),
+                backgroundColor: const Color(0xFFFFFBEB),
+                side: const BorderSide(color: Color(0xFFFDE68A)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                onPressed: () {
+                  showDialog<void>(
+                    context: context,
+                    builder: (_) => OrderChatPinDialog(
+                      pin: widget.order.deliveryPin,
+                      onConfirm: () => controller.sendDeliveryPin(
+                        context: context,
+                        order: widget.order,
+                      ),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(width: 8),
+            ],
+          ],
+        ],
       ),
     );
   }
 
-  Widget _buildBottomBar(bool isActive) {
+  Widget _buildBottomBar(bool isActive, bool isFarmer) {
     if (!isActive) {
       final isCancelled = widget.order.status == OrderStatus.cancelled;
       return Container(
@@ -546,35 +796,70 @@ class _OrderChatScreenState extends ConsumerState<OrderChatScreen> {
     }
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+      padding: const EdgeInsets.fromLTRB(12, 8, 16, 12),
       decoration: const BoxDecoration(
         color: Colors.white,
         border: Border(top: BorderSide(color: Color(0xFFE2E8F0))),
       ),
       child: Row(
         children: [
-          Expanded(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF1F5F9),
-                borderRadius: BorderRadius.circular(24),
+          // Quick actions '+' button
+          Container(
+            margin: const EdgeInsets.only(right: 8),
+            decoration: const BoxDecoration(
+              color: Color(0xFFF1F5F9),
+              shape: BoxShape.circle,
+            ),
+            child: IconButton(
+              icon: const Icon(
+                LucideIcons.plus,
+                size: 20,
+                color: Color(0xFF334155),
               ),
-              child: TextField(
-                controller: _textController,
-                textInputAction: TextInputAction.send,
-                onSubmitted: (_) => _sendMessage(),
-                style: GoogleFonts.notoSansGeorgian(
-                  fontSize: 13.5,
-                  color: const Color(0xFF0F172A),
+              tooltip: 'სწრაფი მოქმედებები',
+              onPressed: () => OrderChatQuickActionsSheet.show(
+                context,
+                order: widget.order,
+                isFarmer: isFarmer,
+              ),
+            ),
+          ),
+          Expanded(
+            child: TextField(
+              controller: _textController,
+              textInputAction: TextInputAction.send,
+              onSubmitted: (_) => _sendMessage(),
+              style: GoogleFonts.notoSansGeorgian(
+                fontSize: 13.5,
+                color: const Color(0xFF0F172A),
+              ),
+              decoration: InputDecoration(
+                isDense: true,
+                filled: true,
+                fillColor: const Color(0xFFF1F5F9),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 11,
                 ),
-                decoration: InputDecoration(
-                  hintText: 'დაწერეთ შეტყობინება...',
-                  hintStyle: GoogleFonts.notoSansGeorgian(
-                    fontSize: 13,
-                    color: const Color(0xFF94A3B8),
+                hintText: 'დაწერეთ შეტყობინება...',
+                hintStyle: GoogleFonts.notoSansGeorgian(
+                  fontSize: 13,
+                  color: const Color(0xFF94A3B8),
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(24),
+                  borderSide: BorderSide.none,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(24),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(24),
+                  borderSide: const BorderSide(
+                    color: AppColors.primary,
+                    width: 1.5,
                   ),
-                  border: InputBorder.none,
                 ),
               ),
             ),

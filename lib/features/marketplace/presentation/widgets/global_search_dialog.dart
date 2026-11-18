@@ -1,7 +1,9 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import '../../../../core/constants/app_assets.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../data/models/farmer_model.dart';
@@ -392,17 +394,10 @@ class _GlobalSearchDialogState extends ConsumerState<GlobalSearchDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppColors.surfaceInput,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                LucideIcons.searchX,
-                size: 36,
-                color: AppColors.textSecondary,
-              ),
+            SvgPicture.asset(
+              AppAssets.emptyProducts,
+              width: 140,
+              height: 140,
             ),
             const SizedBox(height: 12),
             Text(

@@ -10,6 +10,7 @@ import 'features/navigation/presentation/screens/main_nav_screen.dart';
 import 'features/notifications/data/models/notification_model.dart';
 import 'features/notifications/presentation/providers/notifications_provider.dart';
 import 'features/notifications/presentation/notification_navigator.dart';
+import 'features/notifications/presentation/in_app_notification_banner.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -35,7 +36,7 @@ Future<void> main() async {
                 id: remoteMessage.messageId ??
                     'fcm-${DateTime.now().millisecondsSinceEpoch}',
                 title: AppNotification.stripEmojis(title),
-                body: body,
+                body: AppNotification.stripEmojis(body),
                 timeAgo: 'ახლახანს',
                 timestamp: DateTime.now(),
                 category: AppNotification.parseCategory(categoryStr),
@@ -45,6 +46,13 @@ Future<void> main() async {
               ),
             );
         container.read(notificationsProvider.notifier).fetchNotifications();
+
+        InAppNotificationBanner.showIfEnabled(
+          container: container,
+          title: cleanTitle,
+          body: cleanBody,
+          data: remoteMessage.data,
+        );
       },
     );
     PushNotificationService().onTokenUpdated = (newToken) {

@@ -1,0 +1,54 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="carrotGrad" x1="28" y1="26" x2="52" y2="56" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FF9800" />
+      <stop offset="60%" stop-color="#F57C00" />
+      <stop offset="100%" stop-color="#E65100" />
+    </linearGradient>
+    <linearGradient id="tomatoGrad" x1="12" y1="28" x2="38" y2="56" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FF5252" />
+      <stop offset="70%" stop-color="#E53935" />
+      <stop offset="100%" stop-color="#C62828" />
+    </linearGradient>
+    <linearGradient id="vegLeafGrad" x1="42" y1="8" x2="56" y2="28" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#66BB6A" />
+      <stop offset="100%" stop-color="#2E7D32" />
+    </linearGradient>
+  </defs>
+
+  <!-- Ambient Floor Shadow -->
+  <ellipse cx="32" cy="57" rx="23" ry="4" fill="#0F172A" fill-opacity="0.12" />
+
+  <!-- Carrot Behind -->
+  <g id="carrot" transform="rotate(28 42 36)">
+    <!-- Carrot Greens -->
+    <path d="M42 16C42 10 38 7 35 6C36 10 39 12 40 16" stroke="url(#vegLeafGrad)" stroke-width="2" stroke-linecap="round" />
+    <path d="M43 15C45 9 49 7 51 6C49 10 46 12 44 15" stroke="url(#vegLeafGrad)" stroke-width="2" stroke-linecap="round" />
+    <path d="M42 15C43 8 44 5 44 4C44 8 43 11 42 15" stroke="url(#vegLeafGrad)" stroke-width="2.2" stroke-linecap="round" />
+
+    <!-- Carrot Cone Body -->
+    <path d="M36 18C39 17 46 17 48 18C47 26 44 44 42 50C40 44 37 26 36 18Z" fill="url(#carrotGrad)" />
+    <!-- Carrot Texture Ridges -->
+    <path d="M38 25C41 24 44 25 45 26" stroke="#FFE0B2" stroke-width="1.2" stroke-linecap="round" opacity="0.6" />
+    <path d="M39 33C41 32 43 33 44 34" stroke="#FFE0B2" stroke-width="1.2" stroke-linecap="round" opacity="0.6" />
+    <path d="M40 41C41 40 42 41 43 41.5" stroke="#FFE0B2" stroke-width="1" stroke-linecap="round" opacity="0.6" />
+  </g>
+
+  <!-- Tomato In Front -->
+  <g id="tomato">
+    <ellipse cx="24" cy="41" rx="15" ry="14" fill="url(#tomatoGrad)" />
+    <!-- Tomato Gloss Highlight -->
+    <path d="M15 35C13 39 14 45 17 48" stroke="#FFCDD2" stroke-width="2.5" stroke-linecap="round" opacity="0.75" />
+    <circle cx="16" cy="33" r="1.5" fill="#FFFFFF" opacity="0.8" />
+
+    <!-- Tomato Star Calyx / Sepals -->
+    <path d="M24 28L25 25L23 23L24 27Z" fill="#388E3C" />
+    <path d="M24 28L29 27L28 29Z" fill="#4CAF50" />
+    <path d="M24 28L28 31L26 31Z" fill="#43A047" />
+    <path d="M24 28L20 31L22 31Z" fill="#2E7D32" />
+    <path d="M24 28L19 27L21 28Z" fill="#4CAF50" />
+    <!-- Tomato Stem -->
+    <path d="M24 27C24.5 24 26 22 28 21" stroke="#2E7D32" stroke-width="2" stroke-linecap="round" />
+  </g>
+</svg>
+

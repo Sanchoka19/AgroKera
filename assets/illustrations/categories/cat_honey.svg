@@ -1,0 +1,58 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="honeyGrad" x1="16" y1="26" x2="44" y2="54" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFD54F" />
+      <stop offset="50%" stop-color="#FFB300" />
+      <stop offset="100%" stop-color="#FF8F00" />
+    </linearGradient>
+    <linearGradient id="potGrad" x1="16" y1="20" x2="48" y2="54" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFF8E1" />
+      <stop offset="100%" stop-color="#FFECB3" />
+    </linearGradient>
+    <linearGradient id="dipperGrad" x1="38" y1="8" x2="54" y2="44" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#D7CCC8" />
+      <stop offset="60%" stop-color="#A1887F" />
+      <stop offset="100%" stop-color="#6D4C41" />
+    </linearGradient>
+  </defs>
+
+  <!-- Ambient Floor Shadow -->
+  <ellipse cx="32" cy="57" rx="22" ry="4" fill="#0F172A" fill-opacity="0.12" />
+
+  <!-- Honey Pot / Jar -->
+  <g id="honeyJar">
+    <!-- Ceramic/Glass Pot Body -->
+    <path d="M20 25C17 29 15 36 15 42C15 50 20 54 31 54C42 54 47 50 47 42C47 36 45 29 42 25H20Z" fill="url(#honeyGrad)" stroke="#FFA000" stroke-width="1.5" />
+    
+    <!-- Pot Neck & Rim -->
+    <ellipse cx="31" cy="25" rx="12" ry="3.5" fill="#FFE082" stroke="#FFB300" stroke-width="1.2" />
+    <path d="M19 25C19 24 21 21 31 21C41 21 43 24 43 25" fill="#FFE082" />
+    <ellipse cx="31" cy="21" rx="11" ry="3" fill="#FFF3E0" stroke="#FFA000" stroke-width="1.2" />
+
+    <!-- Honey Pot Label -->
+    <rect x="23" y="34" width="16" height="12" rx="3" fill="#FFFFFF" opacity="0.9" />
+    <!-- Mini Honeycomb icon on label -->
+    <path d="M31 37L34 39V42L31 44L28 42V39L31 37Z" fill="#FFA000" />
+
+    <!-- Gloss Highlight -->
+    <path d="M19 32C17 36 17 44 20 48" stroke="#FFF9C4" stroke-width="2.2" stroke-linecap="round" opacity="0.8" />
+
+    <!-- Honey Drip from Rim -->
+    <path d="M22 25C22 28 24 30 25 30C26 30 26 27 26 25" fill="#FFC107" />
+  </g>
+
+  <!-- Wooden Honey Dipper (Diagonal) -->
+  <g id="honeyDipper">
+    <!-- Stick Handle -->
+    <line x1="50" y1="10" x2="33" y2="34" stroke="url(#dipperGrad)" stroke-width="3" stroke-linecap="round" />
+    
+    <!-- Dipper Head Rings -->
+    <ellipse cx="36" cy="30" rx="4" ry="2.2" transform="rotate(-35 36 30)" fill="#8D6E63" />
+    <ellipse cx="38" cy="27" rx="4.8" ry="2.5" transform="rotate(-35 38 27)" fill="#795548" />
+    <ellipse cx="40" cy="24" rx="4" ry="2.2" transform="rotate(-35 40 24)" fill="#6D4C41" />
+
+    <!-- Honey coating on dipper head -->
+    <path d="M33 34C32 37 36 39 37 36C38 33 34 32 33 34Z" fill="#FFD54F" />
+  </g>
+</svg>
+

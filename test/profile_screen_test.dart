@@ -9,6 +9,8 @@ import 'package:agrokera/features/profile/presentation/screens/farmer_delivery_s
 import 'package:agrokera/features/profile/presentation/screens/farm_address_screen.dart';
 import 'package:agrokera/features/profile/presentation/screens/guest_profile_screen.dart';
 import 'package:agrokera/features/profile/presentation/screens/my_addresses_screen.dart';
+import 'package:agrokera/features/profile/presentation/widgets/customer_profile_header.dart';
+import 'package:agrokera/features/profile/presentation/widgets/farmer_profile_hero.dart';
 import 'package:agrokera/features/profile/domain/models/user_address_model.dart';
 import 'test_helper.dart';
 
@@ -236,6 +238,101 @@ void main() {
     expect(find.text('ფერმის მისამართი'), findsOneWidget);
     expect(find.text('ფერმის მისამართის შენახვა'), findsOneWidget);
     expect(find.text('თვითგატანის წერტილი (საჯარო)'), findsOneWidget);
+  });
+
+  testWidgets('Customer Profile allows editing user name via EditProfileBottomSheet', (WidgetTester tester) async {
+    final container = ProviderContainer();
+    container.read(authStateProvider.notifier).login(
+          name: 'გიორგი ბერიძე',
+          email: 'user@example.ge',
+          role: UserRole.customer,
+        );
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: const MaterialApp(
+          home: GuestProfileScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Tap on the name or pencil icon to open sheet
+    expect(find.text('გიორგი ბერიძე'), findsOneWidget);
+    await tester.tap(find.text('გიორგი ბერიძე'));
+    await tester.pumpAndSettle();
+
+    // Bottom sheet is shown
+    expect(find.text('პროფილის რედაქტირება'), findsOneWidget);
+    expect(find.text('პირადი სახელი და გვარი'), findsOneWidget);
+    expect(find.text('მეურნეობის / ფერმის დასახელება'), findsNothing); // Not a farmer
+
+    // Enter new name
+    final nameField = find.widgetWithText(TextFormField, 'გიორგი ბერიძე');
+    await tester.enterText(nameField, 'გიორგი მაისურაძე');
+    await tester.pump();
+
+    // Tap Save
+    await tester.tap(find.text('შენახვა'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600));
+
+    // Verify updated name in state and UI
+    expect(container.read(authStateProvider).userName, 'გიორგი მაისურაძე');
+    expect(find.descendant(of: find.byType(CustomerProfileHeader), matching: find.text('გიორგი მაისურაძე')), findsOneWidget);
+  });
+
+  testWidgets('Farmer Profile allows editing personal name and farm name via EditProfileBottomSheet', (WidgetTester tester) async {
+    final container = ProviderContainer();
+    container.read(authStateProvider.notifier).login(
+          name: 'რევაზ ბერიძე',
+          email: 'revaz@farm.ge',
+          role: UserRole.farmer,
+        );
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: const MaterialApp(
+          home: GuestProfileScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Tap on the edit pencil button
+    final editButton = find.byTooltip('პროფილის რედაქტირება');
+    expect(editButton, findsOneWidget);
+    await tester.tap(editButton);
+    await tester.pumpAndSettle();
+
+    // Bottom sheet is shown with both fields
+    expect(find.text('პროფილის რედაქტირება'), findsOneWidget);
+    expect(find.text('პირადი სახელი და გვარი'), findsOneWidget);
+    expect(find.text('მეურნეობის / ფერმის დასახელება'), findsOneWidget);
+
+    // Edit personal name
+    final nameField = find.widgetWithText(TextFormField, 'რევაზ ბერიძე');
+    await tester.enterText(nameField, 'რევაზ კობახიძე');
+    await tester.pump();
+
+    // Edit farm name
+    final farmField = find.byType(TextFormField).at(1);
+    await tester.enterText(farmField, 'ახალი ალაზანი');
+    await tester.pump();
+
+    // Tap Save
+    await tester.tap(find.text('შენახვა'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600));
+
+    // Verify updated names in auth state and UI
+    final auth = container.read(authStateProvider);
+    expect(auth.userName, 'რევაზ კობახიძე');
+    expect(auth.farmName, 'ახალი ალაზანი');
+    expect(find.descendant(of: find.byType(FarmerProfileHero), matching: find.text('რევაზ კობახიძე')), findsOneWidget);
+    expect(find.descendant(of: find.byType(FarmerProfileHero), matching: find.text('ახალი ალაზანი')), findsOneWidget);
   });
 }
 

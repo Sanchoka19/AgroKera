@@ -91,17 +91,97 @@ class NotificationsNotifier extends Notifier<List<AppNotification>> {
             .map((item) =>
                 AppNotification.fromJson(item as Map<String, dynamic>))
             .toList();
-        state = list;
+        state = groupNotifications(list);
       }
     } catch (e) {
       // Keep existing state on transient network failures
     }
   }
 
+  /// Groups multiple chat notifications for the same order into a single card
+  /// reflecting the latest message and aggregated unread count.
+  static List<AppNotification> groupNotifications(List<AppNotification> items) {
+    final Map<String, AppNotification> chatGroupMap = {};
+    final Map<String, int> chatUnreadCountMap = {};
+    final List<AppNotification> nonChatItems = [];
+
+    // Items are assumed to be ordered by timestamp descending
+    for (final item in items) {
+      if (item.isChat && item.orderId != null && item.orderId!.isNotEmpty) {
+        final orderId = item.orderId!;
+        if (!chatGroupMap.containsKey(orderId)) {
+          chatGroupMap[orderId] = item;
+          chatUnreadCountMap[orderId] = item.isRead ? 0 : item.unreadCount;
+        } else {
+          if (!item.isRead) {
+            chatUnreadCountMap[orderId] =
+                (chatUnreadCountMap[orderId] ?? 0) + item.unreadCount;
+          }
+        }
+      } else {
+        nonChatItems.add(item);
+      }
+    }
+
+    final List<AppNotification> finalChatItems = [];
+    for (final entry in chatGroupMap.entries) {
+      final orderId = entry.key;
+      final item = entry.value;
+      final totalUnread = chatUnreadCountMap[orderId] ?? 0;
+
+      if (totalUnread > 1) {
+        final cleanTitle = item.title.replaceAll(RegExp(r'\s*\(\d+\)'), '');
+        final parts = cleanTitle.split('•');
+        final base = parts[0].trim();
+        final sender = parts.length > 1 ? ' • ${parts[1].trim()}' : '';
+        finalChatItems.add(item.copyWith(
+          title: '$base ($totalUnread)$sender',
+          isRead: false,
+        ));
+      } else {
+        finalChatItems.add(item);
+      }
+    }
+
+    final allItems = [...finalChatItems, ...nonChatItems];
+    allItems.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+    return allItems;
+  }
+
   void addNotification(AppNotification notif) {
+    // If it's a chat notification, group with existing cards for the same order
+    if (notif.isChat && notif.orderId != null && notif.orderId!.isNotEmpty) {
+      final filtered = state.where((n) => !(n.isChat && n.orderId == notif.orderId)).toList();
+      state = groupNotifications([notif, ...filtered]);
+      return;
+    }
+
     // Check if notif with same id already exists
     if (state.any((n) => n.id == notif.id)) return;
     state = [notif, ...state];
+  }
+
+  Future<void> markOrderChatNotificationsAsRead(String orderId) async {
+    state = [
+      for (final notif in state)
+        if (notif.orderId == orderId && notif.isChat)
+          notif.copyWith(isRead: true)
+        else
+          notif,
+    ];
+    try {
+      final auth = ref.read(authStateProvider);
+      if (auth.userId != null) {
+        final api = ref.read(apiClientProvider);
+        await api.patch(
+          '/api/notifications/read-order',
+          data: {
+            'userId': auth.userId,
+            'orderId': orderId,
+          },
+        );
+      }
+    } catch (_) {}
   }
 
   Future<void> markAsRead(String id) async {

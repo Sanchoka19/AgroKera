@@ -90,6 +90,7 @@ class OrderChatNotifier extends Notifier<Map<String, List<OrderMessage>>> {
     required String senderId,
     required UserRole senderRole,
     required String senderName,
+    OrderMessageType type = OrderMessageType.text,
   }) async {
     final cleanText = text.trim();
     if (cleanText.isEmpty) return;
@@ -102,6 +103,7 @@ class OrderChatNotifier extends Notifier<Map<String, List<OrderMessage>>> {
       senderRole: senderRole,
       senderName: senderName,
       text: cleanText,
+      type: type,
       createdAt: DateTime.now(),
     );
 

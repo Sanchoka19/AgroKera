@@ -1,22 +1,25 @@
 import 'dart:async';
-import 'dart:io';
 import 'dart:ui';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../core/auth/auth_state_provider.dart';
+import '../../../../core/constants/app_assets.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/app_header.dart';
 import '../../../../core/widgets/app_search_bar.dart';
 import '../../../../core/widgets/auth_required_bottom_sheet.dart';
 import '../../../../core/widgets/product_card.dart';
+import '../../../../core/widgets/product_cart_helper.dart';
 import '../providers/marketplace_provider.dart';
 import '../widgets/global_search_dialog.dart';
 import '../widgets/guest_promo_banner.dart';
+import '../widgets/nearby_farms_section.dart';
+import '../widgets/quick_categories_bar.dart';
+import 'categories_screen.dart';
 import 'favorites_screen.dart';
-import 'farmer_profile_screen.dart';
 import 'product_details_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -66,7 +69,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget build(BuildContext context) {
     final authState = ref.watch(authStateProvider);
     final marketplace = ref.watch(marketplaceProvider);
-    final farmers = marketplace.farmers;
     final products = ref.watch(buyerProductsProvider);
 
     return Scaffold(
@@ -217,164 +219,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 22),
-
-                    // Section 1: "ახლოს მდებარე" (Nearby Farms)
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'ახლოს მდებარე',
-                          style: AppTypography.h1.copyWith(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        const Icon(
-                          LucideIcons.chevronRight,
-                          size: 20,
-                          color: AppColors.textPrimary,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
                   ],
                 ),
               ),
+              const SizedBox(height: 20),
 
-              // Horizontal list of farms (Edge-to-edge scrolling with 16px start/end insets)
-              if (farmers.isEmpty)
-                SizedBox(
-                  height: 100,
-                  child: Center(
-                    child: marketplace.isSyncing
-                        ? const SizedBox(
-                            width: 24,
-                            height: 24,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2.5,
-                              color: AppColors.primary,
-                            ),
-                          )
-                        : Text(
-                            'ფერმები ჯერ არ არის დამატებული',
-                            style: AppTypography.bodyMedium.copyWith(
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                  ),
-                )
-              else
-                SizedBox(
-                  height: 145,
-                  child: ListView.separated(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  clipBehavior: Clip.none,
-                  scrollDirection: Axis.horizontal,
-                  itemCount: farmers.length,
-                  separatorBuilder: (context, index) =>
-                      const SizedBox(width: 12),
-                  itemBuilder: (context, index) {
-                    final farmer = farmers[index];
-                    return GestureDetector(
-                      onTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                FarmerProfileScreen(farmer: farmer),
-                          ),
-                        );
-                      },
-                      child: Container(
-                        width: 200,
-                        decoration: BoxDecoration(
-                          color: AppColors.surface,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: AppColors.border,
-                            width: 1,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.05),
-                              blurRadius: 6,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        clipBehavior: Clip.antiAlias,
-                        child: Stack(
-                          children: [
-                            _buildFarmerCoverImage(farmer.coverUrl),
-                              Container(
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    begin: Alignment.topCenter,
-                                    end: Alignment.bottomCenter,
-                                    colors: [
-                                      Colors.transparent,
-                                      Colors.black.withValues(alpha: 0.70),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                              Positioned(
-                                top: 8,
-                                right: 8,
-                                child: Container(
-                                  padding: const EdgeInsets.all(4),
-                                  decoration: const BoxDecoration(
-                                    color: Colors.white,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Icon(
-                                    LucideIcons.badgeCheck,
-                                    size: 16,
-                                    color: AppColors.primary,
-                                  ),
-                                ),
-                              ),
-                              Positioned(
-                                bottom: 10,
-                                left: 12,
-                                right: 12,
-                                child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      farmer.farmName,
-                                      style:
-                                          AppTypography.titleMedium.copyWith(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: 15,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      farmer.location,
-                                      style: AppTypography.caption.copyWith(
-                                        color: Colors.white.withValues(
-                                          alpha: 0.9,
-                                        ),
-                                        fontSize: 11.5,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
+              // Section: "სწრაფი კატეგორიები" (Quick Categories Bar with custom SVGs)
+              QuickCategoriesBar(
+                onSeeAllTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const CategoriesScreen(),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 20),
+
+              // Section 1: "ახლოს მდებარე" (Nearby Farms with Real Proximity Calculation)
+              const NearbyFarmsSection(),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Column(
@@ -396,7 +259,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     if (products.isEmpty)
                       Center(
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 40),
+                          padding: const EdgeInsets.symmetric(vertical: 32),
                           child: marketplace.isSyncing
                               ? const SizedBox(
                                   width: 24,
@@ -406,11 +269,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                     color: AppColors.primary,
                                   ),
                                 )
-                              : Text(
-                                  'პროდუქტები ჯერ არ არის დამატებული',
-                                  style: AppTypography.bodyMedium.copyWith(
-                                    color: AppColors.textSecondary,
-                                  ),
+                              : Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    SvgPicture.asset(
+                                      AppAssets.emptyProducts,
+                                      width: 150,
+                                      height: 150,
+                                    ),
+                                    const SizedBox(height: 14),
+                                    Text(
+                                      'პროდუქტები ჯერ არ არის დამატებული',
+                                      style: AppTypography.titleMedium.copyWith(
+                                        color: AppColors.textPrimary,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                         ),
                       )
@@ -442,14 +317,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               ),
                             );
                           },
-                          onAddPressed: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    ProductDetailsScreen(product: product),
-                              ),
-                            );
-                          },
+                          onAddWithContext: isOwner
+                              ? null
+                              : (btnContext) =>
+                                  ProductCartHelper.handleAddToCart(
+                                    context: context,
+                                    ref: ref,
+                                    product: product,
+                                    buttonContext: btnContext,
+                                  ),
                         );
                       },
                     ),
@@ -465,57 +341,5 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   ),
 ),
 );
-  }
-
-  Widget _buildFarmerCoverImage(String coverUrl) {
-    if (coverUrl.startsWith('http://') || coverUrl.startsWith('https://')) {
-      return Image.network(
-        coverUrl,
-        height: 145,
-        width: 200,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) => Container(
-          height: 145,
-          width: 200,
-          color: AppColors.surfaceInput,
-          alignment: Alignment.center,
-          child: const Icon(
-            LucideIcons.image,
-            color: AppColors.textSecondary,
-            size: 32,
-          ),
-        ),
-      );
-    }
-    if (!kIsWeb && File(coverUrl).existsSync()) {
-      return Image.file(
-        File(coverUrl),
-        height: 145,
-        width: 200,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) => Container(
-          height: 145,
-          width: 200,
-          color: AppColors.surfaceInput,
-          alignment: Alignment.center,
-          child: const Icon(
-            LucideIcons.image,
-            color: AppColors.textSecondary,
-            size: 32,
-          ),
-        ),
-      );
-    }
-    return Container(
-      height: 145,
-      width: 200,
-      color: AppColors.surfaceInput,
-      alignment: Alignment.center,
-      child: const Icon(
-        LucideIcons.image,
-        color: AppColors.textSecondary,
-        size: 32,
-      ),
-    );
   }
 }

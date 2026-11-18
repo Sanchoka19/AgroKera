@@ -101,7 +101,7 @@ class _DeliveryAddressBottomSheetState
         }
       }
       final pos = await Geolocator.getCurrentPosition();
-      final resolved = GeorgianGeoLookup.resolveInstantAddress(
+      final resolved = await GeorgianGeoLookup.resolveDetailedAddress(
         LatLng(pos.latitude, pos.longitude),
       );
       if (!mounted) return;

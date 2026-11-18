@@ -78,9 +78,8 @@ class _ProductQuantitySectionState extends State<ProductQuantitySection> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: const Color(0xFFF1F5F9),
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: const Color(0xFFCBD5E1), width: 1),
         ),
         child: Text(
           label,
@@ -112,9 +111,6 @@ class _ProductQuantitySectionState extends State<ProductQuantitySection> {
             decoration: BoxDecoration(
               color: const Color(0xFFFEF3C7),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: const Color(0xFFF59E0B).withValues(alpha: 0.35),
-              ),
             ),
             child: Row(
               children: [

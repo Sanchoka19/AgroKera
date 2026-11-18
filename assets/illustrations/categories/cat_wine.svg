@@ -1,0 +1,71 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="wineBottleGrad" x1="16" y1="14" x2="32" y2="54" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#2E7D32" />
+      <stop offset="70%" stop-color="#1B5E20" />
+      <stop offset="100%" stop-color="#0E3813" />
+    </linearGradient>
+    <linearGradient id="redWineGrad" x1="36" y1="32" x2="52" y2="48" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#C2185B" />
+      <stop offset="60%" stop-color="#880E4F" />
+      <stop offset="100%" stop-color="#4A0023" />
+    </linearGradient>
+    <linearGradient id="grapeGrad" x1="28" y1="36" x2="48" y2="56" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#9C27B0" />
+      <stop offset="60%" stop-color="#6A1B9A" />
+      <stop offset="100%" stop-color="#4A148C" />
+    </linearGradient>
+  </defs>
+
+  <!-- Ambient Floor Shadow -->
+  <ellipse cx="32" cy="57" rx="22" ry="4" fill="#0F172A" fill-opacity="0.12" />
+
+  <!-- Wine Bottle Left -->
+  <g id="wineBottle">
+    <!-- Bottle Body & Shoulder -->
+    <path d="M22 19V14H24V19L27 24C28 26 28 28 28 32V51C28 53 26.5 54 24.5 54H21.5C19.5 54 18 53 18 51V32C18 28 18 26 19 24L22 19Z" fill="url(#wineBottleGrad)" />
+    
+    <!-- Bottle Neck Foil Capsule (Gold) -->
+    <rect x="21.5" y="13" width="3" height="6" fill="#D4AF37" />
+    
+    <!-- Label -->
+    <rect x="18.5" y="34" width="9" height="12" rx="1.5" fill="#FFF9C4" opacity="0.9" />
+    <path d="M21 39H25" stroke="#B71C1C" stroke-width="1.2" stroke-linecap="round" />
+
+    <!-- Glass Highlight -->
+    <path d="M20 26L21 21" stroke="#A5D6A7" stroke-width="1.2" stroke-linecap="round" />
+    <path d="M20 32V49" stroke="#A5D6A7" stroke-width="1.2" stroke-linecap="round" opacity="0.6" />
+  </g>
+
+  <!-- Wine Glass Right -->
+  <g id="wineGlass">
+    <!-- Glass Base -->
+    <ellipse cx="44" cy="54" rx="6" ry="1.5" fill="#CFD8DC" />
+    <!-- Glass Stem -->
+    <line x1="44" y1="44" x2="44" y2="54" stroke="#B0BEC5" stroke-width="1.6" stroke-linecap="round" />
+    <!-- Glass Bowl Outer -->
+    <path d="M37 32C37 42 41 45 44 45C47 45 51 42 51 32H37Z" stroke="#B0BEC5" stroke-width="1.2" fill="#ECEFF1" fill-opacity="0.2" />
+    <!-- Red Wine Inside Bowl -->
+    <path d="M38 35C38 41.5 41 44 44 44C47 44 50 41.5 50 35H38Z" fill="url(#redWineGrad)" />
+    <!-- Wine Liquid Surface -->
+    <ellipse cx="44" cy="35" rx="6" ry="1.2" fill="#E91E63" />
+    <!-- Glass Rim Highlight -->
+    <path d="M39 37C39 41 41 43 43 43" stroke="#FFFFFF" stroke-width="1" stroke-linecap="round" opacity="0.7" />
+  </g>
+
+  <!-- Grape Cluster Foreground Left -->
+  <g id="grapes">
+    <circle cx="28" cy="46" r="3.2" fill="url(#grapeGrad)" />
+    <circle cx="33" cy="44" r="3.2" fill="url(#grapeGrad)" />
+    <circle cx="31" cy="49" r="3.2" fill="url(#grapeGrad)" />
+    <circle cx="35" cy="49" r="3" fill="url(#grapeGrad)" />
+    <circle cx="33" cy="53" r="2.6" fill="url(#grapeGrad)" />
+
+    <!-- Grape Highlight -->
+    <circle cx="32" cy="43" r="0.8" fill="#E1BEE7" opacity="0.8" />
+    <circle cx="30" cy="48" r="0.8" fill="#E1BEE7" opacity="0.8" />
+    <!-- Small Vine Leaf -->
+    <path d="M31 43C30 40 31 38 34 38C35 41 33 42 31 43Z" fill="#4CAF50" />
+  </g>
+</svg>
+

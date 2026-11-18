@@ -2001,8 +2001,6 @@ export async function processOrderExpirations(): Promise<{
             orderId: order.id,
             category: tmpl.category,
             data: tmpl.data,
-          });
-            },
           }).catch(() => { });
           warned++;
         }

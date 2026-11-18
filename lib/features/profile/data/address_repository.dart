@@ -16,15 +16,15 @@ class AddressRepository {
     try {
       final jsonStr = await _storage.readAddressesJson();
       if (jsonStr == null || jsonStr.trim().isEmpty) {
-        return _initialSeedAddresses();
+        return const [];
       }
       final decoded = jsonDecode(jsonStr) as List<dynamic>;
       final list = decoded
           .map((e) => UserAddress.fromJson(e as Map<String, dynamic>))
           .toList();
-      return list.isNotEmpty ? list : _initialSeedAddresses();
+      return list;
     } catch (_) {
-      return _initialSeedAddresses();
+      return const [];
     }
   }
 
@@ -36,7 +36,7 @@ class AddressRepository {
     } catch (_) {}
   }
 
-  /// Loads active address string, falling back to default address or standard Georgian address
+  /// Loads active address string, falling back to default address or empty string
   Future<String> loadActiveAddress() async {
     try {
       final saved = await _storage.readActiveAddress();
@@ -49,7 +49,7 @@ class AddressRepository {
         return def.formattedAddress;
       }
     } catch (_) {}
-    return 'თბილისი, საქართველო';
+    return '';
   }
 
   /// Saves active address string
@@ -70,20 +70,6 @@ class AddressRepository {
     } catch (_) {
       // Offline fallback: persistent local storage remains authoritative
     }
-  }
-
-  List<UserAddress> _initialSeedAddresses() {
-    return [
-      UserAddress(
-        id: 'addr_default_home',
-        title: 'სახლი',
-        city: 'თბილისი',
-        addressLine: 'ი. ჭავჭავაძის გამზ. 24',
-        details: 'სად. 2, სართ. 3, ბ. 15',
-        isDefault: true,
-        createdAt: DateTime.now(),
-      ),
-    ];
   }
 }
 

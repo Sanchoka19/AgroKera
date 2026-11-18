@@ -110,10 +110,13 @@ class UserAddressState {
 
   const UserAddressState({
     this.addresses = const [],
-    this.activeAddress = 'თბილისი, საქართველო',
+    this.activeAddress = '',
     this.isLoading = false,
     this.errorMessage,
   });
+
+  /// Whether the user has configured at least one personal delivery address
+  bool get hasAddress => addresses.isNotEmpty && activeAddress.trim().isNotEmpty;
 
   UserAddress? get defaultAddress {
     try {

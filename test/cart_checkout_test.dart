@@ -136,6 +136,43 @@ void main() {
       expect(find.text('ავტორიზაცია'), findsWidgets);
     });
 
+    testWidgets('prompts AddressRequiredBottomSheet when authenticated user attempts checkout without saved address', (tester) async {
+      final container = ProviderContainer();
+      container.read(authStateProvider.notifier).login(role: UserRole.customer);
+      container.read(cartProvider.notifier).addItem(
+        const CartItemModel(
+          id: 'authed_prod_1',
+          title: 'სოფლის პომიდორი',
+          packageText: '1კგ',
+          farmerName: 'სოფლის ფერმა',
+          pricePerUnit: 35.00,
+          unit: 'კგ',
+          imageUrl: '',
+          quantity: 1,
+          weightKg: 1.0,
+          minOrderQuantity: 1.0,
+          stockQuantity: 50.0,
+        ),
+      );
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const MaterialApp(
+            home: CartScreen(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('გაგრძელება'), findsOneWidget);
+      await tester.tap(find.text('გაგრძელება'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('მიუთითეთ მისამართი'), findsOneWidget);
+      expect(find.text('მისამართის დამატება'), findsOneWidget);
+    });
+
     testWidgets('shows auth required screen for unauthenticated user on FavoritesScreen', (tester) async {
       await tester.pumpWidget(
         const ProviderScope(

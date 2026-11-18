@@ -4,6 +4,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:agrokera/core/auth/auth_state_provider.dart';
 import 'package:agrokera/core/theme/app_colors.dart';
 import 'package:agrokera/core/theme/app_typography.dart';
+import 'package:agrokera/core/widgets/address_required_bottom_sheet.dart';
 import 'package:agrokera/core/widgets/app_toast.dart';
 import 'package:agrokera/core/widgets/auth_required_bottom_sheet.dart';
 import 'package:agrokera/features/marketplace/presentation/providers/marketplace_provider.dart';
@@ -77,10 +78,17 @@ class CartBottomBar extends ConsumerWidget {
           case CartValidationValid():
             break;
         }
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => const CheckoutScreen(),
-          ),
+
+        requireAddress(
+          context,
+          ref: ref,
+          onAddressPresent: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const CheckoutScreen(),
+              ),
+            );
+          },
         );
       },
     );

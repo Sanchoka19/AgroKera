@@ -214,7 +214,12 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
           ProfileRowItem(
             icon: LucideIcons.mapPin,
             title: isFarmer ? 'ჩემი პირადი მისამართი' : 'ჩემი მისამართი',
-            subtitle: 'მიტანის მისამართი შეკვეთებისთვის (${ref.watch(userAddressProvider).activeAddress})',
+            subtitle: () {
+              final addr = ref.watch(userAddressProvider);
+              return addr.hasAddress
+                  ? 'მიტანის მისამართი შეკვეთებისთვის (${addr.activeAddress})'
+                  : 'დაამატეთ მიტანის მისამართი შეკვეთებისთვის';
+            }(),
             onTap: () {
               if (isFarmer) {
                 Navigator.of(context).push(

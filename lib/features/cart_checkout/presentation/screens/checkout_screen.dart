@@ -23,6 +23,7 @@ import '../widgets/checkout/delivery_fee_explanation_sheet.dart';
 import '../widgets/checkout/delivery_slot_bottom_sheet.dart';
 import '../widgets/payment/order_placed_dialog.dart';
 import '../widgets/payment/payment_method_card.dart';
+import 'package:agrokera/core/widgets/address_required_bottom_sheet.dart';
 import '../../../profile/presentation/providers/user_address_provider.dart';
 
 class CheckoutScreen extends ConsumerStatefulWidget {
@@ -40,7 +41,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   @override
   void initState() {
     super.initState();
-    _address = ref.read(userAddressProvider).activeAddress;
+    final active = ref.read(userAddressProvider).activeAddress;
+    _address = active.isNotEmpty ? active : 'თბილისი, საქართველო';
   }
 
   void _showAddressDialog() {
@@ -76,6 +78,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     final cartItems = ref.read(cartProvider);
     if (cartItems.isEmpty) {
       AppToast.info(context, 'თქვენი კალათა ცარიელია');
+      return;
+    }
+
+    final addressState = ref.read(userAddressProvider);
+    if (!addressState.hasAddress) {
+      AddressRequiredBottomSheet.show(context);
       return;
     }
 

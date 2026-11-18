@@ -258,7 +258,7 @@ class _OrderChatsListScreenState extends ConsumerState<OrderChatsListScreen> {
               order: order,
               lastMessage: lastMessage,
               isFarmer: isFarmer,
-              hasUnread: ref.watch(isOrderChatUnreadProvider(order.id)),
+              hasUnread: false,
               onTap: () => _openChat(order),
             );
           },
@@ -330,7 +330,7 @@ class _OrderChatsListScreenState extends ConsumerState<OrderChatsListScreen> {
                     order: order,
                     lastMessage: lastMessage,
                     isFarmer: isFarmer,
-                    hasUnread: ref.watch(isOrderChatUnreadProvider(order.id)),
+                    hasUnread: false,
                     onTap: () => _openChat(order),
                   ),
                 );

@@ -206,7 +206,8 @@ class _FarmAddressScreenState extends ConsumerState<FarmAddressScreen> {
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 110),
+        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -217,18 +218,18 @@ class _FarmAddressScreenState extends ConsumerState<FarmAddressScreen> {
               landmark: _landmarkController.text,
               onEdit: _openMapPicker,
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: 12),
 
             // 2. Clean Interactive Live Mini Map (No fake atlas images!)
             Container(
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.03),
-                    blurRadius: 12,
-                    offset: const Offset(0, 3),
+                    blurRadius: 10,
+                    offset: const Offset(0, 2),
                   ),
                 ],
               ),
@@ -236,7 +237,7 @@ class _FarmAddressScreenState extends ConsumerState<FarmAddressScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+                    padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -293,10 +294,10 @@ class _FarmAddressScreenState extends ConsumerState<FarmAddressScreen> {
                   GestureDetector(
                     onTap: _openMapPicker,
                     child: Container(
-                      height: 180,
-                      margin: const EdgeInsets.symmetric(horizontal: 14),
+                      height: 140,
+                      margin: const EdgeInsets.symmetric(horizontal: 12),
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: const Color(0xFFE2E8F0)),
                       ),
                       clipBehavior: Clip.antiAlias,
@@ -424,23 +425,23 @@ class _FarmAddressScreenState extends ConsumerState<FarmAddressScreen> {
                       ),
                     )
                   else
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 8),
                 ],
               ),
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: 12),
 
             // 3. Clear Address Form (Eliminating the confusing quick-region stack!)
             Container(
-              padding: const EdgeInsets.all(18),
+              padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.03),
-                    blurRadius: 12,
-                    offset: const Offset(0, 3),
+                    blurRadius: 10,
+                    offset: const Offset(0, 2),
                   ),
                 ],
               ),
@@ -546,24 +547,21 @@ class _FarmAddressScreenState extends ConsumerState<FarmAddressScreen> {
                   const SizedBox(height: 6),
                   TextFormField(
                     controller: _landmarkController,
-                    maxLines: 2,
+                    maxLines: 1,
                     style: GoogleFonts.notoSansGeorgian(
                       fontSize: 13.5,
                       color: const Color(0xFF1E293B),
                     ),
                     decoration: InputDecoration(
-                      hintText: 'მაგ: სოფლის ცენტრთან, ყვითელი ჭიშკარი, მეურნეობა #3',
+                      hintText: 'მაგ: სოფლის ცენტრთან, ყვითელი ჭიშკარი',
                       hintStyle: GoogleFonts.notoSansGeorgian(
                         fontSize: 12.5,
                         color: const Color(0xFF94A3B8),
                       ),
-                      prefixIcon: const Padding(
-                        padding: EdgeInsets.only(bottom: 24),
-                        child: Icon(
-                          LucideIcons.signpost,
-                          size: 18,
-                          color: Color(0xFF64748B),
-                        ),
+                      prefixIcon: const Icon(
+                        LucideIcons.signpost,
+                        size: 18,
+                        color: Color(0xFF64748B),
                       ),
                       filled: true,
                       fillColor: const Color(0xFFF8FAFC),

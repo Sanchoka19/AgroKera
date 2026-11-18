@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:ui';
 import 'package:flutter/foundation.dart';
@@ -517,6 +518,20 @@ Widget buildCoverPreviewImage(String pathOrUrl) {
         child: const Icon(LucideIcons.image, size: 36, color: Color(0xFF94A3B8)),
       ),
     );
+  }
+  if (pathOrUrl.startsWith('data:image/')) {
+    try {
+      final base64Str = pathOrUrl.split(',').last;
+      return Image.memory(
+        base64Decode(base64Str),
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) => Container(
+          color: const Color(0xFFE2E8F0),
+          alignment: Alignment.center,
+          child: const Icon(LucideIcons.image, size: 36, color: Color(0xFF94A3B8)),
+        ),
+      );
+    } catch (_) {}
   }
   if (!kIsWeb && File(pathOrUrl).existsSync()) {
     return Image.file(

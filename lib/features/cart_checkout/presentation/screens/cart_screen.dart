@@ -2,11 +2,16 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import '../../../../core/constants/app_assets.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/app_confirmation_bottom_sheet.dart';
+import '../../../marketplace/data/models/farmer_model.dart';
+import '../../../marketplace/presentation/providers/marketplace_provider.dart';
+import '../../../marketplace/presentation/screens/farmer_profile_screen.dart';
 import '../../data/models/cart_item_model.dart';
 import '../providers/cart_provider.dart';
 import '../widgets/cart/cart_bottom_bar.dart';
@@ -112,6 +117,181 @@ class _CartScreenState extends ConsumerState<CartScreen>
     }
   }
 
+  Widget _buildFarmHeaderCard(List<CartItemModel> cartItems) {
+    final first = cartItems.first;
+    final marketplace = ref.watch(marketplaceProvider);
+    final FarmerModel? matchedFarmer = marketplace.farmers.where((f) {
+      if (first.farmerId != null &&
+          first.farmerId!.isNotEmpty &&
+          f.id == first.farmerId) {
+        return true;
+      }
+      return f.farmName == first.farmerName || f.farmerName == first.farmerName;
+    }).firstOrNull;
+
+    final displayName = matchedFarmer?.farmName.isNotEmpty == true
+        ? matchedFarmer!.farmName
+        : first.farmerName;
+    final avatarUrl = matchedFarmer?.avatarUrl ?? '';
+    final isVerified = matchedFarmer?.isVerified ?? true;
+    final location = matchedFarmer?.location.isNotEmpty == true
+        ? matchedFarmer!.location
+        : 'პირდაპირ მეურნეობიდან';
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 10),
+      child: Material(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          onTap: matchedFarmer != null
+              ? () {
+                  HapticFeedback.lightImpact();
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          FarmerProfileScreen(farmer: matchedFarmer),
+                    ),
+                  );
+                }
+              : null,
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: const Color(0xFFE2E8F0),
+                width: 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF0F172A).withValues(alpha: 0.03),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                // Farm Avatar / Icon
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE8F7EE),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: AppColors.primary.withValues(alpha: 0.2),
+                    ),
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: avatarUrl.isNotEmpty
+                      ? Image.network(
+                          avatarUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, _, _) => const Icon(
+                            LucideIcons.sprout,
+                            size: 20,
+                            color: AppColors.primary,
+                          ),
+                        )
+                      : const Icon(
+                          LucideIcons.sprout,
+                          size: 20,
+                          color: AppColors.primary,
+                        ),
+                ),
+                const SizedBox(width: 12),
+
+                // Farm Title & Subtitle (Product count + Location)
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              displayName,
+                              style: GoogleFonts.notoSansGeorgian(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w800,
+                                color: const Color(0xFF0F172A),
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          if (isVerified) ...[
+                            const SizedBox(width: 5),
+                            SvgPicture.asset(
+                              AppAssets.verifiedBadge,
+                              width: 16,
+                              height: 16,
+                            ),
+                          ],
+                        ],
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        '${cartItems.length} დასახელება • $location',
+                        style: GoogleFonts.notoSansGeorgian(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: const Color(0xFF64748B),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+
+                if (matchedFarmer != null) ...[
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF0FDF4),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: const Color(0xFFBBF7D0),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'ფერმა',
+                          style: GoogleFonts.notoSansGeorgian(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.primaryDark,
+                          ),
+                        ),
+                        const SizedBox(width: 2),
+                        const Icon(
+                          LucideIcons.chevronRight,
+                          size: 14,
+                          color: AppColors.primaryDark,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final cartItems = ref.watch(cartProvider);
@@ -161,45 +341,10 @@ class _CartScreenState extends ConsumerState<CartScreen>
                     ),
                   ),
 
-                  // Single-Farmer Store Indicator
+                  // Single-Farmer Store Card (Wolt / Glovo style)
                   if (cartItems.isNotEmpty &&
                       cartItems.first.farmerName.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 2, 16, 8),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: AppColors.primaryLight.withValues(alpha: 0.6),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(
-                            color: AppColors.primary.withValues(alpha: 0.2),
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(
-                              LucideIcons.store,
-                              size: 16,
-                              color: AppColors.primary,
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                'მეურნეობა: ${cartItems.first.farmerName}',
-                                style: GoogleFonts.notoSansGeorgian(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.primaryDark,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
+                    _buildFarmHeaderCard(cartItems),
 
                   // Cart Items List
                   Expanded(

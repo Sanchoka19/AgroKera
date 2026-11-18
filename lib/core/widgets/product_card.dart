@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../features/marketplace/data/models/product_model.dart';
@@ -30,35 +33,51 @@ class ProductCard extends StatelessWidget {
     this.isOwner = false,
   });
 
+  Widget _buildProductImage(String url) {
+    Widget fallback() => Container(
+          color: AppColors.surfaceInput,
+          alignment: Alignment.center,
+          child: const Icon(
+            LucideIcons.image,
+            color: AppColors.textSecondary,
+            size: 28,
+          ),
+        );
+
+    if (url.startsWith('assets/')) {
+      return Image.asset(
+        url,
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) => fallback(),
+      );
+    }
+    if (url.startsWith('data:image/')) {
+      try {
+        final base64Str = url.split(',').last;
+        return Image.memory(
+          base64Decode(base64Str),
+          fit: BoxFit.cover,
+          errorBuilder: (_, _, _) => fallback(),
+        );
+      } catch (_) {}
+    }
+    if (!kIsWeb && File(url).existsSync()) {
+      return Image.file(
+        File(url),
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) => fallback(),
+      );
+    }
+    return Image.network(
+      url,
+      fit: BoxFit.cover,
+      errorBuilder: (_, _, _) => fallback(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final imageWidget = product.imageUrl.startsWith('assets/')
-        ? Image.asset(
-            product.imageUrl,
-            fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) => Container(
-              color: AppColors.surfaceInput,
-              alignment: Alignment.center,
-              child: const Icon(
-                LucideIcons.image,
-                color: AppColors.textSecondary,
-                size: 28,
-              ),
-            ),
-          )
-        : Image.network(
-            product.imageUrl,
-            fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) => Container(
-              color: AppColors.surfaceInput,
-              alignment: Alignment.center,
-              child: const Icon(
-                LucideIcons.image,
-                color: AppColors.textSecondary,
-                size: 28,
-              ),
-            ),
-          );
+    final imageWidget = _buildProductImage(product.imageUrl);
 
     return BounceTap(
       onTap: onTap,
@@ -67,7 +86,13 @@ class ProductCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: AppColors.border, width: 1),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
+            ),
+          ],
         ),
         clipBehavior: Clip.antiAlias,
         child: Column(
@@ -78,10 +103,7 @@ class ProductCard extends StatelessWidget {
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  Hero(
-                    tag: 'product_image_${product.id}',
-                    child: imageWidget,
-                  ),
+                  imageWidget,
                   if (isOwner)
                     Positioned(
                       top: 6,

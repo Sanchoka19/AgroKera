@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -110,43 +113,45 @@ class _ProductImageGalleryState extends ConsumerState<ProductImageGallery> {
               },
               itemBuilder: (context, idx) {
                 final imgUrl = gallery[idx];
-                final imageWidget = imgUrl.startsWith('assets/')
-                    ? Image.asset(
-                        imgUrl,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) =>
-                            Container(
-                              color: AppColors.surfaceInput,
-                              alignment: Alignment.center,
-                              child: const Icon(
-                                LucideIcons.image,
-                                color: AppColors.textSecondary,
-                                size: 48,
-                              ),
-                            ),
-                      )
-                    : Image.network(
-                        imgUrl,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) =>
-                            Container(
-                              color: AppColors.surfaceInput,
-                              alignment: Alignment.center,
-                              child: const Icon(
-                                LucideIcons.image,
-                                color: AppColors.textSecondary,
-                                size: 48,
-                              ),
-                            ),
-                      );
+                Widget fallback() => Container(
+                      color: AppColors.surfaceInput,
+                      alignment: Alignment.center,
+                      child: const Icon(
+                        LucideIcons.image,
+                        color: AppColors.textSecondary,
+                        size: 48,
+                      ),
+                    );
 
-                if (idx == 0) {
-                  return Hero(
-                    tag: 'product_image_${product.id}',
-                    child: imageWidget,
+                if (imgUrl.startsWith('assets/')) {
+                  return Image.asset(
+                    imgUrl,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, _, _) => fallback(),
                   );
                 }
-                return imageWidget;
+                if (imgUrl.startsWith('data:image/')) {
+                  try {
+                    final base64Str = imgUrl.split(',').last;
+                    return Image.memory(
+                      base64Decode(base64Str),
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) => fallback(),
+                    );
+                  } catch (_) {}
+                }
+                if (!kIsWeb && File(imgUrl).existsSync()) {
+                  return Image.file(
+                    File(imgUrl),
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, _, _) => fallback(),
+                  );
+                }
+                return Image.network(
+                  imgUrl,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, _, _) => fallback(),
+                );
               },
             ),
             if (gallery.length > 1)

@@ -1,9 +1,11 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:agrokera/core/auth/auth_repository.dart';
 import 'package:agrokera/core/theme/app_colors.dart';
 import 'package:agrokera/core/widgets/app_toast.dart';
 import '../../models/farmer_onboarding_state.dart';
@@ -41,6 +43,31 @@ class _Step1FarmInfoWidgetState extends ConsumerState<Step1FarmInfoWidget> {
     _addressController.dispose();
     _landmarkController.dispose();
     super.dispose();
+  }
+
+  Future<void> _handlePickedFarmPhoto(XFile file) async {
+    final notifier = ref.read(farmerOnboardingProvider.notifier);
+    final authRepo = ref.read(authRepositoryProvider);
+    String previewPath = file.path;
+    try {
+      final bytes = await file.readAsBytes();
+      if (bytes.isNotEmpty) {
+        previewPath = 'data:image/jpeg;base64,${base64Encode(bytes)}';
+      }
+    } catch (_) {}
+    notifier.setFarmPhoto(path: previewPath, name: file.name);
+    if (mounted) {
+      AppToast.info(context, 'ფერმის ფოტო იტვირთება...');
+    }
+    try {
+      final remoteUrl = await authRepo.uploadImage(file, folder: 'covers');
+      if (remoteUrl != null && remoteUrl.isNotEmpty) {
+        notifier.setFarmPhoto(path: remoteUrl, name: file.name);
+      }
+    } catch (_) {}
+    if (mounted) {
+      AppToast.success(context, 'ფერმის ფოტო წარმატებით აიტვირთა!');
+    }
   }
 
   Future<void> _pickFarmPhoto() async {
@@ -87,15 +114,12 @@ class _Step1FarmInfoWidgetState extends ConsumerState<Step1FarmInfoWidget> {
                     try {
                       final XFile? file = await _imagePicker.pickImage(
                         source: ImageSource.camera,
+                        maxWidth: 1600,
+                        maxHeight: 1000,
                         imageQuality: 85,
                       );
-                      if (!mounted) return;
                       if (file != null) {
-                        ref.read(farmerOnboardingProvider.notifier).setFarmPhoto(
-                              path: file.path,
-                              name: file.name,
-                            );
-                        AppToast.success(context, 'ფერმის ფოტო წარმატებით გადაღებულია!');
+                        await _handlePickedFarmPhoto(file);
                       }
                     } catch (_) {
                       if (!mounted) return;
@@ -115,15 +139,12 @@ class _Step1FarmInfoWidgetState extends ConsumerState<Step1FarmInfoWidget> {
                     try {
                       final XFile? file = await _imagePicker.pickImage(
                         source: ImageSource.gallery,
+                        maxWidth: 1600,
+                        maxHeight: 1000,
                         imageQuality: 85,
                       );
-                      if (!mounted) return;
                       if (file != null) {
-                        ref.read(farmerOnboardingProvider.notifier).setFarmPhoto(
-                              path: file.path,
-                              name: file.name,
-                            );
-                        AppToast.success(context, 'ფერმის ფოტო წარმატებით აიტვირთა!');
+                        await _handlePickedFarmPhoto(file);
                       }
                     } catch (_) {
                       if (!mounted) return;

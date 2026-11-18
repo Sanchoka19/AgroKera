@@ -87,9 +87,28 @@ class MarketplaceNotifier extends Notifier<MarketplaceState> {
       }
 
       if (rawFarmers != null) {
+        final auth = ref.read(authStateProvider);
         newFarmers = rawFarmers
             .whereType<Map<String, dynamic>>()
-            .map(FarmerModel.fromJson)
+            .map((json) {
+              var farmer = FarmerModel.fromJson(json);
+              if (auth.isAuthenticated &&
+                  auth.isFarmer &&
+                  ((auth.farmerId != null && farmer.id == auth.farmerId) ||
+                      (auth.farmName != null && farmer.farmName == auth.farmName))) {
+                farmer = farmer.copyWith(
+                  avatarUrl: (auth.userAvatarUrl != null &&
+                          auth.userAvatarUrl!.trim().isNotEmpty)
+                      ? auth.userAvatarUrl
+                      : farmer.avatarUrl,
+                  coverUrl: (auth.farmCoverUrl != null &&
+                          auth.farmCoverUrl!.trim().isNotEmpty)
+                      ? auth.farmCoverUrl
+                      : farmer.coverUrl,
+                );
+              }
+              return farmer;
+            })
             .toList();
       }
 
@@ -501,6 +520,37 @@ class MarketplaceNotifier extends Notifier<MarketplaceState> {
           farmerName: (cleanFarmer != null && cleanFarmer.isNotEmpty)
               ? cleanFarmer
               : f.farmerName,
+        );
+      }
+      return f;
+    }).toList();
+
+    state = state.copyWith(farmers: updatedFarmers);
+  }
+
+  void updateFarmerMedia({
+    required String? farmerId,
+    String? avatarUrl,
+    String? coverUrl,
+  }) {
+    final cleanAvatar = avatarUrl?.trim();
+    final cleanCover = coverUrl?.trim();
+    if ((cleanAvatar == null || cleanAvatar.isEmpty) &&
+        (cleanCover == null || cleanCover.isEmpty)) {
+      return;
+    }
+
+    final updatedFarmers = state.farmers.map((f) {
+      final matches = (farmerId != null && f.id == farmerId) ||
+          (farmerId == null && (f.id == 'farmer_1' || f.id == 'farmer_2'));
+      if (matches) {
+        return f.copyWith(
+          avatarUrl: (cleanAvatar != null && cleanAvatar.isNotEmpty)
+              ? cleanAvatar
+              : f.avatarUrl,
+          coverUrl: (cleanCover != null && cleanCover.isNotEmpty)
+              ? cleanCover
+              : f.coverUrl,
         );
       }
       return f;

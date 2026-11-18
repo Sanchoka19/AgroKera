@@ -127,7 +127,7 @@ class _FarmerDashboardScreenState extends ConsumerState<FarmerDashboardScreen> {
                         children: [
                           // Item 1: დაამატე ახალი პროდუქტი
                           _buildManagementRowItem(
-                            icon: LucideIcons.shoppingBag,
+                            icon: LucideIcons.packagePlus,
                             title: 'დაამატე ახალი პროდუქტი',
                             subtitle: 'ახალი სიის შექმნა',
                             onTap: _openAddProductSheet,
@@ -137,7 +137,7 @@ class _FarmerDashboardScreenState extends ConsumerState<FarmerDashboardScreen> {
 
                           // Item 2: მარაგის მართვა
                           _buildManagementRowItem(
-                            icon: LucideIcons.clipboardCheck,
+                            icon: LucideIcons.package,
                             title: 'მარაგის მართვა',
                             subtitle: 'განაახლეთ ხელმისაწვდომობა და ფასი',
                             onTap: () {
@@ -152,7 +152,7 @@ class _FarmerDashboardScreenState extends ConsumerState<FarmerDashboardScreen> {
 
                           // Item 3: შემოსული შეკვეთები
                           _buildManagementRowItem(
-                            icon: LucideIcons.inbox,
+                            icon: LucideIcons.clipboardCheck,
                             title: 'შემოსული შეკვეთები',
                             subtitle: 'სტატუსები, დეტალები და ზედნადებები',
                             onTap: () {

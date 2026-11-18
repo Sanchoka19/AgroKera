@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
+import '../../../../core/auth/auth_state_provider.dart';
 import '../../../profile/presentation/providers/user_address_provider.dart';
 import '../../domain/services/farmer_proximity_service.dart';
 import 'marketplace_provider.dart';
@@ -18,10 +19,16 @@ class NearbyFarmersState {
 }
 
 /// Provider that calculates real proximity and sorts farmers by distance
+/// (excluding the currently logged-in farmer's own farm)
 final nearbyFarmersProvider = Provider<NearbyFarmersState>((ref) {
   final marketplace = ref.watch(marketplaceProvider);
+  final authState = ref.watch(authStateProvider);
   final addressState = ref.watch(userAddressProvider);
   final activeAddress = addressState.activeAddressModel;
+
+  final visibleFarmers = authState.isFarmer
+      ? marketplace.farmers.where((f) => !f.isOwnedBy(authState)).toList()
+      : marketplace.farmers;
 
   LatLng origin;
   bool hasUserAddressOrigin = false;
@@ -45,7 +52,7 @@ final nearbyFarmersProvider = Provider<NearbyFarmersState>((ref) {
   }
 
   final sortedFarmers = FarmerProximityService.sortAndCalculateDistances(
-    farmers: marketplace.farmers,
+    farmers: visibleFarmers,
     origin: origin,
   );
 

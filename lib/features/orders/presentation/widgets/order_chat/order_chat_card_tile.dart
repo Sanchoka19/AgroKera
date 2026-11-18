@@ -63,6 +63,7 @@ class OrderChatCardTile extends StatelessWidget {
         order.status == OrderStatus.pending ||
         order.status == OrderStatus.inProgress;
     final isPending = order.status == OrderStatus.pending;
+    final showUnread = isActive && hasUnread;
 
     // Display title based on role
     final titleText = isFarmer
@@ -193,7 +194,7 @@ class OrderChatCardTile extends StatelessWidget {
                             style: GoogleFonts.notoSansGeorgian(
                               fontSize: 15,
                               fontWeight:
-                                  hasUnread ? FontWeight.w800 : FontWeight.w700,
+                                  showUnread ? FontWeight.w800 : FontWeight.w700,
                               color: const Color(0xFF0F172A),
                             ),
                           ),
@@ -204,13 +205,13 @@ class OrderChatCardTile extends StatelessWidget {
                           style: GoogleFonts.notoSansGeorgian(
                             fontSize: 11,
                             fontWeight:
-                                hasUnread ? FontWeight.w700 : FontWeight.w500,
-                            color: hasUnread
+                                showUnread ? FontWeight.w700 : FontWeight.w500,
+                            color: showUnread
                                 ? const Color(0xFFEF4444)
                                 : const Color(0xFF94A3B8),
                           ),
                         ),
-                        if (hasUnread) ...[
+                        if (showUnread) ...[
                           const SizedBox(width: 6),
                           Container(
                             width: 9,

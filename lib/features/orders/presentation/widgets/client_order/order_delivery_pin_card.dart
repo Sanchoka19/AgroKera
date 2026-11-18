@@ -146,7 +146,7 @@ class OrderDeliveryPinCard extends StatelessWidget {
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
-                  'ეს კოდი აჩვენეთ ფერმერს ან კურიერს პროდუქციის ადგილზე ჩაბარებისას',
+                  'ეს კოდი აჩვენეთ ან გაუგზავნეთ ფერმერს პროდუქციის ჩაბარებისას შეკვეთის დასასრულებლად',
                   style: GoogleFonts.notoSansGeorgian(
                     fontSize: 11.5,
                     color: const Color(0xFF475569),

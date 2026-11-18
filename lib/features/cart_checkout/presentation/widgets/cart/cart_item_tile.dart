@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,8 +12,8 @@ import 'package:agrokera/core/widgets/app_toast.dart';
 import 'package:agrokera/features/cart_checkout/data/models/cart_item_model.dart';
 import '../../providers/cart_provider.dart';
 
-/// Card displaying product thumbnail, title, farmer, bulk discount and quantity stepper.
-class CartItemTile extends ConsumerWidget {
+/// Card displaying product thumbnail, title, bulk discount and editable quantity stepper.
+class CartItemTile extends ConsumerStatefulWidget {
   final CartItemModel item;
   final VoidCallback onRemove;
 
@@ -21,7 +24,115 @@ class CartItemTile extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<CartItemTile> createState() => _CartItemTileState();
+}
+
+class _CartItemTileState extends ConsumerState<CartItemTile> {
+  late final TextEditingController _qtyController;
+  late final FocusNode _qtyFocusNode;
+
+  @override
+  void initState() {
+    super.initState();
+    _qtyController = TextEditingController(text: '${widget.item.quantity}');
+    _qtyFocusNode = FocusNode()
+      ..addListener(() {
+        if (!_qtyFocusNode.hasFocus) {
+          _commitTypedQuantity(_qtyController.text);
+        } else {
+          _qtyController.selection = TextSelection(
+            baseOffset: 0,
+            extentOffset: _qtyController.text.length,
+          );
+        }
+      });
+  }
+
+  @override
+  void didUpdateWidget(covariant CartItemTile oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.item.quantity != widget.item.quantity &&
+        !_qtyFocusNode.hasFocus &&
+        _qtyController.text != '${widget.item.quantity}') {
+      _qtyController.text = '${widget.item.quantity}';
+    }
+  }
+
+  @override
+  void dispose() {
+    _qtyController.dispose();
+    _qtyFocusNode.dispose();
+    super.dispose();
+  }
+
+  void _commitTypedQuantity(String rawValue) {
+    final item = widget.item;
+    final parsed = int.tryParse(rawValue.trim());
+    if (parsed == null) {
+      _qtyController.text = '${item.quantity}';
+      return;
+    }
+
+    final minQty = item.minOrderQuantity.toInt().clamp(1, 99999);
+    final maxStock = item.stockQuantity.toInt().clamp(minQty, 99999);
+
+    if (parsed < minQty) {
+      AppToast.info(
+        context,
+        'მინიმალური შეკვეთაა $minQty ${item.unit}',
+      );
+    } else if (parsed > maxStock) {
+      AppToast.info(
+        context,
+        'მარაგში მხოლოდ $maxStock ${item.unit}-ია',
+      );
+    }
+
+    final clamped = parsed.clamp(minQty, maxStock);
+    _qtyController.text = '$clamped';
+    if (clamped != item.quantity) {
+      ref.read(cartProvider.notifier).updateQuantity(item.id, clamped);
+    }
+  }
+
+  Widget _buildThumbnail(String url) {
+    Widget fallback() => const Center(
+          child: Icon(LucideIcons.image, color: AppColors.textSecondary),
+        );
+
+    if (url.startsWith('assets/')) {
+      return Image.asset(
+        url,
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) => fallback(),
+      );
+    }
+    if (url.startsWith('data:image/')) {
+      try {
+        return Image.memory(
+          base64Decode(url.split(',').last),
+          fit: BoxFit.cover,
+          errorBuilder: (_, _, _) => fallback(),
+        );
+      } catch (_) {}
+    }
+    if (!kIsWeb && File(url).existsSync()) {
+      return Image.file(
+        File(url),
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) => fallback(),
+      );
+    }
+    return Image.network(
+      url,
+      fit: BoxFit.cover,
+      errorBuilder: (_, _, _) => fallback(),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final item = widget.item;
     final isOwn = ref.watch(authStateProvider).isOwnerOfCartItem(item);
 
     return Container(
@@ -51,14 +162,7 @@ class CartItemTile extends ConsumerWidget {
               width: 84,
               height: 84,
               color: const Color(0xFFF3F4F6),
-              child: Image.network(
-                item.imageUrl,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => const Center(
-                  child:
-                      Icon(LucideIcons.image, color: AppColors.textSecondary),
-                ),
-              ),
+              child: _buildThumbnail(item.imageUrl),
             ),
           ),
           const SizedBox(width: 12),
@@ -85,7 +189,7 @@ class CartItemTile extends ConsumerWidget {
                     GestureDetector(
                       onTap: () {
                         HapticFeedback.lightImpact();
-                        onRemove();
+                        widget.onRemove();
                       },
                       child: const Padding(
                         padding: EdgeInsets.all(2.0),
@@ -133,17 +237,6 @@ class CartItemTile extends ConsumerWidget {
                       color: AppColors.textSecondary,
                     ),
                   ),
-                const SizedBox(height: 2),
-
-                // Farmer Name
-                Text(
-                  item.farmerName,
-                  style: AppTypography.caption.copyWith(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: const Color(0xFF10B981),
-                  ),
-                ),
                 const SizedBox(height: 10),
 
                 // Price Column (Left) and Stepper (Right)
@@ -186,94 +279,135 @@ class CartItemTile extends ConsumerWidget {
                     ),
                     const Spacer(),
 
-                    // Stepper: [-] qty [+]
-                    Container(
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF3F4F6),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 4,
-                        vertical: 4,
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          GestureDetector(
-                            onTap: () {
-                              if (item.quantity <= item.minOrderQuantity) {
-                                AppToast.info(
-                                  context,
-                                  'მინიმალური შეკვეთაა ${item.minOrderQuantity.toInt()} ${item.unit}',
-                                );
-                                return;
-                              }
-                              ref
-                                  .read(cartProvider.notifier)
-                                  .decrement(item.id);
-                            },
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 3,
-                              ),
-                              child: Icon(
-                                LucideIcons.minus,
-                                size: 16,
+                    // Stepper: (-) qty (+) with circular buttons & spacing
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Circular Minus Button
+                        InkWell(
+                          onTap: () {
+                            HapticFeedback.lightImpact();
+                            if (item.quantity <= item.minOrderQuantity) {
+                              AppToast.info(
+                                context,
+                                'მინიმალური შეკვეთაა ${item.minOrderQuantity.toInt()} ${item.unit}',
+                              );
+                              return;
+                            }
+                            ref.read(cartProvider.notifier).decrement(item.id);
+                          },
+                          customBorder: const CircleBorder(),
+                          child: Container(
+                            width: 32,
+                            height: 32,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF1F5F9),
+                              shape: BoxShape.circle,
+                              border: Border.all(
                                 color: item.quantity <= item.minOrderQuantity
-                                    ? AppColors.textSecondary
-                                        .withValues(alpha: 0.35)
-                                    : AppColors.textPrimary,
+                                    ? const Color(0xFFE2E8F0)
+                                        .withValues(alpha: 0.6)
+                                    : const Color(0xFFCBD5E1),
                               ),
                             ),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 6),
-                            child: Text(
-                              '${item.quantity}',
-                              style: AppTypography.bodyMedium.copyWith(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.textPrimary,
-                              ),
+                            alignment: Alignment.center,
+                            child: Icon(
+                              LucideIcons.minus,
+                              size: 15,
+                              color: item.quantity <= item.minOrderQuantity
+                                  ? AppColors.textSecondary
+                                      .withValues(alpha: 0.35)
+                                  : AppColors.textPrimary,
                             ),
                           ),
-                          GestureDetector(
-                            onTap: () {
-                              if (item.quantity >= item.stockQuantity) {
-                                AppToast.info(
-                                  context,
-                                  'მარაგში მხოლოდ ${item.stockQuantity.toInt()} ${item.unit}-ია',
-                                );
-                                return;
-                              }
-                              final success = ref
-                                  .read(cartProvider.notifier)
-                                  .increment(item.id);
-                              if (!success) {
-                                AppToast.info(
-                                  context,
-                                  'მარაგში მხოლოდ ${item.stockQuantity.toInt()} ${item.unit}-ია',
-                                );
+                        ),
+                        const SizedBox(width: 8),
+
+                        // Editable Quantity Number in the middle
+                        Container(
+                          height: 32,
+                          constraints: const BoxConstraints(
+                            minWidth: 38,
+                            maxWidth: 58,
+                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          alignment: Alignment.center,
+                          child: TextField(
+                            controller: _qtyController,
+                            focusNode: _qtyFocusNode,
+                            keyboardType: TextInputType.number,
+                            textInputAction: TextInputAction.done,
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly,
+                            ],
+                            textAlign: TextAlign.center,
+                            style: AppTypography.bodyMedium.copyWith(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.textPrimary,
+                            ),
+                            decoration: const InputDecoration(
+                              border: InputBorder.none,
+                              enabledBorder: InputBorder.none,
+                              focusedBorder: InputBorder.none,
+                              isDense: true,
+                              filled: false,
+                              contentPadding: EdgeInsets.zero,
+                            ),
+                            onSubmitted: (val) {
+                              _commitTypedQuantity(val);
+                              _qtyFocusNode.unfocus();
+                            },
+                            onTapOutside: (_) {
+                              if (_qtyFocusNode.hasFocus) {
+                                _commitTypedQuantity(_qtyController.text);
+                                _qtyFocusNode.unfocus();
                               }
                             },
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 3,
-                              ),
-                              child: Icon(
-                                LucideIcons.plus,
-                                size: 16,
-                                color: item.quantity >= item.stockQuantity
-                                    ? AppColors.textSecondary
-                                        .withValues(alpha: 0.35)
-                                    : AppColors.textPrimary,
-                              ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+
+                        // Circular Plus Button
+                        InkWell(
+                          onTap: () {
+                            HapticFeedback.lightImpact();
+                            if (item.quantity >= item.stockQuantity) {
+                              AppToast.info(
+                                context,
+                                'მარაგში მხოლოდ ${item.stockQuantity.toInt()} ${item.unit}-ია',
+                              );
+                              return;
+                            }
+                            final success = ref
+                                .read(cartProvider.notifier)
+                                .increment(item.id);
+                            if (!success) {
+                              AppToast.info(
+                                context,
+                                'მარაგში მხოლოდ ${item.stockQuantity.toInt()} ${item.unit}-ია',
+                              );
+                            }
+                          },
+                          customBorder: const CircleBorder(),
+                          child: Container(
+                            width: 32,
+                            height: 32,
+                            decoration: BoxDecoration(
+                              color: item.quantity >= item.stockQuantity
+                                  ? AppColors.primary.withValues(alpha: 0.4)
+                                  : AppColors.primary,
+                              shape: BoxShape.circle,
+                            ),
+                            alignment: Alignment.center,
+                            child: const Icon(
+                              LucideIcons.plus,
+                              size: 15,
+                              color: Colors.white,
                             ),
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ],
                 ),

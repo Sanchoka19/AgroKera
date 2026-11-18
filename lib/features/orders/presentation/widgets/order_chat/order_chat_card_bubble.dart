@@ -8,6 +8,7 @@ import '../../../../../core/widgets/app_toast.dart';
 import '../../../domain/models/farmer_order_model.dart';
 import '../../../domain/models/order_message_model.dart';
 import '../../controllers/order_chat_actions_controller.dart';
+import '../../providers/farmer_orders_provider.dart';
 import '../order_pin_verification_bottom_sheet.dart';
 import 'order_chat_pin_dialog.dart';
 
@@ -117,7 +118,7 @@ class OrderChatCardBubble extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (message.type == OrderMessageType.pin)
-                    _buildPinDisplay(context, bodyText)
+                    _buildPinDisplay(context, ref, bodyText)
                   else
                     Text(
                       bodyText,
@@ -195,7 +196,7 @@ class OrderChatCardBubble extends ConsumerWidget {
     );
   }
 
-  Widget _buildPinDisplay(BuildContext context, String rawText) {
+  Widget _buildPinDisplay(BuildContext context, WidgetRef ref, String rawText) {
     final pin = _extractCleanText(rawText);
     return Column(
       children: [
@@ -224,10 +225,24 @@ class OrderChatCardBubble extends ConsumerWidget {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: () => OrderPinVerificationBottomSheet.show(
-                context: context,
-                order: order!,
-              ),
+              onPressed: () async {
+                final confirmed = await OrderPinVerificationBottomSheet.show(
+                  context: context,
+                  order: order!,
+                );
+                if (confirmed && context.mounted) {
+                  AppToast.success(
+                    context,
+                    'შეკვეთა #${order!.id} წარმატებით დასრულდა!',
+                  );
+                  final error = await ref
+                      .read(farmerOrdersProvider.notifier)
+                      .completeOrder(order!.id);
+                  if (error != null && context.mounted) {
+                    AppToast.error(context, error);
+                  }
+                }
+              },
               icon: const Icon(LucideIcons.checkCheck, size: 15),
               label: Text(
                 'შეკვეთის დასრულება',

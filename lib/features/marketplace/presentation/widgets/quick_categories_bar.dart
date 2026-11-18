@@ -129,14 +129,14 @@ class _QuickCategoryItem extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Circular Pastel Badge with Category SVG
+              // Rounded Square Pastel Badge with Category SVG
               Container(
                 width: 62,
                 height: 62,
                 padding: const EdgeInsets.all(11),
                 decoration: BoxDecoration(
                   color: category.backgroundColor.withValues(alpha: 0.12),
-                  shape: BoxShape.circle,
+                  borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: category.backgroundColor.withValues(alpha: 0.22),
                     width: 1.2,

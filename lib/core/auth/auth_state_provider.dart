@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import '../services/push_notification_service.dart';
 import '../storage/secure_storage_service.dart';
+import '../../features/marketplace/presentation/providers/marketplace_provider.dart';
 import '../../features/profile/presentation/providers/user_address_provider.dart';
 import 'auth_models.dart';
 import 'auth_repository.dart';
@@ -87,6 +89,13 @@ class AuthNotifier extends Notifier<AuthState> {
           userAvatarUrl: hasNewAvatar ? serverAvatarUrl : state.userAvatarUrl,
           farmCoverUrl: hasNewCover ? serverCoverUrl : state.farmCoverUrl,
         );
+        if (state.isFarmer) {
+          ref.read(marketplaceProvider.notifier).updateFarmerMedia(
+                farmerId: state.farmerId,
+                avatarUrl: hasNewAvatar ? serverAvatarUrl : null,
+                coverUrl: hasNewCover ? serverCoverUrl : null,
+              );
+        }
         await _resaveSession();
       }
     } catch (_) {}
@@ -353,6 +362,12 @@ class AuthNotifier extends Notifier<AuthState> {
     bool syncBackend = true,
   }) async {
     state = state.copyWith(farmCoverUrl: coverUrl);
+    if (state.isFarmer) {
+      ref.read(marketplaceProvider.notifier).updateFarmerMedia(
+            farmerId: state.farmerId,
+            coverUrl: coverUrl,
+          );
+    }
     await _resaveSession();
     if (syncBackend) {
       await _patchProfileSilently(
@@ -367,6 +382,12 @@ class AuthNotifier extends Notifier<AuthState> {
     bool syncBackend = true,
   }) async {
     state = state.copyWith(userAvatarUrl: avatarUrl);
+    if (state.isFarmer) {
+      ref.read(marketplaceProvider.notifier).updateFarmerMedia(
+            farmerId: state.farmerId,
+            avatarUrl: avatarUrl,
+          );
+    }
     await _resaveSession();
     if (syncBackend) {
       await _patchProfileSilently({'avatarUrl': avatarUrl});
@@ -440,19 +461,27 @@ class AuthNotifier extends Notifier<AuthState> {
   // ---------------------------------------------------------------------------
 
   /// Shows a local preview instantly, then uploads and swaps in the remote URL.
-  /// Returns false when offline (local preview is kept).
+  /// Returns false when offline (local/data-url preview is kept).
   Future<bool> _uploadImage(
     XFile file, {
     required String folder,
     required Future<void> Function(String url, {bool syncBackend}) apply,
   }) async {
-    await apply(file.path, syncBackend: false);
+    String fallbackPreview = file.path;
+    try {
+      final bytes = await file.readAsBytes();
+      if (bytes.isNotEmpty) {
+        fallbackPreview = 'data:image/jpeg;base64,${base64Encode(bytes)}';
+      }
+    } catch (_) {}
+    await apply(fallbackPreview, syncBackend: false);
     try {
       final remoteUrl = await _repo.uploadImage(file, folder: folder);
       if (remoteUrl != null) {
         await apply(remoteUrl, syncBackend: true);
+        return true;
       }
-      return true;
+      return false;
     } catch (_) {
       return false;
     }
@@ -465,7 +494,17 @@ class AuthNotifier extends Notifier<AuthState> {
     final uid = state.userId ?? fallbackUserId;
     if (uid == null) return;
     try {
-      await _repo.patchProfile(uid, data);
+      final enriched = <String, dynamic>{
+        'role': state.role.apiValue,
+        if (state.userEmail != null && state.userEmail!.isNotEmpty)
+          'email': state.userEmail,
+        if (state.userName != null && state.userName!.isNotEmpty)
+          'fullName': state.userName,
+        if (state.farmName != null && state.farmName!.isNotEmpty)
+          'farmName': state.farmName,
+        ...data,
+      };
+      await _repo.patchProfile(uid, enriched);
     } catch (_) {
       // Offline resilient fallback
     }
@@ -498,10 +537,10 @@ class AuthNotifier extends Notifier<AuthState> {
   /// latest profile fields (cover, avatar, email) from [state].
   Future<void> _resaveSession() async {
     final saved = await _storage.readSession();
-    final userId = saved['userId'];
-    if (userId == null) return;
+    final userId = state.userId ?? saved['userId'];
+    if (userId == null || userId.isEmpty) return;
     await _storage.saveSession(
-      token: saved['token'] ?? '',
+      token: saved['token'] ?? 'ak_session_$userId',
       userId: userId,
       farmerId: state.farmerId ?? saved['farmerId'],
       farmName: state.farmName ?? saved['farmName'],

@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/widgets/app_confirmation_bottom_sheet.dart';
 import '../../../../core/widgets/app_reason_bottom_sheet.dart';
 import '../../../../core/widgets/app_toast.dart';
 import '../../domain/models/farmer_order_model.dart';
@@ -71,25 +70,10 @@ class _FarmerOrderDetailScreenState
   }
 
   Future<void> _onCompleteOrder(FarmerOrder order) async {
-    bool confirmed = false;
-
-    if (order.isBankTransfer) {
-      confirmed = await OrderPinVerificationBottomSheet.show(
-        context: context,
-        order: order,
-      );
-    } else {
-      confirmed = await AppConfirmationBottomSheet.show(
-        context: context,
-        title: 'ნაღდი თანხის ჩაბარება',
-        message:
-            'დაადასტურეთ, რომ ნაღდი თანხა (₾${order.totalAmount.toStringAsFixed(2)}) ჩაიბარეთ და შეკვეთა #${order.id} წარმატებით გადაეცით მყიდველს.',
-        confirmText: 'თანხა მივიღე და ჩავაბარე',
-        cancelText: 'უკან',
-        type: ConfirmationType.positive,
-        icon: LucideIcons.banknote,
-      );
-    }
+    final confirmed = await OrderPinVerificationBottomSheet.show(
+      context: context,
+      order: order,
+    );
 
     if (confirmed && mounted) {
       AppToast.success(

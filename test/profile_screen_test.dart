@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:agrokera/core/auth/auth_state_provider.dart';
+import 'package:agrokera/core/widgets/draggable_floating_cart.dart';
 import 'package:agrokera/features/marketplace/data/models/farmer_model.dart';
 import 'package:agrokera/features/marketplace/presentation/screens/farmer_profile_screen.dart';
 import 'package:agrokera/features/profile/presentation/screens/farmer_delivery_settings_screen.dart';
@@ -172,6 +173,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('გიორგის ფერმა'), findsOneWidget);
+    expect(find.byType(DraggableFloatingCart), findsOneWidget);
 
     // Switch to "ფერმის შესახებ" tab
     await tester.tap(find.text('ფერმის შესახებ'));
@@ -333,6 +335,52 @@ void main() {
     expect(auth.farmName, 'ახალი ალაზანი');
     expect(find.descendant(of: find.byType(FarmerProfileHero), matching: find.text('რევაზ კობახიძე')), findsOneWidget);
     expect(find.descendant(of: find.byType(FarmerProfileHero), matching: find.text('ახალი ალაზანი')), findsOneWidget);
+  });
+
+  testWidgets('EditProfileBottomSheet displays photo pickers for Customer and Farmer and updates avatar/cover state', (WidgetTester tester) async {
+    final container = ProviderContainer();
+    container.read(authStateProvider.notifier).login(
+          name: 'რევაზ ბერიძე',
+          email: 'revaz@farm.ge',
+          role: UserRole.farmer,
+        );
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: const MaterialApp(
+          home: GuestProfileScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Open EditProfileBottomSheet
+    await tester.tap(find.byTooltip('პროფილის რედაქტირება'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('პროფილის ფოტო'), findsOneWidget);
+    expect(find.text('ფერმის გარეკანის ფოტო'), findsOneWidget);
+
+    // Update avatar and cover via AuthNotifier
+    await container.read(authStateProvider.notifier).updateUserAvatarUrl(
+          'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+          syncBackend: false,
+        );
+    await container.read(authStateProvider.notifier).updateFarmCoverUrl(
+          'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+          syncBackend: false,
+        );
+    await tester.pump();
+
+    expect(
+      container.read(authStateProvider).userAvatarUrl,
+      startsWith('data:image/png;base64,'),
+    );
+    expect(
+      container.read(authStateProvider).farmCoverUrl,
+      startsWith('data:image/png;base64,'),
+    );
   });
 }
 

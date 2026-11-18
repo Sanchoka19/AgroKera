@@ -1,4 +1,7 @@
+import 'dart:convert';
+import 'dart:io';
 import 'dart:ui';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -460,6 +463,66 @@ class _GlobalSearchDialogState extends ConsumerState<GlobalSearchDialog> {
     );
   }
 
+  Widget _buildImageThumbnail(
+    String url, {
+    required double width,
+    required double height,
+    required IconData fallbackIcon,
+  }) {
+    Widget fallback() => Container(
+          width: width,
+          height: height,
+          color: AppColors.surfaceInput,
+          alignment: Alignment.center,
+          child: Icon(
+            fallbackIcon,
+            size: width * 0.42,
+            color: AppColors.textSecondary,
+          ),
+        );
+
+    if (url.startsWith('assets/')) {
+      return Image.asset(
+        url,
+        width: width,
+        height: height,
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) => fallback(),
+      );
+    }
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return Image.network(
+        url,
+        width: width,
+        height: height,
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) => fallback(),
+      );
+    }
+    if (url.startsWith('data:image/')) {
+      try {
+        final base64Str = url.split(',').last;
+        return Image.memory(
+          base64Decode(base64Str),
+          width: width,
+          height: height,
+          fit: BoxFit.cover,
+          errorBuilder: (_, _, _) => fallback(),
+        );
+      } catch (_) {}
+    }
+    if (!kIsWeb && File(url).existsSync()) {
+      return Image.file(
+        File(url),
+        width: width,
+        height: height,
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) => fallback(),
+      );
+    }
+    return fallback();
+  }
+
   Widget _buildProductTile(ProductModel product) {
     return InkWell(
       onTap: () => _navigateToProduct(product),
@@ -471,21 +534,11 @@ class _GlobalSearchDialogState extends ConsumerState<GlobalSearchDialog> {
             // Product image thumbnail
             ClipRRect(
               borderRadius: BorderRadius.circular(10),
-              child: Image.network(
+              child: _buildImageThumbnail(
                 product.imageUrl,
                 width: 48,
                 height: 48,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => Container(
-                  width: 48,
-                  height: 48,
-                  color: AppColors.surfaceInput,
-                  child: const Icon(
-                    LucideIcons.image,
-                    size: 20,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
+                fallbackIcon: LucideIcons.image,
               ),
             ),
             const SizedBox(width: 12),
@@ -601,14 +654,12 @@ class _GlobalSearchDialogState extends ConsumerState<GlobalSearchDialog> {
         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
         child: Row(
           children: [
-            CircleAvatar(
-              radius: 20,
-              backgroundImage: NetworkImage(farmer.avatarUrl),
-              onBackgroundImageError: (exception, stackTrace) {},
-              child: const Icon(
-                LucideIcons.user,
-                size: 18,
-                color: Colors.white,
+            ClipOval(
+              child: _buildImageThumbnail(
+                farmer.avatarUrl,
+                width: 40,
+                height: 40,
+                fallbackIcon: LucideIcons.user,
               ),
             ),
             const SizedBox(width: 12),

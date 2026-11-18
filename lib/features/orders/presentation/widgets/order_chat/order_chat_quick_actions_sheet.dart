@@ -46,7 +46,6 @@ class OrderChatQuickActionsSheet extends ConsumerWidget {
     final hasAddress = (order.deliveryAddress?.trim().isNotEmpty == true);
     final isClient = !isFarmer;
     final hasPin = order.deliveryPin.trim().isNotEmpty;
-    final isEscrow = order.isBankTransfer;
 
     return Container(
       decoration: const BoxDecoration(
@@ -225,8 +224,8 @@ class OrderChatQuickActionsSheet extends ConsumerWidget {
             ),
             const SizedBox(height: 8),
 
-            // Action 4: PIN Code Transfer (Only for customer under Escrow)
-            if (isClient && hasPin && isEscrow) ...[
+            // Action 4: PIN Code Transfer (Only for customer)
+            if (isClient && hasPin) ...[
               _buildActionTile(
                 icon: LucideIcons.keyRound,
                 iconColor: const Color(0xFFD97706),

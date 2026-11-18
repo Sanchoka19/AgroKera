@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -47,6 +50,35 @@ class ProductStep3Review extends StatelessWidget {
     required this.minOrder,
     required this.selectedAgroTags,
   });
+
+  Widget _buildPreviewPhoto(ProductPhotoEntry photo) {
+    if (photo.bytes != null) {
+      return Image.memory(photo.bytes!, fit: BoxFit.cover);
+    }
+    if (photo.url.startsWith('data:image/')) {
+      try {
+        return Image.memory(
+          base64Decode(photo.url.split(',').last),
+          fit: BoxFit.cover,
+        );
+      } catch (_) {}
+    }
+    if (photo.url.startsWith('assets/')) {
+      return Image.asset(photo.url, fit: BoxFit.cover);
+    }
+    if (!kIsWeb && File(photo.url).existsSync()) {
+      return Image.file(File(photo.url), fit: BoxFit.cover);
+    }
+    return Image.network(
+      photo.url,
+      fit: BoxFit.cover,
+      errorBuilder: (_, _, _) => const Icon(
+        LucideIcons.image,
+        size: 40,
+        color: Color(0xFF94A3B8),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -151,25 +183,7 @@ class ProductStep3Review extends StatelessWidget {
                     ),
                     clipBehavior: Clip.antiAlias,
                     child: previewPhoto != null
-                        ? (previewPhoto.bytes != null
-                            ? Image.memory(
-                                previewPhoto.bytes!,
-                                fit: BoxFit.cover,
-                              )
-                            : (previewPhoto.url.startsWith('assets/')
-                                ? Image.asset(
-                                    previewPhoto.url,
-                                    fit: BoxFit.cover,
-                                  )
-                                : Image.network(
-                                    previewPhoto.url,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (_, _, _) => const Icon(
-                                      LucideIcons.image,
-                                      size: 40,
-                                      color: Color(0xFF94A3B8),
-                                    ),
-                                  )))
+                        ? _buildPreviewPhoto(previewPhoto)
                         : const Center(
                             child: Icon(
                               LucideIcons.image,

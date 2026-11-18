@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,6 +10,8 @@ import '../../../../core/auth/auth_state_provider.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_toast.dart';
 import '../../../marketplace/presentation/providers/marketplace_provider.dart';
+import 'avatar_picker_modal.dart';
+import 'cover_photo_picker_modal.dart';
 
 /// Bottom sheet modal to edit user's personal name and/or farm name.
 class EditProfileBottomSheet extends ConsumerStatefulWidget {
@@ -52,6 +57,88 @@ class _EditProfileBottomSheetState extends ConsumerState<EditProfileBottomSheet>
     _nameController.dispose();
     _farmNameController.dispose();
     super.dispose();
+  }
+
+  Widget _buildAvatarPreview(String? url) {
+    if (url == null || url.isEmpty) {
+      return Container(
+        color: AppColors.primaryLight,
+        alignment: Alignment.center,
+        child: const Icon(LucideIcons.user, size: 28, color: AppColors.primary),
+      );
+    }
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return Image.network(
+        url,
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) => Container(
+          color: AppColors.primaryLight,
+          alignment: Alignment.center,
+          child: const Icon(LucideIcons.user, size: 28, color: AppColors.primary),
+        ),
+      );
+    }
+    if (url.startsWith('data:image/')) {
+      try {
+        final base64Str = url.split(',').last;
+        return Image.memory(
+          base64Decode(base64Str),
+          fit: BoxFit.cover,
+          errorBuilder: (_, _, _) => Container(
+            color: AppColors.primaryLight,
+            alignment: Alignment.center,
+            child: const Icon(LucideIcons.user, size: 28, color: AppColors.primary),
+          ),
+        );
+      } catch (_) {}
+    }
+    if (!kIsWeb && File(url).existsSync()) {
+      return Image.file(
+        File(url),
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) => Container(
+          color: AppColors.primaryLight,
+          alignment: Alignment.center,
+          child: const Icon(LucideIcons.user, size: 28, color: AppColors.primary),
+        ),
+      );
+    }
+    return Container(
+      color: AppColors.primaryLight,
+      alignment: Alignment.center,
+      child: const Icon(LucideIcons.user, size: 28, color: AppColors.primary),
+    );
+  }
+
+  Widget _buildCoverPreview(String? coverUrl) {
+    final url = (coverUrl != null && coverUrl.isNotEmpty)
+        ? coverUrl
+        : 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=1000&auto=format&fit=crop&q=80';
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return Image.network(
+        url,
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) => Container(color: AppColors.primaryLight),
+      );
+    }
+    if (url.startsWith('data:image/')) {
+      try {
+        final base64Str = url.split(',').last;
+        return Image.memory(
+          base64Decode(base64Str),
+          fit: BoxFit.cover,
+          errorBuilder: (_, _, _) => Container(color: AppColors.primaryLight),
+        );
+      } catch (_) {}
+    }
+    if (!kIsWeb && File(url).existsSync()) {
+      return Image.file(
+        File(url),
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) => Container(color: AppColors.primaryLight),
+      );
+    }
+    return Container(color: AppColors.primaryLight);
   }
 
   Future<void> _handleSave() async {
@@ -128,41 +215,239 @@ class _EditProfileBottomSheetState extends ConsumerState<EditProfileBottomSheet>
 
                 // Header row
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'პროფილის რედაქტირება',
-                          style: GoogleFonts.notoSansGeorgian(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w800,
-                            color: const Color(0xFF0F172A),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'პროფილის რედაქტირება',
+                            style: GoogleFonts.notoSansGeorgian(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800,
+                              color: const Color(0xFF0F172A),
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 3),
-                        Text(
-                          isFarmer
-                              ? 'შეცვალეთ თქვენი პირადი და მეურნეობის სახელი'
-                              : 'შეცვალეთ თქვენი პირადი სახელი და გვარი',
-                          style: GoogleFonts.notoSansGeorgian(
-                            fontSize: 12.5,
-                            color: const Color(0xFF64748B),
-                            fontWeight: FontWeight.w500,
+                          const SizedBox(height: 3),
+                          Text(
+                            isFarmer
+                                ? 'შეცვალეთ თქვენი პირადი და მეურნეობის სახელი'
+                                : 'შეცვალეთ თქვენი პირადი სახელი და გვარი',
+                            style: GoogleFonts.notoSansGeorgian(
+                              fontSize: 12.5,
+                              color: const Color(0xFF64748B),
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                    IconButton(
-                      icon: const Icon(LucideIcons.x, size: 20),
-                      onPressed: () => Navigator.pop(context),
-                      splashRadius: 20,
+                    const SizedBox(width: 12),
+                    InkWell(
+                      onTap: () => Navigator.of(context).pop(),
+                      borderRadius: BorderRadius.circular(10),
+                      child: Container(
+                        width: 34,
+                        height: 34,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF1F5F9),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(
+                          LucideIcons.x,
+                          size: 18,
+                          color: Color(0xFF64748B),
+                        ),
+                      ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 18),
+
+                // 0. Photos Editing Section (Avatar & Farm Cover)
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Avatar Picker Row
+                      InkWell(
+                        onTap: () => AvatarPickerModal.show(context, ref),
+                        borderRadius: BorderRadius.circular(12),
+                        child: Row(
+                          children: [
+                            Stack(
+                              clipBehavior: Clip.none,
+                              children: [
+                                Container(
+                                  width: 56,
+                                  height: 56,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: AppColors.primary,
+                                      width: 2,
+                                    ),
+                                  ),
+                                  child: ClipOval(
+                                    child: _buildAvatarPreview(auth.userAvatarUrl),
+                                  ),
+                                ),
+                                Positioned(
+                                  bottom: -2,
+                                  right: -2,
+                                  child: Container(
+                                    width: 22,
+                                    height: 22,
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primary,
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: Colors.white,
+                                        width: 1.5,
+                                      ),
+                                    ),
+                                    child: const Icon(
+                                      LucideIcons.camera,
+                                      color: Colors.white,
+                                      size: 11,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'პროფილის ფოტო',
+                                    style: GoogleFonts.notoSansGeorgian(
+                                      fontSize: 13.5,
+                                      fontWeight: FontWeight.w700,
+                                      color: const Color(0xFF0F172A),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'დააჭირეთ ფოტოს შესაცვლელად',
+                                    style: GoogleFonts.notoSansGeorgian(
+                                      fontSize: 11.5,
+                                      color: const Color(0xFF64748B),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                  color: const Color(0xFFCBD5E1),
+                                ),
+                              ),
+                              child: Text(
+                                'შეცვლა',
+                                style: GoogleFonts.notoSansGeorgian(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      if (isFarmer) ...[
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 12),
+                          child: Divider(height: 1, color: Color(0xFFE2E8F0)),
+                        ),
+                        // Cover Photo Picker Row
+                        InkWell(
+                          onTap: () => CoverPhotoPickerModal.show(context),
+                          borderRadius: BorderRadius.circular(12),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 56,
+                                height: 42,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(
+                                    color: const Color(0xFFCBD5E1),
+                                  ),
+                                ),
+                                clipBehavior: Clip.antiAlias,
+                                child: _buildCoverPreview(auth.farmCoverUrl),
+                              ),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'ფერმის გარეკანის ფოტო',
+                                      style: GoogleFonts.notoSansGeorgian(
+                                        fontSize: 13.5,
+                                        fontWeight: FontWeight.w700,
+                                        color: const Color(0xFF0F172A),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      'გამოჩნდება მთავარ გვერდზე და პროფილზე',
+                                      style: GoogleFonts.notoSansGeorgian(
+                                        fontSize: 11.5,
+                                        color: const Color(0xFF64748B),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(
+                                    color: const Color(0xFFCBD5E1),
+                                  ),
+                                ),
+                                child: Text(
+                                  'შეცვლა',
+                                  style: GoogleFonts.notoSansGeorgian(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.primary,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 18),
 
                 // 1. Personal Name Field
                 Text(

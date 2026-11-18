@@ -96,11 +96,10 @@ class ClientOrderCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: isCancelled ? const Color(0xFFFAFAFA) : Colors.white,
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: const Color(0xFFE2E8F0)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: isCancelled ? 0.015 : 0.03),
-              blurRadius: 10,
+              color: Colors.black.withValues(alpha: isCancelled ? 0.02 : 0.05),
+              blurRadius: 12,
               offset: const Offset(0, 3),
             ),
           ],
@@ -212,7 +211,6 @@ class ClientOrderCard extends StatelessWidget {
               decoration: BoxDecoration(
                 color: const Color(0xFFF8FAFC),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFF1F5F9)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

@@ -1,3 +1,5 @@
+import '../../../../core/auth/auth_models.dart';
+
 class FarmerModel {
   final String id;
   final String farmName;
@@ -130,6 +132,15 @@ class FarmerModel {
       deliveryFee: deliveryFee ?? this.deliveryFee,
       regionalDeliveryFees: regionalDeliveryFees ?? this.regionalDeliveryFees,
       isPickupEnabled: isPickupEnabled ?? this.isPickupEnabled,
+    );
+  }
+
+  /// Checks if this farm is owned by the provided authenticated user.
+  bool isOwnedBy(AuthState auth) {
+    return auth.isOwner(
+      farmerId: id,
+      farmName: farmName,
+      farmerName: farmerName,
     );
   }
 }

@@ -218,14 +218,11 @@ class FarmerOrderCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: isCancelled ? const Color(0xFFFAFAFA) : Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isCancelled ? const Color(0xFFE2E8F0) : const Color(0xFFE2E8F0),
-        ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF0F172A).withValues(alpha: isCancelled ? 0.02 : 0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
+            color: const Color(0xFF0F172A).withValues(alpha: isCancelled ? 0.02 : 0.05),
+            blurRadius: 12,
+            offset: const Offset(0, 3),
           ),
         ],
       ),

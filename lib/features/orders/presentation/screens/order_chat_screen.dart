@@ -520,7 +520,6 @@ class _OrderChatScreenState extends ConsumerState<OrderChatScreen> {
   Widget _buildQuickReplies(bool isFarmer) {
     final controller = ref.read(orderChatActionsControllerProvider);
     final hasPin = widget.order.deliveryPin.trim().isNotEmpty;
-    final isEscrow = widget.order.isBankTransfer;
 
     final standardReplies = isFarmer
         ? ['გზაში ვარ', '10 წუთში მოვალ', 'ადგილზე ვარ', 'შლაგბაუმთან ვდგავარ']
@@ -721,8 +720,8 @@ class _OrderChatScreenState extends ConsumerState<OrderChatScreen> {
             ),
             const SizedBox(width: 8),
 
-            // Customer Action 4: Delivery PIN (Only client & escrow)
-            if (hasPin && isEscrow) ...[
+            // Customer Action 4: Delivery PIN (Only client)
+            if (hasPin) ...[
               ActionChip(
                 avatar: const Icon(
                   LucideIcons.keyRound,

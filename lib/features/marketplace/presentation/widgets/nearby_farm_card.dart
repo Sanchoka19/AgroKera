@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -22,7 +24,22 @@ class NearbyFarmCard extends StatelessWidget {
   });
 
   Widget _buildCoverImage(String coverUrl) {
-    if (coverUrl.startsWith('/') || coverUrl.startsWith('file://')) {
+    if (coverUrl.startsWith('data:image/')) {
+      try {
+        final base64Str = coverUrl.split(',').last;
+        return Image.memory(
+          base64Decode(base64Str),
+          fit: BoxFit.cover,
+          width: double.infinity,
+          height: double.infinity,
+        );
+      } catch (_) {}
+    }
+
+    if (!kIsWeb &&
+        (coverUrl.startsWith('/') ||
+            coverUrl.startsWith('file://') ||
+            File(coverUrl).existsSync())) {
       final path = coverUrl.replaceFirst('file://', '');
       final file = File(path);
       if (file.existsSync()) {

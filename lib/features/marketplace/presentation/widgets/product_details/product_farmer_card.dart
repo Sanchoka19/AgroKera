@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -12,6 +15,50 @@ class ProductFarmerCard extends StatelessWidget {
   final FarmerModel farmer;
 
   const ProductFarmerCard({super.key, required this.farmer});
+
+  Widget _buildAvatar(String avatarUrl) {
+    Widget fallback() => Container(
+          width: 48,
+          height: 48,
+          color: const Color(0xFFE8F7EE),
+          child: const Icon(
+            LucideIcons.user,
+            color: AppColors.primary,
+          ),
+        );
+
+    if (avatarUrl.startsWith('http://') || avatarUrl.startsWith('https://')) {
+      return Image.network(
+        avatarUrl,
+        width: 48,
+        height: 48,
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) => fallback(),
+      );
+    }
+    if (avatarUrl.startsWith('data:image/')) {
+      try {
+        final base64Str = avatarUrl.split(',').last;
+        return Image.memory(
+          base64Decode(base64Str),
+          width: 48,
+          height: 48,
+          fit: BoxFit.cover,
+          errorBuilder: (_, _, _) => fallback(),
+        );
+      } catch (_) {}
+    }
+    if (!kIsWeb && File(avatarUrl).existsSync()) {
+      return Image.file(
+        File(avatarUrl),
+        width: 48,
+        height: 48,
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) => fallback(),
+      );
+    }
+    return fallback();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -44,21 +91,7 @@ class ProductFarmerCard extends StatelessWidget {
               // Farmer Avatar
               ClipRRect(
                 borderRadius: BorderRadius.circular(24),
-                child: Image.network(
-                  farmer.avatarUrl,
-                  width: 48,
-                  height: 48,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Container(
-                    width: 48,
-                    height: 48,
-                    color: const Color(0xFFE8F7EE),
-                    child: const Icon(
-                      LucideIcons.user,
-                      color: AppColors.primary,
-                    ),
-                  ),
-                ),
+                child: _buildAvatar(farmer.avatarUrl),
               ),
               const SizedBox(width: 12),
 

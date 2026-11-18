@@ -53,7 +53,6 @@ class _AddEditAddressSheetState extends State<AddEditAddressSheet> {
   late String _selectedCity;
   late final TextEditingController _addressLineController;
   late final TextEditingController _detailsController;
-  late final TextEditingController _noteController;
   late bool _isDefault;
   LatLng? _pinnedPoint;
   bool _isGpsLoading = false;
@@ -69,7 +68,6 @@ class _AddEditAddressSheetState extends State<AddEditAddressSheet> {
     _selectedCity = init?.city.isNotEmpty == true ? init!.city : 'თბილისი';
     _addressLineController = TextEditingController(text: init?.addressLine ?? '');
     _detailsController = TextEditingController(text: init?.details ?? '');
-    _noteController = TextEditingController(text: init?.note ?? '');
     _isDefault = init?.isDefault ?? false;
     if (init?.latitude != null && init?.longitude != null) {
       _pinnedPoint = LatLng(init!.latitude!, init.longitude!);
@@ -80,7 +78,6 @@ class _AddEditAddressSheetState extends State<AddEditAddressSheet> {
   void dispose() {
     _addressLineController.dispose();
     _detailsController.dispose();
-    _noteController.dispose();
     super.dispose();
   }
 
@@ -152,16 +149,23 @@ class _AddEditAddressSheetState extends State<AddEditAddressSheet> {
 
     final line = _addressLineController.text.trim();
     final details = _detailsController.text.trim();
-    final note = _noteController.text.trim();
+
+    String resolvedCity = _selectedCity;
+    for (final city in _quickCities) {
+      if (line.contains(city)) {
+        resolvedCity = city;
+        break;
+      }
+    }
 
     final address = UserAddress(
       id: widget.initialAddress?.id ??
           'addr_${DateTime.now().millisecondsSinceEpoch}',
       title: _selectedTag,
-      city: _selectedCity,
+      city: resolvedCity,
       addressLine: line,
       details: details.isNotEmpty ? details : null,
-      note: note.isNotEmpty ? note : null,
+      note: null,
       isDefault: _isDefault,
       latitude: _pinnedPoint?.latitude ?? widget.initialAddress?.latitude,
       longitude: _pinnedPoint?.longitude ?? widget.initialAddress?.longitude,
@@ -256,45 +260,7 @@ class _AddEditAddressSheetState extends State<AddEditAddressSheet> {
                 ),
                 const SizedBox(height: 14),
 
-                // 2. City Chips
-                Text(
-                  'ქალაქი / რეგიონი',
-                  style: GoogleFonts.notoSansGeorgian(
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w700,
-                    color: const Color(0xFF475569),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: _quickCities.map((city) {
-                      final isSel = _selectedCity == city;
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 6),
-                        child: FilterChip(
-                          label: Text(city),
-                          selected: isSel,
-                          onSelected: (_) => setState(() => _selectedCity = city),
-                          labelStyle: GoogleFonts.notoSansGeorgian(
-                            fontSize: 12,
-                            fontWeight: isSel ? FontWeight.w700 : FontWeight.w500,
-                            color: isSel ? AppColors.primaryDark : const Color(0xFF475569),
-                          ),
-                          selectedColor: AppColors.primaryLight,
-                          backgroundColor: const Color(0xFFF8FAFC),
-                          side: BorderSide(
-                            color: isSel ? AppColors.primary : const Color(0xFFE2E8F0),
-                          ),
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                ),
-                const SizedBox(height: 14),
-
-                // 3. Address line input with GPS and Map buttons
+                // 2. Address line input with GPS and Map buttons
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -490,56 +456,7 @@ class _AddEditAddressSheetState extends State<AddEditAddressSheet> {
                 ),
                 const SizedBox(height: 12),
 
-                // 5. Courier note
-                Text(
-                  'კომენტარი კურიერისთვის (სურვილისამებრ)',
-                  style: GoogleFonts.notoSansGeorgian(
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w700,
-                    color: const Color(0xFF475569),
-                  ),
-                ),
-                const SizedBox(height: 6),
-                TextFormField(
-                  controller: _noteController,
-                  style: GoogleFonts.notoSansGeorgian(fontSize: 13.5),
-                  decoration: InputDecoration(
-                    hintText: 'მაგ: კოდი: 1234, დარეკეთ კარზე',
-                    hintStyle: GoogleFonts.notoSansGeorgian(
-                      fontSize: 13,
-                      color: const Color(0xFF94A3B8),
-                    ),
-                    prefixIcon: const Icon(
-                      LucideIcons.messageSquare,
-                      size: 18,
-                      color: Color(0xFF64748B),
-                    ),
-                    filled: true,
-                    fillColor: const Color(0xFFF8FAFC),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 12,
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(
-                        color: AppColors.primary,
-                        width: 1.5,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-
-                // 6. Default address switch
+                // 4. Default address switch
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
                   value: _isDefault,

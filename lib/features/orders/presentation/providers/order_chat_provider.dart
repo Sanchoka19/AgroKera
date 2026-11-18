@@ -172,10 +172,23 @@ final orderChatReadProvider =
   OrderChatReadNotifier.new,
 );
 
-/// Determines whether a specific order's chat has unread messages for the current user
+/// Determines whether a specific order's chat has unread messages for the current user.
+/// Only active orders (`pending` or `inProgress`) can show an unread indicator;
+/// `completed` and `cancelled` chats never trigger unread reactions.
 final isOrderChatUnreadProvider = Provider.family<bool, String>((ref, orderId) {
   final auth = ref.watch(authStateProvider);
   if (!auth.isAuthenticated) return false;
+
+  final ordersState = ref.watch(farmerOrdersProvider);
+  final order = ordersState.orders.where((o) => o.id == orderId).firstOrNull ??
+      ordersState.incomingOrders.where((o) => o.id == orderId).firstOrNull ??
+      ordersState.clientOrders.where((o) => o.id == orderId).firstOrNull;
+
+  if (order != null &&
+      (order.status == OrderStatus.completed ||
+          order.status == OrderStatus.cancelled)) {
+    return false;
+  }
 
   final myRole = auth.role;
   final readMap = ref.watch(orderChatReadProvider);
@@ -201,7 +214,8 @@ final isOrderChatUnreadProvider = Provider.family<bool, String>((ref, orderId) {
   );
 });
 
-/// Total count of unread chat messages/conversations for the logged-in user (Farmer or Customer)
+/// Total count of unread chat messages/conversations for the logged-in user (Farmer or Customer).
+/// Counts ONLY active orders (`pending` or `inProgress`). Completed and cancelled chats are ignored.
 final unreadChatCountProvider = Provider<int>((ref) {
   final auth = ref.watch(authStateProvider);
   if (!auth.isAuthenticated) return 0;
@@ -217,10 +231,14 @@ final unreadChatCountProvider = Provider<int>((ref) {
   final notifications = ref.watch(notificationsProvider);
 
   int totalUnread = 0;
-  final Set<String> countedOrderIds = {};
 
-  // 1. Count from user's orders
+  // Count strictly from user's active orders (Pending / InProgress)
   for (final order in myOrders) {
+    final isActive =
+        order.status == OrderStatus.pending ||
+        order.status == OrderStatus.inProgress;
+    if (!isActive) continue;
+
     final lastRead = readMap[order.id];
     final messages = chatMap[order.id] ?? const [];
 
@@ -240,16 +258,6 @@ final unreadChatCountProvider = Provider<int>((ref) {
     final orderUnread = max(unreadMsgsInChat, unreadNotifsForOrder);
     if (orderUnread > 0) {
       totalUnread += orderUnread;
-      countedOrderIds.add(order.id);
-    }
-  }
-
-  // 2. Also include any unread chat notifications whose order might not be in the current list
-  for (final notif in notifications) {
-    if (notif.isChat &&
-        !notif.isRead &&
-        (notif.orderId == null || !countedOrderIds.contains(notif.orderId))) {
-      totalUnread += notif.unreadCount;
     }
   }
 

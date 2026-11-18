@@ -81,7 +81,7 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
       child: Column(
         children: [
           ProfileRowItem(
-            icon: LucideIcons.shoppingBag,
+            icon: LucideIcons.package,
             title: 'ჩემი პროდუქტები',
             subtitle: 'პროდუქტების სია და ფასები',
             onTap: () {

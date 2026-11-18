@@ -90,7 +90,7 @@ void main() {
       expect(find.text('32 ჭავჭავაძე, Batumi'), findsOneWidget);
 
       // Handover button
-      expect(find.text('ჩავიბარე შეკვეთა'), findsOneWidget);
+      expect(find.textContaining('ჩავიბარე შეკვეთა'), findsOneWidget);
     });
 
     testWidgets('ClientOrdersScreen navigates to ClientOrderDetailScreen on details tap', (tester) async {
@@ -121,7 +121,7 @@ void main() {
       // We should now be on ClientOrderDetailScreen
       expect(find.text('AgroKera Escrow ანგარიშსწორება'), findsOneWidget);
       expect(find.text('ჩაბარების PIN კოდი'), findsOneWidget);
-      expect(find.text('ჩავიბარე შეკვეთა'), findsOneWidget);
+      expect(find.textContaining('ჩავიბარე შეკვეთა'), findsOneWidget);
     });
   });
 }

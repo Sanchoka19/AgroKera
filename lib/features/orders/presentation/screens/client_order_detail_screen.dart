@@ -7,12 +7,16 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_reason_bottom_sheet.dart';
 import '../../../../core/widgets/app_toast.dart';
 import '../../domain/models/farmer_order_model.dart';
+import '../../domain/models/order_message_model.dart';
+import '../controllers/order_chat_actions_controller.dart';
 import '../providers/farmer_orders_provider.dart';
+import '../providers/order_chat_provider.dart';
 import '../widgets/client_order/order_delivery_info_card.dart';
 import '../widgets/client_order/order_delivery_pin_card.dart';
 import '../widgets/client_order/order_escrow_payment_card.dart';
 import '../widgets/client_order/order_products_breakdown_card.dart';
 import '../widgets/client_order/order_tracking_card.dart';
+import '../widgets/order_chat/order_chat_pin_dialog.dart';
 import 'order_chat_screen.dart';
 
 /// Clean, modular client order details screen ("ჩემი შეკვეთის დეტალები")
@@ -32,14 +36,16 @@ class ClientOrderDetailScreen extends ConsumerStatefulWidget {
 class _ClientOrderDetailScreenState
     extends ConsumerState<ClientOrderDetailScreen> {
   bool _isReportedLocally = false;
+  bool _isPinSentLocally = false;
 
   @override
   void initState() {
     super.initState();
     unawaited(
-      Future.microtask(
-        () => ref.read(farmerOrdersProvider.notifier).refreshFromBackend(),
-      ),
+      Future.microtask(() async {
+        await ref.read(farmerOrdersProvider.notifier).refreshFromBackend();
+        await ref.read(orderChatProvider.notifier).loadMessages(widget.orderId);
+      }),
     );
   }
 
@@ -147,6 +153,11 @@ class _ClientOrderDetailScreenState
 
   Widget? _buildBottomActions(FarmerOrder order) {
     if (order.status == OrderStatus.inProgress) {
+      final chatMessages = ref.watch(orderChatProvider)[order.id] ?? const [];
+      final hasPinInChat =
+          chatMessages.any((m) => m.type == OrderMessageType.pin);
+      final isPinSent = _isPinSentLocally || hasPinInChat;
+
       return Container(
         padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
         decoration: const BoxDecoration(
@@ -156,28 +167,48 @@ class _ClientOrderDetailScreenState
         child: SafeArea(
           child: ElevatedButton.icon(
             onPressed: () {
-              ref
-                  .read(farmerOrdersProvider.notifier)
-                  .completeOrder(order.id);
-              AppToast.success(
-                context,
-                'შეკვეთა #${order.id} დადასტურებულია როგორც ჩაბარებული!',
+              showDialog<void>(
+                context: context,
+                builder: (_) => OrderChatPinDialog(
+                  pin: order.deliveryPin,
+                  onConfirm: () async {
+                    final sent = await ref
+                        .read(orderChatActionsControllerProvider)
+                        .sendDeliveryPin(
+                          context: context,
+                          order: order,
+                        );
+                    if (sent && mounted) {
+                      setState(() => _isPinSentLocally = true);
+                      AppToast.success(
+                        context,
+                        'ჩაბარების PIN კოდი (${order.deliveryPin}) გაეგზავნა ფერმერს შეკვეთის დასასრულებლად!',
+                      );
+                    }
+                  },
+                ),
               );
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
+              backgroundColor:
+                  isPinSent ? const Color(0xFF0F766E) : AppColors.primary,
               foregroundColor: Colors.white,
               elevation: 0,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
-              minimumSize: const Size.fromHeight(44),
+              minimumSize: const Size.fromHeight(46),
             ),
-            icon: const Icon(LucideIcons.circleCheck, size: 16),
+            icon: Icon(
+              isPinSent ? LucideIcons.checkCheck : LucideIcons.keyRound,
+              size: 16,
+            ),
             label: Text(
-              'ჩავიბარე შეკვეთა',
+              isPinSent
+                  ? 'PIN კოდი გაგზავნილია • ჩათში ხელახლა ჩაგდება'
+                  : 'ჩავიბარე შეკვეთა • PIN კოდის გაგზავნა',
               style: GoogleFonts.notoSansGeorgian(
-                fontSize: 14,
+                fontSize: 13.5,
                 fontWeight: FontWeight.w700,
               ),
             ),

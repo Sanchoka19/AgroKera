@@ -1,4 +1,7 @@
+import 'dart:convert';
+import 'dart:io';
 import 'dart:ui';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -104,6 +107,42 @@ class _ProductQuickAddBottomSheetState
     return _quantity * product.price;
   }
 
+  Widget _buildProductThumb(String url) {
+    Widget fallback() => const Icon(
+          LucideIcons.image,
+          color: AppColors.textSecondary,
+        );
+
+    if (url.startsWith('assets/')) {
+      return Image.asset(
+        url,
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) => fallback(),
+      );
+    }
+    if (url.startsWith('data:image/')) {
+      try {
+        return Image.memory(
+          base64Decode(url.split(',').last),
+          fit: BoxFit.cover,
+          errorBuilder: (_, _, _) => fallback(),
+        );
+      } catch (_) {}
+    }
+    if (!kIsWeb && File(url).existsSync()) {
+      return Image.file(
+        File(url),
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) => fallback(),
+      );
+    }
+    return Image.network(
+      url,
+      fit: BoxFit.cover,
+      errorBuilder: (_, _, _) => fallback(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final product = widget.product;
@@ -154,24 +193,7 @@ class _ProductQuickAddBottomSheetState
                     width: 64,
                     height: 64,
                     color: AppColors.surfaceInput,
-                    child: product.imageUrl.startsWith('assets/')
-                        ? Image.asset(
-                            product.imageUrl,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) =>
-                                const Icon(
-                              LucideIcons.image,
-                              color: AppColors.textSecondary,
-                            ),
-                          )
-                        : Image.network(
-                            product.imageUrl,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) => const Icon(
-                              LucideIcons.image,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
+                    child: _buildProductThumb(product.imageUrl),
                   ),
                 ),
                 const SizedBox(width: 14),

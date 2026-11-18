@@ -601,12 +601,24 @@ export default {
       }
 
       if (path.startsWith("/api/profile/")) {
-        const userId = path.replace("/api/profile/", "");
-        if (method === "GET") {
-          const user = await prisma.user.findUnique({
-            where: { id: userId },
+        const userId = decodeURIComponent(path.replace("/api/profile/", ""));
+        const findUserByIdOrEmail = async (idOrKey: string) => {
+          let found = await prisma.user.findUnique({
+            where: { id: idOrKey },
             include: { farmerProfile: true },
           });
+          if (!found) {
+            const fp = await prisma.farmerProfile.findUnique({
+              where: { id: idOrKey },
+              include: { user: { include: { farmerProfile: true } } },
+            });
+            if (fp?.user) found = fp.user;
+          }
+          return found;
+        };
+
+        if (method === "GET") {
+          const user = await findUserByIdOrEmail(userId);
           if (!user) return errorResponse("User not found", 404);
           return jsonResponse(user);
         }
@@ -615,6 +627,8 @@ export default {
           const body = (await request.json()) as {
             fullName?: string;
             name?: string;
+            email?: string;
+            role?: string;
             verificationStatus?: VerificationStatus;
             farmName?: string;
             region?: string;
@@ -626,11 +640,56 @@ export default {
             isVatPayer?: boolean;
           };
 
-          const existingUser = await prisma.user.findUnique({
-            where: { id: userId },
-            include: { farmerProfile: true },
-          });
-          if (!existingUser) return errorResponse("User not found", 404);
+          let existingUser = await findUserByIdOrEmail(userId);
+          if (!existingUser && body.email) {
+            existingUser = await prisma.user.findFirst({
+              where: {
+                email: {
+                  equals: body.email.trim().toLowerCase(),
+                  mode: "insensitive",
+                },
+              },
+              include: { farmerProfile: true },
+            });
+          }
+
+          if (!existingUser) {
+            const isFarmer =
+              body.role?.toUpperCase() === "FARMER" ||
+              userId.startsWith("user_farmer_") ||
+              userId.startsWith("farmer_") ||
+              Boolean(body.farmName || body.coverUrl);
+            const slug = userId.replace(/^user_(farmer|client)_/, "").replace(/^farmer_/, "");
+            existingUser = await prisma.user.create({
+              data: {
+                id: userId.startsWith("farmer_") ? `user_${userId}` : userId,
+                fullName: body.fullName || body.name || (isFarmer ? "ფერმერი" : "მომხმარებელი"),
+                email: body.email?.trim().toLowerCase() || `${slug}@agrokera.ge`,
+                phoneNumber: `+995599${Math.floor(100000 + Math.random() * 900000)}`,
+                role: isFarmer ? Role.FARMER : Role.CLIENT,
+                verificationStatus: body.verificationStatus || VerificationStatus.VERIFIED,
+                avatarUrl: body.avatarUrl,
+                ...(isFarmer
+                  ? {
+                      farmerProfile: {
+                        create: {
+                          id: userId.startsWith("farmer_") ? userId : `farmer_${slug}`,
+                          farmName: body.farmName || "ჩემი მეურნეობა",
+                          region: body.region || "კახეთი",
+                          city: "თელავი",
+                          address: body.address || "თელავი, კახეთი",
+                          coverUrl: body.coverUrl,
+                          avatarUrl: body.avatarUrl,
+                          isVatPayer: body.isVatPayer ?? false,
+                        },
+                      },
+                    }
+                  : {}),
+              },
+              include: { farmerProfile: true },
+            });
+            return jsonResponse(existingUser);
+          }
 
           const resolvedFullName = body.fullName || body.name;
           const hasFarmerFieldUpdate = Boolean(
@@ -645,7 +704,7 @@ export default {
           );
 
           const user = await prisma.user.update({
-            where: { id: userId },
+            where: { id: existingUser.id },
             data: {
               ...(resolvedFullName ? { fullName: resolvedFullName } : {}),
               ...(body.avatarUrl ? { avatarUrl: body.avatarUrl } : {}),

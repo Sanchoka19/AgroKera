@@ -196,14 +196,15 @@ class FarmerOrderBottomBar extends StatelessWidget {
         child: Row(
           children: [
             Expanded(
-              flex: 1,
+              flex: 5,
               child: OutlinedButton.icon(
                 onPressed: onCancel,
                 icon: const Icon(LucideIcons.x, size: 16),
                 label: Text(
                   'უარყოფა',
+                  maxLines: 1,
                   style: GoogleFonts.notoSansGeorgian(
-                    fontSize: 13.5,
+                    fontSize: 13,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -213,6 +214,7 @@ class FarmerOrderBottomBar extends StatelessWidget {
                     color: Color(0xFFFECACA),
                     width: 1.2,
                   ),
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
                   minimumSize: const Size.fromHeight(48),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
@@ -220,9 +222,9 @@ class FarmerOrderBottomBar extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 10),
             Expanded(
-              flex: 2,
+              flex: 7,
               child: ElevatedButton.icon(
                 onPressed: isUpdating ? null : onAccept,
                 icon: isUpdating
@@ -237,8 +239,9 @@ class FarmerOrderBottomBar extends StatelessWidget {
                     : const Icon(LucideIcons.check, size: 18),
                 label: Text(
                   'შეკვეთის მიღება',
+                  maxLines: 1,
                   style: GoogleFonts.notoSansGeorgian(
-                    fontSize: 14.5,
+                    fontSize: 13.5,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -246,6 +249,7 @@ class FarmerOrderBottomBar extends StatelessWidget {
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
                   elevation: 0,
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
                   minimumSize: const Size.fromHeight(48),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),

@@ -10,6 +10,7 @@ import '../../../marketplace/presentation/providers/marketplace_provider.dart';
 import '../../data/orders_mock_data.dart';
 import '../../data/orders_repository.dart';
 import '../../domain/models/farmer_order_model.dart';
+import 'order_chat_provider.dart';
 
 final ordersRepositoryProvider = Provider<OrdersRepository>((ref) {
   final api = ref.watch(apiClientProvider);
@@ -437,6 +438,7 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
       clientOrders: state.clientOrders.map(update).toList(),
       inFlightOrderIds: {...state.inFlightOrderIds, id},
     );
+    ref.read(orderChatReadProvider.notifier).markAsRead(id);
 
     final error = await _syncStatus(id, status: OrderStatus.completed);
     if (error != null) {
@@ -488,6 +490,7 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
       clientOrders: state.clientOrders.map(setCancelled).toList(),
       inFlightOrderIds: {...state.inFlightOrderIds, id},
     );
+    ref.read(orderChatReadProvider.notifier).markAsRead(id);
 
     final error = await _syncStatus(
       id,

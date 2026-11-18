@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -21,6 +24,56 @@ class InventoryProductCard extends StatelessWidget {
     required this.onDelete,
   });
 
+  Widget _buildProductImage(String url) {
+    Widget fallback() => Container(
+          width: 64,
+          height: 64,
+          color: const Color(0xFFF1F5F9),
+          child: const Icon(
+            LucideIcons.package,
+            color: Color(0xFF94A3B8),
+          ),
+        );
+
+    if (url.startsWith('assets/')) {
+      return Image.asset(
+        url,
+        width: 64,
+        height: 64,
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) => fallback(),
+      );
+    }
+    if (url.startsWith('data:image/')) {
+      try {
+        final base64Str = url.split(',').last;
+        return Image.memory(
+          base64Decode(base64Str),
+          width: 64,
+          height: 64,
+          fit: BoxFit.cover,
+          errorBuilder: (_, _, _) => fallback(),
+        );
+      } catch (_) {}
+    }
+    if (!kIsWeb && File(url).existsSync()) {
+      return Image.file(
+        File(url),
+        width: 64,
+        height: 64,
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) => fallback(),
+      );
+    }
+    return Image.network(
+      url,
+      width: 64,
+      height: 64,
+      fit: BoxFit.cover,
+      errorBuilder: (_, _, _) => fallback(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isLow = product.stockQuantity > 0 && product.stockQuantity < 20;
@@ -43,12 +96,11 @@ class InventoryProductCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
@@ -58,21 +110,7 @@ class InventoryProductCard extends StatelessWidget {
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(12),
-                child: Image.network(
-                  product.imageUrl,
-                  width: 64,
-                  height: 64,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, _, _) => Container(
-                    width: 64,
-                    height: 64,
-                    color: const Color(0xFFF1F5F9),
-                    child: const Icon(
-                      LucideIcons.package,
-                      color: Color(0xFF94A3B8),
-                    ),
-                  ),
-                ),
+                child: _buildProductImage(product.imageUrl),
               ),
               const SizedBox(width: 12),
               Expanded(

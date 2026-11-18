@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:agrokera/core/theme/app_colors.dart';
@@ -28,17 +29,32 @@ class ProductQuantitySection extends StatefulWidget {
 
 class _ProductQuantitySectionState extends State<ProductQuantitySection> {
   late final TextEditingController _qtyController;
+  late final FocusNode _qtyFocusNode;
 
   @override
   void initState() {
     super.initState();
     _qtyController = TextEditingController(text: '${widget.quantity}');
+    _qtyFocusNode = FocusNode()
+      ..addListener(() {
+        if (!_qtyFocusNode.hasFocus) {
+          final parsed =
+              int.tryParse(_qtyController.text.trim()) ?? widget.quantity;
+          _updateQuantity(parsed);
+        } else {
+          _qtyController.selection = TextSelection(
+            baseOffset: 0,
+            extentOffset: _qtyController.text.length,
+          );
+        }
+      });
   }
 
   @override
   void didUpdateWidget(covariant ProductQuantitySection oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.quantity != widget.quantity &&
+        !_qtyFocusNode.hasFocus &&
         _qtyController.text != '${widget.quantity}') {
       _qtyController.text = '${widget.quantity}';
     }
@@ -47,6 +63,7 @@ class _ProductQuantitySectionState extends State<ProductQuantitySection> {
   @override
   void dispose() {
     _qtyController.dispose();
+    _qtyFocusNode.dispose();
     super.dispose();
   }
 
@@ -176,7 +193,7 @@ class _ProductQuantitySectionState extends State<ProductQuantitySection> {
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Decrement
+                      // Decrement (Circular)
                       InkWell(
                         onTap: widget.isOwner
                             ? null
@@ -193,13 +210,13 @@ class _ProductQuantitySectionState extends State<ProductQuantitySection> {
                                   );
                                 }
                               },
-                        borderRadius: BorderRadius.circular(10),
+                        customBorder: const CircleBorder(),
                         child: Container(
                           width: 34,
                           height: 34,
                           decoration: BoxDecoration(
                             color: AppColors.surface,
-                            borderRadius: BorderRadius.circular(10),
+                            shape: BoxShape.circle,
                             border: Border.all(
                               color: (widget.isOwner ||
                                       widget.quantity <=
@@ -221,20 +238,26 @@ class _ProductQuantitySectionState extends State<ProductQuantitySection> {
                           ),
                         ),
                       ),
+                      const SizedBox(width: 8),
 
                       // Direct Editable Number Input
                       Container(
                         height: 34,
                         constraints: const BoxConstraints(
-                          minWidth: 42,
-                          maxWidth: 64,
+                          minWidth: 46,
+                          maxWidth: 68,
                         ),
                         padding: const EdgeInsets.symmetric(horizontal: 4),
                         alignment: Alignment.center,
                         child: TextField(
                           controller: _qtyController,
+                          focusNode: _qtyFocusNode,
                           enabled: !widget.isOwner,
                           keyboardType: TextInputType.number,
+                          textInputAction: TextInputAction.done,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                          ],
                           textAlign: TextAlign.center,
                           style: AppTypography.titleMedium.copyWith(
                             fontSize: 16,
@@ -245,24 +268,32 @@ class _ProductQuantitySectionState extends State<ProductQuantitySection> {
                           ),
                           decoration: const InputDecoration(
                             border: InputBorder.none,
+                            enabledBorder: InputBorder.none,
+                            focusedBorder: InputBorder.none,
                             isDense: true,
+                            filled: false,
                             contentPadding: EdgeInsets.zero,
                           ),
                           onSubmitted: (val) {
                             final parsed =
-                                int.tryParse(val) ?? widget.quantity;
+                                int.tryParse(val.trim()) ?? widget.quantity;
                             _updateQuantity(parsed);
+                            _qtyFocusNode.unfocus();
                           },
                           onTapOutside: (_) {
-                            final parsed =
-                                int.tryParse(_qtyController.text) ??
-                                    widget.quantity;
-                            _updateQuantity(parsed);
+                            if (_qtyFocusNode.hasFocus) {
+                              final parsed =
+                                  int.tryParse(_qtyController.text.trim()) ??
+                                      widget.quantity;
+                              _updateQuantity(parsed);
+                              _qtyFocusNode.unfocus();
+                            }
                           },
                         ),
                       ),
+                      const SizedBox(width: 8),
 
-                      // Increment
+                      // Increment (Circular)
                       InkWell(
                         onTap: (isOutOfStock || widget.isOwner)
                             ? null
@@ -277,7 +308,7 @@ class _ProductQuantitySectionState extends State<ProductQuantitySection> {
                                   );
                                 }
                               },
-                        borderRadius: BorderRadius.circular(10),
+                        customBorder: const CircleBorder(),
                         child: Container(
                           width: 34,
                           height: 34,
@@ -287,7 +318,7 @@ class _ProductQuantitySectionState extends State<ProductQuantitySection> {
                                     widget.quantity >= product.stockQuantity
                                 ? AppColors.primary.withValues(alpha: 0.4)
                                 : AppColors.primary,
-                            borderRadius: BorderRadius.circular(10),
+                            shape: BoxShape.circle,
                           ),
                           alignment: Alignment.center,
                           child: const Icon(

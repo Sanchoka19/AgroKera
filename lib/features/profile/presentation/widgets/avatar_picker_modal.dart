@@ -48,7 +48,9 @@ class AvatarPickerModal extends StatelessWidget {
       }
 
       final success = await authNotifier.uploadAvatar(file);
-      unawaited(marketplaceNotifier.refreshFromBackend());
+      if (success) {
+        unawaited(marketplaceNotifier.refreshFromBackend());
+      }
 
       if (context.mounted) {
         if (success) {

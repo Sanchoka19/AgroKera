@@ -137,15 +137,15 @@ class FarmerInventoryNotifier extends Notifier<FarmerInventoryState> {
 
   Future<PickedProductPhoto> _uploadCompressedXFile(XFile file) async {
     final bytes = await file.readAsBytes();
-    String uploadedUrl =
-        'https://images.unsplash.com/photo-1542838132-92c53300491e?w=600&auto=format&fit=crop&q=80';
+    final base64Str = base64Encode(bytes);
+    String uploadedUrl = 'data:image/jpeg;base64,$base64Str';
     try {
       final api = ref.read(apiClientProvider);
       final response = await api.post<Map<String, dynamic>>(
         '/api/upload',
         data: {
           'fileName': file.name,
-          'base64Data': base64Encode(bytes),
+          'base64Data': base64Str,
           'contentType': 'image/jpeg',
           'folder': 'products',
         },

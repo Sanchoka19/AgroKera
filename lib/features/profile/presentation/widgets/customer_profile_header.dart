@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -40,6 +41,20 @@ class CustomerProfileHeader extends StatelessWidget {
           child: Icon(LucideIcons.user, size: size, color: AppColors.primary),
         ),
       );
+    }
+    if (url.startsWith('data:image/')) {
+      try {
+        final base64Str = url.split(',').last;
+        return Image.memory(
+          base64Decode(base64Str),
+          fit: BoxFit.cover,
+          errorBuilder: (_, _, _) => Container(
+            color: AppColors.primaryLight,
+            alignment: Alignment.center,
+            child: Icon(LucideIcons.user, size: size, color: AppColors.primary),
+          ),
+        );
+      } catch (_) {}
     }
     if (!kIsWeb && File(url).existsSync()) {
       return Image.file(

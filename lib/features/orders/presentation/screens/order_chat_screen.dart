@@ -16,7 +16,6 @@ import '../widgets/order_chat/order_chat_card_bubble.dart';
 import '../widgets/order_chat/order_chat_intercom_dialog.dart';
 import '../widgets/order_chat/order_chat_pin_dialog.dart';
 import '../widgets/order_chat/order_chat_quick_actions_sheet.dart';
-import '../../../notifications/presentation/providers/notifications_provider.dart';
 
 /// Live Order Communication Chat Screen between Farmer & Customer
 class OrderChatScreen extends ConsumerStatefulWidget {
@@ -44,9 +43,7 @@ class _OrderChatScreenState extends ConsumerState<OrderChatScreen> {
     unawaited(
       Future.microtask(() {
         ref.read(orderChatProvider.notifier).loadMessages(widget.order.id);
-        ref
-            .read(notificationsProvider.notifier)
-            .markOrderChatNotificationsAsRead(widget.order.id);
+        ref.read(orderChatReadProvider.notifier).markAsRead(widget.order.id);
       }),
     );
 
@@ -54,6 +51,7 @@ class _OrderChatScreenState extends ConsumerState<OrderChatScreen> {
     _liveSyncTimer = Timer.periodic(const Duration(milliseconds: 2500), (_) {
       if (mounted) {
         ref.read(orderChatProvider.notifier).syncMessages(widget.order.id);
+        ref.read(orderChatReadProvider.notifier).markAsRead(widget.order.id);
       }
     });
   }

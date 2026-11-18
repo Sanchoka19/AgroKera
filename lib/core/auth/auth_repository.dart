@@ -91,6 +91,13 @@ class AuthRepository {
     } catch (_) {}
   }
 
+  Future<Map<String, dynamic>?> getProfile(String userId) async {
+    final response = await _api.get<Map<String, dynamic>>(
+      '/api/profile/$userId',
+    );
+    return response.data;
+  }
+
   Future<void> patchProfile(String userId, Map<String, dynamic> data) async {
     await _api.patch('/api/profile/$userId', data: data);
   }

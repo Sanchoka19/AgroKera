@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/animations/bounce_tap.dart';
 import '../../data/models/notification_model.dart';
 
 /// Presentation card widget for a single notification item in NotificationsScreen.
@@ -107,8 +108,9 @@ class NotificationCard extends StatelessWidget {
         ),
       ),
       onDismissed: (_) => onDismiss(),
-      child: GestureDetector(
+      child: BounceTap(
         onTap: onTap,
+        scaleDown: 0.98,
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(

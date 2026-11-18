@@ -7,7 +7,7 @@ import 'package:agrokera/features/marketplace/data/models/product_model.dart';
 
 /// Sticky Bottom Bar containing total price computation, strike-through original prices,
 /// overlapping discount tag badge, and the "დამატება" PrimaryButton.
-class ProductBottomBar extends StatelessWidget {
+class ProductBottomBar extends StatefulWidget {
   final ProductModel product;
   final int quantity;
   final GlobalKey addButtonKey;
@@ -24,7 +24,33 @@ class ProductBottomBar extends StatelessWidget {
   });
 
   @override
+  State<ProductBottomBar> createState() => _ProductBottomBarState();
+}
+
+class _ProductBottomBarState extends State<ProductBottomBar> {
+  bool _isSuccess = false;
+
+  void _handleTap() {
+    widget.onAddToCart();
+    if (!widget.isOwner &&
+        widget.product.isAvailable &&
+        widget.product.stockQuantity > 0) {
+      if (mounted) {
+        setState(() => _isSuccess = true);
+        Future.delayed(const Duration(milliseconds: 750), () {
+          if (mounted) {
+            setState(() => _isSuccess = false);
+          }
+        });
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final product = widget.product;
+    final quantity = widget.quantity;
+    final isOwner = widget.isOwner;
     final isOutOfStock = !product.isAvailable || product.stockQuantity <= 0;
     final isBulkActive =
         product.hasBulkDiscount && quantity >= product.bulkDiscountMinQty!;
@@ -109,24 +135,34 @@ class ProductBottomBar extends StatelessWidget {
               const SizedBox(width: 20),
               Expanded(
                 child: PrimaryButton(
-                  key: addButtonKey,
+                  key: widget.addButtonKey,
+                  backgroundColor:
+                      _isSuccess ? const Color(0xFF16A34A) : AppColors.primary,
                   text: isOwner
                       ? 'თქვენი პროდუქტი'
-                      : (isOutOfStock ? 'მარაგში აღარ არის' : 'დამატება'),
+                      : (isOutOfStock
+                          ? 'მარაგში აღარ არის'
+                          : (_isSuccess ? 'დამატებულია' : 'დამატება')),
                   icon: isOwner
                       ? const Icon(
                           LucideIcons.ban,
                           size: 18,
                           color: Colors.white,
                         )
-                      : (isOutOfStock
-                          ? null
-                          : const Icon(
-                              LucideIcons.shoppingCart,
+                      : (_isSuccess
+                          ? const Icon(
+                              LucideIcons.check,
                               size: 20,
                               color: Colors.white,
-                            )),
-                  onPressed: (isOwner || isOutOfStock) ? null : onAddToCart,
+                            )
+                          : (isOutOfStock
+                              ? null
+                              : const Icon(
+                                  LucideIcons.shoppingCart,
+                                  size: 20,
+                                  color: Colors.white,
+                                ))),
+                  onPressed: (isOwner || isOutOfStock) ? null : _handleTap,
                 ),
               ),
             ],

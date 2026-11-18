@@ -29,6 +29,9 @@ class AvatarPickerModal extends StatelessWidget {
     WidgetRef ref,
     ImageSource source,
   ) async {
+    final authNotifier = ref.read(authStateProvider.notifier);
+    final marketplaceNotifier = ref.read(marketplaceProvider.notifier);
+
     try {
       final XFile? file = await ImagePicker().pickImage(
         source: source,
@@ -38,13 +41,14 @@ class AvatarPickerModal extends StatelessWidget {
         preferredCameraDevice: CameraDevice.front,
       );
 
-      if (file == null || !context.mounted) return;
+      if (file == null) return;
 
-      AppToast.info(context, 'პროფილის ფოტო იტვირთება...');
+      if (context.mounted) {
+        AppToast.info(context, 'პროფილის ფოტო იტვირთება...');
+      }
 
-      final success =
-          await ref.read(authStateProvider.notifier).uploadAvatar(file);
-      unawaited(ref.read(marketplaceProvider.notifier).refreshFromBackend());
+      final success = await authNotifier.uploadAvatar(file);
+      unawaited(marketplaceNotifier.refreshFromBackend());
 
       if (context.mounted) {
         if (success) {
@@ -122,8 +126,9 @@ class AvatarPickerModal extends StatelessWidget {
                     style: GoogleFonts.notoSansGeorgian(fontSize: 12, color: const Color(0xFF64748B)),
                   ),
                   onTap: () {
+                    final navContext = Navigator.of(context).context;
                     Navigator.pop(context);
-                    pickAndUploadAvatar(context, ref, ImageSource.camera);
+                    pickAndUploadAvatar(navContext, ref, ImageSource.camera);
                   },
                 ),
                 const Divider(height: 1, color: Color(0xFFF1F5F9)),
@@ -150,8 +155,9 @@ class AvatarPickerModal extends StatelessWidget {
                     style: GoogleFonts.notoSansGeorgian(fontSize: 12, color: const Color(0xFF64748B)),
                   ),
                   onTap: () {
+                    final navContext = Navigator.of(context).context;
                     Navigator.pop(context);
-                    pickAndUploadAvatar(context, ref, ImageSource.gallery);
+                    pickAndUploadAvatar(navContext, ref, ImageSource.gallery);
                   },
                 ),
               ],

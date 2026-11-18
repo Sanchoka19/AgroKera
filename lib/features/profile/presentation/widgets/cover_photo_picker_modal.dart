@@ -26,6 +26,8 @@ class CoverPhotoPickerModal extends StatelessWidget {
   }
 
   static void showPresetPicker(BuildContext context, WidgetRef ref) {
+    final authNotifier = ref.read(authStateProvider.notifier);
+    final marketplaceNotifier = ref.read(marketplaceProvider.notifier);
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.white,
@@ -55,18 +57,14 @@ class CoverPhotoPickerModal extends StatelessWidget {
                     scrollDirection: Axis.horizontal,
                     itemCount: FarmerOnboardingState.presetFarmCovers.length,
                     separatorBuilder: (_, _) => const SizedBox(width: 12),
-                    itemBuilder: (context, index) {
+                    itemBuilder: (itemCtx, index) {
                       final preset =
                           FarmerOnboardingState.presetFarmCovers[index];
                       return GestureDetector(
                         onTap: () async {
                           Navigator.pop(ctx);
-                          await ref
-                              .read(authStateProvider.notifier)
-                              .updateFarmCoverUrl(preset['url']!);
-                          unawaited(ref
-                              .read(marketplaceProvider.notifier)
-                              .refreshFromBackend());
+                          await authNotifier.updateFarmCoverUrl(preset['url']!);
+                          unawaited(marketplaceNotifier.refreshFromBackend());
                           if (context.mounted) {
                             AppToast.success(
                               context,
@@ -169,30 +167,38 @@ class CoverPhotoPickerModal extends StatelessWidget {
                   ),
                   subtitle: const Text('გადაუღე ფერმას ან მეურნეობას'),
                   onTap: () async {
+                    final navContext = Navigator.of(context).context;
+                    final authNotifier = ref.read(authStateProvider.notifier);
+                    final marketplaceNotifier =
+                        ref.read(marketplaceProvider.notifier);
                     Navigator.pop(context);
                     try {
                       final XFile? file = await ImagePicker().pickImage(
                         source: ImageSource.camera,
                         imageQuality: 85,
                       );
-                      if (file != null && context.mounted) {
-                        AppToast.info(context, 'გარეკანის ფოტო იტვირთება...');
-                        await ref
-                            .read(authStateProvider.notifier)
-                            .uploadFarmCover(file);
-                        unawaited(ref
-                            .read(marketplaceProvider.notifier)
-                            .refreshFromBackend());
-                        if (context.mounted) {
+                      if (file != null) {
+                        if (navContext.mounted) {
+                          AppToast.info(
+                            navContext,
+                            'გარეკანის ფოტო იტვირთება...',
+                          );
+                        }
+                        await authNotifier.uploadFarmCover(file);
+                        unawaited(marketplaceNotifier.refreshFromBackend());
+                        if (navContext.mounted) {
                           AppToast.success(
-                            context,
+                            navContext,
                             'გარეკანის ფოტო წარმატებით განახლდა!',
                           );
                         }
                       }
                     } catch (_) {
-                      if (context.mounted) {
-                        AppToast.error(context, 'კამერის გახსნა ვერ მოხერხდა');
+                      if (navContext.mounted) {
+                        AppToast.error(
+                          navContext,
+                          'კამერის გახსნა ვერ მოხერხდა',
+                        );
                       }
                     }
                   },
@@ -208,30 +214,38 @@ class CoverPhotoPickerModal extends StatelessWidget {
                   ),
                   subtitle: const Text('ატვირთე ლანდშაფტური სურათი'),
                   onTap: () async {
+                    final navContext = Navigator.of(context).context;
+                    final authNotifier = ref.read(authStateProvider.notifier);
+                    final marketplaceNotifier =
+                        ref.read(marketplaceProvider.notifier);
                     Navigator.pop(context);
                     try {
                       final XFile? file = await ImagePicker().pickImage(
                         source: ImageSource.gallery,
                         imageQuality: 85,
                       );
-                      if (file != null && context.mounted) {
-                        AppToast.info(context, 'გარეკანის ფოტო იტვირთება...');
-                        await ref
-                            .read(authStateProvider.notifier)
-                            .uploadFarmCover(file);
-                        unawaited(ref
-                            .read(marketplaceProvider.notifier)
-                            .refreshFromBackend());
-                        if (context.mounted) {
+                      if (file != null) {
+                        if (navContext.mounted) {
+                          AppToast.info(
+                            navContext,
+                            'გარეკანის ფოტო იტვირთება...',
+                          );
+                        }
+                        await authNotifier.uploadFarmCover(file);
+                        unawaited(marketplaceNotifier.refreshFromBackend());
+                        if (navContext.mounted) {
                           AppToast.success(
-                            context,
+                            navContext,
                             'გარეკანის ფოტო წარმატებით განახლდა!',
                           );
                         }
                       }
                     } catch (_) {
-                      if (context.mounted) {
-                        AppToast.error(context, 'ფოტოს არჩევა ვერ მოხერხდა');
+                      if (navContext.mounted) {
+                        AppToast.error(
+                          navContext,
+                          'ფოტოს არჩევა ვერ მოხერხდა',
+                        );
                       }
                     }
                   },
@@ -249,8 +263,9 @@ class CoverPhotoPickerModal extends StatelessWidget {
                     'მზა თემატური ფოტოები (ვენახი, ბაღი, სათბური)',
                   ),
                   onTap: () {
+                    final navContext = Navigator.of(context).context;
                     Navigator.pop(context);
-                    showPresetPicker(context, ref);
+                    showPresetPicker(navContext, ref);
                   },
                 ),
               ],

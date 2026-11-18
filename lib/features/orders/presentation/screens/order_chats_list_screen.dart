@@ -11,16 +11,17 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_filter_tab.dart';
 import '../../../../core/widgets/app_header.dart';
 import '../../domain/models/farmer_order_model.dart';
-import '../../domain/models/order_message_model.dart';
 import '../providers/farmer_orders_provider.dart';
 import '../providers/order_chat_provider.dart';
+import '../widgets/order_chat/order_chat_card_tile.dart';
+import '../widgets/order_chat/order_chat_section_header.dart';
 import 'order_chat_screen.dart';
 
 /// Segmented tab for filtering chats
-enum OrderChatTab { all, active, old }
+enum OrderChatTab { active, old, all }
 
 /// Dedicated Screen for Order Chat Conversations ("შეკვეთის ჩათები")
-/// Displays active and past order communication hubs
+/// Displays smart-ordered and grouped active and archive communication hubs
 class OrderChatsListScreen extends ConsumerStatefulWidget {
   const OrderChatsListScreen({super.key});
 
@@ -69,38 +70,14 @@ class _OrderChatsListScreenState extends ConsumerState<OrderChatsListScreen> {
     super.dispose();
   }
 
-  String _formatDate(DateTime dt) {
-    const months = [
-      'იან',
-      'თებ',
-      'მარ',
-      'აპრ',
-      'მაი',
-      'ივნ',
-      'ივლ',
-      'აგვ',
-      'სექ',
-      'ოქტ',
-      'ნოე',
-      'დეკ'
-    ];
-    final now = DateTime.now();
-    final isToday =
-        now.year == dt.year && now.month == dt.month && now.day == dt.day;
-
-    final h = dt.hour.toString().padLeft(2, '0');
-    final min = dt.minute.toString().padLeft(2, '0');
-
-    if (isToday) {
-      return '$h:$min';
-    }
-    final m = months[dt.month - 1];
-    return '${dt.day} $m, $h:$min';
-  }
-
-  String _shortId(String id) {
-    if (id.length <= 8) return id;
-    return id.substring(0, 8);
+  void _openChat(FarmerOrder order) {
+    HapticFeedback.lightImpact();
+    ref.read(orderChatReadProvider.notifier).markAsRead(order.id);
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => OrderChatScreen(order: order),
+      ),
+    );
   }
 
   @override
@@ -108,12 +85,19 @@ class _OrderChatsListScreenState extends ConsumerState<OrderChatsListScreen> {
     final auth = ref.watch(authStateProvider);
     final isFarmer = auth.role == UserRole.farmer;
     final ordersState = ref.watch(farmerOrdersProvider);
+    final chatMap = ref.watch(orderChatProvider);
 
-    // For farmer: incoming customer orders; For regular user: client orders
+    // Role-based order isolation
     final allOrders =
         isFarmer ? ordersState.incomingOrders : ordersState.clientOrders;
 
-    final activeOrders = allOrders
+    final unreadOrderIds = <String>{
+      for (final o in allOrders)
+        if (ref.watch(isOrderChatUnreadProvider(o.id))) o.id,
+    };
+
+    // Filter into active (Pending / InProgress) and old (Completed / Cancelled)
+    final unrankedActive = allOrders
         .where(
           (o) =>
               o.status == OrderStatus.pending ||
@@ -121,7 +105,7 @@ class _OrderChatsListScreenState extends ConsumerState<OrderChatsListScreen> {
         )
         .toList();
 
-    final oldOrders = allOrders
+    final unrankedOld = allOrders
         .where(
           (o) =>
               o.status == OrderStatus.completed ||
@@ -129,11 +113,14 @@ class _OrderChatsListScreenState extends ConsumerState<OrderChatsListScreen> {
         )
         .toList();
 
-    final displayedOrders = switch (_selectedTab) {
-      OrderChatTab.all => allOrders,
-      OrderChatTab.active => activeOrders,
-      OrderChatTab.old => oldOrders,
-    };
+    // Smart Ordering via OrderChatSorter
+    final sortedActiveOrders = OrderChatSorter.sortByUrgencyAndActivity(
+      unrankedActive,
+      chatMap,
+      unreadOrderIds: unreadOrderIds,
+    );
+    final sortedOldOrders =
+        OrderChatSorter.sortByLatestActivity(unrankedOld, chatMap);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
@@ -148,7 +135,7 @@ class _OrderChatsListScreenState extends ConsumerState<OrderChatsListScreen> {
               padding: EdgeInsets.fromLTRB(20, 12, 20, 8),
             ),
 
-            // Horizontally Scrollable Tab Filter Bar (Zero Overflow)
+            // Filter Tabs Bar
             SizedBox(
               height: 48,
               child: ListView(
@@ -158,7 +145,7 @@ class _OrderChatsListScreenState extends ConsumerState<OrderChatsListScreen> {
                 children: [
                   AppFilterTab(
                     label: 'აქტიური',
-                    count: activeOrders.length,
+                    count: sortedActiveOrders.length,
                     showZeroCount: true,
                     isSelected: _selectedTab == OrderChatTab.active,
                     onTap: () =>
@@ -167,7 +154,7 @@ class _OrderChatsListScreenState extends ConsumerState<OrderChatsListScreen> {
                   const SizedBox(width: 8),
                   AppFilterTab(
                     label: 'ძველი',
-                    count: oldOrders.length,
+                    count: sortedOldOrders.length,
                     showZeroCount: true,
                     isSelected: _selectedTab == OrderChatTab.old,
                     onTap: () => setState(() => _selectedTab = OrderChatTab.old),
@@ -186,7 +173,7 @@ class _OrderChatsListScreenState extends ConsumerState<OrderChatsListScreen> {
 
             const SizedBox(height: 6),
 
-            // Orders Chat List
+            // Content List
             Expanded(
               child: RefreshIndicator(
                 color: AppColors.primary,
@@ -196,294 +183,216 @@ class _OrderChatsListScreenState extends ConsumerState<OrderChatsListScreen> {
                       .refreshFromBackend();
                   _preloadOrderMessages();
                 },
-                child: displayedOrders.isEmpty
-                    ? LayoutBuilder(
-                        builder: (context, constraints) => SingleChildScrollView(
-                          physics: const AlwaysScrollableScrollPhysics(
-                            parent: BouncingScrollPhysics(),
-                          ),
-                          child: ConstrainedBox(
-                            constraints: BoxConstraints(
-                              minHeight: constraints.maxHeight,
-                              minWidth: constraints.maxWidth,
-                            ),
-                            child: _buildEmptyState(),
-                          ),
-                        ),
-                      )
-                    : ListView.separated(
-                        physics: const AlwaysScrollableScrollPhysics(
-                          parent: ClampingScrollPhysics(),
-                        ),
-                        padding: const EdgeInsets.fromLTRB(20, 6, 20, 32),
-                        itemCount: displayedOrders.length,
-                        separatorBuilder: (_, _) => const SizedBox(height: 12),
-                        itemBuilder: (context, index) {
-                          final order = displayedOrders[index];
-                          return _buildChatCard(order, isFarmer);
-                        },
-                      ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-
-  Widget _buildChatCard(FarmerOrder order, bool isFarmer) {
-    final chatMap = ref.watch(orderChatProvider);
-    final messages = chatMap[order.id];
-    final OrderMessage? lastMessage =
-        (messages != null && messages.isNotEmpty) ? messages.last : null;
-
-    final isActive =
-        order.status == OrderStatus.pending ||
-        order.status == OrderStatus.inProgress;
-
-    // Display title
-    final titleText = isFarmer
-        ? order.customerName
-        : (order.contactPerson.isNotEmpty &&
-                order.contactPerson != 'მყიდველი'
-            ? order.contactPerson
-            : 'შეკვეთა #${_shortId(order.id)}');
-
-    final displayTime = _formatDate(lastMessage?.createdAt ?? order.createdAt);
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () {
-          HapticFeedback.lightImpact();
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => OrderChatScreen(order: order),
-            ),
-          );
-        },
-        borderRadius: BorderRadius.circular(18),
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(
-              color: isActive
-                  ? AppColors.primary.withValues(alpha: 0.25)
-                  : const Color(0xFFE2E8F0),
-              width: isActive ? 1.5 : 1.0,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
-                blurRadius: 10,
-                offset: const Offset(0, 3),
-              ),
-            ],
-          ),
-          padding: const EdgeInsets.all(14),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Avatar with active pulse indicator
-              Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: isActive
-                          ? AppColors.primary.withValues(alpha: 0.1)
-                          : const Color(0xFFF1F5F9),
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: isActive
-                            ? AppColors.primary.withValues(alpha: 0.25)
-                            : const Color(0xFFE2E8F0),
-                        width: 1.5,
-                      ),
-                    ),
-                    child: Icon(
-                      isFarmer ? LucideIcons.user : LucideIcons.store,
-                      size: 22,
-                      color: isActive
-                          ? AppColors.primary
-                          : const Color(0xFF64748B),
-                    ),
-                  ),
-                  if (isActive)
-                    Positioned(
-                      bottom: 0,
-                      right: 0,
-                      child: Container(
-                        width: 13,
-                        height: 13,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF10B981),
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 2),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-
-              const SizedBox(width: 12),
-
-              // Chat Content
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Top: Title & Time
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            titleText,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.notoSansGeorgian(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w700,
-                              color: const Color(0xFF0F172A),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          displayTime,
-                          style: GoogleFonts.notoSansGeorgian(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                            color: const Color(0xFF94A3B8),
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 3),
-
-                    // Products summary & total
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            '${order.productsSummary} • ${order.totalAmount.toStringAsFixed(1)} ₾',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.notoSansGeorgian(
-                              fontSize: 12,
-                              color: const Color(0xFF64748B),
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 8),
-
-                    // Last message preview & Status pill
-                    Row(
-                      children: [
-                        const Icon(
-                          LucideIcons.messageSquare,
-                          size: 13,
-                          color: AppColors.primary,
-                        ),
-                        const SizedBox(width: 6),
-                        Expanded(
-                          child: Text(
-                            lastMessage != null
-                                ? (lastMessage.isSystem
-                                    ? 'სისტემა: ${lastMessage.text}'
-                                    : '${lastMessage.senderName}: ${lastMessage.text}')
-                                : 'დააჭირეთ ჩათის გასახსნელად...',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.notoSansGeorgian(
-                              fontSize: 12.5,
-                              fontWeight: lastMessage != null
-                                  ? FontWeight.w600
-                                  : FontWeight.w400,
-                              color: lastMessage != null
-                                  ? const Color(0xFF334155)
-                                  : const Color(0xFF94A3B8),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 3,
-                          ),
-                          decoration: BoxDecoration(
-                            color: order.status.badgeBg,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            order.status.label,
-                            style: GoogleFonts.notoSansGeorgian(
-                              fontSize: 10.5,
-                              fontWeight: FontWeight.w700,
-                              color: order.status.color,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+                child: _buildBody(
+                  activeOrders: sortedActiveOrders,
+                  oldOrders: sortedOldOrders,
+                  isFarmer: isFarmer,
+                  chatMap: chatMap,
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildEmptyState() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
+  Widget _buildBody({
+    required List<FarmerOrder> activeOrders,
+    required List<FarmerOrder> oldOrders,
+    required bool isFarmer,
+    required Map<String, dynamic> chatMap,
+  }) {
+    switch (_selectedTab) {
+      case OrderChatTab.active:
+        if (activeOrders.isEmpty) {
+          return _buildScrollableEmptyState(
+            title: 'აქტიური ჩათები არ არის',
+            subtitle:
+                'შეკვეთის მიღების ან გაფორმების შემდეგ აქ გამოჩნდება აქტიური ჩატი დეტალების დასაზუსტებლად.',
+          );
+        }
+        return ListView.separated(
+          physics: const AlwaysScrollableScrollPhysics(
+            parent: ClampingScrollPhysics(),
+          ),
+          padding: const EdgeInsets.fromLTRB(20, 6, 20, 32),
+          itemCount: activeOrders.length,
+          separatorBuilder: (_, _) => const SizedBox(height: 12),
+          itemBuilder: (context, index) {
+            final order = activeOrders[index];
+            final messages = ref.watch(orderChatProvider)[order.id];
+            final lastMessage =
+                (messages != null && messages.isNotEmpty) ? messages.last : null;
+            return OrderChatCardTile(
+              order: order,
+              lastMessage: lastMessage,
+              isFarmer: isFarmer,
+              hasUnread: ref.watch(isOrderChatUnreadProvider(order.id)),
+              onTap: () => _openChat(order),
+            );
+          },
+        );
+
+      case OrderChatTab.old:
+        if (oldOrders.isEmpty) {
+          return _buildScrollableEmptyState(
+            title: 'არქივი ცარიელია',
+            subtitle:
+                'დასრულებული და გაუქმებული შეკვეთების მიმოწერები შეინახება არქივში.',
+          );
+        }
+        return ListView.separated(
+          physics: const AlwaysScrollableScrollPhysics(
+            parent: ClampingScrollPhysics(),
+          ),
+          padding: const EdgeInsets.fromLTRB(20, 6, 20, 32),
+          itemCount: oldOrders.length,
+          separatorBuilder: (_, _) => const SizedBox(height: 12),
+          itemBuilder: (context, index) {
+            final order = oldOrders[index];
+            final messages = ref.watch(orderChatProvider)[order.id];
+            final lastMessage =
+                (messages != null && messages.isNotEmpty) ? messages.last : null;
+            return OrderChatCardTile(
+              order: order,
+              lastMessage: lastMessage,
+              isFarmer: isFarmer,
+              hasUnread: ref.watch(isOrderChatUnreadProvider(order.id)),
+              onTap: () => _openChat(order),
+            );
+          },
+        );
+
+      case OrderChatTab.all:
+        if (activeOrders.isEmpty && oldOrders.isEmpty) {
+          return _buildScrollableEmptyState(
+            title: 'ჩათები არ მოიძებნა',
+            subtitle:
+                'შეკვეთის გაფორმების შემდეგ აქ გამოჩნდება პირდაპირი ჩატი მხარეებს შორის.',
+          );
+        }
+
+        return ListView(
+          physics: const AlwaysScrollableScrollPhysics(
+            parent: ClampingScrollPhysics(),
+          ),
+          padding: const EdgeInsets.fromLTRB(20, 6, 20, 32),
           children: [
-            SvgPicture.asset(
-              AppAssets.emptyChats,
-              width: 200,
-              height: 200,
-              fit: BoxFit.contain,
-            ),
-            const SizedBox(height: 20),
-            Text(
-              _selectedTab == OrderChatTab.active
-                  ? 'აქტიური ჩათები არ არის'
-                  : 'ჩათები არ მოიძებნა',
-              textAlign: TextAlign.center,
-              style: GoogleFonts.notoSansGeorgian(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: const Color(0xFF0F172A),
+            // Active Section
+            if (activeOrders.isNotEmpty) ...[
+              OrderChatSectionHeader(
+                icon: LucideIcons.messageSquare,
+                title: 'აქტიური მიმოწერები',
+                count: activeOrders.length,
+                iconColor: AppColors.primary,
+                badgeBg: AppColors.primary.withValues(alpha: 0.1),
+                badgeTextColor: AppColors.primary,
               ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'შეკვეთის გაფორმების შემდეგ აქ გამოჩნდება პირდაპირი ჩატი ფერმერთან დეტალების დასაზუსტებლად.',
-              textAlign: TextAlign.center,
-              style: GoogleFonts.notoSansGeorgian(
-                fontSize: 13.5,
-                color: const Color(0xFF64748B),
-                height: 1.45,
+              ...activeOrders.map((order) {
+                final messages = ref.watch(orderChatProvider)[order.id];
+                final lastMessage =
+                    (messages != null && messages.isNotEmpty)
+                        ? messages.last
+                        : null;
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: OrderChatCardTile(
+                    order: order,
+                    lastMessage: lastMessage,
+                    isFarmer: isFarmer,
+                    hasUnread: ref.watch(isOrderChatUnreadProvider(order.id)),
+                    onTap: () => _openChat(order),
+                  ),
+                );
+              }),
+            ],
+
+            // Archive Section
+            if (oldOrders.isNotEmpty) ...[
+              OrderChatSectionHeader(
+                icon: LucideIcons.archive,
+                title: 'არქივი / დასრულებული',
+                count: oldOrders.length,
+                iconColor: const Color(0xFF64748B),
+                badgeBg: const Color(0xFFF1F5F9),
+                badgeTextColor: const Color(0xFF64748B),
               ),
-            ),
+              ...oldOrders.map((order) {
+                final messages = ref.watch(orderChatProvider)[order.id];
+                final lastMessage =
+                    (messages != null && messages.isNotEmpty)
+                        ? messages.last
+                        : null;
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: OrderChatCardTile(
+                    order: order,
+                    lastMessage: lastMessage,
+                    isFarmer: isFarmer,
+                    hasUnread: ref.watch(isOrderChatUnreadProvider(order.id)),
+                    onTap: () => _openChat(order),
+                  ),
+                );
+              }),
+            ],
           ],
+        );
+    }
+  }
+
+  Widget _buildScrollableEmptyState({
+    required String title,
+    required String subtitle,
+  }) {
+    return LayoutBuilder(
+      builder: (context, constraints) => SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(
+          parent: BouncingScrollPhysics(),
+        ),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            minHeight: constraints.maxHeight,
+            minWidth: constraints.maxWidth,
+          ),
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  SvgPicture.asset(
+                    AppAssets.emptyChats,
+                    width: 190,
+                    height: 190,
+                    fit: BoxFit.contain,
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    title,
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.notoSansGeorgian(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: const Color(0xFF0F172A),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    subtitle,
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.notoSansGeorgian(
+                      fontSize: 13.5,
+                      color: const Color(0xFF64748B),
+                      height: 1.45,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
       ),
     );

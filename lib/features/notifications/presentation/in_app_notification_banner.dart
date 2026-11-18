@@ -53,6 +53,7 @@ class InAppNotificationBanner {
       icon: icon,
       duration: const Duration(seconds: 4),
       actionLabel: 'ნახვა',
+      sendToBell: true,
       onAction: () {
         NotificationNavigator.open(
           container: container,

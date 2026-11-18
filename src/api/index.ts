@@ -614,6 +614,7 @@ export default {
         if (method === "PATCH") {
           const body = (await request.json()) as {
             fullName?: string;
+            name?: string;
             verificationStatus?: VerificationStatus;
             farmName?: string;
             region?: string;
@@ -625,22 +626,33 @@ export default {
             isVatPayer?: boolean;
           };
 
+          const existingUser = await prisma.user.findUnique({
+            where: { id: userId },
+            include: { farmerProfile: true },
+          });
+          if (!existingUser) return errorResponse("User not found", 404);
+
+          const resolvedFullName = body.fullName || body.name;
+          const hasFarmerFieldUpdate = Boolean(
+            body.farmName ||
+              body.region ||
+              body.address ||
+              body.idCardFrontUrl ||
+              body.idCardBackUrl ||
+              body.coverUrl ||
+              body.avatarUrl ||
+              body.isVatPayer !== undefined
+          );
+
           const user = await prisma.user.update({
             where: { id: userId },
             data: {
-              ...(body.fullName ? { fullName: body.fullName } : {}),
+              ...(resolvedFullName ? { fullName: resolvedFullName } : {}),
               ...(body.avatarUrl ? { avatarUrl: body.avatarUrl } : {}),
               ...(body.verificationStatus
                 ? { verificationStatus: body.verificationStatus }
                 : {}),
-              ...(body.farmName ||
-                body.region ||
-                body.address ||
-                body.idCardFrontUrl ||
-                body.idCardBackUrl ||
-                body.coverUrl ||
-                body.avatarUrl ||
-                body.isVatPayer !== undefined
+              ...(existingUser.farmerProfile && hasFarmerFieldUpdate
                 ? {
                   farmerProfile: {
                     update: {
@@ -691,6 +703,7 @@ export default {
           isVatPayer: f.isVatPayer,
           avatarUrl:
             f.avatarUrl ||
+            f.user.avatarUrl ||
             "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80",
           coverUrl:
             f.coverUrl ||

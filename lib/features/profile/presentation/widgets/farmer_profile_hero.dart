@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:ui';
 import 'package:flutter/foundation.dart';
@@ -14,6 +15,7 @@ import '../../../../core/widgets/auth_required_bottom_sheet.dart';
 import '../../../marketplace/presentation/providers/marketplace_provider.dart';
 import '../../../notifications/presentation/providers/notifications_provider.dart';
 import '../../../notifications/presentation/screens/notifications_screen.dart';
+import '../../../orders/presentation/providers/order_chat_provider.dart';
 import '../../../orders/presentation/screens/order_chats_list_screen.dart';
 import 'avatar_picker_modal.dart';
 import 'cover_photo_picker_modal.dart';
@@ -43,6 +45,17 @@ class FarmerProfileHero extends ConsumerWidget {
             Container(color: AppColors.primaryLight),
       );
     }
+    if (url.startsWith('data:image/')) {
+      try {
+        final base64Str = url.split(',').last;
+        return Image.memory(
+          base64Decode(base64Str),
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) =>
+              Container(color: AppColors.primaryLight),
+        );
+      } catch (_) {}
+    }
     if (!kIsWeb && File(url).existsSync()) {
       return Image.file(
         File(url),
@@ -65,6 +78,17 @@ class FarmerProfileHero extends ConsumerWidget {
         errorBuilder: (context, error, stackTrace) =>
             _buildPlaceholderAvatar(size),
       );
+    }
+    if (avatarUrl.startsWith('data:image/')) {
+      try {
+        final base64Str = avatarUrl.split(',').last;
+        return Image.memory(
+          base64Decode(base64Str),
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) =>
+              _buildPlaceholderAvatar(size),
+        );
+      } catch (_) {}
     }
     if (!kIsWeb && File(avatarUrl).existsSync()) {
       return Image.file(
@@ -178,6 +202,7 @@ class FarmerProfileHero extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final marketplace = ref.watch(marketplaceProvider);
     final unreadNotifs = ref.watch(unreadNotificationsCountProvider);
+    final unreadChats = ref.watch(unreadChatCountProvider);
     final topInset = MediaQuery.of(context).padding.top;
     final coverHeight = 185.0 + topInset;
     final heroHeight = coverHeight + 58.0;
@@ -251,6 +276,10 @@ class FarmerProfileHero extends ConsumerWidget {
                               context: context,
                               icon: LucideIcons.messageSquare,
                               tooltip: 'შეკვეთის ჩათი',
+                              badgeText: (authState.isAuthenticated &&
+                                      unreadChats > 0)
+                                  ? (unreadChats > 9 ? '9+' : '$unreadChats')
+                                  : null,
                               onTap: () {
                                 requireAuth(
                                   context,

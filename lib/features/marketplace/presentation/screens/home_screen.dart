@@ -8,6 +8,8 @@ import '../../../../core/auth/auth_state_provider.dart';
 import '../../../../core/constants/app_assets.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../core/widgets/animations/skeletons/product_card_skeleton.dart';
+import '../../../../core/widgets/animations/staggered_entrance.dart';
 import '../../../../core/widgets/app_header.dart';
 import '../../../../core/widgets/app_search_bar.dart';
 import '../../../../core/widgets/auth_required_bottom_sheet.dart';
@@ -257,19 +259,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
                     // Responsive grid of products (auto 2, 3, 4+ columns based on screen width)
                     if (products.isEmpty)
-                      Center(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 32),
-                          child: marketplace.isSyncing
-                              ? const SizedBox(
-                                  width: 24,
-                                  height: 24,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2.5,
-                                    color: AppColors.primary,
-                                  ),
-                                )
-                              : Column(
+                      marketplace.isSyncing
+                          ? const ProductGridSkeleton(itemCount: 4)
+                          : Center(
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 32),
+                                child: Column(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     SvgPicture.asset(
@@ -287,8 +282,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                     ),
                                   ],
                                 ),
-                        ),
-                      )
+                              ),
+                            )
                     else
                       GridView.builder(
                       shrinkWrap: true,
@@ -306,26 +301,29 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         final isOwner = product.isOwnedBy(
                           ref.watch(authStateProvider),
                         );
-                        return ProductCard(
-                          product: product,
-                          isOwner: isOwner,
-                          onTap: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    ProductDetailsScreen(product: product),
-                              ),
-                            );
-                          },
-                          onAddWithContext: isOwner
-                              ? null
-                              : (btnContext) =>
-                                  ProductCartHelper.handleAddToCart(
-                                    context: context,
-                                    ref: ref,
-                                    product: product,
-                                    buttonContext: btnContext,
-                                  ),
+                        return StaggeredEntrance(
+                          index: index,
+                          child: ProductCard(
+                            product: product,
+                            isOwner: isOwner,
+                            onTap: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      ProductDetailsScreen(product: product),
+                                ),
+                              );
+                            },
+                            onAddWithContext: isOwner
+                                ? null
+                                : (btnContext) =>
+                                    ProductCartHelper.handleAddToCart(
+                                      context: context,
+                                      ref: ref,
+                                      product: product,
+                                      buttonContext: btnContext,
+                                    ),
+                          ),
                         );
                       },
                     ),

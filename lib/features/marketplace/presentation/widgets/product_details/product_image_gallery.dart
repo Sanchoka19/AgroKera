@@ -110,7 +110,7 @@ class _ProductImageGalleryState extends ConsumerState<ProductImageGallery> {
               },
               itemBuilder: (context, idx) {
                 final imgUrl = gallery[idx];
-                return imgUrl.startsWith('assets/')
+                final imageWidget = imgUrl.startsWith('assets/')
                     ? Image.asset(
                         imgUrl,
                         fit: BoxFit.cover,
@@ -139,6 +139,14 @@ class _ProductImageGalleryState extends ConsumerState<ProductImageGallery> {
                               ),
                             ),
                       );
+
+                if (idx == 0) {
+                  return Hero(
+                    tag: 'product_image_${product.id}',
+                    child: imageWidget,
+                  );
+                }
+                return imageWidget;
               },
             ),
             if (gallery.length > 1)

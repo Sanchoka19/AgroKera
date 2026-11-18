@@ -56,13 +56,40 @@ class AuthNotifier extends Notifier<AuthState> {
       userName: saved['name'] ?? fallback.name,
       userPhone: saved['phone'] ?? fallback.phone,
       userEmail: savedEmail,
-      farmCoverUrl: saved['farmCoverUrl'],
+      farmCoverUrl: saved['farmCoverUrl'] ?? fallback.coverUrl,
       userAvatarUrl: saved['userAvatarUrl'] ?? fallback.avatarUrl,
       userAddress: savedAddress,
       role: role,
       kycStatus: KycStatus.fromString(saved['kycStatus']),
     );
     unawaited(syncFcmToken());
+    unawaited(_syncProfileFromBackend());
+  }
+
+  Future<void> _syncProfileFromBackend() async {
+    final uid = state.userId;
+    if (uid == null || uid.isEmpty) return;
+    try {
+      final user = await _repo.getProfile(uid);
+      if (user == null || !state.isAuthenticated) return;
+      final farmerProfile = user['farmerProfile'] as Map<String, dynamic>?;
+      final serverAvatarUrl = (farmerProfile?['avatarUrl'] as String?) ??
+          (user['avatarUrl'] as String?);
+      final serverCoverUrl = farmerProfile?['coverUrl'] as String?;
+
+      final hasNewAvatar =
+          serverAvatarUrl != null && serverAvatarUrl.trim().isNotEmpty;
+      final hasNewCover =
+          serverCoverUrl != null && serverCoverUrl.trim().isNotEmpty;
+
+      if (hasNewAvatar || hasNewCover) {
+        state = state.copyWith(
+          userAvatarUrl: hasNewAvatar ? serverAvatarUrl : state.userAvatarUrl,
+          farmCoverUrl: hasNewCover ? serverCoverUrl : state.farmCoverUrl,
+        );
+        await _resaveSession();
+      }
+    } catch (_) {}
   }
 
   Future<void> syncFcmToken([String? token]) async {
@@ -321,19 +348,29 @@ class AuthNotifier extends Notifier<AuthState> {
   // Profile media & fields
   // ---------------------------------------------------------------------------
 
-  Future<void> updateFarmCoverUrl(String coverUrl) async {
+  Future<void> updateFarmCoverUrl(
+    String coverUrl, {
+    bool syncBackend = true,
+  }) async {
     state = state.copyWith(farmCoverUrl: coverUrl);
     await _resaveSession();
-    await _patchProfileSilently(
-      {'coverUrl': coverUrl},
-      fallbackUserId: 'user_farmer_2',
-    );
+    if (syncBackend) {
+      await _patchProfileSilently(
+        {'coverUrl': coverUrl},
+        fallbackUserId: 'user_farmer_2',
+      );
+    }
   }
 
-  Future<void> updateUserAvatarUrl(String avatarUrl) async {
+  Future<void> updateUserAvatarUrl(
+    String avatarUrl, {
+    bool syncBackend = true,
+  }) async {
     state = state.copyWith(userAvatarUrl: avatarUrl);
     await _resaveSession();
-    await _patchProfileSilently({'avatarUrl': avatarUrl});
+    if (syncBackend) {
+      await _patchProfileSilently({'avatarUrl': avatarUrl});
+    }
   }
 
   /// Uploads user avatar to cloud storage and persists to backend profile and local storage
@@ -407,12 +444,14 @@ class AuthNotifier extends Notifier<AuthState> {
   Future<bool> _uploadImage(
     XFile file, {
     required String folder,
-    required Future<void> Function(String url) apply,
+    required Future<void> Function(String url, {bool syncBackend}) apply,
   }) async {
-    await apply(file.path);
+    await apply(file.path, syncBackend: false);
     try {
       final remoteUrl = await _repo.uploadImage(file, folder: folder);
-      if (remoteUrl != null) await apply(remoteUrl);
+      if (remoteUrl != null) {
+        await apply(remoteUrl, syncBackend: true);
+      }
       return true;
     } catch (_) {
       return false;
@@ -445,6 +484,8 @@ class AuthNotifier extends Notifier<AuthState> {
       userId: resolved.userId,
       farmerId: resolved.farmerId,
       farmName: farmNameOverride ?? resolved.farmName,
+      farmCoverUrl: state.farmCoverUrl ?? resolved.coverUrl,
+      userAvatarUrl: state.userAvatarUrl ?? resolved.avatarUrl,
       role: role.name,
       name: resolved.name,
       phone: resolved.phone,
@@ -583,7 +624,12 @@ class AuthNotifier extends Notifier<AuthState> {
         phone ??
         defaultPhone;
     final serverEmail = user?['email'] as String? ?? state.userEmail ?? email;
-    final serverAvatarUrl = farmerProfile?['avatarUrl'] as String?;
+    final rawServerAvatar = (farmerProfile?['avatarUrl'] as String?) ??
+        (user?['avatarUrl'] as String?);
+    final serverAvatarUrl =
+        (rawServerAvatar != null && rawServerAvatar.trim().isNotEmpty)
+            ? rawServerAvatar
+            : state.userAvatarUrl;
     final serverCoverUrl = farmerProfile?['coverUrl'] as String? ??
         state.farmCoverUrl ??
         coverUrl;
@@ -596,7 +642,7 @@ class AuthNotifier extends Notifier<AuthState> {
       userName: serverFullName,
       userPhone: serverPhone,
       userEmail: serverEmail,
-      userAvatarUrl: serverAvatarUrl ?? state.userAvatarUrl,
+      userAvatarUrl: serverAvatarUrl,
       farmCoverUrl: serverCoverUrl,
       kycStatus: KycStatus.fromString(kycStr),
     );
@@ -606,6 +652,8 @@ class AuthNotifier extends Notifier<AuthState> {
       userId: userId,
       farmerId: farmerId,
       farmName: serverFarmName,
+      farmCoverUrl: serverCoverUrl,
+      userAvatarUrl: serverAvatarUrl,
       role: role.name,
       name: serverFullName,
       phone: serverPhone,
@@ -629,6 +677,8 @@ class AuthNotifier extends Notifier<AuthState> {
       userId: state.userId ?? 'user_local',
       farmerId: state.farmerId,
       farmName: state.farmName ?? farmName,
+      farmCoverUrl: state.farmCoverUrl,
+      userAvatarUrl: state.userAvatarUrl,
       role: role.name,
       name: state.userName ?? name,
       phone: state.userPhone ?? phone ?? defaultPhone,

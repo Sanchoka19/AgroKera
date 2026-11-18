@@ -224,7 +224,7 @@ void main() {
     // Verify toast contents
     expect(find.text('ბულგარული წიწაკა დამატებულია კალათაში!'), findsOneWidget);
     expect(find.text('კალათა'), findsOneWidget);
-    expect(find.byIcon(LucideIcons.badgeCheck), findsOneWidget);
+    expect(find.byIcon(LucideIcons.check), findsOneWidget);
 
     // Tap action
     await tester.tap(find.text('კალათა'));
@@ -264,12 +264,50 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
     expect(find.text('შეცდომა დაფიქსირდა'), findsNothing);
     expect(find.text('ინფორმაცია განახლდა'), findsOneWidget);
-    expect(find.byIcon(LucideIcons.badgeInfo), findsOneWidget);
+    expect(find.byIcon(LucideIcons.info), findsOneWidget);
 
     // 3. Manual dismiss
     AppToast.dismiss();
     await tester.pumpAndSettle();
     expect(find.text('ინფორმაცია განახლდა'), findsNothing);
+  });
+
+  testWidgets('AppToast handles sendToBell animation with flying dot',
+      (WidgetTester tester) async {
+    BuildContext? testContext;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Builder(
+            builder: (context) {
+              testContext = context;
+              return const SizedBox();
+            },
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    AppToast.show(
+      testContext!,
+      'ახალი შეტყობინება შეკვეთაზე',
+      sendToBell: true,
+      duration: const Duration(milliseconds: 1000),
+    );
+
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 360));
+    expect(find.text('ახალი შეტყობინება შეკვეთაზე'), findsOneWidget);
+
+    // Fast-forward past duration to trigger fly to bell
+    await tester.pump(const Duration(milliseconds: 1000));
+    await tester.pump(const Duration(milliseconds: 100)); // Halfway through flight
+    await tester.pump(const Duration(milliseconds: 400)); // Completed flight
+    await tester.pumpAndSettle();
+
+    expect(find.text('ახალი შეტყობინება შეკვეთაზე'), findsNothing);
   });
 
   testWidgets('CategoriesScreen renders bento cards and filters by search',

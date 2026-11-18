@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../../core/theme/app_colors.dart';
+import '../../../../../core/widgets/animations/bounce_tap.dart';
 import '../../../domain/models/farmer_order_model.dart';
 import '../../screens/client_order_detail_screen.dart';
 import '../../screens/order_chat_screen.dart';
@@ -87,9 +88,9 @@ class ClientOrderCard extends StatelessWidget {
     final hasFarmerName =
         order.farmerName != null && order.farmerName!.trim().isNotEmpty;
 
-    return InkWell(
+    return BounceTap(
       onTap: () => _openDetails(context),
-      borderRadius: BorderRadius.circular(18),
+      scaleDown: 0.98,
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(

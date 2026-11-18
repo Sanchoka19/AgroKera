@@ -9,6 +9,7 @@ import '../../../../core/auth/auth_state_provider.dart';
 import '../../../../core/constants/app_assets.dart';
 import '../../../../core/services/push_notification_service.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/animations/staggered_entrance.dart';
 import '../../../../core/widgets/app_filter_tab.dart';
 import '../../../../core/widgets/auth_required_bottom_sheet.dart';
 import '../../data/models/notification_model.dart';
@@ -362,7 +363,9 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                       separatorBuilder: (_, _) => const SizedBox(height: 12),
                       itemBuilder: (context, index) {
                         final item = filtered[index];
-                        return NotificationCard(
+                        return StaggeredEntrance(
+                          index: index,
+                          child: NotificationCard(
                           item: item,
                           onTap: () {
                             if (!item.isRead) {
@@ -411,6 +414,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                               ),
                             );
                           },
+                        ),
                         );
                       },
                     ),

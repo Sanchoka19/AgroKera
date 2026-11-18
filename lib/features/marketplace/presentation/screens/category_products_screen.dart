@@ -8,6 +8,7 @@ import '../../../../core/auth/auth_state_provider.dart';
 import '../../../../core/constants/app_assets.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../core/widgets/animations/staggered_entrance.dart';
 import '../../../../core/widgets/draggable_floating_cart.dart';
 import '../../../../core/widgets/product_card.dart';
 import '../../../../core/widgets/product_cart_helper.dart';
@@ -249,21 +250,24 @@ class _CategoryProductsScreenState
                           final isOwner = ref
                               .watch(authStateProvider)
                               .isOwnerOfProduct(product);
-                          return ProductCard(
-                            product: product,
-                            isOwner: isOwner,
-                            onTap: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      ProductDetailsScreen(product: product),
-                                ),
-                              );
-                            },
-                            onAddWithContext: isOwner
-                                ? null
-                                : (btnContext) =>
-                                    _onAddToCart(product, btnContext),
+                          return StaggeredEntrance(
+                            index: index,
+                            child: ProductCard(
+                              product: product,
+                              isOwner: isOwner,
+                              onTap: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        ProductDetailsScreen(product: product),
+                                  ),
+                                );
+                              },
+                              onAddWithContext: isOwner
+                                  ? null
+                                  : (btnContext) =>
+                                      _onAddToCart(product, btnContext),
+                            ),
                           );
                         },
                       ),

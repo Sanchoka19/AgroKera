@@ -11,6 +11,7 @@ import '../auth/auth_state_provider.dart';
 import '../theme/app_colors.dart';
 import 'app_logo.dart';
 import 'auth_required_bottom_sheet.dart';
+import 'toast/toast_target_registry.dart';
 
 /// Unified Top Header across all primary screens in AgroKera.
 /// Ensures 100% visual harmony, uniform spacing, and cohesive brand experience.
@@ -147,36 +148,41 @@ class AppHeader extends ConsumerWidget {
 
                   // Notification Bell Icon
                   if (showNotificationBell)
-                    IconButton(
-                      tooltip: 'შეტყობინებები',
-                      onPressed: () {
-                        HapticFeedback.lightImpact();
-                        requireAuth(
-                          context,
-                          ref: ref,
-                          onAuthenticated: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => const NotificationsScreen(),
-                              ),
+                    Builder(
+                      builder: (bellCtx) {
+                        ToastTargetRegistry.registerBell(bellCtx);
+                        return IconButton(
+                          tooltip: 'შეტყობინებები',
+                          onPressed: () {
+                            HapticFeedback.lightImpact();
+                            requireAuth(
+                              context,
+                              ref: ref,
+                              onAuthenticated: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) => const NotificationsScreen(),
+                                  ),
+                                );
+                              },
                             );
                           },
+                          icon: Stack(
+                            clipBehavior: Clip.none,
+                            children: [
+                              const Icon(
+                                LucideIcons.bell,
+                                size: 24,
+                                color: AppColors.primary,
+                              ),
+                              if (authState.isAuthenticated && unreadNotifs > 0)
+                                _buildCountBadge(
+                                  unreadNotifs > 9 ? '9+' : '$unreadNotifs',
+                                ),
+                            ],
+                          ),
                         );
                       },
-                      icon: Stack(
-                        clipBehavior: Clip.none,
-                        children: [
-                          const Icon(
-                            LucideIcons.bell,
-                            size: 24,
-                            color: AppColors.primary,
-                          ),
-                          if (authState.isAuthenticated && unreadNotifs > 0)
-                            _buildCountBadge(
-                              unreadNotifs > 9 ? '9+' : '$unreadNotifs',
-                            ),
-                        ],
-                      ),
                     ),
 
                   // Cart Icon
@@ -224,25 +230,36 @@ class AppHeader extends ConsumerWidget {
     return Positioned(
       top: -5,
       right: -4,
-      child: Container(
-        padding: const EdgeInsets.all(2),
-        constraints: const BoxConstraints(
-          minWidth: 17,
-          minHeight: 17,
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 260),
+        transitionBuilder: (child, animation) => ScaleTransition(
+          scale: CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeOutBack,
+          ),
+          child: child,
         ),
-        decoration: BoxDecoration(
-          color: const Color(0xFFEF4444),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        alignment: Alignment.center,
-        child: Text(
-          text,
-          textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 9.5,
-            fontWeight: FontWeight.w800,
-            height: 1.0,
+        child: Container(
+          key: ValueKey(text),
+          padding: const EdgeInsets.all(2),
+          constraints: const BoxConstraints(
+            minWidth: 17,
+            minHeight: 17,
+          ),
+          decoration: BoxDecoration(
+            color: const Color(0xFFEF4444),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            text,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 9.5,
+              fontWeight: FontWeight.w800,
+              height: 1.0,
+            ),
           ),
         ),
       ),

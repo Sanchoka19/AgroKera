@@ -3,6 +3,8 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../features/marketplace/data/models/product_model.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
+import 'animations/animated_add_to_cart_button.dart';
+import 'animations/bounce_tap.dart';
 import 'app_toast.dart';
 
 /// Product card according to DESIGN_SYSTEM.md and Figma screenshots:
@@ -30,9 +32,37 @@ class ProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
+    final imageWidget = product.imageUrl.startsWith('assets/')
+        ? Image.asset(
+            product.imageUrl,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) => Container(
+              color: AppColors.surfaceInput,
+              alignment: Alignment.center,
+              child: const Icon(
+                LucideIcons.image,
+                color: AppColors.textSecondary,
+                size: 28,
+              ),
+            ),
+          )
+        : Image.network(
+            product.imageUrl,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) => Container(
+              color: AppColors.surfaceInput,
+              alignment: Alignment.center,
+              child: const Icon(
+                LucideIcons.image,
+                color: AppColors.textSecondary,
+                size: 28,
+              ),
+            ),
+          );
+
+    return BounceTap(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(18),
+      scaleDown: 0.97,
       child: Container(
         decoration: BoxDecoration(
           color: AppColors.surface,
@@ -48,35 +78,10 @@ class ProductCard extends StatelessWidget {
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  product.imageUrl.startsWith('assets/')
-                      ? Image.asset(
-                          product.imageUrl,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) =>
-                              Container(
-                                color: AppColors.surfaceInput,
-                                alignment: Alignment.center,
-                                child: const Icon(
-                                  LucideIcons.image,
-                                  color: AppColors.textSecondary,
-                                  size: 28,
-                                ),
-                              ),
-                        )
-                      : Image.network(
-                          product.imageUrl,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) =>
-                              Container(
-                                color: AppColors.surfaceInput,
-                                alignment: Alignment.center,
-                                child: const Icon(
-                                  LucideIcons.image,
-                                  color: AppColors.textSecondary,
-                                  size: 28,
-                                ),
-                              ),
-                        ),
+                  Hero(
+                    tag: 'product_image_${product.id}',
+                    child: imageWidget,
+                  ),
                   if (isOwner)
                     Positioned(
                       top: 6,
@@ -268,38 +273,16 @@ class ProductCard extends StatelessWidget {
                     const SizedBox(width: 4),
                     Builder(
                       builder: (btnContext) {
-                        if (isOwner) {
-                          return InkWell(
-                            onTap: () {
+                        return AnimatedAddToCartButton(
+                          isOwner: isOwner,
+                          isOutOfStock: !product.isAvailable || product.stockQuantity <= 0,
+                          onPressed: () {
+                            if (isOwner) {
                               AppToast.info(
                                 btnContext,
                                 'საკუთარი პროდუქტის დამატება შეუძლებელია',
                               );
-                            },
-                            borderRadius: BorderRadius.circular(16),
-                            child: Container(
-                              width: 32,
-                              height: 32,
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFF1F5F9),
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: const Color(0xFFCBD5E1),
-                                  width: 1,
-                                ),
-                              ),
-                              alignment: Alignment.center,
-                              child: const Icon(
-                                LucideIcons.ban,
-                                size: 15,
-                                color: Color(0xFF94A3B8),
-                              ),
-                            ),
-                          );
-                        }
-                        return InkWell(
-                          onTap: () {
-                            if (onAddWithContext != null) {
+                            } else if (onAddWithContext != null) {
                               onAddWithContext!(btnContext);
                             } else if (onAddPressed != null) {
                               onAddPressed!();
@@ -307,29 +290,6 @@ class ProductCard extends StatelessWidget {
                               onTap?.call();
                             }
                           },
-                          borderRadius: BorderRadius.circular(16),
-                          child: Container(
-                            width: 32,
-                            height: 32,
-                            decoration: BoxDecoration(
-                              color: AppColors.primary,
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color:
-                                      AppColors.primary.withValues(alpha: 0.28),
-                                  blurRadius: 4,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            alignment: Alignment.center,
-                            child: const Icon(
-                              LucideIcons.plus,
-                              size: 18,
-                              color: AppColors.textOnPrimary,
-                            ),
-                          ),
                         );
                       },
                     ),

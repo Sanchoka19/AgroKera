@@ -28,6 +28,8 @@ Future<void> main() async {
       onForegroundMessage: (remoteMessage) {
         final title = remoteMessage.notification?.title ?? 'AgroKera შეტყობინება';
         final body = remoteMessage.notification?.body ?? '';
+        final cleanTitle = AppNotification.stripEmojis(title);
+        final cleanBody = AppNotification.stripEmojis(body);
         final categoryStr = remoteMessage.data['category'] as String?;
         final orderId = remoteMessage.data['orderId'] as String?;
         final type = remoteMessage.data['type'] as String?;
@@ -35,8 +37,8 @@ Future<void> main() async {
               AppNotification(
                 id: remoteMessage.messageId ??
                     'fcm-${DateTime.now().millisecondsSinceEpoch}',
-                title: AppNotification.stripEmojis(title),
-                body: AppNotification.stripEmojis(body),
+                title: cleanTitle,
+                body: cleanBody,
                 timeAgo: 'ახლახანს',
                 timestamp: DateTime.now(),
                 category: AppNotification.parseCategory(categoryStr),

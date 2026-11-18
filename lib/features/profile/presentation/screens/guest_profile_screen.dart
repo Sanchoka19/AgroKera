@@ -12,6 +12,7 @@ import '../../../../core/widgets/auth_required_bottom_sheet.dart';
 import '../../../farm_inventory/presentation/screens/farmer_inventory_screen.dart';
 import '../../../marketplace/presentation/screens/favorites_screen.dart';
 import '../../../marketplace/presentation/widgets/guest_promo_banner.dart';
+import '../../../orders/presentation/providers/order_chat_provider.dart';
 import '../../../orders/presentation/screens/client_orders_screen.dart';
 import '../../../orders/presentation/screens/incoming_orders_screen.dart';
 import '../../../orders/presentation/screens/order_chats_list_screen.dart';
@@ -315,6 +316,7 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
     final authState = ref.watch(authStateProvider);
     final isFarmer = authState.role == UserRole.farmer;
     final isGuest = !authState.isAuthenticated;
+    final unreadChats = ref.watch(unreadChatCountProvider);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
@@ -344,10 +346,56 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
                         },
                       );
                     },
-                    icon: const Icon(
-                      LucideIcons.messageSquare,
-                      size: 24,
-                      color: AppColors.primary,
+                    icon: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        const Icon(
+                          LucideIcons.messageSquare,
+                          size: 24,
+                          color: AppColors.primary,
+                        ),
+                        if (authState.isAuthenticated && unreadChats > 0)
+                          Positioned(
+                            top: -5,
+                            right: -4,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 4,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFEF4444),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                  color: Colors.white,
+                                  width: 1.5,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color(0xFFEF4444)
+                                        .withValues(alpha: 0.4),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 1),
+                                  ),
+                                ],
+                              ),
+                              constraints: const BoxConstraints(
+                                minWidth: 17,
+                                minHeight: 17,
+                              ),
+                              child: Text(
+                                unreadChats > 9 ? '9+' : '$unreadChats',
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w800,
+                                  height: 1,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
                 ],

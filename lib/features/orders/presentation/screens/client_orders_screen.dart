@@ -287,8 +287,6 @@ class _ClientOrdersScreenState extends ConsumerState<ClientOrdersScreen> {
                         ),
                       )
                     : ListView.separated(
-                        // ignore: deprecated_member_use
-                        cacheExtent: 2000.0,
                         padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
                         itemCount: orders.length,
                         separatorBuilder: (_, _) => const SizedBox(height: 12),

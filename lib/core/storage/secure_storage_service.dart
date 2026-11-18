@@ -1,8 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '../network/api_client.dart';
 
 /// Persistent secure storage for user session, JWT token, and role data
 class SecureStorageService {
+  static final Map<String, String> _testMemoryStore = {};
   static const _tokenKey = 'agrokera_auth_token';
   static const _userIdKey = 'agrokera_user_id';
   static const _farmerIdKey = 'agrokera_farmer_id';
@@ -29,6 +31,29 @@ class SecureStorageService {
     this._storage = const FlutterSecureStorage(),
   ]);
 
+  Future<void> _write(String key, String value) async {
+    if (isFlutterTestEnv) {
+      _testMemoryStore[key] = value;
+      return;
+    }
+    await _storage.write(key: key, value: value);
+  }
+
+  Future<String?> _read(String key) async {
+    if (isFlutterTestEnv) {
+      return _testMemoryStore[key];
+    }
+    return await _storage.read(key: key);
+  }
+
+  Future<void> _delete(String key) async {
+    if (isFlutterTestEnv) {
+      _testMemoryStore.remove(key);
+      return;
+    }
+    await _storage.delete(key: key);
+  }
+
   Future<void> saveSession({
     required String token,
     required String userId,
@@ -44,29 +69,29 @@ class SecureStorageService {
   }) async {
     try {
       await Future.wait([
-        _storage.write(key: _tokenKey, value: token),
-        _storage.write(key: _userIdKey, value: userId),
+        _write(_tokenKey, token),
+        _write(_userIdKey, userId),
         if (farmerId != null)
-          _storage.write(key: _farmerIdKey, value: farmerId)
+          _write(_farmerIdKey, farmerId)
         else
-          _storage.delete(key: _farmerIdKey),
+          _delete(_farmerIdKey),
         if (farmName != null)
-          _storage.write(key: _farmNameKey, value: farmName)
+          _write(_farmNameKey, farmName)
         else
-          _storage.delete(key: _farmNameKey),
+          _delete(_farmNameKey),
         if (farmCoverUrl != null)
-          _storage.write(key: _farmCoverKey, value: farmCoverUrl)
+          _write(_farmCoverKey, farmCoverUrl)
         else
-          _storage.delete(key: _farmCoverKey),
+          _delete(_farmCoverKey),
         if (userAvatarUrl != null)
-          _storage.write(key: _userAvatarKey, value: userAvatarUrl)
+          _write(_userAvatarKey, userAvatarUrl)
         else
-          _storage.delete(key: _userAvatarKey),
-        _storage.write(key: _roleKey, value: role),
-        _storage.write(key: _nameKey, value: name),
-        _storage.write(key: _phoneKey, value: phone),
-        if (email != null) _storage.write(key: _emailKey, value: email),
-        _storage.write(key: _kycStatusKey, value: kycStatus),
+          _delete(_userAvatarKey),
+        _write(_roleKey, role),
+        _write(_nameKey, name),
+        _write(_phoneKey, phone),
+        if (email != null) _write(_emailKey, email),
+        _write(_kycStatusKey, kycStatus),
       ]);
     } catch (_) {
       // Ignore platform channel errors in widget tests
@@ -76,17 +101,17 @@ class SecureStorageService {
   Future<Map<String, String?>> readSession() async {
     try {
       final results = await Future.wait([
-        _storage.read(key: _tokenKey),
-        _storage.read(key: _userIdKey),
-        _storage.read(key: _farmerIdKey),
-        _storage.read(key: _roleKey),
-        _storage.read(key: _nameKey),
-        _storage.read(key: _phoneKey),
-        _storage.read(key: _emailKey),
-        _storage.read(key: _kycStatusKey),
-        _storage.read(key: _farmNameKey),
-        _storage.read(key: _farmCoverKey),
-        _storage.read(key: _userAvatarKey),
+        _read(_tokenKey),
+        _read(_userIdKey),
+        _read(_farmerIdKey),
+        _read(_roleKey),
+        _read(_nameKey),
+        _read(_phoneKey),
+        _read(_emailKey),
+        _read(_kycStatusKey),
+        _read(_farmNameKey),
+        _read(_farmCoverKey),
+        _read(_userAvatarKey),
       ]);
       return {
         'token': results[0],
@@ -108,7 +133,7 @@ class SecureStorageService {
 
   Future<String?> getToken() async {
     try {
-      return await _storage.read(key: _tokenKey);
+      return await _read(_tokenKey);
     } catch (_) {
       return null;
     }
@@ -116,39 +141,39 @@ class SecureStorageService {
 
   Future<void> updateKycStatus(String status) async {
     try {
-      await _storage.write(key: _kycStatusKey, value: status);
+      await _write(_kycStatusKey, status);
     } catch (_) {}
   }
 
   Future<void> clearSession() async {
     try {
       await Future.wait([
-        _storage.delete(key: _tokenKey),
-        _storage.delete(key: _userIdKey),
-        _storage.delete(key: _farmerIdKey),
-        _storage.delete(key: _farmNameKey),
-        _storage.delete(key: _farmCoverKey),
-        _storage.delete(key: _userAvatarKey),
-        _storage.delete(key: _roleKey),
-        _storage.delete(key: _nameKey),
-        _storage.delete(key: _phoneKey),
-        _storage.delete(key: _emailKey),
-        _storage.delete(key: _kycStatusKey),
-        _storage.delete(key: _activeAddressKey),
-        _storage.delete(key: _addressesJsonKey),
+        _delete(_tokenKey),
+        _delete(_userIdKey),
+        _delete(_farmerIdKey),
+        _delete(_farmNameKey),
+        _delete(_farmCoverKey),
+        _delete(_userAvatarKey),
+        _delete(_roleKey),
+        _delete(_nameKey),
+        _delete(_phoneKey),
+        _delete(_emailKey),
+        _delete(_kycStatusKey),
+        _delete(_activeAddressKey),
+        _delete(_addressesJsonKey),
       ]);
     } catch (_) {}
   }
 
   Future<void> saveCartJson(String json) async {
     try {
-      await _storage.write(key: _cartJsonKey, value: json);
+      await _write(_cartJsonKey, json);
     } catch (_) {}
   }
 
   Future<String?> readCartJson() async {
     try {
-      return await _storage.read(key: _cartJsonKey);
+      return await _read(_cartJsonKey);
     } catch (_) {
       return null;
     }
@@ -156,13 +181,13 @@ class SecureStorageService {
 
   Future<void> saveFavoritesJson(String json) async {
     try {
-      await _storage.write(key: _favoritesJsonKey, value: json);
+      await _write(_favoritesJsonKey, json);
     } catch (_) {}
   }
 
   Future<String?> readFavoritesJson() async {
     try {
-      return await _storage.read(key: _favoritesJsonKey);
+      return await _read(_favoritesJsonKey);
     } catch (_) {
       return null;
     }
@@ -170,16 +195,16 @@ class SecureStorageService {
 
   Future<void> saveReportedPaymentOrderIds(Set<String> ids) async {
     try {
-      await _storage.write(
-        key: _reportedPaymentOrdersKey,
-        value: ids.join(','),
+      await _write(
+        _reportedPaymentOrdersKey,
+        ids.join(','),
       );
     } catch (_) {}
   }
 
   Future<Set<String>> readReportedPaymentOrderIds() async {
     try {
-      final raw = await _storage.read(key: _reportedPaymentOrdersKey);
+      final raw = await _read(_reportedPaymentOrdersKey);
       if (raw == null || raw.trim().isEmpty) return {};
       return raw.split(',').where((id) => id.trim().isNotEmpty).toSet();
     } catch (_) {
@@ -189,16 +214,16 @@ class SecureStorageService {
 
   Future<void> saveOrderMessagesJson(String orderId, String json) async {
     try {
-      await _storage.write(
-        key: 'agrokera_order_chat_$orderId',
-        value: json,
+      await _write(
+        'agrokera_order_chat_$orderId',
+        json,
       );
     } catch (_) {}
   }
 
   Future<String?> readOrderMessagesJson(String orderId) async {
     try {
-      return await _storage.read(key: 'agrokera_order_chat_$orderId');
+      return await _read('agrokera_order_chat_$orderId');
     } catch (_) {
       return null;
     }
@@ -206,13 +231,13 @@ class SecureStorageService {
 
   Future<void> saveActiveAddress(String address) async {
     try {
-      await _storage.write(key: _activeAddressKey, value: address);
+      await _write(_activeAddressKey, address);
     } catch (_) {}
   }
 
   Future<String?> readActiveAddress() async {
     try {
-      return await _storage.read(key: _activeAddressKey);
+      return await _read(_activeAddressKey);
     } catch (_) {
       return null;
     }
@@ -220,13 +245,13 @@ class SecureStorageService {
 
   Future<void> saveFarmLocation(String location) async {
     try {
-      await _storage.write(key: _farmLocationKey, value: location);
+      await _write(_farmLocationKey, location);
     } catch (_) {}
   }
 
   Future<String?> readFarmLocation() async {
     try {
-      return await _storage.read(key: _farmLocationKey);
+      return await _read(_farmLocationKey);
     } catch (_) {
       return null;
     }
@@ -234,13 +259,13 @@ class SecureStorageService {
 
   Future<void> saveFarmLandmark(String landmark) async {
     try {
-      await _storage.write(key: _farmLandmarkKey, value: landmark);
+      await _write(_farmLandmarkKey, landmark);
     } catch (_) {}
   }
 
   Future<String?> readFarmLandmark() async {
     try {
-      return await _storage.read(key: _farmLandmarkKey);
+      return await _read(_farmLandmarkKey);
     } catch (_) {
       return null;
     }
@@ -248,13 +273,13 @@ class SecureStorageService {
 
   Future<void> saveAddressesJson(String json) async {
     try {
-      await _storage.write(key: _addressesJsonKey, value: json);
+      await _write(_addressesJsonKey, json);
     } catch (_) {}
   }
 
   Future<String?> readAddressesJson() async {
     try {
-      return await _storage.read(key: _addressesJsonKey);
+      return await _read(_addressesJsonKey);
     } catch (_) {
       return null;
     }
@@ -262,13 +287,13 @@ class SecureStorageService {
 
   Future<void> saveNotificationSettingsJson(String json) async {
     try {
-      await _storage.write(key: _notificationSettingsKey, value: json);
+      await _write(_notificationSettingsKey, json);
     } catch (_) {}
   }
 
   Future<String?> readNotificationSettingsJson() async {
     try {
-      return await _storage.read(key: _notificationSettingsKey);
+      return await _read(_notificationSettingsKey);
     } catch (_) {
       return null;
     }
@@ -277,8 +302,8 @@ class SecureStorageService {
   Future<void> clearAddresses() async {
     try {
       await Future.wait([
-        _storage.delete(key: _activeAddressKey),
-        _storage.delete(key: _addressesJsonKey),
+        _delete(_activeAddressKey),
+        _delete(_addressesJsonKey),
       ]);
     } catch (_) {}
   }

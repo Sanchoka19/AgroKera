@@ -45,20 +45,20 @@ class FarmerInventoryState {
   int get allCount => allProducts.length;
 
   int get activeCount =>
-      allProducts.where((p) => p.isAvailable && p.stockQuantity >= 20).length;
+      allProducts.where((p) => p.isAvailable && !p.isOutOfStock && p.stockQuantity >= 20).length;
 
   int get lowCount =>
-      allProducts.where((p) => p.stockQuantity > 0 && p.stockQuantity < 20).length;
+      allProducts.where((p) => !p.isOutOfStock && p.stockQuantity > 0 && p.stockQuantity < 20).length;
 
   int get outCount =>
-      allProducts.where((p) => !p.isAvailable || p.stockQuantity <= 0).length;
+      allProducts.where((p) => p.isOutOfStock).length;
 
   List<ProductModel> get filteredProducts {
     return allProducts.where((p) {
       return switch (selectedFilter) {
-        InventoryFilter.active => p.isAvailable && p.stockQuantity >= 20,
-        InventoryFilter.low => p.stockQuantity > 0 && p.stockQuantity < 20,
-        InventoryFilter.out => !p.isAvailable || p.stockQuantity <= 0,
+        InventoryFilter.active => p.isAvailable && !p.isOutOfStock && p.stockQuantity >= 20,
+        InventoryFilter.low => !p.isOutOfStock && p.stockQuantity > 0 && p.stockQuantity < 20,
+        InventoryFilter.out => p.isOutOfStock,
         InventoryFilter.all => true,
       };
     }).toList();
@@ -293,11 +293,14 @@ class FarmerInventoryNotifier extends Notifier<FarmerInventoryState> {
 
   /// Toggles product availability
   Future<void> toggleAvailability(ProductModel product, bool isAvailable) async {
+    final neededStock = (isAvailable && product.stockQuantity < product.minOrderQuantity)
+        ? (product.minOrderQuantity > 0 ? product.minOrderQuantity : 25.0)
+        : null;
+
     await ref.read(marketplaceProvider.notifier).updateProduct(
           product.id,
           isAvailable: isAvailable,
-          stockQuantity:
-              isAvailable && product.stockQuantity <= 0 ? 25.0 : null,
+          stockQuantity: neededStock,
         );
   }
 

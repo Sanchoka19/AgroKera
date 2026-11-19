@@ -92,6 +92,7 @@ class _ClientOrderDetailScreenState
             icon: const Icon(LucideIcons.messageSquare, color: AppColors.primary),
             tooltip: 'ჩათი ფერმერთან',
             onPressed: () {
+              ref.read(orderChatReadProvider.notifier).markAsRead(order.id);
               Navigator.of(context).push(
                 MaterialPageRoute(
                   builder: (_) => OrderChatScreen(order: order),

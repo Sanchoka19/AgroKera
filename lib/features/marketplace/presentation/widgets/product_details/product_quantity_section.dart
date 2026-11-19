@@ -97,7 +97,8 @@ class _ProductQuantitySectionState extends State<ProductQuantitySection> {
         'მარაგში მხოლოდ $maxStock ${widget.product.unit}-ია',
       );
     }
-    final clamped = newQty.clamp(minQty, maxStock > 0 ? maxStock : 1);
+    final effectiveUpper = maxStock >= minQty ? maxStock : minQty;
+    final clamped = newQty.clamp(minQty, effectiveUpper);
     _qtyController.text = '$clamped';
     widget.onQuantityChanged(clamped);
   }
@@ -127,7 +128,7 @@ class _ProductQuantitySectionState extends State<ProductQuantitySection> {
   @override
   Widget build(BuildContext context) {
     final product = widget.product;
-    final isOutOfStock = !product.isAvailable || product.stockQuantity <= 0;
+    final isOutOfStock = product.isOutOfStock;
     final isBulkActive =
         product.hasBulkDiscount && widget.quantity >= product.bulkDiscountMinQty!;
 

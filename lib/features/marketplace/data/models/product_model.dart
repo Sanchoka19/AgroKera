@@ -95,6 +95,16 @@ class ProductModel {
     return price * (1.0 - (bulkDiscountPercent! / 100.0));
   }
 
+  /// Whether the remaining stock is less than the farmer's minimum order requirement
+  bool get isStockBelowMinOrder =>
+      stockQuantity > 0 && stockQuantity < minOrderQuantity;
+
+  /// Pure domain check whether the product is effectively out of stock or unavailable for purchase.
+  /// Under Rule B: If stockQuantity < minOrderQuantity, the remaining stock cannot satisfy
+  /// the minimum order requirement, so the product is automatically treated as out of stock / unavailable.
+  bool get isOutOfStock =>
+      !isAvailable || stockQuantity <= 0 || stockQuantity < minOrderQuantity;
+
   /// Formatted minimum order text
   String get minOrderDisplay =>
       '${minOrderQuantity.truncateToDouble() == minOrderQuantity ? minOrderQuantity.toInt() : minOrderQuantity} $unit';
@@ -110,6 +120,12 @@ class ProductModel {
 
   factory ProductModel.fromJson(Map<String, dynamic> json) {
     final stockQty = (json['stockQuantity'] as num?)?.toDouble() ?? 50.0;
+    final minOrderQty = (json['minOrderQuantity'] as num?)?.toDouble() ?? 1.0;
+    final rawIsAvailable = json['isAvailable'] as bool? ?? true;
+    final isBelowMin = stockQty > 0 && stockQty < minOrderQty;
+    final isStockExhausted = stockQty <= 0 || isBelowMin;
+    final effectiveIsAvailable = rawIsAvailable && !isStockExhausted;
+
     final rawImages = (json['images'] as List<dynamic>?)
             ?.whereType<String>()
             .where((u) => u.isNotEmpty)
@@ -127,6 +143,14 @@ class ProductModel {
             ?.map((e) => e.toString())
             .toList() ??
         const [];
+    final defaultStockStatus = stockQty <= 0
+        ? 'ამოწურულია'
+        : isBelowMin
+            ? 'მარაგი ამოიწურა'
+            : stockQty < 20
+                ? 'იწურება'
+                : 'მარაგშია';
+
     return ProductModel(
       id: json['id'] as String,
       title: json['title'] as String? ?? '',
@@ -138,18 +162,13 @@ class ProductModel {
       discountPercent: validDiscount,
       rating: (json['rating'] as num?)?.toDouble() ?? 0.0,
       reviewCount: (json['reviewCount'] as num?)?.toInt() ?? 0,
-      isAvailable: json['isAvailable'] as bool? ?? true,
+      isAvailable: effectiveIsAvailable,
       stockQuantity: stockQty,
-      stockStatus: json['stockStatus'] as String? ??
-          (stockQty <= 0
-              ? 'ამოწურულია'
-              : stockQty < 20
-                  ? 'იწურება'
-                  : 'მარაგშია'),
+      stockStatus: isBelowMin ? 'მარაგი ამოიწურა' : (json['stockStatus'] as String? ?? defaultStockStatus),
       imageUrl: primaryUrl,
       images: rawImages.isNotEmpty ? rawImages : [primaryUrl],
       description: json['description'] as String? ?? '',
-      minOrderQuantity: (json['minOrderQuantity'] as num?)?.toDouble() ?? 1.0,
+      minOrderQuantity: minOrderQty,
       bulkDiscountMinQty: rawBulkMin != null && rawBulkMin > 0 ? rawBulkMin : null,
       bulkDiscountPercent: rawBulkPct != null && rawBulkPct > 0 ? rawBulkPct : null,
       agroTags: rawTags,

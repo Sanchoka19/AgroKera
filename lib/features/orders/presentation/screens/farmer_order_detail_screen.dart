@@ -8,6 +8,7 @@ import '../../../../core/widgets/app_reason_bottom_sheet.dart';
 import '../../../../core/widgets/app_toast.dart';
 import '../../domain/models/farmer_order_model.dart';
 import '../providers/farmer_orders_provider.dart';
+import '../providers/order_chat_provider.dart';
 import '../widgets/farmer_order/farmer_order_bottom_bar.dart';
 import '../widgets/farmer_order/farmer_order_customer_card.dart';
 import '../widgets/farmer_order/farmer_order_financial_card.dart';
@@ -90,6 +91,7 @@ class _FarmerOrderDetailScreenState
   }
 
   void _onOpenChat(FarmerOrder order) {
+    ref.read(orderChatReadProvider.notifier).markAsRead(order.id);
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => OrderChatScreen(order: order),

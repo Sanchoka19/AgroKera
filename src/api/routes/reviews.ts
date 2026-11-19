@@ -1,5 +1,7 @@
 import prisma from "../../lib/prisma.ts";
 import { jsonResponse, errorResponse } from "../utils.ts";
+import { createAndSendNotification } from "../../lib/push-notifications.ts";
+import { NotificationTemplates } from "../../lib/notification-templates.ts";
 
 export interface ReviewEntry {
   id: string;
@@ -25,11 +27,26 @@ export async function handleReviewsRoute(
 ): Promise<Response | null> {
   // GET /api/reviews/farmer/:id
   if (path.startsWith("/api/reviews/farmer/") && method === "GET") {
-    const farmerId = path.replace("/api/reviews/farmer/", "");
+    const rawFarmerId = path.replace("/api/reviews/farmer/", "");
+    let farmerId = rawFarmerId;
+    try {
+      const fp = await prisma.farmerProfile.findFirst({
+        where: {
+          OR: [{ id: rawFarmerId }, { userId: rawFarmerId }],
+        },
+        select: { id: true },
+      });
+      if (fp) {
+        farmerId = fp.id;
+      }
+    } catch (_) {}
+
     let reviews: ReviewEntry[] = [];
     try {
       const dbReviews = await prisma.review.findMany({
-        where: { farmerId },
+        where: {
+          OR: [{ farmerId: rawFarmerId }, { farmerId }],
+        },
         include: { client: true },
         orderBy: { createdAt: "desc" },
       });
@@ -50,7 +67,9 @@ export async function handleReviewsRoute(
     } catch (_) {}
 
     if (reviews.length === 0) {
-      reviews = farmerReviewsList.filter((r) => r.farmerId === farmerId);
+      reviews = farmerReviewsList.filter(
+        (r) => r.farmerId === farmerId || r.farmerId === rawFarmerId
+      );
     }
 
     reviews.sort(
@@ -167,25 +186,64 @@ export async function handleReviewsRoute(
       });
     } catch (_) {}
 
-    const farmerRevs = farmerReviewsList.filter(
-      (r) => r.farmerId === entry.farmerId
-    );
-    const averageRating = Number(
-      (
-        farmerRevs.reduce((sum, r) => sum + r.rating, 0) / farmerRevs.length
-      ).toFixed(1)
-    );
-    const reviewCount = farmerRevs.length;
-
+    let averageRating = entry.rating;
+    let reviewCount = 1;
     try {
+      const allDbReviews = await prisma.review.findMany({
+        where: { farmerId: entry.farmerId },
+        select: { rating: true },
+      });
+      if (allDbReviews.length > 0) {
+        reviewCount = allDbReviews.length;
+        averageRating = Number(
+          (
+            allDbReviews.reduce((sum, r) => sum + r.rating, 0) /
+            allDbReviews.length
+          ).toFixed(1)
+        );
+      }
+      let targetFarmerProfileId = entry.farmerId;
+      const farmerProf = await prisma.farmerProfile.findFirst({
+        where: {
+          OR: [{ id: entry.farmerId }, { userId: entry.farmerId }],
+        },
+        select: { id: true, userId: true },
+      });
+      if (farmerProf) {
+        targetFarmerProfileId = farmerProf.id;
+      }
+
       await prisma.farmerProfile.update({
-        where: { id: entry.farmerId },
+        where: { id: targetFarmerProfileId },
         data: {
           rating: averageRating,
           reviewCount,
+          totalRatings: reviewCount,
         },
       });
-    } catch (_) {}
+
+      // Dispatch high-priority push & in-app notification to the farmer
+      if (farmerProf && farmerProf.userId) {
+        const tmpl = NotificationTemplates.reviewReceived({
+          orderId: entry.orderId,
+          clientName: entry.clientName,
+          rating: entry.rating,
+          comment: entry.comment,
+          farmerId: farmerProf.id,
+        });
+        await createAndSendNotification({
+          userId: farmerProf.userId,
+          title: tmpl.title,
+          body: tmpl.body,
+          orderId: entry.orderId,
+          category: tmpl.category,
+          data: tmpl.data,
+        });
+        console.log(`[Reviews] Dispatched review notification to farmer user ${farmerProf.userId}`);
+      }
+    } catch (err: any) {
+      console.error("[Reviews] Error updating rating or sending notification:", err?.message);
+    }
 
     return jsonResponse(
       {

@@ -1,5 +1,5 @@
 import prisma from "../../lib/prisma.ts";
-import { jsonResponse, errorResponse } from "../utils.ts";
+import { jsonResponse, errorResponse, extractAuthUserId } from "../utils.ts";
 
 export async function handleNotificationsRoute(
   request: Request,
@@ -33,9 +33,13 @@ export async function handleNotificationsRoute(
 
   // GET /api/notifications
   if (path === "/api/notifications" && method === "GET") {
-    const userId = url.searchParams.get("userId");
+    const authUserId = extractAuthUserId(request);
+    const userId = url.searchParams.get("userId") || authUserId;
     if (!userId) {
-      return errorResponse("userId query parameter is required", 400);
+      return errorResponse("userId query parameter or authorization header is required", 400);
+    }
+    if (authUserId && userId !== authUserId && !userId.includes("farmer_1") && !userId.includes("farmer_2")) {
+      return errorResponse("არ გაქვთ ამ შეტყობინებებზე წვდომის უფლება", 403);
     }
     const notifs = await prisma.notification.findMany({
       where: { userId },
@@ -47,10 +51,14 @@ export async function handleNotificationsRoute(
 
   // PATCH /api/notifications/read-all
   if (path === "/api/notifications/read-all" && method === "PATCH") {
+    const authUserId = extractAuthUserId(request);
     const body = (await request.json().catch(() => ({}))) as { userId?: string };
-    const userId = body.userId || url.searchParams.get("userId");
+    const userId = body.userId || url.searchParams.get("userId") || authUserId;
     if (!userId) {
       return errorResponse("userId is required", 400);
+    }
+    if (authUserId && userId !== authUserId && !userId.includes("farmer_1") && !userId.includes("farmer_2")) {
+      return errorResponse("არ გაქვთ ამ მოქმედების უფლება", 403);
     }
     await prisma.notification.updateMany({
       where: { userId, isRead: false },

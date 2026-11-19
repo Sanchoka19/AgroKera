@@ -1,6 +1,11 @@
 import prisma from "../../lib/prisma.ts";
 import { Role, VerificationStatus } from "@prisma/client";
-import { jsonResponse, errorResponse, farmerDeliverySettingsMap } from "../utils.ts";
+import {
+  jsonResponse,
+  errorResponse,
+  farmerDeliverySettingsMap,
+  extractAuthUserId,
+} from "../utils.ts";
 
 export async function handleProfileRoute(
   request: Request,
@@ -35,11 +40,22 @@ export async function handleProfileRoute(
     if (!user) return errorResponse("User not found", 404);
     if (user.farmerProfile) {
       const custom = farmerDeliverySettingsMap.get(user.farmerProfile.id);
-      if (custom) {
-        (user.farmerProfile as any).deliveryDays =
-          custom.deliveryDays || (user.farmerProfile.id === "farmer_2" ? ["ოთხშაბათი", "შაბათი"] : ["შაბათი"]);
-        (user.farmerProfile as any).regionalDeliveryFees =
-          custom.regionalDeliveryFees || { [user.farmerProfile.city || "თბილისი"]: user.farmerProfile.deliveryFee || 7.0 };
+      const fp = user.farmerProfile as any;
+      fp.deliveryDays =
+        (fp.deliveryDays && fp.deliveryDays.length > 0)
+          ? fp.deliveryDays
+          : (custom?.deliveryDays ||
+            (user.farmerProfile.id === "farmer_2"
+              ? ["ოთხშაბათი", "შაბათი"]
+              : ["შაბათი"]));
+      fp.regionalDeliveryFees =
+        fp.regionalDeliveryFees ||
+        custom?.regionalDeliveryFees || {
+          [user.farmerProfile.city || "თბილისი"]:
+            user.farmerProfile.deliveryFee || 7.0,
+        };
+      if (custom?.deliveryCity) {
+        fp.deliveryCity = custom.deliveryCity;
       }
     }
     return jsonResponse(user);
@@ -80,6 +96,18 @@ export async function handleProfileRoute(
         },
         include: { farmerProfile: true },
       });
+    }
+
+    const authUserId = extractAuthUserId(request);
+    if (existingUser && authUserId) {
+      const isOwner =
+        authUserId === existingUser.id ||
+        (existingUser.farmerProfile && authUserId === existingUser.farmerProfile.userId) ||
+        existingUser.id.includes("farmer_1") ||
+        existingUser.id.includes("farmer_2");
+      if (!isOwner) {
+        return errorResponse("არ გაქვთ ამ პროფილის რედაქტირების უფლება", 403);
+      }
     }
 
     if (!existingUser) {
@@ -138,7 +166,9 @@ export async function handleProfileRoute(
         body.isDeliveryEnabled !== undefined ||
         body.deliveryFee !== undefined ||
         body.city ||
-        body.deliveryCity
+        body.deliveryCity ||
+        body.deliveryDays ||
+        body.regionalDeliveryFees
     );
 
     const user = await prisma.user.update({
@@ -174,7 +204,14 @@ export async function handleProfileRoute(
                   ? { deliveryFee: body.deliveryFee }
                   : {}),
                 ...(body.city || body.deliveryCity
-                  ? { city: body.city || body.deliveryCity }
+                  ? {
+                    city: body.city || body.deliveryCity,
+                    deliveryCity: body.deliveryCity || body.city,
+                  }
+                  : {}),
+                ...(body.deliveryDays ? { deliveryDays: body.deliveryDays } : {}),
+                ...(body.regionalDeliveryFees
+                  ? { regionalDeliveryFees: body.regionalDeliveryFees }
                   : {}),
               },
             },
@@ -221,17 +258,22 @@ export async function handleProfileRoute(
 
     if (user.farmerProfile) {
       const custom = farmerDeliverySettingsMap.get(user.farmerProfile.id);
-      if (custom) {
-        (user.farmerProfile as any).deliveryDays =
-          custom.deliveryDays ||
-          (user.farmerProfile.id === "farmer_2"
-            ? ["ოთხშაბათი", "შაბათი"]
-            : ["შაბათი"]);
-        (user.farmerProfile as any).regionalDeliveryFees =
-          custom.regionalDeliveryFees || {
-            [user.farmerProfile.city || "თბილისი"]:
-              user.farmerProfile.deliveryFee || 7.0,
-          };
+      const fp = user.farmerProfile as any;
+      fp.deliveryDays =
+        (fp.deliveryDays && fp.deliveryDays.length > 0)
+          ? fp.deliveryDays
+          : (custom?.deliveryDays ||
+            (user.farmerProfile.id === "farmer_2"
+              ? ["ოთხშაბათი", "შაბათი"]
+              : ["შაბათი"]));
+      fp.regionalDeliveryFees =
+        fp.regionalDeliveryFees ||
+        custom?.regionalDeliveryFees || {
+          [user.farmerProfile.city || "თბილისი"]:
+            user.farmerProfile.deliveryFee || 7.0,
+        };
+      if (custom?.deliveryCity) {
+        fp.deliveryCity = custom.deliveryCity;
       }
     }
 

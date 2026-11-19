@@ -71,7 +71,7 @@ class ReviewsRepository {
       }
     } catch (_) {}
 
-    return (reviews: <OrderReviewModel>[], averageRating: 5.0, reviewCount: 0);
+    return (reviews: <OrderReviewModel>[], averageRating: 0.0, reviewCount: 0);
   }
 
   /// Checks if an order already has a submitted review.

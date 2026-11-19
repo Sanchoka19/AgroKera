@@ -31,6 +31,7 @@ import '../../../marketplace/presentation/providers/marketplace_provider.dart';
 import 'farmer_delivery_settings_screen.dart';
 import 'help_center_screen.dart';
 import '../../../notifications/presentation/screens/notification_settings_screen.dart';
+import '../../../reviews/presentation/screens/farmer_my_reviews_screen.dart';
 
 class GuestProfileScreen extends ConsumerStatefulWidget {
   const GuestProfileScreen({super.key});
@@ -142,6 +143,29 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
               Navigator.of(context).push(
                 MaterialPageRoute(
                   builder: (context) => FarmAddressScreen(
+                    farmerId: authState.farmerId,
+                  ),
+                ),
+              );
+            },
+          ),
+          const ProfileRowDivider(),
+          ProfileRowItem(
+            icon: LucideIcons.star,
+            title: 'შეფასებები და რეიტინგი',
+            subtitle: () {
+              final farmers = ref.watch(marketplaceProvider).farmers;
+              final f = farmers.where((x) => x.id == authState.farmerId).firstOrNull;
+              if (f != null && f.reviewCount > 0) {
+                return 'რეიტინგი: ${f.rating.toStringAsFixed(1)} / 5.0 • ${f.reviewCount} შეფასება';
+              }
+              return 'მომხმარებელთა შეფასებები და უკუკავშირი';
+            }(),
+            onTap: () {
+              HapticFeedback.lightImpact();
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => FarmerMyReviewsScreen(
                     farmerId: authState.farmerId,
                   ),
                 ),

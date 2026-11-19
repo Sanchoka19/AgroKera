@@ -32,9 +32,7 @@ class _ProductBottomBarState extends State<ProductBottomBar> {
 
   void _handleTap() {
     widget.onAddToCart();
-    if (!widget.isOwner &&
-        widget.product.isAvailable &&
-        widget.product.stockQuantity > 0) {
+    if (!widget.isOwner && !widget.product.isOutOfStock) {
       if (mounted) {
         setState(() => _isSuccess = true);
         Future.delayed(const Duration(milliseconds: 750), () {
@@ -51,7 +49,7 @@ class _ProductBottomBarState extends State<ProductBottomBar> {
     final product = widget.product;
     final quantity = widget.quantity;
     final isOwner = widget.isOwner;
-    final isOutOfStock = !product.isAvailable || product.stockQuantity <= 0;
+    final isOutOfStock = product.isOutOfStock;
     final isBulkActive =
         product.hasBulkDiscount && quantity >= product.bulkDiscountMinQty!;
     final unitPrice = product.priceForQuantity(quantity);
@@ -140,9 +138,11 @@ class _ProductBottomBarState extends State<ProductBottomBar> {
                       _isSuccess ? const Color(0xFF16A34A) : AppColors.primary,
                   text: isOwner
                       ? 'თქვენი პროდუქტი'
-                      : (isOutOfStock
-                          ? 'მარაგში აღარ არის'
-                          : (_isSuccess ? 'დამატებულია' : 'დამატება')),
+                      : (product.isStockBelowMinOrder
+                          ? 'დარჩენილი მარაგი < მინიმუმი'
+                          : (isOutOfStock
+                              ? 'მარაგში აღარ არის'
+                              : (_isSuccess ? 'დამატებულია' : 'დამატება'))),
                   icon: isOwner
                       ? const Icon(
                           LucideIcons.ban,

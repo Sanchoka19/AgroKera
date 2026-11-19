@@ -28,6 +28,7 @@ class ProductFormValidator {
   static String? validateStep2({
     required String priceText,
     required String stockText,
+    double minOrder = 1.0,
     required bool isDiscountActive,
     required String discountText,
     required bool isBulkDiscountActive,
@@ -42,6 +43,12 @@ class ProductFormValidator {
     final stock = double.tryParse(stockText.trim()) ?? -1.0;
     if (stockText.trim().isEmpty || stock < 0) {
       return 'გთხოვთ მიუთითოთ მარაგის რაოდენობა';
+    }
+
+    if (stock > 0 && stock < minOrder) {
+      final minStr = minOrder.truncateToDouble() == minOrder ? minOrder.toInt().toString() : minOrder.toString();
+      final stockStr = stock.truncateToDouble() == stock ? stock.toInt().toString() : stock.toString();
+      return 'მარაგი ($stockStr) არ შეიძლება იყოს მინიმალურ შეკვეთაზე ($minStr) ნაკლები';
     }
 
     if (isDiscountActive) {
@@ -109,11 +116,9 @@ class ProductFormValidator {
     if (cleanDesc.isNotEmpty) {
       if (buffer.isNotEmpty) buffer.writeln();
       buffer.write(cleanDesc);
-    } else if (buffer.isEmpty) {
-      buffer.write('ნატურალური ქართული აგრო-პროდუქცია პირდაპირ მეურნეობიდან.');
     }
 
-    return buffer.toString();
+    return buffer.toString().trim();
   }
 }
 

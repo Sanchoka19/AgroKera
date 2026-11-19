@@ -21,7 +21,7 @@ class ProductHeaderInfo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isOutOfStock = !product.isAvailable || product.stockQuantity <= 0;
+    final isOutOfStock = product.isOutOfStock;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -119,7 +119,9 @@ class ProductHeaderInfo extends StatelessWidget {
             // Stock status badge
             isOutOfStock
                 ? StatusBadge.danger(
-                    label: 'მარაგში აღარ არის',
+                    label: product.isStockBelowMinOrder
+                        ? 'დარჩენილი მარაგი < მინიმუმი'
+                        : 'მარაგში აღარ არის',
                     icon: const Icon(
                       LucideIcons.x,
                       size: 12,

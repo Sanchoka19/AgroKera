@@ -1,9 +1,10 @@
 import prisma from "../../lib/prisma.ts";
 import { Role, VerificationStatus } from "@prisma/client";
 import nodemailer from "nodemailer";
-import { jsonResponse, errorResponse } from "../utils.ts";
+import { jsonResponse, errorResponse, createAuthToken } from "../utils.ts";
 
 const otpStore = new Map<string, { code: string; expiresAt: number }>();
+const otpRateLimitMap = new Map<string, { lastSentAt: number; count: number }>();
 
 export async function handleAuthRoute(
   request: Request,
@@ -19,10 +20,46 @@ export async function handleAuthRoute(
       return errorResponse("გთხოვთ მიუთითოთ სწორი ელ-ფოსტა", 400);
     }
 
+    // Rate Limiting Guard: 60s cooldown, max 5 attempts in 15 minutes
+    const now = Date.now();
+    const rateLimit = otpRateLimitMap.get(targetEmail);
+    if (rateLimit) {
+      if (now - rateLimit.lastSentAt < 60 * 1000) {
+        const waitSec = Math.ceil((60 * 1000 - (now - rateLimit.lastSentAt)) / 1000);
+        return errorResponse(`გთხოვთ მოიცადოთ ${waitSec} წამი ახალი კოდის მოთხოვნამდე`, 429);
+      }
+      if (rateLimit.count >= 5 && now - rateLimit.lastSentAt < 15 * 60 * 1000) {
+        return errorResponse("ძალიან ბევრი მცდელობა. გთხოვთ სცადოთ 15 წუთის შემდეგ", 429);
+      }
+      otpRateLimitMap.set(targetEmail, {
+        lastSentAt: now,
+        count: now - rateLimit.lastSentAt > 15 * 60 * 1000 ? 1 : rateLimit.count + 1,
+      });
+    } else {
+      otpRateLimitMap.set(targetEmail, { lastSentAt: now, count: 1 });
+    }
+
     const code = String(Math.floor(10000 + Math.random() * 90000));
+    const expiresAt = new Date(Date.now() + 9 * 60 * 1000);
+    try {
+      await prisma.otpCode.upsert({
+        where: { email: targetEmail },
+        create: {
+          email: targetEmail,
+          code,
+          expiresAt,
+        },
+        update: {
+          code,
+          expiresAt,
+        },
+      });
+    } catch (dbErr) {
+      console.error("[OTP DB Error]:", dbErr);
+    }
     otpStore.set(targetEmail, {
       code,
-      expiresAt: Date.now() + 9 * 60 * 1000, // 9 minutes
+      expiresAt: expiresAt.getTime(),
     });
 
     const smtpUser = (process.env.SMTP_USER || "").trim();
@@ -74,19 +111,31 @@ export async function handleAuthRoute(
     const targetEmail = (body.email || "").trim().toLowerCase();
     const inputCode = (body.code || "").trim();
 
-    const record = otpStore.get(targetEmail);
-    if (!record) {
+    let dbOtp = null;
+    try {
+      dbOtp = await prisma.otpCode.findUnique({
+        where: { email: targetEmail },
+      });
+    } catch (_) {}
+
+    const memoryOtp = otpStore.get(targetEmail);
+    const validCode = dbOtp?.code || memoryOtp?.code;
+    const expiresAtMs = dbOtp ? dbOtp.expiresAt.getTime() : memoryOtp?.expiresAt;
+
+    if (!validCode || !expiresAtMs) {
       return errorResponse("ვერიფიკაციის კოდი არ მოიძებნა ან ვადა გაუვიდა", 400);
     }
-    if (Date.now() > record.expiresAt) {
+    if (Date.now() > expiresAtMs) {
       otpStore.delete(targetEmail);
+      try { await prisma.otpCode.deleteMany({ where: { email: targetEmail } }); } catch (_) {}
       return errorResponse("ვერიფიკაციის კოდს ვადა გაუვიდა", 400);
     }
-    if (record.code !== inputCode) {
+    if (validCode !== inputCode) {
       return errorResponse("შეყვანილი კოდი არასწორია", 400);
     }
 
     otpStore.delete(targetEmail);
+    try { await prisma.otpCode.deleteMany({ where: { email: targetEmail } }); } catch (_) {}
     return jsonResponse({ verified: true, email: targetEmail });
   }
 
@@ -193,7 +242,7 @@ export async function handleAuthRoute(
     }
 
     return jsonResponse({
-      token: `ak_jwt_${user.id}`,
+      token: createAuthToken(user.id),
       user,
     });
   }
@@ -311,7 +360,7 @@ export async function handleAuthRoute(
 
     return jsonResponse(
       {
-        token: `ak_jwt_${user.id}`,
+        token: createAuthToken(user.id),
         user,
       },
       201

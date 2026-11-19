@@ -179,6 +179,9 @@ void main() {
     await tester.tap(find.text('ფერმის შესახებ'));
     await tester.pumpAndSettle();
 
+    // In About tab, floating cart must not be visible
+    expect(find.byType(DraggableFloatingCart), findsNothing);
+
     // Check history, location, and delivery info
     expect(find.text('ფერმის ისტორია'), findsOneWidget);
     expect(find.text('მდებარეობა'), findsOneWidget);

@@ -144,6 +144,35 @@ export class NotificationTemplates {
   }
 
   /**
+   * Farmer notification when a customer submits a review
+   */
+  static reviewReceived(params: {
+    orderId: string;
+    clientName: string;
+    rating: number;
+    comment?: string;
+    farmerId: string;
+  }): FormattedNotification {
+    const id = this.shortId(params.orderId);
+    const commentSnippet =
+      params.comment && params.comment.trim().length > 0
+        ? `: "${params.comment.trim().length > 60 ? params.comment.trim().slice(0, 57) + "..." : params.comment.trim()}"`
+        : "";
+
+    return {
+      title: `ახალი შეფასება • ${params.rating}/5`,
+      body: `${params.clientName}-მ შეაფასა შეკვეთა #${id}${commentSnippet}`,
+      category: "orders",
+      data: {
+        orderId: params.orderId,
+        farmerId: params.farmerId,
+        type: "farmer_review_received",
+        rating: String(params.rating),
+      },
+    };
+  }
+
+  /**
    * Pre-expiry warning for farmer
    */
   static expiryWarningFarmer(orderId: string, remainingMinutes: number): FormattedNotification {

@@ -64,7 +64,7 @@ class _FarmerProfileScreenState extends ConsumerState<FarmerProfileScreen>
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     _tabController.addListener(() {
-      if (!_tabController.indexIsChanging) {
+      if (_selectedTabIndex != _tabController.index) {
         setState(() => _selectedTabIndex = _tabController.index);
       }
     });
@@ -152,6 +152,7 @@ class _FarmerProfileScreenState extends ConsumerState<FarmerProfileScreen>
         centerTitle: true,
       ),
       body: Stack(
+        fit: StackFit.expand,
         children: [
           SingleChildScrollView(
             controller: _scrollController,
@@ -410,6 +411,11 @@ class _FarmerProfileScreenState extends ConsumerState<FarmerProfileScreen>
                 ),
                 child: TabBar(
                   controller: _tabController,
+                  onTap: (index) {
+                    if (_selectedTabIndex != index) {
+                      setState(() => _selectedTabIndex = index);
+                    }
+                  },
                   indicator: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(11),
@@ -483,7 +489,7 @@ class _FarmerProfileScreenState extends ConsumerState<FarmerProfileScreen>
                                 child: GridView.builder(
                                   shrinkWrap: true,
                                   physics: const NeverScrollableScrollPhysics(),
-                                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
                                   gridDelegate:
                                       const SliverGridDelegateWithMaxCrossAxisExtent(
                                     maxCrossAxisExtent: 210,
@@ -584,12 +590,13 @@ class _FarmerProfileScreenState extends ConsumerState<FarmerProfileScreen>
           ],
         ),
       ),
-      DraggableFloatingCart(
-        key: _floatingCartKey,
-        cartCount: cartCount,
-        bottomOffset: 24.0,
-        onTap: _openCart,
-      ),
+      if (_selectedTabIndex == 0)
+        DraggableFloatingCart(
+          key: _floatingCartKey,
+          cartCount: cartCount,
+          bottomOffset: 24.0,
+          onTap: _openCart,
+        ),
     ],
   ),
 );

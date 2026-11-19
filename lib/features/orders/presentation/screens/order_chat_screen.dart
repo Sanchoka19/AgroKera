@@ -43,18 +43,23 @@ class _OrderChatScreenState extends ConsumerState<OrderChatScreen> {
   void initState() {
     super.initState();
     PushNotificationService.activeChatOrderId = widget.order.id;
+    ref.read(orderChatReadProvider.notifier).markAsRead(widget.order.id);
     unawaited(
-      Future.microtask(() {
-        ref.read(orderChatProvider.notifier).loadMessages(widget.order.id);
-        ref.read(orderChatReadProvider.notifier).markAsRead(widget.order.id);
+      Future.microtask(() async {
+        await ref.read(orderChatProvider.notifier).loadMessages(widget.order.id);
+        if (mounted) {
+          ref.read(orderChatReadProvider.notifier).markAsRead(widget.order.id);
+        }
       }),
     );
 
     // Live polling for incoming messages every 2.5 seconds
-    _liveSyncTimer = Timer.periodic(const Duration(milliseconds: 2500), (_) {
+    _liveSyncTimer = Timer.periodic(const Duration(milliseconds: 2500), (_) async {
       if (mounted) {
-        ref.read(orderChatProvider.notifier).syncMessages(widget.order.id);
-        ref.read(orderChatReadProvider.notifier).markAsRead(widget.order.id);
+        await ref.read(orderChatProvider.notifier).syncMessages(widget.order.id);
+        if (mounted) {
+          ref.read(orderChatReadProvider.notifier).markAsRead(widget.order.id);
+        }
       }
     });
   }
@@ -67,6 +72,7 @@ class _OrderChatScreenState extends ConsumerState<OrderChatScreen> {
     _liveSyncTimer?.cancel();
     _textController.dispose();
     _scrollController.dispose();
+    ref.read(orderChatReadProvider.notifier).markAsRead(widget.order.id);
     super.dispose();
   }
 

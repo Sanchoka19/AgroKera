@@ -95,6 +95,34 @@ void main() {
       expect(bulkActiveItem.effectiveUnitPrice, 8.0);
       expect(bulkActiveItem.totalPrice, 80.0);
     });
+
+    test('Approach B: product is out of stock when stockQuantity < minOrderQuantity and cannot be added to cart', () {
+      final container = ProviderContainer();
+      final notifier = container.read(cartProvider.notifier);
+      notifier.clearCart();
+
+      const product = ProductModel(
+        id: 'test_below_min',
+        title: 'კიტრი',
+        category: 'ბოსტნეული',
+        farmerId: 'farmer_1',
+        farmerName: 'სანჩოს ფერმა',
+        price: 5.0,
+        imageUrl: '',
+        description: 'აღწერა',
+        stockQuantity: 4.0, // Stock is only 4 kg
+        minOrderQuantity: 10.0, // Min order is 10 kg
+      );
+
+      // Verify domain model flags
+      expect(product.isStockBelowMinOrder, isTrue);
+      expect(product.isOutOfStock, isTrue);
+
+      // Attempting to add product to cart should fail with AddToCartOutOfStock
+      final result = notifier.addProduct(product, 5);
+      expect(result, isA<AddToCartOutOfStock>());
+      expect(container.read(cartProvider).isEmpty, isTrue);
+    });
   });
 
   group('Cart & Favorites Auth Guard Tests', () {

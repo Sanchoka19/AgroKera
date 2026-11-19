@@ -1,0 +1,12 @@
+# Android Release Signing Configuration Example
+# Copy this file to `android/key.properties` and fill with your actual keystore credentials.
+# `android/key.properties` and `*.jks` are already ignored by git.
+#
+# Generate a keystore with:
+# keytool -genkey -v -keystore android/app/upload-keystore.jks -keyalg RSA -keysize 2048 -validity 10000 -alias upload
+
+keyAlias=upload
+keyPassword=your_key_password
+storeFile=../app/upload-keystore.jks
+storePassword=your_store_password
+

@@ -158,6 +158,9 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
   }
 
   Widget _buildDescription(String description) {
+    final clean = description.trim();
+    if (clean.isEmpty) return const SizedBox.shrink();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -170,7 +173,7 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
         ),
         const SizedBox(height: 8),
         Text(
-          description,
+          clean,
           style: AppTypography.bodyMedium.copyWith(
             color: AppColors.textPrimary,
             height: 1.5,
@@ -236,8 +239,10 @@ class _ProductDetailsScreenState extends ConsumerState<ProductDetailsScreen> {
                       ProductDeliveryInfoCard(farmer: farmer, farmerId: farmer.id),
                       const SizedBox(height: 22),
                       ProductFarmerCard(farmer: farmer),
-                      const SizedBox(height: 22),
-                      _buildDescription(product.description),
+                      if (product.description.trim().isNotEmpty) ...[
+                        const SizedBox(height: 22),
+                        _buildDescription(product.description),
+                      ],
                       ProductSimilarCarousel(products: similarProducts),
                       const SizedBox(height: 36),
                     ],

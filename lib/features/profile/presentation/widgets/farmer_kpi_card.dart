@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -7,6 +8,8 @@ import 'package:agrokera/core/theme/app_colors.dart';
 import 'package:agrokera/features/marketplace/presentation/providers/marketplace_provider.dart';
 import 'package:agrokera/features/orders/domain/models/farmer_order_model.dart';
 import 'package:agrokera/features/orders/presentation/providers/farmer_orders_provider.dart';
+import 'package:agrokera/features/orders/presentation/screens/incoming_orders_screen.dart';
+import 'package:agrokera/features/reviews/presentation/screens/farmer_my_reviews_screen.dart';
 
 /// Clean White Dashboard KPI Card showing farm performance metrics (Revenue, Orders, Rating)
 /// dynamically calculated from real incoming orders and farmer profile data.
@@ -22,8 +25,12 @@ class FarmerKpiCard extends ConsumerWidget {
     this.rating,
   });
 
-  Widget _buildMetricCol({required String value, required String label}) {
-    return Column(
+  Widget _buildMetricCol({
+    required String value,
+    required String label,
+    VoidCallback? onTap,
+  }) {
+    final col = Column(
       children: [
         Text(
           value,
@@ -47,6 +54,20 @@ class FarmerKpiCard extends ConsumerWidget {
           ),
         ),
       ],
+    );
+
+    if (onTap == null) return col;
+
+    return InkWell(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        onTap();
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
+        child: col,
+      ),
     );
   }
 
@@ -141,6 +162,13 @@ class FarmerKpiCard extends ConsumerWidget {
                 child: _buildMetricCol(
                   value: displayOrderCount,
                   label: 'შეკვეთების რაოდენობა',
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const IncomingOrdersScreen(),
+                      ),
+                    );
+                  },
                 ),
               ),
               Container(
@@ -152,6 +180,15 @@ class FarmerKpiCard extends ConsumerWidget {
                 child: _buildMetricCol(
                   value: displayRating,
                   label: 'საშუალო შეფასება',
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => FarmerMyReviewsScreen(
+                          farmerId: farmerId ?? matchingFarmer?.id,
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ),
             ],

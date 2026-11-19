@@ -8,7 +8,12 @@ import {
 } from "@prisma/client";
 import { createAndSendNotification } from "../../lib/push-notifications.ts";
 import { NotificationTemplates } from "../../lib/notification-templates.ts";
-import { jsonResponse, errorResponse, maskPhoneNumbers } from "../utils.ts";
+import {
+  jsonResponse,
+  errorResponse,
+  maskPhoneNumbers,
+  extractAuthUserId,
+} from "../utils.ts";
 import { calculatePendingOrderDeadline } from "../../lib/order-cron.ts";
 
 const orderMetadataMap = new Map<string, {
@@ -27,13 +32,33 @@ export async function handleOrdersRoute(
 ): Promise<Response | null> {
   // GET /api/orders
   if (method === "GET" && path === "/api/orders") {
+    const authUserId = extractAuthUserId(request);
     const farmerId = url.searchParams.get("farmerId");
     const clientId = url.searchParams.get("clientId");
 
+    if (!farmerId && !clientId && !authUserId) {
+      return errorResponse("ავტორიზაცია აუცილებელია", 401);
+    }
+
+    let resolvedClientId = clientId;
+    let resolvedFarmerId = farmerId;
+
+    if (!resolvedClientId && !resolvedFarmerId && authUserId) {
+      const user = await prisma.user.findUnique({
+        where: { id: authUserId },
+        include: { farmerProfile: true },
+      });
+      if (user?.farmerProfile) {
+        resolvedFarmerId = user.farmerProfile.id;
+      } else {
+        resolvedClientId = authUserId;
+      }
+    }
+
     const orders = await prisma.order.findMany({
       where: {
-        ...(farmerId ? { farmerId } : {}),
-        ...(clientId ? { clientId } : {}),
+        ...(resolvedFarmerId ? { farmerId: resolvedFarmerId } : {}),
+        ...(resolvedClientId ? { clientId: resolvedClientId } : {}),
       },
       include: {
         client: true,
@@ -60,11 +85,12 @@ export async function handleOrdersRoute(
       const meta = orderMetadataMap.get(o.id);
       const isPickup =
         o.fulfillmentType === FulfillmentType.SELF_PICKUP ||
+        o.isPickup ||
         Boolean(meta?.isPickup);
-      const deliveryFee = isPickup ? 0 : (meta?.deliveryFee ?? 0);
-      const heavyFee = isPickup ? 0 : (meta?.heavyFee ?? 0);
-      const platformFee = meta?.platformFee ?? 0;
-      const paymentMethod = meta?.paymentMethod || "ESCROW";
+      const deliveryFee = isPickup ? 0 : (o.deliveryFee || (meta?.deliveryFee ?? 0));
+      const heavyFee = isPickup ? 0 : (o.heavyFee || (meta?.heavyFee ?? 0));
+      const platformFee = o.platformFee || (meta?.platformFee ?? 0);
+      const paymentMethod = o.paymentMethod || meta?.paymentMethod || "ESCROW";
 
       return {
         id: o.id,
@@ -248,6 +274,11 @@ export async function handleOrdersRoute(
           farmerId: resolvedFarmerId,
           status: OrderStatus.PENDING,
           totalAmount,
+          deliveryFee,
+          heavyFee,
+          platformFee,
+          paymentMethod,
+          isPickup,
           hasVat: body.hasVat ?? false,
           fulfillmentType:
             body.fulfillmentType === "SELF_PICKUP" || (body as { isPickup?: boolean }).isPickup === true

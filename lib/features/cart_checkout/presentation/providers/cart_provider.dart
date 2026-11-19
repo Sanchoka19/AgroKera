@@ -148,7 +148,7 @@ class CartNotifier extends Notifier<List<CartItemModel>> {
       return const AddToCartOwnerForbidden();
     }
 
-    if (!product.isAvailable || product.stockQuantity <= 0) {
+    if (product.isOutOfStock) {
       return const AddToCartOutOfStock();
     }
 
@@ -201,7 +201,8 @@ class CartNotifier extends Notifier<List<CartItemModel>> {
     }
 
     final targetTotal = currentInCart + effectiveAddQuantity;
-    final clampedTotal = targetTotal.clamp(minLimit, maxStock);
+    final effectiveMaxStock = maxStock < minLimit ? minLimit : maxStock;
+    final clampedTotal = targetTotal.clamp(minLimit, effectiveMaxStock);
     final actuallyAdded = clampedTotal - currentInCart;
 
     if (actuallyAdded <= 0) {
@@ -274,7 +275,7 @@ class CartNotifier extends Notifier<List<CartItemModel>> {
       }
       final product = products.where((p) => p.id == item.id).firstOrNull;
       if (product != null) {
-        if (!product.isAvailable || product.stockQuantity <= 0) {
+        if (product.isOutOfStock) {
           return CartValidationOutOfStock(item.title);
         }
         if (item.quantity > product.stockQuantity) {
@@ -318,7 +319,8 @@ class CartNotifier extends Notifier<List<CartItemModel>> {
 
     final existingIndex = state.indexWhere((item) => item.id == newItem.id);
     final minLimit = newItem.minOrderQuantity.toInt().clamp(1, 99999);
-    final maxAvailable = newItem.stockQuantity.toInt().clamp(minLimit, 99999);
+    final rawStock = newItem.stockQuantity.toInt();
+    final maxAvailable = (rawStock >= minLimit ? rawStock : minLimit).clamp(minLimit, 99999);
 
     if (existingIndex != -1) {
       final existing = state[existingIndex];
@@ -373,7 +375,8 @@ class CartNotifier extends Notifier<List<CartItemModel>> {
     state = state.map((item) {
       if (item.id == id) {
         final minLimit = item.minOrderQuantity.toInt().clamp(1, 99999);
-        final maxLimit = item.stockQuantity.toInt().clamp(minLimit, 99999);
+        final rawStock = item.stockQuantity.toInt();
+        final maxLimit = (rawStock >= minLimit ? rawStock : minLimit).clamp(minLimit, 99999);
         final clamped = quantity.clamp(minLimit, maxLimit);
         return item.copyWith(quantity: clamped);
       }

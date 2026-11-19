@@ -250,9 +250,11 @@ class ProductCard extends StatelessWidget {
                             style: AppTypography.caption.copyWith(
                               fontSize: 10,
                               fontWeight: FontWeight.w600,
-                              color: product.stockStatus == 'მარაგშია'
-                                  ? AppColors.primary
-                                  : AppColors.accentWarm,
+                              color: product.isOutOfStock
+                                  ? const Color(0xFFDC2626)
+                                  : product.stockStatus == 'მარაგშია'
+                                      ? AppColors.primary
+                                      : AppColors.accentWarm,
                             ),
                           ),
                           const SizedBox(height: 1),
@@ -301,7 +303,7 @@ class ProductCard extends StatelessWidget {
                       builder: (btnContext) {
                         return AnimatedAddToCartButton(
                           isOwner: isOwner,
-                          isOutOfStock: !product.isAvailable || product.stockQuantity <= 0,
+                          isOutOfStock: product.isOutOfStock,
                           onPressed: () {
                             if (isOwner) {
                               AppToast.info(

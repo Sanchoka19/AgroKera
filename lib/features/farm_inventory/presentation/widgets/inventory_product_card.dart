@@ -76,8 +76,9 @@ class InventoryProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isLow = product.stockQuantity > 0 && product.stockQuantity < 20;
-    final isOut = product.stockQuantity <= 0 || !product.isAvailable;
+    final isStockBelowMin = product.isStockBelowMinOrder;
+    final isOut = product.isOutOfStock;
+    final isLow = !isOut && product.stockQuantity > 0 && product.stockQuantity < 20;
 
     final statusColor = isOut
         ? const Color(0xFFDC2626)
@@ -129,7 +130,9 @@ class InventoryProductCard extends StatelessWidget {
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
-                            isOut ? 'გათიშული / 0' : product.stockStatus,
+                            isStockBelowMin
+                                ? 'მარაგი < მინიმუმი'
+                                : (isOut ? 'გათიშული / 0' : product.stockStatus),
                             style: GoogleFonts.notoSansGeorgian(
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
@@ -173,7 +176,7 @@ class InventoryProductCard extends StatelessWidget {
                 ),
               ),
               Switch(
-                value: product.isAvailable && product.stockQuantity > 0,
+                value: product.isAvailable && !product.isOutOfStock,
                 activeThumbColor: AppColors.primary,
                 onChanged: onToggleAvailability,
               ),

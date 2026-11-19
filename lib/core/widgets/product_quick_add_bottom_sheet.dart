@@ -65,7 +65,8 @@ class _ProductQuickAddBottomSheetState
   void initState() {
     super.initState();
     _minLimit = widget.product.minOrderQuantity.toInt().clamp(1, 99999);
-    _maxStock = widget.product.stockQuantity.toInt().clamp(1, 99999);
+    final rawStock = widget.product.stockQuantity.toInt();
+    _maxStock = (rawStock >= _minLimit ? rawStock : _minLimit).clamp(1, 99999);
     _quantity = _minLimit;
     _qtyController = TextEditingController(text: '$_quantity');
     _qtyFocusNode = FocusNode();

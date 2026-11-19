@@ -303,6 +303,7 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
       final error = ProductFormValidator.validateStep2(
         priceText: _priceCtrl.text,
         stockText: _stockCtrl.text,
+        minOrder: _minOrder,
         isDiscountActive: _isDiscountActive,
         discountText: _discountCtrl.text,
         isBulkDiscountActive: _isBulkDiscountActive,

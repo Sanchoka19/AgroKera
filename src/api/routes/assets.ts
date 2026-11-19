@@ -76,10 +76,16 @@ export async function handleAssetsRoute(
 
     const rawBase64 = body.base64Data.replace(/^data:[^;]+;base64,/, "");
     const buffer = Buffer.from(rawBase64, "base64");
-    const contentType = body.contentType || "image/jpeg";
-    const ext = (body.fileName?.split(".").pop() || "jpg").toLowerCase();
-    const folder = body.folder || "products";
-    const objectKey = `${folder}/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    if (buffer.length > 10 * 1024 * 1024) {
+      return errorResponse("ფაილის ზომა არ უნდა აღემატებოდეს 10MB-ს", 413);
+    }
+
+    const rawContentType = body.contentType || "image/jpeg";
+    const contentType = rawContentType.startsWith("image/") ? rawContentType : "image/jpeg";
+    const ext = (body.fileName?.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "");
+    const allowedFolders = ["products", "avatars", "covers", "kyc"];
+    const folder = allowedFolders.includes(body.folder || "") ? body.folder! : "products";
+    const objectKey = `${folder}/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext || "jpg"}`;
 
     if (
       r2Endpoint &&

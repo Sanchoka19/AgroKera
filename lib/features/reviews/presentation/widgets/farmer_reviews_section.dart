@@ -5,9 +5,11 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../marketplace/data/models/farmer_model.dart';
 import '../providers/reviews_provider.dart';
-import 'star_rating_selector.dart';
+import 'farmer_review_item_card.dart';
+import 'farmer_reviews_list_sheet.dart';
 
-/// Reviews section shown on the farmer profile ("ფერმის შესახებ" tab)
+/// Reviews section shown on the farmer profile ("ფერმის შესახებ" tab).
+/// Previews the top 3 reviews and allows viewing all reviews via a modal bottom sheet.
 class FarmerReviewsSection extends ConsumerStatefulWidget {
   final FarmerModel farmer;
 
@@ -22,12 +24,28 @@ class FarmerReviewsSection extends ConsumerStatefulWidget {
 }
 
 class _FarmerReviewsSectionState extends ConsumerState<FarmerReviewsSection> {
+  static const int _previewLimit = 3;
+
   @override
   void initState() {
     super.initState();
     Future.microtask(() {
       ref.read(reviewsProvider.notifier).loadReviewsForFarmer(widget.farmer.id);
     });
+  }
+
+  void _openAllReviewsSheet({
+    required List reviews,
+    required double rating,
+    required int reviewCount,
+  }) {
+    FarmerReviewsListSheet.show(
+      context: context,
+      farmer: widget.farmer,
+      reviews: List.from(reviews),
+      rating: rating,
+      reviewCount: reviewCount,
+    );
   }
 
   @override
@@ -44,17 +62,22 @@ class _FarmerReviewsSectionState extends ConsumerState<FarmerReviewsSection> {
             : widget.farmer.rating)
         : 0.0;
 
+    final previewReviews = reviews.take(_previewLimit).toList();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Section Header with Review Count Badge
         Row(
           children: [
-            Text(
-              'მომხმარებელთა შეფასებები',
-              style: GoogleFonts.notoSansGeorgian(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: const Color(0xFF0F172A),
+            Expanded(
+              child: Text(
+                'მომხმარებელთა შეფასებები',
+                style: GoogleFonts.notoSansGeorgian(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: const Color(0xFF0F172A),
+                ),
               ),
             ),
             const SizedBox(width: 8),
@@ -63,7 +86,6 @@ class _FarmerReviewsSectionState extends ConsumerState<FarmerReviewsSection> {
               decoration: BoxDecoration(
                 color: const Color(0xFFF1F5F9),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
               ),
               child: Text(
                 '$displayReviewCount',
@@ -78,81 +100,84 @@ class _FarmerReviewsSectionState extends ConsumerState<FarmerReviewsSection> {
         ),
         const SizedBox(height: 12),
 
-        // Summary Rating Card
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.03),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    displayRating.toStringAsFixed(1),
-                    style: GoogleFonts.notoSansGeorgian(
-                      fontSize: 32,
-                      fontWeight: FontWeight.w900,
-                      color: const Color(0xFF0F172A),
-                      letterSpacing: -0.5,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: List.generate(5, (index) {
-                      final starValue = index + 1;
-                      final isFull = displayRating >= starValue;
-                      final isHalf = displayRating >= starValue - 0.5 && !isFull;
-
-                      return Icon(
-                        isFull
-                            ? Icons.star_rounded
-                            : (isHalf ? Icons.star_half_rounded : Icons.star_border_rounded),
-                        size: 20,
-                        color: const Color(0xFFF59E0B),
-                      );
-                    }),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '$displayReviewCount შეფასება',
-                    style: GoogleFonts.notoSansGeorgian(
-                      fontSize: 12,
-                      color: const Color(0xFF64748B),
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-              const Spacer(),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFEF3C7),
-                  shape: BoxShape.circle,
+        // Summary Rating Card (shown when there are reviews)
+        if (displayReviewCount > 0) ...[
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
                 ),
-                child: const Icon(
-                  LucideIcons.award,
-                  color: Color(0xFFD97706),
-                  size: 28,
-                ),
-              ),
-            ],
-          ),
-        ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      displayRating.toStringAsFixed(1),
+                      style: GoogleFonts.notoSansGeorgian(
+                        fontSize: 32,
+                        fontWeight: FontWeight.w900,
+                        color: const Color(0xFF0F172A),
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: List.generate(5, (index) {
+                        final starValue = index + 1;
+                        final isFull = displayRating >= starValue;
+                        final isHalf =
+                            displayRating >= starValue - 0.5 && !isFull;
 
-        const SizedBox(height: 14),
+                        return Icon(
+                          isFull
+                              ? Icons.star_rounded
+                              : (isHalf
+                                  ? Icons.star_half_rounded
+                                  : Icons.star_border_rounded),
+                          size: 20,
+                          color: const Color(0xFFF59E0B),
+                        );
+                      }),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '$displayReviewCount შეფასება',
+                      style: GoogleFonts.notoSansGeorgian(
+                        fontSize: 12,
+                        color: const Color(0xFF64748B),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFFEF3C7),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    LucideIcons.award,
+                    color: Color(0xFFD97706),
+                    size: 28,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+        ],
 
         // Reviews List or Empty State
         if (reviews.isEmpty)
@@ -162,7 +187,13 @@ class _FarmerReviewsSectionState extends ConsumerState<FarmerReviewsSection> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
             child: Column(
               children: [
@@ -184,123 +215,65 @@ class _FarmerReviewsSectionState extends ConsumerState<FarmerReviewsSection> {
               ],
             ),
           )
-        else
+        else ...[
+          // Preview up to 3 reviews
           ListView.separated(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            itemCount: reviews.length,
-            separatorBuilder: (context, _) => const SizedBox(height: 10),
+            itemCount: previewReviews.length,
+            separatorBuilder: (_, _) => const SizedBox(height: 10),
             itemBuilder: (context, index) {
-              final review = reviews[index];
-              final dateStr =
-                  '${review.createdAt.day}.${review.createdAt.month.toString().padLeft(2, '0')}.${review.createdAt.year}';
+              return FarmerReviewItemCard(review: previewReviews[index]);
+            },
+          ),
 
-              return Container(
-                padding: const EdgeInsets.all(14),
+          // "View All Reviews" button if more than 3 reviews exist
+          if (reviews.length > _previewLimit) ...[
+            const SizedBox(height: 12),
+            InkWell(
+              onTap: () => _openAllReviewsSheet(
+                reviews: reviews,
+                rating: displayRating,
+                reviewCount: displayReviewCount,
+              ),
+              borderRadius: BorderRadius.circular(14),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 16),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        CircleAvatar(
-                          radius: 16,
-                          backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-                          backgroundImage: review.clientAvatarUrl != null &&
-                                  review.clientAvatarUrl!.isNotEmpty
-                              ? NetworkImage(review.clientAvatarUrl!)
-                              : null,
-                          child: review.clientAvatarUrl == null ||
-                                  review.clientAvatarUrl!.isEmpty
-                              ? Text(
-                                  review.clientName.isNotEmpty
-                                      ? review.clientName[0].toUpperCase()
-                                      : 'მ',
-                                  style: GoogleFonts.notoSansGeorgian(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.primary,
-                                  ),
-                                )
-                              : null,
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                review.clientName,
-                                style: GoogleFonts.notoSansGeorgian(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w700,
-                                  color: const Color(0xFF0F172A),
-                                ),
-                              ),
-                              Text(
-                                dateStr,
-                                style: GoogleFonts.firaCode(
-                                  fontSize: 11,
-                                  color: const Color(0xFF94A3B8),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        StarRatingDisplay(
-                          rating: review.rating,
-                          size: 14,
-                        ),
-                      ],
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.03),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
                     ),
-                    if (review.tags.isNotEmpty) ...[
-                      const SizedBox(height: 8),
-                      Wrap(
-                        spacing: 6,
-                        runSpacing: 4,
-                        children: review.tags.map((tag) {
-                          return Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 3,
-                            ),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF1F5F9),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
-                              tag,
-                              style: GoogleFonts.notoSansGeorgian(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w500,
-                                color: const Color(0xFF475569),
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                    ],
-                    if (review.comment != null &&
-                        review.comment!.trim().isNotEmpty) ...[
-                      const SizedBox(height: 8),
-                      Text(
-                        review.comment!.trim(),
-                        style: GoogleFonts.notoSansGeorgian(
-                          fontSize: 12.5,
-                          height: 1.4,
-                          color: const Color(0xFF334155),
-                        ),
-                      ),
-                    ],
                   ],
                 ),
-              );
-            },
-          ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'ყველა შეფასების ნახვა (${reviews.length})',
+                      style: GoogleFonts.notoSansGeorgian(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    const Icon(
+                      LucideIcons.chevronRight,
+                      size: 16,
+                      color: AppColors.primary,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ],
       ],
     );
   }

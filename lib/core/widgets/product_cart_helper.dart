@@ -36,8 +36,13 @@ class ProductCartHelper {
       return;
     }
 
-    if (!product.isAvailable || product.stockQuantity <= 0) {
-      AppToast.info(context, 'მარაგში მეტი აღარ არის');
+    if (product.isOutOfStock) {
+      AppToast.info(
+        context,
+        product.isStockBelowMinOrder
+            ? 'დარჩენილი მარაგი არ აკმაყოფილებს მინიმალურ შეკვეთას'
+            : 'მარაგში მეტი აღარ არის',
+      );
       return;
     }
 

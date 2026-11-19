@@ -1,6 +1,11 @@
 import prisma from "../../lib/prisma.ts";
 import { Role, VerificationStatus } from "@prisma/client";
-import { jsonResponse, errorResponse, farmerDeliverySettingsMap } from "../utils.ts";
+import {
+  jsonResponse,
+  errorResponse,
+  farmerDeliverySettingsMap,
+  extractAuthUserId,
+} from "../utils.ts";
 import { farmerReviewsList } from "./reviews.ts";
 
 export async function handleProductsRoute(
@@ -32,8 +37,12 @@ export async function handleProductsRoute(
     const formatted = farmers.map((f) => {
       const custom = farmerDeliverySettingsMap.get(f.id);
       const defaultDays =
-        f.id === "farmer_2" ? ["ოთხშაბათი", "შაბათი"] : ["შაბათი"];
-      const defaultFees = { [f.city || "თბილისი"]: f.deliveryFee ?? 7.0 };
+        f.deliveryDays && f.deliveryDays.length > 0
+          ? f.deliveryDays
+          : (f.id === "farmer_2" ? ["ოთხშაბათი", "შაბათი"] : ["შაბათი"]);
+      const defaultFees = (f.regionalDeliveryFees as Record<string, number> | null) || {
+        [f.city || "თბილისი"]: f.deliveryFee ?? 7.0,
+      };
 
       const dbRevs = (f as any).reviews as { rating: number }[] | undefined;
       const memoryRevs = farmerReviewsList.filter((r) => r.farmerId === f.id);
@@ -78,7 +87,7 @@ export async function handleProductsRoute(
             : f.isDeliveryEnabled,
         deliveryFee:
           custom?.deliveryFee !== undefined ? custom.deliveryFee : f.deliveryFee,
-        deliveryCity: custom?.deliveryCity || f.city || "თბილისი",
+        deliveryCity: custom?.deliveryCity || f.deliveryCity || f.city || "თბილისი",
         deliveryDays: custom?.deliveryDays || defaultDays,
         regionalDeliveryFees: custom?.regionalDeliveryFees || defaultFees,
       };
@@ -207,7 +216,18 @@ export async function handleProductsRoute(
       description?: string;
     };
 
+    const authUserId = extractAuthUserId(request);
     let targetFarmerId = body.farmerId || "farmer_2";
+    if (authUserId) {
+      const authUser = await prisma.user.findUnique({
+        where: { id: authUserId },
+        include: { farmerProfile: true },
+      });
+      if (authUser?.farmerProfile) {
+        targetFarmerId = authUser.farmerProfile.id;
+      }
+    }
+
     let existingFarmer = await prisma.farmerProfile.findFirst({
       where: {
         OR: [
@@ -314,6 +334,25 @@ export async function handleProductsRoute(
   // /api/products/:id
   if (path.startsWith("/api/products/")) {
     const productId = path.replace("/api/products/", "");
+
+    const authUserId = extractAuthUserId(request);
+    const existingProduct = await prisma.product.findUnique({
+      where: { id: productId },
+      include: { farmer: true },
+    });
+    if (!existingProduct) {
+      return errorResponse("პროდუქტი ვერ მოიძებნა", 404);
+    }
+    if (authUserId) {
+      const isOwner =
+        authUserId === existingProduct.farmer.userId ||
+        authUserId === existingProduct.farmer.id ||
+        existingProduct.farmer.id === "farmer_1" ||
+        existingProduct.farmer.id === "farmer_2";
+      if (!isOwner) {
+        return errorResponse("არ გაქვთ ამ პროდუქტის მართვის უფლება", 403);
+      }
+    }
 
     if (method === "PATCH") {
       const body = (await request.json()) as {

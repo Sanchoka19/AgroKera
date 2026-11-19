@@ -124,9 +124,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             end: Alignment.bottomCenter,
             stops: [0.0, 0.16, 0.32],
             colors: [
-              Color(0xFF14532D), // Rich Deep Emerald
-              Color(0xFF15803D), // Brand Forest Green
-              Color(0xFF16A34A), // Vibrant Emerald
+              Color(0xFF062824), // Dark Pine / Deep Midnight Teal
+              Color(0xFF0D3F3B), // Rich Deep Teal
+              Color(0xFF0F766E), // Brand Deep Emerald Teal
             ],
           ),
         ),
@@ -192,7 +192,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                             width: 6,
                             height: 6,
                             decoration: const BoxDecoration(
-                              color: Color(0xFF86EFAC),
+                              color: Color(0xFF2DD4BF),
                               shape: BoxShape.circle,
                             ),
                           ),

@@ -54,6 +54,14 @@ class _FarmerInventoryScreenState extends ConsumerState<FarmerInventoryScreen> {
     ProductModel product,
     bool isAvailable,
   ) async {
+    if (isAvailable && product.isStockBelowMinOrder) {
+      AppToast.error(
+        context,
+        'მარაგი (${product.stockQuantity.toInt()} ${product.unit}) ნაკლებია მინიმალურ შეკვეთაზე (${product.minOrderDisplay}). გასააქტიურებლად შეავსეთ მარაგი ან შეამცირეთ მინიმალური ზღვარი.',
+      );
+      return;
+    }
+
     final confirmed = await AppConfirmationBottomSheet.show(
       context: context,
       title: isAvailable ? 'პროდუქტის გააქტიურება' : 'პროდუქტის გათიშვა',

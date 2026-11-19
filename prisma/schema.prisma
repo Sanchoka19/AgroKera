@@ -82,6 +82,9 @@ model FarmerProfile {
   isDeliveryEnabled  Boolean            @default(true)
   isVatPayer         Boolean            @default(false)
   deliveryFee        Float              @default(0.0)
+  deliveryCity       String?
+  deliveryDays       String[]           @default([])
+  regionalDeliveryFees Json?
   rating             Float              @default(5.0)
   reviewCount        Int                @default(0)
   totalRatings       Int                @default(0)
@@ -125,6 +128,11 @@ model Order {
   farmerId             String?
   status               OrderStatus        @default(PENDING)
   totalAmount          Float
+  deliveryFee          Float              @default(0.0)
+  heavyFee             Float              @default(0.0)
+  platformFee          Float              @default(0.0)
+  paymentMethod        String             @default("ESCROW")
+  isPickup             Boolean            @default(false)
   hasVat               Boolean            @default(false)
   fulfillmentType      FulfillmentType    @default(FARMER_DELIVERY)
   contactPerson        String?
@@ -212,5 +220,16 @@ model Review {
 
   @@index([farmerId, createdAt])
 }
+
+model OtpCode {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  code      String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([email])
+}
+
 
 

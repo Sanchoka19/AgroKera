@@ -240,6 +240,24 @@ class SecureStorageService {
     }
   }
 
+  Future<void> saveChatLastReadMap(String userId, Map<String, DateTime> map) async {
+    try {
+      final jsonMap = map.map((k, v) => MapEntry(k, v.toIso8601String()));
+      await _write('agrokera_chat_reads_$userId', jsonEncode(jsonMap));
+    } catch (_) {}
+  }
+
+  Future<Map<String, DateTime>> readChatLastReadMap(String userId) async {
+    try {
+      final raw = await _read('agrokera_chat_reads_$userId');
+      if (raw != null && raw.trim().isNotEmpty) {
+        final decoded = jsonDecode(raw) as Map<String, dynamic>;
+        return decoded.map((k, v) => MapEntry(k, DateTime.parse(v as String)));
+      }
+    } catch (_) {}
+    return {};
+  }
+
   Future<String> _scopedKey(String baseKey, [String? userId]) async {
     final uid = userId ?? await _read(_userIdKey);
     if (uid != null && uid.trim().isNotEmpty) {

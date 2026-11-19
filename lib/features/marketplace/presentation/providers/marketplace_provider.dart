@@ -254,11 +254,14 @@ class MarketplaceNotifier extends Notifier<MarketplaceState> {
     List<String>? images,
   }) async {
     final tempId = 'prod_${DateTime.now().millisecondsSinceEpoch}';
+    final isBelowMin = stockQuantity > 0 && stockQuantity < minOrderQuantity;
     final stockStatus = stockQuantity <= 0
         ? 'ამოწურულია'
-        : stockQuantity < 20
-            ? 'იწურება'
-            : 'მარაგშია';
+        : isBelowMin
+            ? 'მარაგი ამოიწურა'
+            : stockQuantity < 20
+                ? 'იწურება'
+                : 'მარაგშია';
     final effectiveImages = (images != null && images.isNotEmpty)
         ? images
         : (imageUrl != null && imageUrl.isNotEmpty)
@@ -280,7 +283,7 @@ class MarketplaceNotifier extends Notifier<MarketplaceState> {
       discountPercent: discountPercent,
       stockQuantity: stockQuantity,
       stockStatus: stockStatus,
-      isAvailable: stockQuantity > 0,
+      isAvailable: stockQuantity >= minOrderQuantity && stockQuantity > 0,
       minOrderQuantity: minOrderQuantity,
       bulkDiscountMinQty: bulkDiscountMinQty,
       bulkDiscountPercent: bulkDiscountPercent,
@@ -368,14 +371,21 @@ class MarketplaceNotifier extends Notifier<MarketplaceState> {
       products: state.products.map((p) {
         if (p.id != productId) return p;
         final newStock = stockQuantity ?? p.stockQuantity;
+        final newMinOrder = minOrderQuantity ?? p.minOrderQuantity;
+        final isBelowMin = newStock > 0 && newStock < newMinOrder;
+        final isExhausted = newStock <= 0 || isBelowMin;
         final newStatus = newStock <= 0
             ? 'ამოწურულია'
-            : newStock < 20
-                ? 'იწურება'
-                : 'მარაგშია';
+            : isBelowMin
+                ? 'მარაგი ამოიწურა'
+                : newStock < 20
+                    ? 'იწურება'
+                    : 'მარაგშია';
         final nextImages = (images != null && images.isNotEmpty)
             ? images
             : (imageUrl != null ? [imageUrl] : p.images);
+        final baseAvailable = isAvailable ?? (newStock > 0 ? p.isAvailable : false);
+        final effectiveAvailable = baseAvailable && !isExhausted;
         return p.copyWith(
           title: title,
           category: category,
@@ -385,10 +395,10 @@ class MarketplaceNotifier extends Notifier<MarketplaceState> {
           unit: unit,
           stockQuantity: newStock,
           stockStatus: newStatus,
-          minOrderQuantity: minOrderQuantity,
+          minOrderQuantity: newMinOrder,
           bulkDiscountMinQty: bulkDiscountMinQty,
           bulkDiscountPercent: bulkDiscountPercent,
-          isAvailable: isAvailable ?? (newStock > 0 ? p.isAvailable : false),
+          isAvailable: effectiveAvailable,
           description: description,
           imageUrl: imageUrl ?? (nextImages.isNotEmpty ? nextImages.first : p.imageUrl),
           images: nextImages,
@@ -442,10 +452,11 @@ class MarketplaceNotifier extends Notifier<MarketplaceState> {
         state.products.where((p) => p.id == productId).firstOrNull;
     if (target == null || addedQuantity <= 0) return null;
     final newTotal = target.stockQuantity + addedQuantity;
+    final isAvailable = newTotal >= target.minOrderQuantity && newTotal > 0;
     await updateProduct(
       productId,
       stockQuantity: newTotal,
-      isAvailable: true,
+      isAvailable: isAvailable,
     );
     return newTotal;
   }
@@ -457,10 +468,11 @@ class MarketplaceNotifier extends Notifier<MarketplaceState> {
       if (match != null) {
         final remaining =
             (match.stockQuantity - item.quantity).clamp(0.0, 99999.0);
+        final isAvailable = remaining >= match.minOrderQuantity && remaining > 0;
         await updateProduct(
           match.id,
           stockQuantity: remaining,
-          isAvailable: remaining > 0,
+          isAvailable: isAvailable,
         );
       }
     }
@@ -884,7 +896,7 @@ final similarProductsProvider =
 
   final candidates = allProducts.where((p) {
     if (p.id == targetProduct.id) return false;
-    if (!p.isAvailable || p.stockQuantity <= 0) return false;
+    if (p.isOutOfStock) return false;
     return true;
   }).toList();
 

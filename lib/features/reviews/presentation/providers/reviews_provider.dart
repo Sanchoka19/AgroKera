@@ -121,28 +121,26 @@ class ReviewsNotifier extends Notifier<ReviewsState> {
   /// Loads reviews for a specific farmer from the server
   Future<void> loadReviewsForFarmer(String farmerId) async {
     final result = await _repo.fetchReviewsForFarmer(farmerId);
-    if (result.reviews.isNotEmpty) {
-      final updatedFarmerMap =
-          Map<String, List<OrderReviewModel>>.from(state.reviewsByFarmer);
-      updatedFarmerMap[farmerId] = result.reviews;
+    final updatedFarmerMap =
+        Map<String, List<OrderReviewModel>>.from(state.reviewsByFarmer);
+    updatedFarmerMap[farmerId] = result.reviews;
 
-      final updatedOrdersMap =
-          Map<String, OrderReviewModel>.from(state.reviewsByOrder);
-      for (final r in result.reviews) {
-        updatedOrdersMap[r.orderId] = r;
-      }
-
-      state = state.copyWith(
-        reviewsByFarmer: updatedFarmerMap,
-        reviewsByOrder: updatedOrdersMap,
-      );
-
-      ref.read(marketplaceProvider.notifier).updateFarmerRating(
-            farmerId: farmerId,
-            newRating: result.averageRating,
-            newReviewCount: result.reviewCount,
-          );
+    final updatedOrdersMap =
+        Map<String, OrderReviewModel>.from(state.reviewsByOrder);
+    for (final r in result.reviews) {
+      updatedOrdersMap[r.orderId] = r;
     }
+
+    state = state.copyWith(
+      reviewsByFarmer: updatedFarmerMap,
+      reviewsByOrder: updatedOrdersMap,
+    );
+
+    ref.read(marketplaceProvider.notifier).updateFarmerRating(
+          farmerId: farmerId,
+          newRating: result.averageRating,
+          newReviewCount: result.reviewCount,
+        );
   }
 
   /// Checks if an order has already been reviewed

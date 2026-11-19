@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Agrokera</string>
+	<string>AgroKera</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -65,6 +65,21 @@
 		<string>UIInterfaceOrientationPortraitUpsideDown</string>
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+
+	<!-- Permissions for Camera, Photo Library & Location -->
+	<key>NSCameraUsageDescription</key>
+	<string>AgroKera საჭიროებს კამერაზე წვდომას პროდუქციის ფოტოების გადასაღებად, ფერმერის KYC ვერიფიკაციისთვის და პროფილის სურათის დასაყენებლად.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>AgroKera საჭიროებს ფოტოების გალერეაზე წვდომას პროდუქციის სურათებისა და პროფილის ფოტოს ასატვირთად.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>AgroKera საჭიროებს თქვენს ლოკაციაზე წვდომას მეურნეობისა და მიწოდების ზუსტი მისამართის რუკაზე დასადგენად.</string>
+
+	<!-- Background Modes for Push Notifications -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>fetch</string>
+		<string>remote-notification</string>
 	</array>
 </dict>
 </plist>

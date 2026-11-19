@@ -156,21 +156,53 @@ final orderChatProvider =
   OrderChatNotifier.new,
 );
 
-/// Tracks the last read timestamp per order chat in the current session
+/// Tracks the last read timestamp per order chat in the current session and persistent storage
 class OrderChatReadNotifier extends Notifier<Map<String, DateTime>> {
+  String? _currentUserId;
+
   @override
   Map<String, DateTime> build() {
+    _currentUserId = ref.watch(authStateProvider.select((s) => s.userId));
+    if (_currentUserId != null && _currentUserId!.isNotEmpty) {
+      unawaited(_loadFromStorage(_currentUserId!));
+    }
+
     ref.listen(authStateProvider, (prev, next) {
       if (prev?.userId != next.userId) {
-        state = const {};
+        _currentUserId = next.userId;
+        if (next.userId != null && next.userId!.isNotEmpty) {
+          unawaited(_loadFromStorage(next.userId!));
+        } else {
+          state = const {};
+        }
       }
     });
     return const {};
   }
 
+  Future<void> _loadFromStorage(String userId) async {
+    try {
+      final storage = ref.read(secureStorageProvider);
+      final stored = await storage.readChatLastReadMap(userId);
+      if (stored.isNotEmpty) {
+        state = {...stored, ...state};
+      }
+    } catch (_) {}
+  }
+
   /// Marks all messages and chat notifications for [orderId] as read
   void markAsRead(String orderId) {
-    state = {...state, orderId: DateTime.now()};
+    final now = DateTime.now().toUtc();
+    final updated = {...state, orderId: now};
+    state = updated;
+
+    final userId = _currentUserId ?? ref.read(authStateProvider).userId;
+    if (userId != null && userId.isNotEmpty) {
+      unawaited(
+        ref.read(secureStorageProvider).saveChatLastReadMap(userId, updated),
+      );
+    }
+
     unawaited(
       ref
           .read(notificationsProvider.notifier)
@@ -203,6 +235,8 @@ final isOrderChatUnreadProvider = Provider.family<bool, String>((ref, orderId) {
   }
 
   final myRole = auth.role;
+  final myUserId = auth.userId;
+  final myFarmerId = auth.farmerId;
   final readMap = ref.watch(orderChatReadProvider);
   final lastRead = readMap[orderId];
 
@@ -218,12 +252,40 @@ final isOrderChatUnreadProvider = Provider.family<bool, String>((ref, orderId) {
   final messages = chatMap[orderId];
   if (messages == null || messages.isEmpty) return false;
 
-  return messages.any(
-    (m) =>
-        !m.isSystem &&
-        m.senderRole != myRole &&
-        (lastRead == null || m.createdAt.isAfter(lastRead)),
+  final userMessages = messages.where((m) => !m.isSystem).toList();
+  if (userMessages.isEmpty) return false;
+
+  bool isFromMe(OrderMessage m) {
+    if (m.senderRole == myRole) return true;
+    if (myUserId != null && m.senderId == myUserId) return true;
+    if (myFarmerId != null && m.senderId == myFarmerId) return true;
+    return false;
+  }
+
+  // If the very latest message was sent by me, the conversation is already seen/up to date
+  final lastMsg = userMessages.last;
+  if (isFromMe(lastMsg)) {
+    return false;
+  }
+
+  // Find latest message from the counterparty
+  final lastCounterpartyMsg = userMessages.lastWhere(
+    (m) => !isFromMe(m),
+    orElse: () => lastMsg,
   );
+
+  if (lastRead != null) {
+    // If lastRead is after or at the counterparty's latest message, it is marked as seen
+    return lastCounterpartyMsg.createdAt.toUtc().isAfter(lastRead.toUtc());
+  }
+
+  // If lastRead is not yet known in memory, check if current user replied after this message
+  final myLastMsg = userMessages.reversed.where(isFromMe).firstOrNull;
+  if (myLastMsg != null) {
+    return lastCounterpartyMsg.createdAt.isAfter(myLastMsg.createdAt);
+  }
+
+  return !isFromMe(lastCounterpartyMsg);
 });
 
 /// Total count of unread chat messages/conversations for the logged-in user (Farmer or Customer).
@@ -238,10 +300,6 @@ final unreadChatCountProvider = Provider<int>((ref) {
   final myOrders =
       isFarmer ? ordersState.incomingOrders : ordersState.clientOrders;
 
-  final chatMap = ref.watch(orderChatProvider);
-  final readMap = ref.watch(orderChatReadProvider);
-  final notifications = ref.watch(notificationsProvider);
-
   int totalUnread = 0;
 
   // Count strictly from user's active orders (Pending / InProgress)
@@ -251,25 +309,9 @@ final unreadChatCountProvider = Provider<int>((ref) {
         order.status == OrderStatus.inProgress;
     if (!isActive) continue;
 
-    final lastRead = readMap[order.id];
-    final messages = chatMap[order.id] ?? const [];
-
-    final unreadMsgsInChat = messages
-        .where(
-          (m) =>
-              !m.isSystem &&
-              m.senderRole != myRole &&
-              (lastRead == null || m.createdAt.isAfter(lastRead)),
-        )
-        .length;
-
-    final unreadNotifsForOrder = notifications
-        .where((n) => n.isChat && !n.isRead && n.orderId == order.id)
-        .fold<int>(0, (sum, n) => sum + n.unreadCount);
-
-    final orderUnread = max(unreadMsgsInChat, unreadNotifsForOrder);
-    if (orderUnread > 0) {
-      totalUnread += orderUnread;
+    final isUnread = ref.watch(isOrderChatUnreadProvider(order.id));
+    if (isUnread) {
+      totalUnread += 1;
     }
   }
 

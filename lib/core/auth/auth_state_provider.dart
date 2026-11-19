@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import '../services/push_notification_service.dart';
@@ -465,7 +466,12 @@ class AuthNotifier extends Notifier<AuthState> {
     }
     await _resaveSession();
     if (syncBackend) {
-      await _patchProfileSilently({'avatarUrl': avatarUrl});
+      await _patchProfileSilently(
+        {'avatarUrl': avatarUrl},
+        fallbackUserId: state.userId ??
+            state.farmerId ??
+            (state.isFarmer ? 'user_farmer_2' : 'user_client_1'),
+      );
     }
   }
 
@@ -556,12 +562,14 @@ class AuthNotifier extends Notifier<AuthState> {
     required Future<void> Function(String url, {bool syncBackend}) apply,
   }) async {
     String fallbackPreview = file.path;
-    try {
-      final bytes = await file.readAsBytes();
-      if (bytes.isNotEmpty) {
-        fallbackPreview = 'data:image/jpeg;base64,${base64Encode(bytes)}';
-      }
-    } catch (_) {}
+    if (kIsWeb || fallbackPreview.isEmpty) {
+      try {
+        final bytes = await file.readAsBytes();
+        if (bytes.isNotEmpty) {
+          fallbackPreview = 'data:image/jpeg;base64,${base64Encode(bytes)}';
+        }
+      } catch (_) {}
+    }
     await apply(fallbackPreview, syncBackend: false);
     try {
       final remoteUrl = await _repo.uploadImage(file, folder: folder);

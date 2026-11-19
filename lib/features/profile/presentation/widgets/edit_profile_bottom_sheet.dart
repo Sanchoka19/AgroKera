@@ -12,6 +12,7 @@ import '../../../../core/widgets/app_toast.dart';
 import '../../../marketplace/presentation/providers/marketplace_provider.dart';
 import 'avatar_picker_modal.dart';
 import 'cover_photo_picker_modal.dart';
+import 'profile_image_view.dart';
 
 /// Bottom sheet modal to edit user's personal name and/or farm name.
 class EditProfileBottomSheet extends ConsumerStatefulWidget {
@@ -57,88 +58,6 @@ class _EditProfileBottomSheetState extends ConsumerState<EditProfileBottomSheet>
     _nameController.dispose();
     _farmNameController.dispose();
     super.dispose();
-  }
-
-  Widget _buildAvatarPreview(String? url) {
-    if (url == null || url.isEmpty) {
-      return Container(
-        color: AppColors.primaryLight,
-        alignment: Alignment.center,
-        child: const Icon(LucideIcons.user, size: 28, color: AppColors.primary),
-      );
-    }
-    if (url.startsWith('http://') || url.startsWith('https://')) {
-      return Image.network(
-        url,
-        fit: BoxFit.cover,
-        errorBuilder: (_, _, _) => Container(
-          color: AppColors.primaryLight,
-          alignment: Alignment.center,
-          child: const Icon(LucideIcons.user, size: 28, color: AppColors.primary),
-        ),
-      );
-    }
-    if (url.startsWith('data:image/')) {
-      try {
-        final base64Str = url.split(',').last;
-        return Image.memory(
-          base64Decode(base64Str),
-          fit: BoxFit.cover,
-          errorBuilder: (_, _, _) => Container(
-            color: AppColors.primaryLight,
-            alignment: Alignment.center,
-            child: const Icon(LucideIcons.user, size: 28, color: AppColors.primary),
-          ),
-        );
-      } catch (_) {}
-    }
-    if (!kIsWeb && File(url).existsSync()) {
-      return Image.file(
-        File(url),
-        fit: BoxFit.cover,
-        errorBuilder: (_, _, _) => Container(
-          color: AppColors.primaryLight,
-          alignment: Alignment.center,
-          child: const Icon(LucideIcons.user, size: 28, color: AppColors.primary),
-        ),
-      );
-    }
-    return Container(
-      color: AppColors.primaryLight,
-      alignment: Alignment.center,
-      child: const Icon(LucideIcons.user, size: 28, color: AppColors.primary),
-    );
-  }
-
-  Widget _buildCoverPreview(String? coverUrl) {
-    final url = (coverUrl != null && coverUrl.isNotEmpty)
-        ? coverUrl
-        : 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=1000&auto=format&fit=crop&q=80';
-    if (url.startsWith('http://') || url.startsWith('https://')) {
-      return Image.network(
-        url,
-        fit: BoxFit.cover,
-        errorBuilder: (_, _, _) => Container(color: AppColors.primaryLight),
-      );
-    }
-    if (url.startsWith('data:image/')) {
-      try {
-        final base64Str = url.split(',').last;
-        return Image.memory(
-          base64Decode(base64Str),
-          fit: BoxFit.cover,
-          errorBuilder: (_, _, _) => Container(color: AppColors.primaryLight),
-        );
-      } catch (_) {}
-    }
-    if (!kIsWeb && File(url).existsSync()) {
-      return Image.file(
-        File(url),
-        fit: BoxFit.cover,
-        errorBuilder: (_, _, _) => Container(color: AppColors.primaryLight),
-      );
-    }
-    return Container(color: AppColors.primaryLight);
   }
 
   Future<void> _handleSave() async {
@@ -296,7 +215,10 @@ class _EditProfileBottomSheetState extends ConsumerState<EditProfileBottomSheet>
                                     ),
                                   ),
                                   child: ClipOval(
-                                    child: _buildAvatarPreview(auth.userAvatarUrl),
+                                    child: ProfileImageView.avatar(
+                                      avatarUrl: auth.userAvatarUrl,
+                                      size: 56,
+                                    ),
                                   ),
                                 ),
                                 Positioned(
@@ -378,7 +300,7 @@ class _EditProfileBottomSheetState extends ConsumerState<EditProfileBottomSheet>
                         ),
                         // Cover Photo Picker Row
                         InkWell(
-                          onTap: () => CoverPhotoPickerModal.show(context),
+                          onTap: () => CoverPhotoPickerModal.show(context, ref),
                           borderRadius: BorderRadius.circular(12),
                           child: Row(
                             children: [
@@ -392,7 +314,11 @@ class _EditProfileBottomSheetState extends ConsumerState<EditProfileBottomSheet>
                                   ),
                                 ),
                                 clipBehavior: Clip.antiAlias,
-                                child: _buildCoverPreview(auth.farmCoverUrl),
+                                child: ProfileImageView.cover(
+                                  coverUrl: auth.farmCoverUrl,
+                                  width: 56,
+                                  height: 42,
+                                ),
                               ),
                               const SizedBox(width: 14),
                               Expanded(

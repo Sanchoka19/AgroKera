@@ -73,23 +73,29 @@ void main() {
       find.text('ფერმერის მიერ განსაზღვრული მინიმალური შეკვეთაა 5 კგ.'),
       findsOneWidget,
     );
-    expect(find.text('5 კგ'), findsOneWidget);
+    expect(find.text('5'), findsOneWidget);
 
     // Try to decrement below 5 -> should stay at 5
     await tester.tap(find.byIcon(LucideIcons.minus));
     await tester.pump();
-    expect(find.text('5 კგ'), findsOneWidget);
+    expect(find.text('5'), findsOneWidget);
 
     // Increment to 6
     await tester.tap(find.byIcon(LucideIcons.plus));
     await tester.pump();
-    expect(find.text('6 კგ'), findsOneWidget);
+    expect(find.text('6'), findsOneWidget);
+
+    // Directly enter large quantity in TextField
+    await tester.enterText(find.byType(TextField), '25');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pump();
+    expect(find.text('25'), findsOneWidget);
 
     // Confirm adding to cart
     await tester.tap(find.textContaining('კალათაში დამატება'));
     await tester.pumpAndSettle();
 
-    expect(confirmedQuantity, 6);
+    expect(confirmedQuantity, 25);
   });
 
   testWidgets('ProductCartHelper directly adds when minOrderQuantity is 1',

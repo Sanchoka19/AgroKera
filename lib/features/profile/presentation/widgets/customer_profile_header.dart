@@ -1,10 +1,8 @@
-import 'dart:convert';
-import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../core/theme/app_colors.dart';
+import 'profile_image_view.dart';
 
 /// Customer profile header with avatar, name, email, and camera button
 class CustomerProfileHeader extends StatelessWidget {
@@ -22,57 +20,6 @@ class CustomerProfileHeader extends StatelessWidget {
     required this.onAvatarTap,
     this.onEditTap,
   });
-
-  Widget _buildAvatarImage(String? url, [double size = 42]) {
-    if (url == null || url.isEmpty) {
-      return Container(
-        color: AppColors.primaryLight,
-        alignment: Alignment.center,
-        child: Icon(LucideIcons.user, size: size, color: AppColors.primary),
-      );
-    }
-    if (url.startsWith('http://') || url.startsWith('https://')) {
-      return Image.network(
-        url,
-        fit: BoxFit.cover,
-        errorBuilder: (_, _, _) => Container(
-          color: AppColors.primaryLight,
-          alignment: Alignment.center,
-          child: Icon(LucideIcons.user, size: size, color: AppColors.primary),
-        ),
-      );
-    }
-    if (url.startsWith('data:image/')) {
-      try {
-        final base64Str = url.split(',').last;
-        return Image.memory(
-          base64Decode(base64Str),
-          fit: BoxFit.cover,
-          errorBuilder: (_, _, _) => Container(
-            color: AppColors.primaryLight,
-            alignment: Alignment.center,
-            child: Icon(LucideIcons.user, size: size, color: AppColors.primary),
-          ),
-        );
-      } catch (_) {}
-    }
-    if (!kIsWeb && File(url).existsSync()) {
-      return Image.file(
-        File(url),
-        fit: BoxFit.cover,
-        errorBuilder: (_, _, _) => Container(
-          color: AppColors.primaryLight,
-          alignment: Alignment.center,
-          child: Icon(LucideIcons.user, size: size, color: AppColors.primary),
-        ),
-      );
-    }
-    return Container(
-      color: AppColors.primaryLight,
-      alignment: Alignment.center,
-      child: Icon(LucideIcons.user, size: size, color: AppColors.primary),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -105,7 +52,10 @@ class CustomerProfileHeader extends StatelessWidget {
                     ],
                   ),
                   child: ClipOval(
-                    child: _buildAvatarImage(avatarUrl, 42),
+                    child: ProfileImageView.avatar(
+                      avatarUrl: avatarUrl,
+                      size: 92,
+                    ),
                   ),
                 ),
                 Positioned(

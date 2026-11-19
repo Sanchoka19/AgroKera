@@ -386,32 +386,50 @@ class _FarmerProfileScreenState extends ConsumerState<FarmerProfileScreen>
             ),
 
             // Clearance for overlapping bottom half of the card
-            const SizedBox(height: 86),
+            const SizedBox(height: 80),
 
-            // 3. Tab Bar (პროდუქტები / ფერმის შესახებ)
+            // 3. Tab Bar (პროდუქტები / ფერმის შესახებ) - Modern segmented pill design
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: TabBar(
-                controller: _tabController,
-                labelColor: AppColors.primary,
-                unselectedLabelColor: AppColors.textSecondary,
-                indicatorColor: AppColors.primary,
-                indicatorWeight: 2.5,
-                labelStyle: AppTypography.titleMedium.copyWith(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
+              child: Container(
+                height: 44,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(14),
                 ),
-                unselectedLabelStyle: AppTypography.titleMedium.copyWith(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
+                child: TabBar(
+                  controller: _tabController,
+                  indicator: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(11),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.06),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  indicatorSize: TabBarIndicatorSize.tab,
+                  dividerColor: Colors.transparent,
+                  labelColor: AppColors.primary,
+                  unselectedLabelColor: AppColors.textSecondary,
+                  labelStyle: AppTypography.titleMedium.copyWith(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
+                  unselectedLabelStyle: AppTypography.titleMedium.copyWith(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  tabs: const [
+                    Tab(text: 'პროდუქტები'),
+                    Tab(text: 'ფერმის შესახებ'),
+                  ],
                 ),
-                tabs: const [
-                  Tab(text: 'პროდუქტები'),
-                  Tab(text: 'ფერმის შესახებ'),
-                ],
               ),
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 12),
 
             // 5. Tab Content: Products Grid or About Section
             if (_selectedTabIndex == 0) ...[
@@ -516,6 +534,7 @@ class _FarmerProfileScreenState extends ConsumerState<FarmerProfileScreen>
       DraggableFloatingCart(
         key: _floatingCartKey,
         cartCount: cartCount,
+        bottomOffset: 24.0,
         onTap: _openCart,
       ),
     ],

@@ -58,6 +58,8 @@ class _ProductQuickAddBottomSheetState
   late int _quantity;
   late final int _minLimit;
   late final int _maxStock;
+  late final TextEditingController _qtyController;
+  late final FocusNode _qtyFocusNode;
 
   @override
   void initState() {
@@ -65,6 +67,63 @@ class _ProductQuickAddBottomSheetState
     _minLimit = widget.product.minOrderQuantity.toInt().clamp(1, 99999);
     _maxStock = widget.product.stockQuantity.toInt().clamp(1, 99999);
     _quantity = _minLimit;
+    _qtyController = TextEditingController(text: '$_quantity');
+    _qtyFocusNode = FocusNode();
+    _qtyFocusNode.addListener(() {
+      if (!_qtyFocusNode.hasFocus) {
+        _commitTypedQuantity(_qtyController.text);
+      } else {
+        _qtyController.selection = TextSelection(
+          baseOffset: 0,
+          extentOffset: _qtyController.text.length,
+        );
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _qtyController.dispose();
+    _qtyFocusNode.dispose();
+    super.dispose();
+  }
+
+  void _commitTypedQuantity(String rawValue) {
+    final parsed = int.tryParse(rawValue.trim());
+    if (parsed == null) {
+      _qtyController.text = '$_quantity';
+      return;
+    }
+
+    if (parsed < _minLimit) {
+      AppToast.info(
+        context,
+        'მინიმალური შეკვეთის რაოდენობაა ${widget.product.minOrderDisplay}',
+        icon: LucideIcons.info,
+      );
+      setState(() {
+        _quantity = _minLimit;
+        _qtyController.text = '$_quantity';
+      });
+      return;
+    }
+
+    if (parsed > _maxStock) {
+      AppToast.info(
+        context,
+        'მარაგში მხოლოდ $_maxStock ${widget.product.unit}-ია',
+      );
+      setState(() {
+        _quantity = _maxStock;
+        _qtyController.text = '$_quantity';
+      });
+      return;
+    }
+
+    setState(() {
+      _quantity = parsed;
+      _qtyController.text = '$_quantity';
+    });
   }
 
   void _decrement() {
@@ -80,6 +139,7 @@ class _ProductQuickAddBottomSheetState
     HapticFeedback.selectionClick();
     setState(() {
       _quantity--;
+      _qtyController.text = '$_quantity';
     });
   }
 
@@ -92,6 +152,7 @@ class _ProductQuickAddBottomSheetState
     HapticFeedback.selectionClick();
     setState(() {
       _quantity++;
+      _qtyController.text = '$_quantity';
     });
   }
 
@@ -151,26 +212,32 @@ class _ProductQuickAddBottomSheetState
         product.bulkDiscountMinQty != null &&
         _quantity >= product.bulkDiscountMinQty!;
 
-    return SafeArea(
+    return Padding(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
           color: AppColors.surface,
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           border: Border.all(color: AppColors.border, width: 1),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.12),
               blurRadius: 24,
-              offset: const Offset(0, 10),
+              offset: const Offset(0, -4),
             ),
           ],
         ),
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
+        child: SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
             // Handle bar
             Center(
               child: Container(
@@ -358,7 +425,7 @@ class _ProductQuickAddBottomSheetState
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'შესაკვეთი რაოდენობა:',
+                  'რაოდენობა:',
                   style: GoogleFonts.notoSansGeorgian(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
@@ -368,73 +435,106 @@ class _ProductQuickAddBottomSheetState
                 Container(
                   decoration: BoxDecoration(
                     color: const Color(0xFFF8FAFC),
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(20),
                     border: Border.all(color: AppColors.border, width: 1),
                   ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 6,
-                    vertical: 4,
-                  ),
+                  padding: const EdgeInsets.all(4),
                   child: Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       // Minus Button
                       InkWell(
                         onTap: _decrement,
-                        borderRadius: BorderRadius.circular(10),
+                        customBorder: const CircleBorder(),
                         child: Container(
-                          width: 34,
-                          height: 34,
+                          width: 32,
+                          height: 32,
                           decoration: BoxDecoration(
-                            color: _quantity <= _minLimit
-                                ? const Color(0xFFE2E8F0)
-                                : Colors.white,
-                            borderRadius: BorderRadius.circular(10),
+                            color: const Color(0xFFF1F5F9),
+                            shape: BoxShape.circle,
                             border: Border.all(
-                              color: const Color(0xFFCBD5E1),
-                              width: 1,
+                              color: _quantity <= _minLimit
+                                  ? const Color(0xFFE2E8F0)
+                                      .withValues(alpha: 0.6)
+                                  : const Color(0xFFCBD5E1),
                             ),
                           ),
                           alignment: Alignment.center,
                           child: Icon(
                             LucideIcons.minus,
-                            size: 16,
+                            size: 15,
                             color: _quantity <= _minLimit
-                                ? const Color(0xFF94A3B8)
+                                ? AppColors.textSecondary
+                                    .withValues(alpha: 0.35)
                                 : AppColors.textPrimary,
                           ),
                         ),
                       ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 14),
-                        child: Text(
-                          '$_quantity ${product.unit}',
+                      const SizedBox(width: 8),
+
+                      // Editable Quantity Input
+                      Container(
+                        height: 32,
+                        constraints: const BoxConstraints(
+                          minWidth: 42,
+                          maxWidth: 80,
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        alignment: Alignment.center,
+                        child: TextField(
+                          controller: _qtyController,
+                          focusNode: _qtyFocusNode,
+                          keyboardType: TextInputType.number,
+                          textInputAction: TextInputAction.done,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                          ],
+                          textAlign: TextAlign.center,
                           style: GoogleFonts.notoSansGeorgian(
-                            fontSize: 15.5,
+                            fontSize: 16,
                             fontWeight: FontWeight.w800,
                             color: AppColors.textPrimary,
                           ),
+                          decoration: const InputDecoration(
+                            border: InputBorder.none,
+                            enabledBorder: InputBorder.none,
+                            focusedBorder: InputBorder.none,
+                            isDense: true,
+                            filled: false,
+                            contentPadding: EdgeInsets.zero,
+                          ),
+                          onSubmitted: (val) {
+                            _commitTypedQuantity(val);
+                            _qtyFocusNode.unfocus();
+                          },
+                          onTapOutside: (_) {
+                            if (_qtyFocusNode.hasFocus) {
+                              _commitTypedQuantity(_qtyController.text);
+                              _qtyFocusNode.unfocus();
+                            }
+                          },
                         ),
                       ),
+                      const SizedBox(width: 8),
+
                       // Plus Button
                       InkWell(
                         onTap: _increment,
-                        borderRadius: BorderRadius.circular(10),
+                        customBorder: const CircleBorder(),
                         child: Container(
-                          width: 34,
-                          height: 34,
+                          width: 32,
+                          height: 32,
                           decoration: BoxDecoration(
                             color: _quantity >= _maxStock
-                                ? const Color(0xFFE2E8F0)
+                                ? AppColors.primary.withValues(alpha: 0.4)
                                 : AppColors.primary,
-                            borderRadius: BorderRadius.circular(10),
+                            shape: BoxShape.circle,
                           ),
                           alignment: Alignment.center,
-                          child: Icon(
+                          child: const Icon(
                             LucideIcons.plus,
-                            size: 16,
-                            color: _quantity >= _maxStock
-                                ? const Color(0xFF94A3B8)
-                                : Colors.white,
+                            size: 15,
+                            color: Colors.white,
                           ),
                         ),
                       ),
@@ -449,6 +549,10 @@ class _ProductQuickAddBottomSheetState
             // Add to Cart Button
             ElevatedButton(
               onPressed: () {
+                if (_qtyFocusNode.hasFocus) {
+                  _commitTypedQuantity(_qtyController.text);
+                  _qtyFocusNode.unfocus();
+                }
                 HapticFeedback.mediumImpact();
                 Navigator.of(context).pop();
                 widget.onConfirm(_quantity);
@@ -500,6 +604,9 @@ class _ProductQuickAddBottomSheetState
           ],
         ),
       ),
-    );
+    ),
+  ),
+),
+);
   }
 }

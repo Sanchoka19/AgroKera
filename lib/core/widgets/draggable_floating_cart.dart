@@ -78,28 +78,62 @@ class DraggableFloatingCartState extends ConsumerState<DraggableFloatingCart>
     );
   }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
+  ({double minX, double maxX, double topSafe, double maxBottom}) _calculateBounds() {
     final media = MediaQuery.of(context);
     final screenWidth = media.size.width;
     final screenHeight = media.size.height;
-    final bottomBarHeight = media.padding.bottom + widget.bottomOffset;
+    final scaffold = Scaffold.maybeOf(context);
+    final hasAppBar = scaffold?.hasAppBar ?? false;
+    final extendBehindAppBar = scaffold?.widget.extendBodyBehindAppBar ?? false;
+    final hasBottomNav = scaffold?.widget.bottomNavigationBar != null;
+
+    final effectiveBottomOffset = widget.bottomOffset != 85.0
+        ? widget.bottomOffset
+        : (hasBottomNav ? 85.0 : 24.0);
+
+    final bottomBarHeight = media.padding.bottom + effectiveBottomOffset;
     final keyboardHeight = media.viewInsets.bottom;
-    final hasAppBar = Scaffold.maybeOf(context)?.hasAppBar ?? false;
-    final topSafe = hasAppBar ? 12.0 : (media.padding.top + kToolbarHeight);
-    final availableHeight = hasAppBar
+
+    final double topSafe;
+    if (hasAppBar) {
+      topSafe = extendBehindAppBar
+          ? (media.padding.top + kToolbarHeight + 12.0)
+          : 12.0;
+    } else {
+      topSafe = media.padding.top + 12.0;
+    }
+
+    final availableHeight = (hasAppBar && !extendBehindAppBar)
         ? (screenHeight - (media.padding.top + kToolbarHeight))
         : screenHeight;
-    final maxBottom =
-        availableHeight - bottomBarHeight - keyboardHeight - widget.size - 12.0;
+
+    final maxBottom = availableHeight -
+        bottomBarHeight -
+        keyboardHeight -
+        widget.size -
+        12.0;
+
+    return (
+      minX: 16.0,
+      maxX: screenWidth - widget.size - 16.0,
+      topSafe: topSafe,
+      maxBottom: maxBottom > topSafe ? maxBottom : topSafe + 20.0,
+    );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final bounds = _calculateBounds();
 
     if (!_isInitialized) {
-      _cartX = screenWidth - widget.size - 16.0;
-      _cartY = maxBottom > topSafe ? maxBottom : topSafe + 20.0;
+      _cartX = bounds.maxX;
+      _cartY = bounds.maxBottom > bounds.topSafe ? bounds.maxBottom : bounds.topSafe + 20.0;
       _isInitialized = true;
-    } else if (_cartY != null && _cartY! > maxBottom) {
-      _cartY = maxBottom > topSafe ? maxBottom : topSafe;
+    } else if (_cartY != null && _cartY! > bounds.maxBottom) {
+      _cartY = bounds.maxBottom > bounds.topSafe ? bounds.maxBottom : bounds.topSafe;
+    } else if (_cartY != null && _cartY! < bounds.topSafe) {
+      _cartY = bounds.topSafe;
     }
   }
 
@@ -136,16 +170,15 @@ class DraggableFloatingCartState extends ConsumerState<DraggableFloatingCart>
 
   void _snapToEdge(double velocityX) {
     if (!mounted || _cartX == null) return;
+    final bounds = _calculateBounds();
     final media = MediaQuery.of(context);
     final screenWidth = media.size.width;
-    final minX = 16.0;
-    final maxX = screenWidth - widget.size - 16.0;
 
     final double targetX;
     if (velocityX.abs() > 250) {
-      targetX = velocityX < 0 ? minX : maxX;
+      targetX = velocityX < 0 ? bounds.minX : bounds.maxX;
     } else {
-      targetX = (_cartX! < screenWidth / 2) ? minX : maxX;
+      targetX = (_cartX! < screenWidth / 2) ? bounds.minX : bounds.maxX;
     }
 
     _snapAnimation = Tween<double>(begin: _cartX!, end: targetX).animate(
@@ -184,29 +217,11 @@ class DraggableFloatingCartState extends ConsumerState<DraggableFloatingCart>
           });
         },
         onPanUpdate: (details) {
-          final media = MediaQuery.of(context);
-          final screenWidth = media.size.width;
-          final screenHeight = media.size.height;
-          final bottomBarHeight = media.padding.bottom + widget.bottomOffset;
-          final keyboardHeight = media.viewInsets.bottom;
-          final hasAppBar = Scaffold.maybeOf(context)?.hasAppBar ?? false;
-          final topSafe =
-              hasAppBar ? 12.0 : (media.padding.top + kToolbarHeight);
-          final availableHeight = hasAppBar
-              ? (screenHeight - (media.padding.top + kToolbarHeight))
-              : screenHeight;
-          final maxBottom = availableHeight -
-              bottomBarHeight -
-              keyboardHeight -
-              widget.size -
-              10.0;
-
+          final bounds = _calculateBounds();
           _dragDistance += details.delta.distance;
           setState(() {
-            _cartX = (_cartX! + details.delta.dx)
-                .clamp(16.0, screenWidth - widget.size - 16.0);
-            _cartY = (_cartY! + details.delta.dy)
-                .clamp(topSafe, maxBottom > topSafe ? maxBottom : topSafe + 20.0);
+            _cartX = (_cartX! + details.delta.dx).clamp(bounds.minX, bounds.maxX);
+            _cartY = (_cartY! + details.delta.dy).clamp(bounds.topSafe, bounds.maxBottom);
           });
         },
         onPanEnd: (details) {

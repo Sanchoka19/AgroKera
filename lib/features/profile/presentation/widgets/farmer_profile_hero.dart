@@ -20,6 +20,7 @@ import '../../../orders/presentation/screens/order_chats_list_screen.dart';
 import 'avatar_picker_modal.dart';
 import 'cover_photo_picker_modal.dart';
 import 'edit_profile_bottom_sheet.dart';
+import 'profile_image_view.dart';
 
 /// Parallax hero header for Farmer profile with cover, frosted action icons and farm card.
 class FarmerProfileHero extends ConsumerWidget {
@@ -31,87 +32,6 @@ class FarmerProfileHero extends ConsumerWidget {
     required this.authState,
     required this.scrollOffset,
   });
-
-  Widget _buildCoverImage(String? coverUrl) {
-    final url = (coverUrl != null && coverUrl.isNotEmpty)
-        ? coverUrl
-        : 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=1000&auto=format&fit=crop&q=80';
-
-    if (url.startsWith('http://') || url.startsWith('https://')) {
-      return Image.network(
-        url,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) =>
-            Container(color: AppColors.primaryLight),
-      );
-    }
-    if (url.startsWith('data:image/')) {
-      try {
-        final base64Str = url.split(',').last;
-        return Image.memory(
-          base64Decode(base64Str),
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) =>
-              Container(color: AppColors.primaryLight),
-        );
-      } catch (_) {}
-    }
-    if (!kIsWeb && File(url).existsSync()) {
-      return Image.file(
-        File(url),
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) =>
-            Container(color: AppColors.primaryLight),
-      );
-    }
-    return Container(color: AppColors.primaryLight);
-  }
-
-  Widget _buildAvatarImage(String? avatarUrl, [double size = 42]) {
-    if (avatarUrl == null || avatarUrl.isEmpty) {
-      return _buildPlaceholderAvatar(size);
-    }
-    if (avatarUrl.startsWith('http://') || avatarUrl.startsWith('https://')) {
-      return Image.network(
-        avatarUrl,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) =>
-            _buildPlaceholderAvatar(size),
-      );
-    }
-    if (avatarUrl.startsWith('data:image/')) {
-      try {
-        final base64Str = avatarUrl.split(',').last;
-        return Image.memory(
-          base64Decode(base64Str),
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) =>
-              _buildPlaceholderAvatar(size),
-        );
-      } catch (_) {}
-    }
-    if (!kIsWeb && File(avatarUrl).existsSync()) {
-      return Image.file(
-        File(avatarUrl),
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) =>
-            _buildPlaceholderAvatar(size),
-      );
-    }
-    return _buildPlaceholderAvatar(size);
-  }
-
-  Widget _buildPlaceholderAvatar([double size = 42]) {
-    return Container(
-      color: AppColors.primaryLight,
-      alignment: Alignment.center,
-      child: Icon(
-        LucideIcons.user,
-        size: size,
-        color: AppColors.primary,
-      ),
-    );
-  }
 
   Widget _buildFrostedCircleButton({
     required BuildContext context,
@@ -244,8 +164,9 @@ class FarmerProfileHero extends ConsumerWidget {
                               ? 1.0 + (-scrollOffset / 320)
                               : 1.0,
                           alignment: Alignment.topCenter,
-                          child: _buildCoverImage(
-                            authState.farmCoverUrl ?? matchedFarmer?.coverUrl,
+                          child: ProfileImageView.cover(
+                            coverUrl:
+                                authState.farmCoverUrl ?? matchedFarmer?.coverUrl,
                           ),
                         ),
                       ),
@@ -330,7 +251,7 @@ class FarmerProfileHero extends ConsumerWidget {
                         child: Material(
                           color: Colors.transparent,
                           child: InkWell(
-                            onTap: () => CoverPhotoPickerModal.show(context),
+                            onTap: () => CoverPhotoPickerModal.show(context, ref),
                             borderRadius: BorderRadius.circular(20),
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(20),
@@ -437,7 +358,10 @@ class FarmerProfileHero extends ConsumerWidget {
                                 ],
                               ),
                               child: ClipOval(
-                                child: _buildAvatarImage(farmerAvatar, 30),
+                                child: ProfileImageView.avatar(
+                                  avatarUrl: farmerAvatar,
+                                  size: 62,
+                                ),
                               ),
                             ),
                             Positioned(

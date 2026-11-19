@@ -79,13 +79,17 @@ class SecureStorageService {
           _write(_farmNameKey, farmName)
         else
           _delete(_farmNameKey),
-        if (farmCoverUrl != null)
+        if (farmCoverUrl != null &&
+            (!farmCoverUrl.startsWith('data:image/') ||
+                farmCoverUrl.length < 2048))
           _write(_farmCoverKey, farmCoverUrl)
-        else
+        else if (farmCoverUrl == null)
           _delete(_farmCoverKey),
-        if (userAvatarUrl != null)
+        if (userAvatarUrl != null &&
+            (!userAvatarUrl.startsWith('data:image/') ||
+                userAvatarUrl.length < 2048))
           _write(_userAvatarKey, userAvatarUrl)
-        else
+        else if (userAvatarUrl == null)
           _delete(_userAvatarKey),
         _write(_roleKey, role),
         _write(_nameKey, name),

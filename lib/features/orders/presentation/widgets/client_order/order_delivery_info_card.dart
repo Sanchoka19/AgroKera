@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../../core/theme/app_colors.dart';
 import '../../../../../core/widgets/app_toast.dart';
+import '../../../../marketplace/presentation/providers/marketplace_provider.dart';
+import '../../../../profile/presentation/widgets/profile_image_view.dart';
 import '../../../domain/models/farmer_order_model.dart';
 
-/// Card showing delivery destination, time slot window, farmer info, and payment method info.
-class OrderDeliveryInfoCard extends StatelessWidget {
+/// Card showing delivery destination, time slot window, farmer info (with avatar), and payment method info.
+class OrderDeliveryInfoCard extends ConsumerWidget {
   final FarmerOrder order;
 
   const OrderDeliveryInfoCard({super.key, required this.order});
@@ -18,10 +21,22 @@ class OrderDeliveryInfoCard extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final hasFarmerName =
         order.farmerName != null && order.farmerName!.trim().isNotEmpty;
     final hasPhone = order.contactPhone.trim().isNotEmpty;
+
+    final marketplace = ref.watch(marketplaceProvider);
+    final matchedFarmer = marketplace.farmers.where((f) =>
+        (order.farmerId != null && f.id == order.farmerId) ||
+        (order.farmerName != null &&
+            (f.farmName == order.farmerName || f.farmerName == order.farmerName))
+    ).firstOrNull;
+
+    final effectiveFarmerAvatar = (order.farmerAvatarUrl != null &&
+            order.farmerAvatarUrl!.trim().isNotEmpty)
+        ? order.farmerAvatarUrl!.trim()
+        : matchedFarmer?.avatarUrl;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -50,23 +65,46 @@ class OrderDeliveryInfoCard extends StatelessWidget {
           ),
           const SizedBox(height: 12),
 
-          // Farmer Identity Row (if available)
+          // Farmer Identity Row with Farmer Avatar Photo
           if (hasFarmerName) ...[
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(6),
+                  width: 40,
+                  height: 40,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF0FDF4),
-                    borderRadius: BorderRadius.circular(8),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: const Color(0xFFE2E8F0),
+                      width: 1.5,
+                    ),
                   ),
-                  child: const Icon(
-                    LucideIcons.store,
-                    size: 15,
-                    color: Color(0xFF16A34A),
+                  child: ClipOval(
+                    child: (effectiveFarmerAvatar != null &&
+                            effectiveFarmerAvatar.trim().isNotEmpty)
+                        ? ProfileImageView.avatar(
+                            avatarUrl: effectiveFarmerAvatar,
+                            size: 40,
+                            backgroundColor: const Color(0xFFF0FDF4),
+                            iconColor: const Color(0xFF16A34A),
+                          )
+                        : Container(
+                            color: const Color(0xFFF0FDF4),
+                            alignment: Alignment.center,
+                            child: Text(
+                              order.farmerName!.isNotEmpty
+                                  ? order.farmerName![0].toUpperCase()
+                                  : 'ფ',
+                              style: GoogleFonts.notoSansGeorgian(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w800,
+                                color: const Color(0xFF16A34A),
+                              ),
+                            ),
+                          ),
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -81,7 +119,7 @@ class OrderDeliveryInfoCard extends StatelessWidget {
                       Text(
                         order.farmerName!,
                         style: GoogleFonts.notoSansGeorgian(
-                          fontSize: 13,
+                          fontSize: 13.5,
                           fontWeight: FontWeight.w700,
                           color: const Color(0xFF1E293B),
                         ),
@@ -160,14 +198,10 @@ class OrderDeliveryInfoCard extends StatelessWidget {
           // Payment Method Row
           Row(
             children: [
-              Icon(
-                order.isBankTransfer
-                    ? LucideIcons.shieldCheck
-                    : LucideIcons.banknote,
+              const Icon(
+                LucideIcons.creditCard,
                 size: 15,
-                color: order.isBankTransfer
-                    ? const Color(0xFF16A34A)
-                    : const Color(0xFF64748B),
+                color: AppColors.primary,
               ),
               const SizedBox(width: 8),
               Expanded(
@@ -177,13 +211,38 @@ class OrderDeliveryInfoCard extends StatelessWidget {
                       : 'ნაღდი ანგარიშსწორება',
                   style: GoogleFonts.notoSansGeorgian(
                     fontSize: 13,
-                    fontWeight: FontWeight.w600,
                     color: const Color(0xFF334155),
                   ),
                 ),
               ),
             ],
           ),
+
+          // Tracking Number Row (if available)
+          if (order.trackingNumber != null &&
+              order.trackingNumber!.trim().isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                const Icon(
+                  LucideIcons.hash,
+                  size: 15,
+                  color: AppColors.primary,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'გზავნილის კოდი: ${order.trackingNumber}',
+                    style: GoogleFonts.notoSansGeorgian(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFF475569),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );

@@ -538,33 +538,6 @@ class _FarmerProfileScreenState extends ConsumerState<FarmerProfileScreen>
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              if (farmer.about.trim().isNotEmpty) ...[
-                                Text('ფერმის ისტორია', style: AppTypography.h2),
-                                const SizedBox(height: 10),
-                                Container(
-                                  width: double.infinity,
-                                  padding: const EdgeInsets.all(16),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.surface,
-                                    borderRadius: BorderRadius.circular(16),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withValues(alpha: 0.04),
-                                        blurRadius: 10,
-                                        offset: const Offset(0, 2),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Text(
-                                    farmer.about.trim(),
-                                    style: AppTypography.bodyMedium.copyWith(
-                                      height: 1.5,
-                                      color: AppColors.textPrimary,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(height: 18),
-                              ],
                               Text('მიწოდების პირობები', style: AppTypography.h2),
                               const SizedBox(height: 10),
                               ProductDeliveryInfoCard(
@@ -575,10 +548,6 @@ class _FarmerProfileScreenState extends ConsumerState<FarmerProfileScreen>
                               Text('მდებარეობა', style: AppTypography.h2),
                               const SizedBox(height: 10),
                               FarmerLocationCard(location: farmer.location),
-                              const SizedBox(height: 18),
-                              Text('კონტაქტი', style: AppTypography.h2),
-                              const SizedBox(height: 10),
-                              FarmerContactCard(phone: farmer.phone),
                               const SizedBox(height: 24),
                               FarmerReviewsSection(farmer: farmer),
                             ],

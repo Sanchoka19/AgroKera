@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import '../../../../../core/auth/auth_state_provider.dart';
 import '../../../../../core/theme/app_colors.dart';
 import '../../../../../core/widgets/app_toast.dart';
+import '../../../../profile/presentation/widgets/profile_image_view.dart';
 import '../../../domain/models/farmer_order_model.dart';
 
 /// Card showing customer contact info and delivery destination details
-class FarmerOrderCustomerCard extends StatelessWidget {
+class FarmerOrderCustomerCard extends ConsumerWidget {
   final FarmerOrder order;
   final VoidCallback onOpenChat;
 
@@ -23,8 +26,13 @@ class FarmerOrderCustomerCard extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final hasPhone = order.contactPhone.trim().isNotEmpty;
+    final auth = ref.watch(authStateProvider);
+    final effectiveCustomerAvatar = (order.customerAvatarUrl != null &&
+            order.customerAvatarUrl!.trim().isNotEmpty)
+        ? order.customerAvatarUrl!.trim()
+        : (auth.userId == order.clientId ? auth.userAvatarUrl : null);
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -75,18 +83,39 @@ class FarmerOrderCustomerCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              CircleAvatar(
-                radius: 20,
-                backgroundColor: const Color(0xFFF1F5F9),
-                child: Text(
-                  order.customerName.isNotEmpty
-                      ? order.customerName[0].toUpperCase()
-                      : 'მ',
-                  style: GoogleFonts.notoSansGeorgian(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w800,
-                    color: const Color(0xFF334155),
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: const Color(0xFFE2E8F0),
+                    width: 1.5,
                   ),
+                ),
+                child: ClipOval(
+                  child: (effectiveCustomerAvatar != null &&
+                          effectiveCustomerAvatar.trim().isNotEmpty)
+                      ? ProfileImageView.avatar(
+                          avatarUrl: effectiveCustomerAvatar,
+                          size: 44,
+                          backgroundColor: const Color(0xFFF1F5F9),
+                          iconColor: const Color(0xFF334155),
+                        )
+                      : Container(
+                          color: const Color(0xFFF1F5F9),
+                          alignment: Alignment.center,
+                          child: Text(
+                            order.customerName.isNotEmpty
+                                ? order.customerName[0].toUpperCase()
+                                : 'მ',
+                            style: GoogleFonts.notoSansGeorgian(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                              color: const Color(0xFF334155),
+                            ),
+                          ),
+                        ),
                 ),
               ),
               const SizedBox(width: 12),

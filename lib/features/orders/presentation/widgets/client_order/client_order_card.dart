@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../../core/theme/app_colors.dart';
 import '../../../../../core/widgets/animations/bounce_tap.dart';
+import '../../../../reviews/presentation/providers/reviews_provider.dart';
+import '../../../../reviews/presentation/widgets/order_review_bottom_sheet.dart';
 import '../../../domain/models/farmer_order_model.dart';
 import '../../screens/client_order_detail_screen.dart';
 import '../../screens/order_chat_screen.dart';
 
 /// Modern, ergonomic Client Order Card used on the "ჩემი შეკვეთები" screen.
-class ClientOrderCard extends StatelessWidget {
+class ClientOrderCard extends ConsumerWidget {
   final FarmerOrder order;
 
   const ClientOrderCard({
@@ -74,7 +78,7 @@ class ClientOrderCard extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final stepIndex = switch (order.status) {
       OrderStatus.pending => 1,
       OrderStatus.inProgress => 2,
@@ -443,6 +447,90 @@ class ClientOrderCard extends StatelessWidget {
                   ],
                 ),
               ),
+            ],
+
+            if (order.status == OrderStatus.completed) ...[
+              const SizedBox(height: 10),
+              () {
+                final review =
+                    ref.watch(reviewsProvider).reviewsByOrder[order.id];
+                if (review == null) {
+                  return InkWell(
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      OrderReviewBottomSheet.show(
+                        context: context,
+                        order: order,
+                      );
+                    },
+                    borderRadius: BorderRadius.circular(10),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFFBEB),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: const Color(0xFFFDE68A)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            LucideIcons.star,
+                            size: 15,
+                            color: Color(0xFFD97706),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'შეაფასეთ ფერმერი და პროდუქტი',
+                              style: GoogleFonts.notoSansGeorgian(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: const Color(0xFFB45309),
+                              ),
+                            ),
+                          ),
+                          const Icon(
+                            LucideIcons.chevronRight,
+                            size: 14,
+                            color: Color(0xFFB45309),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                } else {
+                  return Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          LucideIcons.star,
+                          size: 13,
+                          color: Color(0xFFF59E0B),
+                        ),
+                        const SizedBox(width: 5),
+                        Text(
+                          'შეფასებულია: ${review.rating}.0',
+                          style: GoogleFonts.notoSansGeorgian(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFF475569),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+              }(),
             ],
 
             const SizedBox(height: 12),

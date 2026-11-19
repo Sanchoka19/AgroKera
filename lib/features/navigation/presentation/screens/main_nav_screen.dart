@@ -108,14 +108,17 @@ class _MainNavScreenState extends ConsumerState<MainNavScreen> {
     final safeIndex = _currentIndex.clamp(0, screens.length - 1);
 
     return Scaffold(
-      body: Column(
+      body: Stack(
         children: [
-          const OfflineStatusBanner(),
-          Expanded(
-            child: IndexedStack(
-              index: safeIndex,
-              children: screens,
-            ),
+          IndexedStack(
+            index: safeIndex,
+            children: screens,
+          ),
+          const Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: OfflineStatusBanner(),
           ),
         ],
       ),

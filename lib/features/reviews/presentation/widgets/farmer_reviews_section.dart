@@ -176,7 +176,7 @@ class _FarmerReviewsSectionState extends ConsumerState<FarmerReviewsSection> {
               ],
             ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 10),
         ],
 
         // Reviews List or Empty State
@@ -216,20 +216,15 @@ class _FarmerReviewsSectionState extends ConsumerState<FarmerReviewsSection> {
             ),
           )
         else ...[
-          // Preview up to 3 reviews
-          ListView.separated(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: previewReviews.length,
-            separatorBuilder: (_, _) => const SizedBox(height: 10),
-            itemBuilder: (context, index) {
-              return FarmerReviewItemCard(review: previewReviews[index]);
-            },
-          ),
+          // Preview up to 3 reviews without extraneous ListView padding
+          for (int i = 0; i < previewReviews.length; i++) ...[
+            if (i > 0) const SizedBox(height: 10),
+            FarmerReviewItemCard(review: previewReviews[i]),
+          ],
 
           // "View All Reviews" button if more than 3 reviews exist
           if (reviews.length > _previewLimit) ...[
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
             InkWell(
               onTap: () => _openAllReviewsSheet(
                 reviews: reviews,

@@ -82,6 +82,7 @@ class FarmerOrderItem {
   final String quantityText;
   final double price;
   final double quantity;
+  final String? imageUrl;
 
   const FarmerOrderItem({
     this.productId,
@@ -89,6 +90,7 @@ class FarmerOrderItem {
     required this.quantityText,
     required this.price,
     this.quantity = 1.0,
+    this.imageUrl,
   });
 
   factory FarmerOrderItem.fromJson(Map<String, dynamic> json) {
@@ -98,6 +100,7 @@ class FarmerOrderItem {
       quantityText: json['quantityText'] as String? ?? '1კგ',
       price: (json['price'] as num?)?.toDouble() ?? 0.0,
       quantity: (json['quantity'] as num?)?.toDouble() ?? 1.0,
+      imageUrl: json['imageUrl'] as String? ?? json['image'] as String?,
     );
   }
 
@@ -108,6 +111,7 @@ class FarmerOrderItem {
       'quantityText': quantityText,
       'price': price,
       'quantity': quantity,
+      if (imageUrl != null) 'imageUrl': imageUrl,
     };
   }
 }

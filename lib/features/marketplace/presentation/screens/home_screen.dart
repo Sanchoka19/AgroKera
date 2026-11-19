@@ -20,6 +20,7 @@ import '../widgets/global_search_dialog.dart';
 import '../widgets/guest_promo_banner.dart';
 import '../widgets/nearby_farms_section.dart';
 import '../widgets/quick_categories_bar.dart';
+import '../../../reviews/presentation/widgets/pending_review_nudge_card.dart';
 import 'categories_screen.dart';
 import 'favorites_screen.dart';
 import 'product_details_screen.dart';
@@ -134,6 +135,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       const GuestPromoBanner(),
                       const SizedBox(height: 16),
                     ],
+
+                    // Pending Review Nudge Banner (if user has an unreviewed completed order)
+                    const PendingReviewNudgeCard(),
 
                     // Hero Carousel Banner with Auto-slide & subtle blur
                     ClipRRect(

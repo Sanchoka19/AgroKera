@@ -11,7 +11,7 @@ import '../../orders/presentation/screens/order_chat_screen.dart';
 import '../../reviews/presentation/screens/farmer_my_reviews_screen.dart';
 
 /// Where an order-related notification should lead.
-enum NotificationTarget { newOrder, orderStatus, chat, review, unknown }
+enum NotificationTarget { newOrder, orderStatus, chat, review, orderReviewPrompt, unknown }
 
 /// Opens the screen that a notification belongs to.
 ///
@@ -39,13 +39,16 @@ class NotificationNavigator {
       case 'farmer_review_received':
       case 'review_received':
         return NotificationTarget.review;
+      case 'order_review_prompt':
+        return NotificationTarget.orderReviewPrompt;
       case 'order_stale_farmer':
         return NotificationTarget.newOrder; // farmer → FarmerOrderDetailScreen
       case 'order_stale_client':
         return NotificationTarget.orderStatus; // client → ClientOrderDetailScreen
     }
     final t = title ?? '';
-    if (t.contains('შეფასებ')) { return NotificationTarget.review; }
+    if (t.contains('მიიღეთ შეფასებ') || t.contains('ახალი შეფასებ')) { return NotificationTarget.review; }
+    if (t.contains('შეაფას')) { return NotificationTarget.orderReviewPrompt; }
     if (t.contains('შეტყობინება')) { return NotificationTarget.chat; }
     if (t.contains('სტატუს') || t.contains('ჩაბარდა') || t.contains('გაუქმდა') ||
         t.contains('დადასტურდა') || t.contains('PIN') || t.contains('გაფორმდა')) { return NotificationTarget.orderStatus; }
@@ -131,6 +134,12 @@ class NotificationNavigator {
         break;
       case NotificationTarget.orderStatus:
         screen = ClientOrderDetailScreen(orderId: order.id);
+        break;
+      case NotificationTarget.orderReviewPrompt:
+        screen = ClientOrderDetailScreen(
+          orderId: order.id,
+          autoPromptReview: true,
+        );
         break;
       case NotificationTarget.chat:
         screen = OrderChatScreen(order: order);

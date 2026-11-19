@@ -182,8 +182,9 @@ void main() {
     // In About tab, floating cart must not be visible
     expect(find.byType(DraggableFloatingCart), findsNothing);
 
-    // Check history, location, and delivery info
-    expect(find.text('ფერმის ისტორია'), findsOneWidget);
+    // Removed farm history and contact per UI design
+    expect(find.text('ფერმის ისტორია'), findsNothing);
+    expect(find.text('კონტაქტი'), findsNothing);
     expect(find.text('მდებარეობა'), findsOneWidget);
     expect(find.text('მიწოდების პირობები'), findsOneWidget);
     expect(find.text('მიწოდება და თვითგატანა'), findsOneWidget);

@@ -13,17 +13,20 @@ import 'star_rating_selector.dart';
 /// Modal bottom sheet for submitting an order review and rating.
 class OrderReviewBottomSheet extends ConsumerStatefulWidget {
   final FarmerOrder order;
+  final int initialRating;
   final VoidCallback? onReviewSubmitted;
 
   const OrderReviewBottomSheet({
     super.key,
     required this.order,
+    this.initialRating = 5,
     this.onReviewSubmitted,
   });
 
   static Future<void> show({
     required BuildContext context,
     required FarmerOrder order,
+    int initialRating = 5,
     VoidCallback? onReviewSubmitted,
   }) {
     return showModalBottomSheet(
@@ -35,6 +38,7 @@ class OrderReviewBottomSheet extends ConsumerStatefulWidget {
       ),
       builder: (ctx) => OrderReviewBottomSheet(
         order: order,
+        initialRating: initialRating,
         onReviewSubmitted: onReviewSubmitted,
       ),
     );
@@ -47,10 +51,16 @@ class OrderReviewBottomSheet extends ConsumerStatefulWidget {
 
 class _OrderReviewBottomSheetState
     extends ConsumerState<OrderReviewBottomSheet> {
-  int _rating = 5;
+  late int _rating;
   List<String> _selectedTags = ['ახალი პროდუქცია'];
   final _commentController = TextEditingController();
   bool _isSubmitting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _rating = widget.initialRating.clamp(1, 5);
+  }
 
   @override
   void dispose() {

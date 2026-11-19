@@ -127,6 +127,11 @@ export async function handleOrdersRoute(
           quantityText: `${item.quantity}${item.product.unit}`,
           pricePerUnit: item.pricePerUnit,
           price: item.subtotal,
+          imageUrl:
+            item.product.imageUrl ||
+            (item.product.images && item.product.images.length > 0
+              ? item.product.images[0]
+              : null),
         })),
       };
     });
@@ -405,6 +410,11 @@ export async function handleOrdersRoute(
           quantityText: `${item.quantity}${item.product.unit}`,
           pricePerUnit: item.pricePerUnit,
           price: item.subtotal,
+          imageUrl:
+            item.product.imageUrl ||
+            (item.product.images && item.product.images.length > 0
+              ? item.product.images[0]
+              : null),
         })),
       },
       201
@@ -581,6 +591,7 @@ export async function handleOrdersRoute(
       createdAt: updated.createdAt.toISOString(),
       status: updated.status,
       customerName: updated.contactPerson || updated.client.fullName,
+      customerAvatarUrl: updated.client?.avatarUrl ?? null,
       contactPerson: updated.contactPerson || updated.client.fullName,
       contactPhone: null,
       hasVat: updated.hasVat,
@@ -607,6 +618,11 @@ export async function handleOrdersRoute(
         quantityText: `${item.quantity}${item.product.unit}`,
         pricePerUnit: item.pricePerUnit,
         price: item.subtotal,
+        imageUrl:
+          item.product.imageUrl ||
+          (item.product.images && item.product.images.length > 0
+            ? item.product.images[0]
+            : null),
       })),
     });
   }

@@ -30,16 +30,22 @@ abstract final class OrdersMockData {
             name: 'ორგანული პომიდორი',
             quantityText: '5კგ',
             price: 10.00,
+            imageUrl:
+                'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=400&auto=format&fit=crop&q=80',
           ),
           FarmerOrderItem(
             name: 'ახალი კარტოფილი',
             quantityText: '15კგ',
             price: 15.00,
+            imageUrl:
+                'https://images.unsplash.com/photo-1518977676601-b53f82aba655?w=400&auto=format&fit=crop&q=80',
           ),
           FarmerOrderItem(
             name: 'მანგო',
             quantityText: '3კგ',
             price: 25.00,
+            imageUrl:
+                'https://images.unsplash.com/photo-1553279768-865429fa0078?w=400&auto=format&fit=crop&q=80',
           ),
         ],
       ),
@@ -64,11 +70,15 @@ abstract final class OrdersMockData {
             name: 'ლობიო (წითელი)',
             quantityText: '10კგ',
             price: 45.00,
+            imageUrl:
+                'https://images.unsplash.com/photo-1551462147-ff29053bfc14?w=400&auto=format&fit=crop&q=80',
           ),
           FarmerOrderItem(
             name: 'მწვანილი (ასორტი)',
             quantityText: '2კგ',
             price: 12.00,
+            imageUrl:
+                'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=400&auto=format&fit=crop&q=80',
           ),
         ],
       ),
@@ -93,16 +103,22 @@ abstract final class OrdersMockData {
             name: 'ორგანული პომიდორი',
             quantityText: '5კგ',
             price: 10.00,
+            imageUrl:
+                'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=400&auto=format&fit=crop&q=80',
           ),
           FarmerOrderItem(
             name: 'ახალი კარტოფილი',
             quantityText: '15კგ',
             price: 15.00,
+            imageUrl:
+                'https://images.unsplash.com/photo-1518977676601-b53f82aba655?w=400&auto=format&fit=crop&q=80',
           ),
           FarmerOrderItem(
             name: 'მანგო',
             quantityText: '3კგ',
             price: 25.00,
+            imageUrl:
+                'https://images.unsplash.com/photo-1553279768-865429fa0078?w=400&auto=format&fit=crop&q=80',
           ),
         ],
       ),
@@ -125,6 +141,8 @@ abstract final class OrdersMockData {
             name: 'ახალი კარტოფილი',
             quantityText: '40კგ',
             price: 40.00,
+            imageUrl:
+                'https://images.unsplash.com/photo-1518977676601-b53f82aba655?w=400&auto=format&fit=crop&q=80',
           ),
         ],
       ),
@@ -149,6 +167,8 @@ abstract final class OrdersMockData {
             name: 'ნატურალური მაისის თაფლი',
             quantityText: '3 ქილა (3კგ)',
             price: 75.00,
+            imageUrl:
+                'https://images.unsplash.com/photo-1587049352846-4a222e784d38?w=400&auto=format&fit=crop&q=80',
           ),
         ],
       ),

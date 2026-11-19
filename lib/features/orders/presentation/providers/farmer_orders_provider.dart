@@ -663,6 +663,7 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
             quantityText: '${ci.quantity}${ci.unit}',
             price: ci.totalPrice,
             quantity: ci.quantity.toDouble(),
+            imageUrl: ci.imageUrl,
           ),
         )
         .toList();

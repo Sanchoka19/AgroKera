@@ -17,16 +17,20 @@ import '../widgets/client_order/order_escrow_payment_card.dart';
 import '../widgets/client_order/order_products_breakdown_card.dart';
 import '../widgets/client_order/order_tracking_card.dart';
 import '../widgets/order_chat/order_chat_pin_dialog.dart';
+import '../../../reviews/presentation/providers/reviews_provider.dart';
+import '../../../reviews/presentation/widgets/order_review_bottom_sheet.dart';
 import '../../../reviews/presentation/widgets/order_review_prompt_card.dart';
 import 'order_chat_screen.dart';
 
 /// Clean, modular client order details screen ("ჩემი შეკვეთის დეტალები")
 class ClientOrderDetailScreen extends ConsumerStatefulWidget {
   final String orderId;
+  final bool autoPromptReview;
 
   const ClientOrderDetailScreen({
     super.key,
     required this.orderId,
+    this.autoPromptReview = false,
   });
 
   @override
@@ -39,6 +43,16 @@ class _ClientOrderDetailScreenState
   bool _isReportedLocally = false;
   bool _isPinSentLocally = false;
 
+  FarmerOrder? _resolveOrder(FarmerOrdersState ordersState) {
+    for (final o in ordersState.clientOrders) {
+      if (o.id == widget.orderId) return o;
+    }
+    for (final o in ordersState.orders) {
+      if (o.id == widget.orderId) return o;
+    }
+    return null;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -46,6 +60,15 @@ class _ClientOrderDetailScreenState
       Future.microtask(() async {
         await ref.read(farmerOrdersProvider.notifier).refreshFromBackend();
         await ref.read(orderChatProvider.notifier).loadMessages(widget.orderId);
+        if (widget.autoPromptReview && mounted) {
+          final order = _resolveOrder(ref.read(farmerOrdersProvider));
+          final reviewsState = ref.read(reviewsProvider);
+          if (order != null &&
+              order.status == OrderStatus.completed &&
+              reviewsState.reviewsByOrder[order.id] == null) {
+            OrderReviewBottomSheet.show(context: context, order: order);
+          }
+        }
       }),
     );
   }
@@ -190,6 +213,19 @@ class _ClientOrderDetailScreenState
                         context,
                         'ჩაბარების PIN კოდი (${order.deliveryPin}) გაეგზავნა ფერმერს შეკვეთის დასასრულებლად!',
                       );
+
+                      // Prompt review prompt immediately after handing over PIN
+                      final reviewsState = ref.read(reviewsProvider);
+                      if (reviewsState.reviewsByOrder[order.id] == null) {
+                        Future.delayed(const Duration(milliseconds: 600), () {
+                          if (mounted) {
+                            OrderReviewBottomSheet.show(
+                              context: context,
+                              order: order,
+                            );
+                          }
+                        });
+                      }
                     }
                   },
                 ),
@@ -221,6 +257,47 @@ class _ClientOrderDetailScreenState
           ),
         ),
       );
+    }
+
+    if (order.status == OrderStatus.completed) {
+      final reviewsState = ref.watch(reviewsProvider);
+      final hasReviewed = reviewsState.reviewsByOrder[order.id] != null;
+      if (!hasReviewed) {
+        return Container(
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            border: Border(top: BorderSide(color: Color(0xFFE2E8F0))),
+          ),
+          child: SafeArea(
+            child: ElevatedButton.icon(
+              onPressed: () {
+                OrderReviewBottomSheet.show(
+                  context: context,
+                  order: order,
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF0F766E),
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                minimumSize: const Size.fromHeight(46),
+              ),
+              icon: const Icon(LucideIcons.star, size: 16),
+              label: Text(
+                'შეაფასე ფერმერი და პროდუქტი',
+                style: GoogleFonts.notoSansGeorgian(
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ),
+        );
+      }
     }
 
     if (order.status == OrderStatus.pending || order.canDirectlyCancel) {

@@ -78,8 +78,10 @@ void main() {
       expect(find.text('4829'), findsOneWidget);
 
       // Items
-      expect(find.text('ქართული პომიდორი (ჩერი) (50 კგ)'), findsOneWidget);
-      expect(find.text('კიტრი (მუხრანის) (30 კგ)'), findsOneWidget);
+      expect(find.text('ქართული პომიდორი (ჩერი)'), findsOneWidget);
+      expect(find.text('კიტრი (მუხრანის)'), findsOneWidget);
+      expect(find.text('რაოდენობა: 50 კგ'), findsOneWidget);
+      expect(find.text('რაოდენობა: 30 კგ'), findsOneWidget);
 
       // Financial breakdown
       expect(find.text('პროდუქტების ჯამი'), findsOneWidget);

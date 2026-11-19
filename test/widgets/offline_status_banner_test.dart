@@ -48,6 +48,19 @@ void main() {
       expect(find.text('ოფლაინ რეჟიმი • ცვლილებები შეინახება ლოკალურად'), findsOneWidget);
       expect(find.byIcon(LucideIcons.wifiOff), findsOneWidget);
 
+      // Tapping pill opens info sheet
+      await tester.tap(find.text('ოფლაინ რეჟიმი • ცვლილებები შეინახება ლოკალურად'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('ლოკალური მეხსიერება აქტიურია'), findsOneWidget);
+      expect(find.text('გასაგებია'), findsOneWidget);
+
+      // Dismiss info sheet
+      await tester.tap(find.text('გასაგებია'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('ლოკალური მეხსიერება აქტიურია'), findsNothing);
+
       connectivity.dispose();
     });
   });

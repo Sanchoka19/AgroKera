@@ -85,11 +85,11 @@ export class NotificationTemplates {
       case "COMPLETED":
         return {
           title: `შეკვეთა #${id} ჩაბარდა`,
-          body: `შეკვეთა წარმატებით დასრულდა. მადლობა AgroKera-ს გამოყენებისთვის.`,
+          body: `შეკვეთა წარმატებით დასრულდა. გთხოვთ შეაფასოთ ფერმერი და პროდუქტის ხარისხი.`,
           category: "orders",
           data: {
             orderId: params.orderId,
-            type: "order_status_updated",
+            type: "order_review_prompt",
             status: params.status,
           },
         };

@@ -28,6 +28,13 @@ class NotificationCard extends StatelessWidget {
             const Color(0xFF0369A1),
             const Color(0xFFE0F2FE),
           );
+        } else if (item.type == 'order_review_prompt' ||
+            item.title.contains('შეაფას')) {
+          return (
+            LucideIcons.star,
+            const Color(0xFFD97706),
+            const Color(0xFFFEF3C7),
+          );
         } else if (item.type == 'order_stale_farmer' ||
             item.type == 'order_stale_client' ||
             item.title.contains('PIN') ||

@@ -122,11 +122,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            stops: [0.0, 0.14, 0.28],
+            stops: [0.0, 0.16, 0.32],
             colors: [
-              Color(0xFF021215),
-              Color(0xFF04242A),
-              Color(0xFF083C45),
+              Color(0xFF14532D), // Rich Deep Emerald
+              Color(0xFF15803D), // Brand Forest Green
+              Color(0xFF16A34A), // Vibrant Emerald
             ],
           ),
         ),
@@ -182,12 +182,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.08),
+                        color: Colors.white.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.14),
-                          width: 1,
-                        ),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -196,7 +192,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                             width: 6,
                             height: 6,
                             decoration: const BoxDecoration(
-                              color: Color(0xFF34D399),
+                              color: Color(0xFF86EFAC),
                               shape: BoxShape.circle,
                             ),
                           ),
@@ -206,7 +202,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                             style: GoogleFonts.notoSansGeorgian(
                               fontSize: 10.5,
                               fontWeight: FontWeight.w700,
-                              color: const Color(0xFF99F6E4),
+                              color: Colors.white,
                               letterSpacing: 1.2,
                             ),
                           ),

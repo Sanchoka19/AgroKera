@@ -67,6 +67,20 @@ class _ProductQuantitySectionState extends State<ProductQuantitySection> {
     super.dispose();
   }
 
+  double _calculateQtyWidth(String text) {
+    final digits = text.isEmpty ? 1 : text.length;
+    switch (digits) {
+      case 1:
+        return 20.0;
+      case 2:
+        return 28.0;
+      case 3:
+        return 36.0;
+      default:
+        return 44.0;
+    }
+  }
+
   void _updateQuantity(int newQty) {
     if (widget.isOwner) {
       AppToast.info(
@@ -238,17 +252,21 @@ class _ProductQuantitySectionState extends State<ProductQuantitySection> {
                           ),
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 2),
 
-                      // Direct Editable Number Input
-                      Container(
-                        height: 34,
-                        constraints: const BoxConstraints(
-                          minWidth: 46,
-                          maxWidth: 68,
-                        ),
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                        alignment: Alignment.center,
+                      // Direct Editable Number Input with dynamic width
+                      AnimatedBuilder(
+                        animation: _qtyController,
+                        builder: (context, child) {
+                          return AnimatedContainer(
+                            duration: const Duration(milliseconds: 140),
+                            curve: Curves.easeOutCubic,
+                            height: 34,
+                            width: _calculateQtyWidth(_qtyController.text),
+                            alignment: Alignment.center,
+                            child: child,
+                          );
+                        },
                         child: TextField(
                           controller: _qtyController,
                           focusNode: _qtyFocusNode,
@@ -291,7 +309,7 @@ class _ProductQuantitySectionState extends State<ProductQuantitySection> {
                           },
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 2),
 
                       // Increment (Circular)
                       InkWell(

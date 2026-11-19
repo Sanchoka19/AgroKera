@@ -156,6 +156,20 @@ class _ProductQuickAddBottomSheetState
     });
   }
 
+  double _calculateQtyWidth(String text) {
+    final digits = text.isEmpty ? 1 : text.length;
+    switch (digits) {
+      case 1:
+        return 20.0;
+      case 2:
+        return 28.0;
+      case 3:
+        return 36.0;
+      default:
+        return 44.0;
+    }
+  }
+
   double _calculateSubtotal() {
     final product = widget.product;
     if (product.hasBulkDiscount &&
@@ -432,114 +446,110 @@ class _ProductQuickAddBottomSheetState
                     color: AppColors.textPrimary,
                   ),
                 ),
-                Container(
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF8FAFC),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: AppColors.border, width: 1),
-                  ),
-                  padding: const EdgeInsets.all(4),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Minus Button
-                      InkWell(
-                        onTap: _decrement,
-                        customBorder: const CircleBorder(),
-                        child: Container(
-                          width: 32,
-                          height: 32,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF1F5F9),
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: _quantity <= _minLimit
-                                  ? const Color(0xFFE2E8F0)
-                                      .withValues(alpha: 0.6)
-                                  : const Color(0xFFCBD5E1),
-                            ),
-                          ),
-                          alignment: Alignment.center,
-                          child: Icon(
-                            LucideIcons.minus,
-                            size: 15,
-                            color: _quantity <= _minLimit
-                                ? AppColors.textSecondary
-                                    .withValues(alpha: 0.35)
-                                : AppColors.textPrimary,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-
-                      // Editable Quantity Input
-                      Container(
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Minus Button
+                    InkWell(
+                      onTap: _decrement,
+                      customBorder: const CircleBorder(),
+                      child: Container(
+                        width: 32,
                         height: 32,
-                        constraints: const BoxConstraints(
-                          minWidth: 42,
-                          maxWidth: 80,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF1F5F9),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: _quantity <= _minLimit
+                                ? const Color(0xFFE2E8F0)
+                                    .withValues(alpha: 0.6)
+                                : const Color(0xFFCBD5E1),
+                          ),
                         ),
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
                         alignment: Alignment.center,
-                        child: TextField(
-                          controller: _qtyController,
-                          focusNode: _qtyFocusNode,
-                          keyboardType: TextInputType.number,
-                          textInputAction: TextInputAction.done,
-                          inputFormatters: [
-                            FilteringTextInputFormatter.digitsOnly,
-                          ],
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.notoSansGeorgian(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.textPrimary,
-                          ),
-                          decoration: const InputDecoration(
-                            border: InputBorder.none,
-                            enabledBorder: InputBorder.none,
-                            focusedBorder: InputBorder.none,
-                            isDense: true,
-                            filled: false,
-                            contentPadding: EdgeInsets.zero,
-                          ),
-                          onSubmitted: (val) {
-                            _commitTypedQuantity(val);
-                            _qtyFocusNode.unfocus();
-                          },
-                          onTapOutside: (_) {
-                            if (_qtyFocusNode.hasFocus) {
-                              _commitTypedQuantity(_qtyController.text);
-                              _qtyFocusNode.unfocus();
-                            }
-                          },
+                        child: Icon(
+                          LucideIcons.minus,
+                          size: 15,
+                          color: _quantity <= _minLimit
+                              ? AppColors.textSecondary
+                                  .withValues(alpha: 0.35)
+                              : AppColors.textPrimary,
                         ),
                       ),
-                      const SizedBox(width: 8),
+                    ),
+                    const SizedBox(width: 2),
 
-                      // Plus Button
-                      InkWell(
-                        onTap: _increment,
-                        customBorder: const CircleBorder(),
-                        child: Container(
-                          width: 32,
+                    // Editable Quantity Input with dynamic width
+                    AnimatedBuilder(
+                      animation: _qtyController,
+                      builder: (context, child) {
+                        return AnimatedContainer(
+                          duration: const Duration(milliseconds: 140),
+                          curve: Curves.easeOutCubic,
                           height: 32,
-                          decoration: BoxDecoration(
-                            color: _quantity >= _maxStock
-                                ? AppColors.primary.withValues(alpha: 0.4)
-                                : AppColors.primary,
-                            shape: BoxShape.circle,
-                          ),
+                          width: _calculateQtyWidth(_qtyController.text),
                           alignment: Alignment.center,
-                          child: const Icon(
-                            LucideIcons.plus,
-                            size: 15,
-                            color: Colors.white,
-                          ),
+                          child: child,
+                        );
+                      },
+                      child: TextField(
+                        controller: _qtyController,
+                        focusNode: _qtyFocusNode,
+                        keyboardType: TextInputType.number,
+                        textInputAction: TextInputAction.done,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                        ],
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.notoSansGeorgian(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.textPrimary,
+                        ),
+                        decoration: const InputDecoration(
+                          border: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          isDense: true,
+                          filled: false,
+                          contentPadding: EdgeInsets.zero,
+                        ),
+                        onSubmitted: (val) {
+                          _commitTypedQuantity(val);
+                          _qtyFocusNode.unfocus();
+                        },
+                        onTapOutside: (_) {
+                          if (_qtyFocusNode.hasFocus) {
+                            _commitTypedQuantity(_qtyController.text);
+                            _qtyFocusNode.unfocus();
+                          }
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 2),
+
+                    // Plus Button
+                    InkWell(
+                      onTap: _increment,
+                      customBorder: const CircleBorder(),
+                      child: Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: _quantity >= _maxStock
+                              ? AppColors.primary.withValues(alpha: 0.4)
+                              : AppColors.primary,
+                          shape: BoxShape.circle,
+                        ),
+                        alignment: Alignment.center,
+                        child: const Icon(
+                          LucideIcons.plus,
+                          size: 15,
+                          color: Colors.white,
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ],
             ),

@@ -12,6 +12,7 @@ import '../../../../core/widgets/auth_required_bottom_sheet.dart';
 import '../../../farm_inventory/presentation/screens/farmer_inventory_screen.dart';
 import '../../../marketplace/presentation/screens/favorites_screen.dart';
 import '../../../marketplace/presentation/widgets/guest_promo_banner.dart';
+import '../../../orders/presentation/providers/farmer_orders_provider.dart';
 import '../../../orders/presentation/providers/order_chat_provider.dart';
 import '../../../orders/presentation/screens/client_orders_screen.dart';
 import '../../../orders/presentation/screens/incoming_orders_screen.dart';
@@ -57,6 +58,13 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
           });
         }
       });
+
+    Future.microtask(() async {
+      final auth = ref.read(authStateProvider);
+      if (auth.isAuthenticated && auth.role == UserRole.farmer) {
+        await ref.read(farmerOrdersProvider.notifier).refreshFromBackend();
+      }
+    });
   }
 
   @override

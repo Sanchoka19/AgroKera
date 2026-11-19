@@ -189,6 +189,8 @@ void main() {
     // Open delivery details modal bottom sheet
     final detailsBtn = find.text('დეტალები');
     await tester.ensureVisible(detailsBtn);
+    await tester.drag(find.byType(SingleChildScrollView), const Offset(0, 100));
+    await tester.pumpAndSettle();
     await tester.tap(detailsBtn);
     await tester.pumpAndSettle();
 

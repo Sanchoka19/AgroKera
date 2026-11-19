@@ -43,7 +43,9 @@ class OrderChatQuickActionsSheet extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final controller = ref.read(orderChatActionsControllerProvider);
-    final hasAddress = (order.deliveryAddress?.trim().isNotEmpty == true);
+    final customerAddress = controller.resolveCustomerAddressToShare(order);
+    final hasCustomerAddress =
+        customerAddress != null && customerAddress.isNotEmpty;
     final isClient = !isFarmer;
     final hasPin = order.deliveryPin.trim().isNotEmpty;
 
@@ -169,9 +171,9 @@ class OrderChatQuickActionsSheet extends ConsumerWidget {
               iconColor: const Color(0xFF0284C7),
               iconBg: const Color(0xFFE0F2FE),
               title: 'მისამართის გაზიარება',
-              subtitle: hasAddress
-                  ? order.deliveryAddress!
-                  : 'შეკვეთაში მითითებული მიწოდების მისამართი',
+              subtitle: hasCustomerAddress
+                  ? customerAddress
+                  : 'თქვენი მიწოდების მისამართი',
               onTap: () async {
                 Navigator.of(context).pop();
                 await controller.sendDeliveryAddress(

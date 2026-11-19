@@ -285,18 +285,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               ),
                             )
                     else
-                      GridView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      gridDelegate:
-                          const SliverGridDelegateWithMaxCrossAxisExtent(
-                        maxCrossAxisExtent: 210,
-                        crossAxisSpacing: 12,
-                        mainAxisSpacing: 12,
-                        childAspectRatio: 0.70,
-                      ),
-                      itemCount: products.length,
-                      itemBuilder: (context, index) {
+                      MediaQuery.removePadding(
+                        context: context,
+                        removeTop: true,
+                        child: GridView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          padding: EdgeInsets.zero,
+                          gridDelegate:
+                              const SliverGridDelegateWithMaxCrossAxisExtent(
+                            maxCrossAxisExtent: 210,
+                            crossAxisSpacing: 12,
+                            mainAxisSpacing: 12,
+                            childAspectRatio: 0.68,
+                          ),
+                          itemCount: products.length,
+                          itemBuilder: (context, index) {
                         final product = products[index];
                         final isOwner = product.isOwnedBy(
                           ref.watch(authStateProvider),
@@ -327,6 +331,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         );
                       },
                     ),
+                  ),
                     const SizedBox(height: 16),
                   ],
                 ),

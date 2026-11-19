@@ -99,11 +99,12 @@ class AuthNotifier extends Notifier<AuthState> {
   }
 
   Future<void> _syncProfileFromBackend() async {
+    if (!ref.mounted) return;
     final uid = state.userId;
     if (uid == null || uid.isEmpty) return;
     try {
       final user = await _repo.getProfile(uid);
-      if (!state.isAuthenticated) return;
+      if (!ref.mounted || !state.isAuthenticated) return;
 
       final currentEmail = state.userEmail?.trim().toLowerCase();
       final serverEmail = (user?['email'] as String?)?.trim().toLowerCase();
@@ -168,6 +169,7 @@ class AuthNotifier extends Notifier<AuthState> {
     if (effectiveToken == null || effectiveToken.isEmpty) {
       effectiveToken = await PushNotificationService().refreshToken();
     }
+    if (!ref.mounted) return;
     final uid = state.userId;
     if (uid == null || effectiveToken == null || effectiveToken.isEmpty) return;
     try {

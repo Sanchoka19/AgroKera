@@ -35,6 +35,47 @@ class OrderChatActionsController {
     return (id: senderId, name: senderName, role: senderRole);
   }
 
+  /// Resolves the customer's genuine address to share in chat, never leaking the farm pickup location
+  String? resolveCustomerAddressToShare(FarmerOrder order) {
+    // 1. If order has a genuine customer delivery address (not self-pickup farm address)
+    final orderAddr = order.deliveryAddress?.trim();
+    if (orderAddr != null &&
+        orderAddr.isNotEmpty &&
+        !order.isPickup &&
+        !orderAddr.startsWith('თვითგატანა') &&
+        !orderAddr.contains('მეურნეობიდან')) {
+      return orderAddr;
+    }
+
+    // 2. Active address selected in user profile / address book
+    final activeUserAddress =
+        _ref.read(userAddressProvider).activeAddress.trim();
+    if (activeUserAddress.isNotEmpty &&
+        !activeUserAddress.startsWith('თვითგატანა') &&
+        !activeUserAddress.contains('მეურნეობიდან')) {
+      return activeUserAddress;
+    }
+
+    // 3. User address from AuthState
+    final authUserAddress = _ref.read(authStateProvider).userAddress?.trim();
+    if (authUserAddress != null &&
+        authUserAddress.isNotEmpty &&
+        !authUserAddress.startsWith('თვითგატანა') &&
+        !authUserAddress.contains('მეურნეობიდან')) {
+      return authUserAddress;
+    }
+
+    // 4. Fallback to orderAddr only if it does not point to farm pickup
+    if (orderAddr != null &&
+        orderAddr.isNotEmpty &&
+        !orderAddr.startsWith('თვითგატანა') &&
+        !orderAddr.contains('მეურნეობიდან')) {
+      return orderAddr;
+    }
+
+    return null;
+  }
+
   /// Sends the formatted delivery address to the chat
   Future<bool> sendDeliveryAddress({
     required BuildContext context,
@@ -43,11 +84,7 @@ class OrderChatActionsController {
   }) async {
     final resolvedAddress = overrideAddress?.trim().isNotEmpty == true
         ? overrideAddress!.trim()
-        : (order.deliveryAddress?.trim().isNotEmpty == true
-            ? order.deliveryAddress!.trim()
-            : (_ref.read(userAddressProvider).activeAddress.trim().isNotEmpty
-                ? _ref.read(userAddressProvider).activeAddress.trim()
-                : null));
+        : resolveCustomerAddressToShare(order);
 
     if (resolvedAddress == null || resolvedAddress.isEmpty) {
       if (context.mounted) {

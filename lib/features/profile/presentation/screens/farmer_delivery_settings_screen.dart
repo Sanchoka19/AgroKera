@@ -6,6 +6,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:agrokera/core/auth/auth_state_provider.dart';
 import 'package:agrokera/core/services/georgian_geo_lookup_service.dart';
+import 'package:agrokera/core/storage/secure_storage_service.dart';
 import 'package:agrokera/core/theme/app_colors.dart';
 import 'package:agrokera/core/widgets/app_toast.dart';
 import 'package:agrokera/features/marketplace/data/models/farmer_model.dart';
@@ -52,7 +53,7 @@ class _FarmerDeliverySettingsScreenState
               farmName: authState.farmName ?? 'ჩემი მეურნეობა',
               farmerName: authState.userName ?? 'ფერმერი',
               location: 'საქართველო',
-              rating: 5.0,
+              rating: 0.0,
               reviewCount: 0,
               totalRatings: 0,
               isVerified: true,
@@ -78,6 +79,45 @@ class _FarmerDeliverySettingsScreenState
       _selectedDays = ['შაბათი'];
     }
     _locationController = TextEditingController(text: farmer.location);
+    _loadSavedSettings(targetId);
+  }
+
+  Future<void> _loadSavedSettings(String targetId) async {
+    try {
+      final storage = ref.read(secureStorageProvider);
+      var saved = await storage.readFarmerDeliverySettings(targetId);
+      final auth = ref.read(authStateProvider);
+      if (saved == null && auth.farmerId != null) {
+        saved = await storage.readFarmerDeliverySettings(auth.farmerId!);
+      }
+      saved ??= await storage.readFarmerDeliverySettings('farmer_2') ??
+          await storage.readFarmerDeliverySettings('farmer_1');
+      if (saved != null && mounted) {
+        setState(() {
+          if (saved!['isDeliveryEnabled'] is bool) {
+            _isDeliveryEnabled = saved['isDeliveryEnabled'] as bool;
+          }
+          if (saved['regionalDeliveryFees'] is Map) {
+            _regionalFees = (saved['regionalDeliveryFees'] as Map).map(
+              (k, v) => MapEntry(k.toString(), (v as num).toDouble()),
+            );
+          }
+          if (saved['deliveryDays'] is List) {
+            final days = (saved['deliveryDays'] as List)
+                .map((e) => DeliveryDaysScheduleCard.normalizeDay(e.toString()))
+                .toSet()
+                .toList();
+            if (days.isNotEmpty) {
+              _selectedDays = days;
+            }
+          }
+          if (saved['location'] is String &&
+              (saved['location'] as String).isNotEmpty) {
+            _locationController.text = saved['location'] as String;
+          }
+        });
+      }
+    } catch (_) {}
   }
 
   @override
@@ -144,7 +184,7 @@ class _FarmerDeliverySettingsScreenState
               farmName: authState.farmName ?? 'ჩემი მეურნეობა',
               farmerName: authState.userName ?? 'ფერმერი',
               location: 'საქართველო',
-              rating: 5.0,
+              rating: 0.0,
               reviewCount: 0,
               totalRatings: 0,
               isVerified: true,
@@ -157,7 +197,7 @@ class _FarmerDeliverySettingsScreenState
     );
   }
 
-  void _saveSettings() {
+  Future<void> _saveSettings() async {
     if (_isDeliveryEnabled) {
       if (_regionalFees.isEmpty) {
         AppToast.error(
@@ -182,10 +222,12 @@ class _FarmerDeliverySettingsScreenState
     final primaryFee =
         _regionalFees.values.isNotEmpty ? _regionalFees.values.first : 7.0;
 
-    final shouldUpdateAllDemo =
-        authState.farmerId == null && widget.farmerId == null;
+    final isDemoFarmer = farmer.id == 'farmer_1' || farmer.id == 'farmer_2';
+    final shouldUpdateAllDemo = isDemoFarmer ||
+        (authState.farmerId == null && widget.farmerId == null) ||
+        (authState.farmerId == 'farmer_1' || authState.farmerId == 'farmer_2');
 
-    ref.read(marketplaceProvider.notifier).updateFarmerDeliverySettings(
+    await ref.read(marketplaceProvider.notifier).updateFarmerDeliverySettings(
           farmerId: farmer.id,
           isDeliveryEnabled: _isDeliveryEnabled,
           deliveryCity: primaryCity,
@@ -200,7 +242,7 @@ class _FarmerDeliverySettingsScreenState
         );
 
     if (authState.farmerId != null && authState.farmerId != farmer.id) {
-      ref.read(marketplaceProvider.notifier).updateFarmerDeliverySettings(
+      await ref.read(marketplaceProvider.notifier).updateFarmerDeliverySettings(
             farmerId: authState.farmerId!,
             isDeliveryEnabled: _isDeliveryEnabled,
             deliveryCity: primaryCity,
@@ -215,6 +257,7 @@ class _FarmerDeliverySettingsScreenState
           );
     }
 
+    if (!mounted) return;
     AppToast.success(context, 'მიწოდების პარამეტრები წარმატებით განახლდა!');
     Navigator.of(context).pop();
   }

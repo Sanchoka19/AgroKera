@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../../core/theme/app_colors.dart';
+import '../../../../profile/presentation/widgets/profile_image_view.dart';
 import '../../../domain/models/farmer_order_model.dart';
 import '../../../domain/models/order_message_model.dart';
 
@@ -12,6 +13,7 @@ class OrderChatCardTile extends StatelessWidget {
   final OrderMessage? lastMessage;
   final bool isFarmer;
   final bool hasUnread;
+  final String? avatarUrl;
   final VoidCallback onTap;
 
   const OrderChatCardTile({
@@ -20,6 +22,7 @@ class OrderChatCardTile extends StatelessWidget {
     this.lastMessage,
     required this.isFarmer,
     this.hasUnread = false,
+    this.avatarUrl,
     required this.onTap,
   });
 
@@ -59,6 +62,9 @@ class OrderChatCardTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final effectiveAvatarUrl =
+        avatarUrl ?? order.resolvePartnerAvatar(isFarmer: isFarmer);
+
     final isActive =
         order.status == OrderStatus.pending ||
         order.status == OrderStatus.inProgress;
@@ -147,14 +153,31 @@ class OrderChatCardTile extends StatelessWidget {
                       color: avatarBg,
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: avatarIconColor.withValues(alpha: 0.2),
+                        color: avatarIconColor.withValues(alpha: 0.25),
                         width: 1.5,
                       ),
                     ),
-                    child: Icon(
-                      isFarmer ? LucideIcons.user : LucideIcons.store,
-                      size: 22,
-                      color: avatarIconColor,
+                    child: ClipOval(
+                      child: (effectiveAvatarUrl != null &&
+                              effectiveAvatarUrl.isNotEmpty)
+                          ? ProfileImageView.avatar(
+                              avatarUrl: effectiveAvatarUrl,
+                              size: 48,
+                              backgroundColor: avatarBg,
+                              iconColor: avatarIconColor,
+                            )
+                          : Center(
+                              child: Text(
+                                titleText.isNotEmpty
+                                    ? titleText[0].toUpperCase()
+                                    : (isFarmer ? 'მ' : 'ფ'),
+                                style: GoogleFonts.notoSansGeorgian(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w800,
+                                  color: avatarIconColor,
+                                ),
+                              ),
+                            ),
                     ),
                   ),
                   if (isActive)

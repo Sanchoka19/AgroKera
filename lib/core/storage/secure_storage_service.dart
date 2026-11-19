@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../network/api_client.dart';
@@ -24,6 +25,8 @@ class SecureStorageService {
   static const _farmLandmarkKey = 'agrokera_farm_landmark';
   static const _addressesJsonKey = 'agrokera_addresses_json';
   static const _notificationSettingsKey = 'agrokera_notification_settings_json';
+  static const _farmerDeliverySettingsMapKey =
+      'agrokera_farmer_delivery_settings_map';
 
   final FlutterSecureStorage _storage;
 
@@ -53,6 +56,10 @@ class SecureStorageService {
     }
     await _storage.delete(key: key);
   }
+
+  Future<void> saveGenericString(String key, String value) => _write(key, value);
+  Future<String?> readGenericString(String key) => _read(key);
+  Future<void> deleteGenericString(String key) => _delete(key);
 
   Future<void> saveSession({
     required String token,
@@ -330,6 +337,47 @@ class SecureStorageService {
         _delete(_addressesJsonKey),
       ]);
     } catch (_) {}
+  }
+
+  Future<void> saveFarmerDeliverySettings({
+    required String farmerId,
+    required Map<String, dynamic> settings,
+  }) async {
+    try {
+      final allSettings = await readAllFarmerDeliverySettings();
+      allSettings[farmerId] = settings;
+      await _write(_farmerDeliverySettingsMapKey, jsonEncode(allSettings));
+    } catch (_) {}
+  }
+
+  Future<Map<String, dynamic>?> readFarmerDeliverySettings(
+    String farmerId,
+  ) async {
+    try {
+      final allSettings = await readAllFarmerDeliverySettings();
+      return allSettings[farmerId];
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<Map<String, Map<String, dynamic>>>
+      readAllFarmerDeliverySettings() async {
+    try {
+      final raw = await _read(_farmerDeliverySettingsMapKey);
+      if (raw == null || raw.trim().isEmpty) return {};
+      final decoded = jsonDecode(raw) as Map<String, dynamic>;
+      return decoded.map(
+        (key, value) => MapEntry(
+          key,
+          value is Map<String, dynamic>
+              ? value
+              : Map<String, dynamic>.from(value as Map),
+        ),
+      );
+    } catch (_) {
+      return {};
+    }
   }
 }
 

@@ -242,7 +242,7 @@ class _CategoryProductsScreenState
                               maxCrossAxisExtent: 210,
                               crossAxisSpacing: 12,
                               mainAxisSpacing: 12,
-                              childAspectRatio: 0.70,
+                              childAspectRatio: 0.68,
                             ),
                         itemCount: products.length,
                         itemBuilder: (context, index) {

@@ -17,6 +17,7 @@ import '../widgets/client_order/order_escrow_payment_card.dart';
 import '../widgets/client_order/order_products_breakdown_card.dart';
 import '../widgets/client_order/order_tracking_card.dart';
 import '../widgets/order_chat/order_chat_pin_dialog.dart';
+import '../../../reviews/presentation/widgets/order_review_prompt_card.dart';
 import 'order_chat_screen.dart';
 
 /// Clean, modular client order details screen ("ჩემი შეკვეთის დეტალები")
@@ -118,6 +119,10 @@ class _ClientOrderDetailScreenState
             children: [
               OrderTrackingCard(order: order),
               const SizedBox(height: 12),
+              if (order.status == OrderStatus.completed) ...[
+                OrderReviewPromptCard(order: order),
+                const SizedBox(height: 12),
+              ],
               if (order.status == OrderStatus.inProgress &&
                   order.isBankTransfer) ...[
                 OrderEscrowPaymentCard(

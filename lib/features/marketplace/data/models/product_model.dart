@@ -33,8 +33,8 @@ class ProductModel {
     this.originalPrice,
     this.unit = 'კგ',
     this.discountPercent,
-    this.rating = 4.9,
-    this.reviewCount = 80,
+    this.rating = 0.0,
+    this.reviewCount = 0,
     this.isAvailable = true,
     this.stockQuantity = 50.0,
     this.stockStatus = 'მარაგშია',
@@ -136,7 +136,7 @@ class ProductModel {
       price: ((json['price'] ?? json['pricePerUnit']) as num?)?.toDouble() ?? 0.0,
       unit: json['unit'] as String? ?? 'კგ',
       discountPercent: validDiscount,
-      rating: (json['rating'] as num?)?.toDouble() ?? 4.9,
+      rating: (json['rating'] as num?)?.toDouble() ?? 0.0,
       reviewCount: (json['reviewCount'] as num?)?.toInt() ?? 0,
       isAvailable: json['isAvailable'] as bool? ?? true,
       stockQuantity: stockQty,
@@ -154,6 +154,33 @@ class ProductModel {
       bulkDiscountPercent: rawBulkPct != null && rawBulkPct > 0 ? rawBulkPct : null,
       agroTags: rawTags,
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'category': category,
+      'farmerId': farmerId,
+      'farmerName': farmerName,
+      'price': price,
+      'pricePerUnit': price,
+      'originalPrice': originalPrice,
+      'unit': unit,
+      'discountPercent': discountPercent,
+      'rating': rating,
+      'reviewCount': reviewCount,
+      'isAvailable': isAvailable,
+      'stockQuantity': stockQuantity,
+      'stockStatus': stockStatus,
+      'imageUrl': imageUrl,
+      'images': images,
+      'description': description,
+      'minOrderQuantity': minOrderQuantity,
+      'bulkDiscountMinQty': bulkDiscountMinQty,
+      'bulkDiscountPercent': bulkDiscountPercent,
+      'agroTags': agroTags,
+    };
   }
 
   ProductModel copyWith({

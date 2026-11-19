@@ -167,7 +167,7 @@ class ProductCard extends StatelessWidget {
 
           // Details section: Compact, fixed and solid gap
           Padding(
-            padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+            padding: const EdgeInsets.fromLTRB(10, 8, 10, 12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
@@ -218,7 +218,11 @@ class ProductCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 2),
                     Text(
-                      '${product.rating} (${product.reviewCount})',
+                      product.reviewCount > 0
+                          ? '${product.rating.toStringAsFixed(1)} (${product.reviewCount})'
+                          : (product.rating > 0
+                              ? product.rating.toStringAsFixed(1)
+                              : 'ახალი'),
                       style: AppTypography.caption.copyWith(
                         fontSize: 10.5,
                         fontWeight: FontWeight.w600,

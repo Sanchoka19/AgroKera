@@ -84,7 +84,9 @@ class ProductHeaderInfo extends StatelessWidget {
                 ),
                 const SizedBox(width: 3),
                 Text(
-                  '${product.rating}',
+                  product.reviewCount > 0
+                      ? product.rating.toStringAsFixed(1)
+                      : (product.rating > 0 ? product.rating.toStringAsFixed(1) : '—'),
                   style: AppTypography.titleMedium.copyWith(
                     fontSize: 13.5,
                     fontWeight: FontWeight.w700,
@@ -92,7 +94,9 @@ class ProductHeaderInfo extends StatelessWidget {
                 ),
                 const SizedBox(width: 3),
                 Text(
-                  '(${product.reviewCount} შეფასება)',
+                  product.reviewCount > 0
+                      ? '(${product.reviewCount} შეფასება)'
+                      : '(შეფასების გარეშე)',
                   style: AppTypography.caption.copyWith(
                     color: AppColors.textSecondary,
                     fontSize: 12,

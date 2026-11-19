@@ -10,6 +10,7 @@ import '../../../../core/constants/app_assets.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_filter_tab.dart';
 import '../../../../core/widgets/app_header.dart';
+import '../../../marketplace/presentation/providers/marketplace_provider.dart';
 import '../../domain/models/farmer_order_model.dart';
 import '../providers/farmer_orders_provider.dart';
 import '../providers/order_chat_provider.dart';
@@ -203,6 +204,23 @@ class _OrderChatsListScreenState extends ConsumerState<OrderChatsListScreen> {
     required bool isFarmer,
     required Map<String, dynamic> chatMap,
   }) {
+    final marketplace = ref.watch(marketplaceProvider);
+    final auth = ref.watch(authStateProvider);
+
+    String? resolveAvatar(FarmerOrder order) {
+      final matchedFarmer = marketplace.farmers.where((f) =>
+          (order.farmerId != null && f.id == order.farmerId) ||
+          (order.farmerName != null &&
+              (f.farmName == order.farmerName ||
+                  f.farmerName == order.farmerName))).firstOrNull;
+      return order.resolvePartnerAvatar(
+        isFarmer: isFarmer,
+        fallbackFarmerAvatar: matchedFarmer?.avatarUrl,
+        fallbackCustomerAvatar:
+            (auth.userId == order.clientId) ? auth.userAvatarUrl : null,
+      );
+    }
+
     switch (_selectedTab) {
       case OrderChatTab.active:
         if (activeOrders.isEmpty) {
@@ -229,6 +247,7 @@ class _OrderChatsListScreenState extends ConsumerState<OrderChatsListScreen> {
               lastMessage: lastMessage,
               isFarmer: isFarmer,
               hasUnread: ref.watch(isOrderChatUnreadProvider(order.id)),
+              avatarUrl: resolveAvatar(order),
               onTap: () => _openChat(order),
             );
           },
@@ -259,6 +278,7 @@ class _OrderChatsListScreenState extends ConsumerState<OrderChatsListScreen> {
               lastMessage: lastMessage,
               isFarmer: isFarmer,
               hasUnread: false,
+              avatarUrl: resolveAvatar(order),
               onTap: () => _openChat(order),
             );
           },
@@ -302,6 +322,7 @@ class _OrderChatsListScreenState extends ConsumerState<OrderChatsListScreen> {
                     lastMessage: lastMessage,
                     isFarmer: isFarmer,
                     hasUnread: ref.watch(isOrderChatUnreadProvider(order.id)),
+                    avatarUrl: resolveAvatar(order),
                     onTap: () => _openChat(order),
                   ),
                 );
@@ -331,6 +352,7 @@ class _OrderChatsListScreenState extends ConsumerState<OrderChatsListScreen> {
                     lastMessage: lastMessage,
                     isFarmer: isFarmer,
                     hasUnread: false,
+                    avatarUrl: resolveAvatar(order),
                     onTap: () => _openChat(order),
                   ),
                 );

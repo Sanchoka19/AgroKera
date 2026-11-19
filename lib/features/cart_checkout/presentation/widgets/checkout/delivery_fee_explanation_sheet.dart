@@ -121,7 +121,6 @@ class DeliveryFeeExplanationSheet extends StatelessWidget {
             decoration: BoxDecoration(
               color: const Color(0xFFF8FAFC),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -247,10 +246,12 @@ class _DeliveryTierItem extends StatelessWidget {
       decoration: BoxDecoration(
         color: isActive ? const Color(0xFFE8F7EE) : Colors.white,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: isActive ? AppColors.primary : const Color(0xFFE2E8F0),
-          width: isActive ? 1.5 : 1,
-        ),
+        border: isActive
+            ? Border.all(
+                color: AppColors.primary,
+                width: 1.5,
+              )
+            : null,
       ),
       child: Row(
         children: [

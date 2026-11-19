@@ -714,7 +714,11 @@ class _GlobalSearchDialogState extends ConsumerState<GlobalSearchDialog> {
                 ),
                 const SizedBox(width: 4),
                 Text(
-                  farmer.rating.toString(),
+                  farmer.reviewCount > 0
+                      ? '${farmer.rating.toStringAsFixed(1)} (${farmer.reviewCount})'
+                      : (farmer.rating > 0
+                          ? farmer.rating.toStringAsFixed(1)
+                          : 'ახალი'),
                   style: AppTypography.caption.copyWith(
                     fontWeight: FontWeight.w700,
                     color: AppColors.textPrimary,

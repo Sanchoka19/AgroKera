@@ -1,10 +1,16 @@
 import '../../../marketplace/data/models/farmer_model.dart';
 import '../../../marketplace/presentation/providers/marketplace_provider.dart';
+import '../models/delivery_schedule_model.dart';
 
 /// Business logic service for checkout operations, delivery slots,
 /// farmer resolution, and regional coverage calculations.
 class CheckoutService {
   const CheckoutService._();
+
+  static const List<String> defaultDeliveryTimeSlots = [
+    '10:00 - 13:00',
+    '14:00 - 18:00',
+  ];
 
   /// Resolves the farmer responsible for the items in the cart.
   static FarmerModel resolveFarmer(
@@ -36,7 +42,7 @@ class CheckoutService {
       farmName: 'აგრო ფერმა',
       farmerName: 'ფერმერი',
       location: 'საქართველო',
-      rating: 5.0,
+      rating: 0.0,
       reviewCount: 0,
       totalRatings: 0,
       isVerified: true,
@@ -48,10 +54,19 @@ class CheckoutService {
     );
   }
 
-  /// Calculates available delivery time slots based on the farmer's delivery schedule.
-  static List<String> generateDeliverySlots(FarmerModel farmer) {
+  /// Generates structured delivery date schedules and time slots.
+  static List<DeliveryDateSchedule> generateDeliverySchedules(FarmerModel farmer) {
     if (!farmer.isDeliveryEnabled) {
-      return ['თვითგატანა მეურნეობიდან (${farmer.deliveryCity})'];
+      final now = DateTime.now();
+      return [
+        DeliveryDateSchedule(
+          date: now,
+          weekdayName: 'თვითგატანა',
+          dayMonthFormatted:
+              farmer.deliveryCity.isNotEmpty ? farmer.deliveryCity : 'მეურნეობა',
+          timeSlots: const ['10:00 - 18:00'],
+        ),
+      ];
     }
 
     final rawDays = farmer.deliveryDays.isNotEmpty
@@ -68,50 +83,71 @@ class CheckoutService {
       DateTime.sunday: 'კვირა',
     };
 
-    const monthNames = [
+    const shortMonthNames = [
       '',
-      'იანვარი',
-      'თებერვალი',
-      'მარტი',
-      'აპრილი',
-      'მაისი',
-      'ივნისი',
-      'ივლისი',
-      'აგვისტო',
-      'სექტემბერი',
-      'ოქტომბერი',
-      'ნოემბერი',
-      'დეკემბერი',
+      'იან',
+      'თებ',
+      'მარ',
+      'აპრ',
+      'მაი',
+      'ივნ',
+      'ივლ',
+      'აგვ',
+      'სექ',
+      'ოქტ',
+      'ნოე',
+      'დეკ',
     ];
 
     final now = DateTime.now();
-    final matchingDates = <DateTime>[];
+    final schedules = <DeliveryDateSchedule>[];
 
+    // Scan up to 14 days ahead for matching delivery days (up to 4 upcoming dates)
     for (int i = 1; i <= 14; i++) {
       final date = now.add(Duration(days: i));
       final weekdayName = geoWeekdayMap[date.weekday];
-      if (rawDays.contains(weekdayName)) {
-        matchingDates.add(date);
-        if (matchingDates.length >= 2) break;
+      if (weekdayName != null && rawDays.contains(weekdayName)) {
+        final monthName = shortMonthNames[date.month];
+        schedules.add(
+          DeliveryDateSchedule(
+            date: date,
+            weekdayName: weekdayName,
+            dayMonthFormatted: '${date.day} $monthName',
+            timeSlots: defaultDeliveryTimeSlots,
+          ),
+        );
+        if (schedules.length >= 4) break;
       }
     }
 
-    if (matchingDates.isEmpty) {
-      return [
-        '${rawDays.first}, 10:00 - 13:00',
-        '${rawDays.first}, 14:00 - 18:00',
-      ];
+    if (schedules.isEmpty) {
+      final fallbackDate = now.add(const Duration(days: 1));
+      final fallbackWeekday =
+          geoWeekdayMap[fallbackDate.weekday] ?? rawDays.first;
+      final monthName = shortMonthNames[fallbackDate.month];
+      schedules.add(
+        DeliveryDateSchedule(
+          date: fallbackDate,
+          weekdayName: fallbackWeekday,
+          dayMonthFormatted: '${fallbackDate.day} $monthName',
+          timeSlots: defaultDeliveryTimeSlots,
+        ),
+      );
     }
 
+    return schedules;
+  }
+
+  /// Calculates available delivery time slots based on the farmer's delivery schedule.
+  static List<String> generateDeliverySlots(FarmerModel farmer) {
+    final schedules = generateDeliverySchedules(farmer);
     final slots = <String>[];
-    for (final d in matchingDates) {
-      final weekdayName = geoWeekdayMap[d.weekday] ?? '';
-      final monthName = monthNames[d.month];
-      slots.add('$weekdayName, ${d.day} $monthName, 10:00-13:00');
-      slots.add('$weekdayName, ${d.day} $monthName, 14:00-18:00');
+    for (final s in schedules) {
+      for (final t in s.timeSlots) {
+        slots.add(s.fullSlotString(t));
+      }
     }
-
-    return slots;
+    return slots.isNotEmpty ? slots : ['შაბათი, 10:00 - 13:00'];
   }
 
   /// Matches the delivery address with the farmer's registered delivery zones and fees.

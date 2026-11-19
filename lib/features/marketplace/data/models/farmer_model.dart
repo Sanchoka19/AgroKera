@@ -42,7 +42,7 @@ class FarmerModel {
     required this.location,
     required this.rating,
     required this.reviewCount,
-    this.totalRatings = 120,
+    this.totalRatings = 0,
     this.isVerified = true,
     this.isVatPayer = true,
     required this.avatarUrl,
@@ -63,9 +63,10 @@ class FarmerModel {
       farmName: json['farmName'] as String? ?? '',
       farmerName: json['farmerName'] as String? ?? '',
       location: json['location'] as String? ?? 'კახეთი',
-      rating: (json['rating'] as num?)?.toDouble() ?? 4.9,
+      rating: (json['rating'] as num?)?.toDouble() ?? 0.0,
       reviewCount: (json['reviewCount'] as num?)?.toInt() ?? 0,
-      totalRatings: (json['totalRatings'] as num?)?.toInt() ?? 0,
+      totalRatings: (json['totalRatings'] as num?)?.toInt() ??
+          ((json['reviewCount'] as num?)?.toInt() ?? 0),
       isVerified: json['isVerified'] as bool? ?? true,
       isVatPayer: json['isVatPayer'] as bool? ?? false,
       avatarUrl: json['avatarUrl'] as String? ??
@@ -89,6 +90,30 @@ class FarmerModel {
               const {'თბილისი': 7.0},
       isPickupEnabled: json['isPickupEnabled'] as bool? ?? true,
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'farmName': farmName,
+      'farmerName': farmerName,
+      'location': location,
+      'rating': rating,
+      'reviewCount': reviewCount,
+      'totalRatings': totalRatings,
+      'isVerified': isVerified,
+      'isVatPayer': isVatPayer,
+      'avatarUrl': avatarUrl,
+      'coverUrl': coverUrl,
+      'about': about,
+      'phone': phone,
+      'isDeliveryEnabled': isDeliveryEnabled,
+      'deliveryCity': deliveryCity,
+      'deliveryDays': deliveryDays,
+      'deliveryFee': deliveryFee,
+      'regionalDeliveryFees': regionalDeliveryFees,
+      'isPickupEnabled': isPickupEnabled,
+    };
   }
 
   FarmerModel copyWith({

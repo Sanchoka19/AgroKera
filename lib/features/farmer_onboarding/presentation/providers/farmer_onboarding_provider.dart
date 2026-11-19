@@ -337,6 +337,29 @@ class FarmerOnboardingNotifier extends Notifier<FarmerOnboardingState> {
           location: effectiveAddress,
         );
 
+    final cleanDays = state.deliveryDays
+        .map(MarketplaceNotifier.normalizeDayName)
+        .toSet()
+        .toList();
+    cleanDays.sort(
+      (a, b) => MarketplaceNotifier.weekdayOrderIndex(a)
+          .compareTo(MarketplaceNotifier.weekdayOrderIndex(b)),
+    );
+
+    unawaited(
+      ref.read(marketplaceProvider.notifier).updateFarmerDeliverySettings(
+            farmerId: currentFid,
+            isDeliveryEnabled: state.isDeliveryEnabled,
+            deliveryCity: state.selectedCity,
+            deliveryDays: cleanDays.isNotEmpty ? cleanDays : const ['შაბათი'],
+            deliveryFee: state.deliveryFee,
+            regionalDeliveryFees: {state.selectedCity: state.deliveryFee},
+            isPickupEnabled: true,
+            location: effectiveAddress,
+            updateAllDemoFarmers: currentFid == 'farmer_1' || currentFid == 'farmer_2',
+          ),
+    );
+
     unawaited(ref.read(marketplaceProvider.notifier).refreshFromBackend());
   }
 }

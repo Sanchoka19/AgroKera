@@ -3,6 +3,9 @@ import 'dart:math';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/auth/auth_state_provider.dart';
 import '../../../../core/network/api_client.dart';
+import '../../../../core/network/offline_queue/offline_queue_store.dart';
+import '../../../../core/network/offline_queue/offline_sync_coordinator.dart';
+import '../../../../core/storage/cache/local_cache_service.dart';
 import '../../../../core/storage/secure_storage_service.dart';
 import '../../../cart_checkout/data/models/cart_item_model.dart';
 import '../../../cart_checkout/presentation/providers/cart_provider.dart';
@@ -14,7 +17,8 @@ import 'order_chat_provider.dart';
 
 final ordersRepositoryProvider = Provider<OrdersRepository>((ref) {
   final api = ref.watch(apiClientProvider);
-  return OrdersRepository(api);
+  final queue = ref.watch(offlineQueueStoreProvider);
+  return OrdersRepository(api, queue);
 });
 
 /// State of the farmer & client orders screen
@@ -48,14 +52,14 @@ class FarmerOrdersState {
     }
   }
 
-  /// Filtered list of incoming orders based on active tab with smart urgency sorting
-  List<FarmerOrder> get filteredIncomingOrders {
-    final list = selectedFilter == null
+  /// Returns filtered list of incoming orders for a specific status with smart urgency sorting
+  List<FarmerOrder> ordersForFilter(OrderStatus? filter) {
+    final list = filter == null
         ? incomingOrders.toList()
-        : incomingOrders.where((o) => o.status == selectedFilter).toList();
+        : incomingOrders.where((o) => o.status == filter).toList();
 
     list.sort((a, b) {
-      if (selectedFilter == null) {
+      if (filter == null) {
         final pDiff =
             _statusPriority(a.status).compareTo(_statusPriority(b.status));
         if (pDiff != 0) return pDiff;
@@ -65,6 +69,12 @@ class FarmerOrdersState {
 
     return list;
   }
+
+  /// Filtered list of incoming orders based on active tab with smart urgency sorting
+  List<FarmerOrder> get filteredIncomingOrders => ordersForFilter(selectedFilter);
+
+  /// Sorted incoming orders (Pending -> InProgress -> Completed -> Cancelled, then newest first)
+  List<FarmerOrder> get sortedIncomingOrders => ordersForFilter(null);
 
   /// Backward-compatible alias for filtered incoming orders
   List<FarmerOrder> get filteredOrders => filteredIncomingOrders;
@@ -157,7 +167,11 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
         unawaited(refreshFromBackend());
       }
     });
-    unawaited(Future.microtask(refreshFromBackend));
+    unawaited(Future.microtask(() async {
+      await _loadCachedOrders();
+      _setupSyncListener();
+      await refreshFromBackend();
+    }));
 
     final auth = ref.read(authStateProvider);
     final initialList = isFlutterTestEnv
@@ -171,6 +185,33 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
       incomingOrders: initialIncoming,
       clientOrders: initialClient,
     );
+  }
+
+  void _setupSyncListener() {
+    try {
+      ref.read(offlineSyncCoordinatorProvider).addOnSyncCompletedListener(() {
+        if (ref.mounted) {
+          unawaited(refreshFromBackend());
+        }
+      });
+    } catch (_) {}
+  }
+
+  Future<void> _loadCachedOrders() async {
+    try {
+      final cacheService = ref.read(localCacheServiceProvider);
+      final rawList = await cacheService.readEntityList(LocalCacheService.ordersKey);
+      if (rawList != null && rawList.isNotEmpty && ref.mounted) {
+        final cached = rawList.map(FarmerOrder.fromJson).toList();
+        final auth = ref.read(authStateProvider);
+        final (cachedIncoming, cachedClient) = _initialPartition(cached, auth);
+        state = state.copyWith(
+          orders: cached,
+          incomingOrders: cachedIncoming,
+          clientOrders: cachedClient,
+        );
+      }
+    } catch (_) {}
   }
 
   (List<FarmerOrder>, List<FarmerOrder>) _initialPartition(
@@ -382,6 +423,14 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
         orders: combinedOrders,
         inFlightOrderIds: _inFlightStatusUpdates.keys.toSet(),
       );
+      if (combinedOrders.isNotEmpty) {
+        unawaited(
+          ref.read(localCacheServiceProvider).saveEntityList(
+            LocalCacheService.ordersKey,
+            combinedOrders.map((o) => o.toJson()).toList(),
+          ),
+        );
+      }
       checkPendingOrderExpirations();
     } catch (_) {
     } finally {
@@ -624,18 +673,18 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
         ? cartItems.first.farmerId!
         : 'farmer_2';
 
-    final resolvedHasVat = hasVat ??
-        () {
-          final marketplace = ref.read(marketplaceProvider);
-          final matchedFarmer = marketplace.farmers.where((f) =>
-              (cartItems.isNotEmpty &&
-                  cartItems.first.farmerId != null &&
-                  f.id == cartItems.first.farmerId) ||
-              (cartItems.isNotEmpty &&
-                  (f.farmerName == cartItems.first.farmerName ||
-                      f.farmName == cartItems.first.farmerName))).firstOrNull;
-          return matchedFarmer?.isVatPayer ?? false;
-        }();
+    final marketplace = ref.read(marketplaceProvider);
+    final matchedFarmer = marketplace.farmers.where((f) =>
+        (cartItems.isNotEmpty &&
+            cartItems.first.farmerId != null &&
+            f.id == cartItems.first.farmerId) ||
+        (cartItems.isNotEmpty &&
+            (f.farmerName == cartItems.first.farmerName ||
+                f.farmName == cartItems.first.farmerName))).firstOrNull;
+    final resolvedFarmer = matchedFarmer ??
+        marketplace.farmers.where((f) => f.id == targetFarmerId).firstOrNull;
+
+    final resolvedHasVat = hasVat ?? (matchedFarmer?.isVatPayer ?? false);
 
     final newOrder = FarmerOrder(
       id: generatedId,
@@ -660,6 +709,10 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
       heavyFee: heavyFee,
       platformFee: platformFee,
       isPickup: isPickup,
+      farmerName: resolvedFarmer?.farmName ??
+          (cartItems.isNotEmpty ? cartItems.first.farmerName : null),
+      farmerAvatarUrl: resolvedFarmer?.avatarUrl,
+      customerAvatarUrl: auth.userAvatarUrl,
     );
 
     final updatedClient = [newOrder, ...state.clientOrders];

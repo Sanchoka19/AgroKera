@@ -449,51 +449,18 @@ class _FarmAddressScreenState extends ConsumerState<FarmAddressScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Form header with 1-Click GPS button
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'მეურნეობის ზუსტი მისამართი',
-                        style: GoogleFonts.notoSansGeorgian(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: const Color(0xFF1E293B),
-                        ),
-                      ),
-                      TextButton.icon(
-                        onPressed: _isGpsLoading ? null : _handleGps,
-                        icon: _isGpsLoading
-                            ? const SizedBox(
-                                width: 12,
-                                height: 12,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: AppColors.primary,
-                                ),
-                              )
-                            : const Icon(LucideIcons.locateFixed, size: 14),
-                        label: Text(
-                          'ჩემი GPS ლოკაცია',
-                          style: GoogleFonts.notoSansGeorgian(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        style: TextButton.styleFrom(
-                          foregroundColor: AppColors.primary,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          visualDensity: VisualDensity.compact,
-                        ),
-                      ),
-                    ],
+                  // Form header label
+                  Text(
+                    'მეურნეობის ზუსტი მისამართი',
+                    style: GoogleFonts.notoSansGeorgian(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF1E293B),
+                    ),
                   ),
                   const SizedBox(height: 8),
 
-                  // Main Address input field
+                  // Main Address input field with embedded 1-Click GPS button
                   TextFormField(
                     controller: _locationController,
                     style: GoogleFonts.notoSansGeorgian(
@@ -510,6 +477,59 @@ class _FarmAddressScreenState extends ConsumerState<FarmAddressScreen> {
                         LucideIcons.mapPin,
                         size: 18,
                         color: AppColors.primary,
+                      ),
+                      suffixIconConstraints: const BoxConstraints(
+                        minHeight: 36,
+                        minWidth: 36,
+                      ),
+                      suffixIcon: Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: _isGpsLoading ? null : _handleGps,
+                            borderRadius: BorderRadius.circular(8),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFE8F7EE),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  if (_isGpsLoading)
+                                    const SizedBox(
+                                      width: 13,
+                                      height: 13,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: AppColors.primary,
+                                      ),
+                                    )
+                                  else
+                                    const Icon(
+                                      LucideIcons.locateFixed,
+                                      size: 14,
+                                      color: AppColors.primary,
+                                    ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'GPS',
+                                    style: GoogleFonts.notoSansGeorgian(
+                                      fontSize: 11.5,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.primaryDark,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
                       ),
                       filled: true,
                       fillColor: const Color(0xFFF8FAFC),

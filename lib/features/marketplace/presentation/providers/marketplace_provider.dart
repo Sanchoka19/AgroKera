@@ -5,6 +5,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/auth/auth_state_provider.dart';
 import '../../../../core/constants/app_categories.dart';
 import '../../../../core/network/api_client.dart';
+import '../../../../core/network/offline_queue/offline_mutation.dart';
+import '../../../../core/network/offline_queue/offline_queue_store.dart';
+import '../../../../core/network/offline_queue/offline_sync_coordinator.dart';
+import '../../../../core/storage/cache/local_cache_service.dart';
+import '../../../../core/storage/secure_storage_service.dart';
 import '../../../cart_checkout/data/models/cart_item_model.dart';
 import '../../../orders/domain/models/farmer_order_model.dart';
 import '../../data/mock_data.dart';
@@ -52,13 +57,89 @@ class MarketplaceState {
 class MarketplaceNotifier extends Notifier<MarketplaceState> {
   @override
   MarketplaceState build() {
-    unawaited(Future.microtask(refreshFromBackend));
+    unawaited(Future.microtask(() async {
+      if (!ref.mounted) return;
+      await _loadCachedMarketplaceData();
+      if (!ref.mounted) return;
+      await _loadPersistedDeliverySettings();
+      _setupSyncListener();
+      if (!ref.mounted) return;
+      await refreshFromBackend();
+    }));
     return MarketplaceState(
       products: MockData.products,
       farmers: MockData.farmers,
       categories: AppCategories.categories,
       isSyncing: !isFlutterTestEnv,
     );
+  }
+
+  void _setupSyncListener() {
+    try {
+      ref.read(offlineSyncCoordinatorProvider).addOnSyncCompletedListener(() {
+        if (ref.mounted) {
+          unawaited(refreshFromBackend());
+        }
+      });
+    } catch (_) {}
+  }
+
+  Future<void> _loadCachedMarketplaceData() async {
+    try {
+      final cache = ref.read(localCacheServiceProvider);
+      final rawProducts = await cache.readEntityList(LocalCacheService.productsKey);
+      final rawFarmers = await cache.readEntityList(LocalCacheService.farmersKey);
+      if (!ref.mounted) return;
+
+      List<ProductModel>? cachedProducts;
+      List<FarmerModel>? cachedFarmers;
+
+      if (rawProducts != null && rawProducts.isNotEmpty) {
+        cachedProducts = rawProducts.map(ProductModel.fromJson).toList();
+      }
+      if (rawFarmers != null && rawFarmers.isNotEmpty) {
+        cachedFarmers = rawFarmers.map(FarmerModel.fromJson).toList();
+      }
+
+      if (cachedProducts != null || cachedFarmers != null) {
+        state = state.copyWith(
+          products: cachedProducts ?? state.products,
+          farmers: cachedFarmers ?? state.farmers,
+        );
+      }
+    } catch (_) {}
+  }
+
+  void _persistCurrentProducts() {
+    try {
+      unawaited(
+        ref.read(localCacheServiceProvider).saveEntityList(
+          LocalCacheService.productsKey,
+          state.products.map((p) => p.toJson()).toList(),
+        ),
+      );
+    } catch (_) {}
+  }
+
+  Future<void> _loadPersistedDeliverySettings() async {
+    try {
+      final storage = ref.read(secureStorageProvider);
+      final persistedConfigs = await storage.readAllFarmerDeliverySettings();
+      if (!ref.mounted || persistedConfigs.isEmpty) return;
+
+      final updatedFarmers = state.farmers.map((farmer) {
+        final saved = persistedConfigs[farmer.id] ??
+            (farmer.id == 'farmer_1' ? persistedConfigs['farmer_2'] : null) ??
+            (farmer.id == 'farmer_2' ? persistedConfigs['farmer_1'] : null);
+        if (saved != null) {
+          return _applyDeliverySettingsToFarmer(farmer, saved);
+        }
+        return farmer;
+      }).toList();
+
+      if (!ref.mounted) return;
+      state = state.copyWith(farmers: updatedFarmers);
+    } catch (_) {}
   }
 
   Future<void> refreshFromBackend() async {
@@ -72,6 +153,7 @@ class MarketplaceNotifier extends Notifier<MarketplaceState> {
         ),
         api.get<List<dynamic>>('/api/farmers'),
       ]);
+      if (!ref.mounted) return;
 
       final rawProducts = results[0].data;
       final rawFarmers = results[1].data;
@@ -88,6 +170,10 @@ class MarketplaceNotifier extends Notifier<MarketplaceState> {
 
       if (rawFarmers != null) {
         final auth = ref.read(authStateProvider);
+        final storage = ref.read(secureStorageProvider);
+        final persistedConfigs = await storage.readAllFarmerDeliverySettings();
+        if (!ref.mounted) return;
+
         newFarmers = rawFarmers
             .whereType<Map<String, dynamic>>()
             .map((json) {
@@ -107,11 +193,36 @@ class MarketplaceNotifier extends Notifier<MarketplaceState> {
                       : farmer.coverUrl,
                 );
               }
+
+              final saved = persistedConfigs[farmer.id] ??
+                  (farmer.id == 'farmer_1' ? persistedConfigs['farmer_2'] : null) ??
+                  (farmer.id == 'farmer_2' ? persistedConfigs['farmer_1'] : null);
+              if (saved != null) {
+                farmer = _applyDeliverySettingsToFarmer(farmer, saved);
+              }
+
               return farmer;
             })
             .toList();
       }
 
+      if (!ref.mounted) return;
+      if (newProducts != null) {
+        unawaited(
+          ref.read(localCacheServiceProvider).saveEntityList(
+            LocalCacheService.productsKey,
+            newProducts.map((p) => p.toJson()).toList(),
+          ),
+        );
+      }
+      if (newFarmers != null) {
+        unawaited(
+          ref.read(localCacheServiceProvider).saveEntityList(
+            LocalCacheService.farmersKey,
+            newFarmers.map((f) => f.toJson()).toList(),
+          ),
+        );
+      }
       state = state.copyWith(
         products: newProducts,
         farmers: newFarmers,
@@ -119,7 +230,9 @@ class MarketplaceNotifier extends Notifier<MarketplaceState> {
       );
     } catch (_) {
       // Gracefully finish syncing when API is unreachable
-      state = state.copyWith(isSyncing: false);
+      if (ref.mounted) {
+        state = state.copyWith(isSyncing: false);
+      }
     }
   }
 
@@ -178,27 +291,31 @@ class MarketplaceNotifier extends Notifier<MarketplaceState> {
     );
 
     state = state.copyWith(products: [newProduct, ...state.products]);
+    _persistCurrentProducts();
+
+    final postData = {
+      'title': title,
+      'category': category,
+      'farmerId': farmerId,
+      'farmerName': farmerName,
+      'pricePerUnit': price,
+      if (originalPrice != null) 'originalPrice': originalPrice,
+      'discountPercent': discountPercent ?? 0,
+      'unit': unit,
+      'stockQuantity': stockQuantity,
+      'minOrderQuantity': minOrderQuantity,
+      if (bulkDiscountMinQty != null) 'bulkDiscountMinQty': bulkDiscountMinQty,
+      if (bulkDiscountPercent != null) 'bulkDiscountPercent': bulkDiscountPercent,
+      if (description != null) 'description': description,
+      'imageUrl': effectivePrimaryImage,
+      'images': effectiveImages,
+    };
 
     try {
       final api = ref.read(apiClientProvider);
       final response = await api.post<Map<String, dynamic>>(
         '/api/products',
-        data: {
-          'title': title,
-          'category': category,
-          'farmerId': farmerId,
-          'farmerName': farmerName,
-          'pricePerUnit': price,
-          'discountPercent': discountPercent ?? 0,
-          'unit': unit,
-          'stockQuantity': stockQuantity,
-          'minOrderQuantity': minOrderQuantity,
-          if (bulkDiscountMinQty != null) 'bulkDiscountMinQty': bulkDiscountMinQty,
-          if (bulkDiscountPercent != null) 'bulkDiscountPercent': bulkDiscountPercent,
-          if (description != null) 'description': description,
-          'imageUrl': effectivePrimaryImage,
-          'images': effectiveImages,
-        },
+        data: postData,
       );
       if (response.data != null) {
         final serverProduct = ProductModel.fromJson(response.data!);
@@ -207,10 +324,25 @@ class MarketplaceNotifier extends Notifier<MarketplaceState> {
               .map((p) => p.id == tempId ? serverProduct : p)
               .toList(),
         );
+        _persistCurrentProducts();
         unawaited(refreshFromBackend());
         return serverProduct;
       }
-    } catch (_) {}
+    } catch (_) {
+      try {
+        final queueStore = ref.read(offlineQueueStoreProvider);
+        await queueStore.enqueue(
+          OfflineMutation(
+            id: 'add_$tempId',
+            endpoint: '/api/products',
+            method: 'POST',
+            payload: postData,
+            timestamp: DateTime.now(),
+            description: 'ახალი პროდუქტის დამატება: $title',
+          ),
+        );
+      } catch (_) {}
+    }
 
     return newProduct;
   }
@@ -264,28 +396,45 @@ class MarketplaceNotifier extends Notifier<MarketplaceState> {
       }).toList(),
     );
 
+    final patchData = {
+      if (title != null) 'title': title,
+      if (category != null) 'category': category,
+      if (price != null) 'pricePerUnit': price,
+      if (originalPrice != null) 'originalPrice': originalPrice,
+      if (discountPercent != null) 'discountPercent': discountPercent,
+      if (unit != null) 'unit': unit,
+      if (stockQuantity != null) 'stockQuantity': stockQuantity,
+      if (minOrderQuantity != null) 'minOrderQuantity': minOrderQuantity,
+      if (bulkDiscountMinQty != null) 'bulkDiscountMinQty': bulkDiscountMinQty,
+      if (bulkDiscountPercent != null) 'bulkDiscountPercent': bulkDiscountPercent,
+      if (isAvailable != null) 'isAvailable': isAvailable,
+      if (description != null) 'description': description,
+      if (imageUrl != null) 'imageUrl': imageUrl,
+      if (images != null) 'images': images,
+    };
+    _persistCurrentProducts();
+
     try {
       final api = ref.read(apiClientProvider);
       await api.patch(
         '/api/products/$productId',
-        data: {
-          if (title != null) 'title': title,
-          if (category != null) 'category': category,
-          if (price != null) 'pricePerUnit': price,
-          if (originalPrice != null) 'originalPrice': originalPrice,
-          if (discountPercent != null) 'discountPercent': discountPercent,
-          if (unit != null) 'unit': unit,
-          if (stockQuantity != null) 'stockQuantity': stockQuantity,
-          if (minOrderQuantity != null) 'minOrderQuantity': minOrderQuantity,
-          if (bulkDiscountMinQty != null) 'bulkDiscountMinQty': bulkDiscountMinQty,
-          if (bulkDiscountPercent != null) 'bulkDiscountPercent': bulkDiscountPercent,
-          if (isAvailable != null) 'isAvailable': isAvailable,
-          if (description != null) 'description': description,
-          if (imageUrl != null) 'imageUrl': imageUrl,
-          if (images != null) 'images': images,
-        },
+        data: patchData,
       );
-    } catch (_) {}
+    } catch (_) {
+      try {
+        final queueStore = ref.read(offlineQueueStoreProvider);
+        await queueStore.enqueue(
+          OfflineMutation(
+            id: 'update_${productId}_${DateTime.now().millisecondsSinceEpoch}',
+            endpoint: '/api/products/$productId',
+            method: 'PATCH',
+            payload: patchData,
+            timestamp: DateTime.now(),
+            description: 'პროდუქტის განახლება: $productId',
+          ),
+        );
+      } catch (_) {}
+    }
   }
 
   Future<double?> restockProduct(String productId, double addedQuantity) async {
@@ -348,10 +497,26 @@ class MarketplaceNotifier extends Notifier<MarketplaceState> {
     state = state.copyWith(
       products: state.products.where((p) => p.id != productId).toList(),
     );
+    _persistCurrentProducts();
+
     try {
       final api = ref.read(apiClientProvider);
       await api.delete('/api/products/$productId');
-    } catch (_) {}
+    } catch (_) {
+      try {
+        final queueStore = ref.read(offlineQueueStoreProvider);
+        await queueStore.enqueue(
+          OfflineMutation(
+            id: 'delete_${productId}_${DateTime.now().millisecondsSinceEpoch}',
+            endpoint: '/api/products/$productId',
+            method: 'DELETE',
+            payload: const {},
+            timestamp: DateTime.now(),
+            description: 'პროდუქტის წაშლა: $productId',
+          ),
+        );
+      } catch (_) {}
+    }
   }
 
   static String normalizeDayName(String d) {
@@ -382,7 +547,48 @@ class MarketplaceNotifier extends Notifier<MarketplaceState> {
     return idx >= 0 ? idx : 99;
   }
 
-  void updateFarmerDeliverySettings({
+  static FarmerModel _applyDeliverySettingsToFarmer(
+    FarmerModel farmer,
+    Map<String, dynamic> settings,
+  ) {
+    final isDeliveryEnabled = settings['isDeliveryEnabled'] as bool?;
+    final deliveryCity = settings['deliveryCity'] as String?;
+    final deliveryFee = (settings['deliveryFee'] as num?)?.toDouble();
+    final isPickupEnabled = settings['isPickupEnabled'] as bool?;
+    final location = settings['location'] as String?;
+
+    List<String>? cleanDays;
+    if (settings['deliveryDays'] is List) {
+      cleanDays = (settings['deliveryDays'] as List)
+          .map((e) => normalizeDayName(e.toString()))
+          .toSet()
+          .toList();
+      cleanDays.sort(
+        (a, b) => weekdayOrderIndex(a).compareTo(weekdayOrderIndex(b)),
+      );
+    }
+
+    Map<String, double>? regionalFees;
+    if (settings['regionalDeliveryFees'] is Map) {
+      regionalFees = (settings['regionalDeliveryFees'] as Map).map(
+        (k, v) => MapEntry(k.toString(), (v as num).toDouble()),
+      );
+    }
+
+    return farmer.copyWith(
+      isDeliveryEnabled: isDeliveryEnabled ?? farmer.isDeliveryEnabled,
+      deliveryCity: deliveryCity ?? farmer.deliveryCity,
+      deliveryDays: cleanDays ?? farmer.deliveryDays,
+      deliveryFee: deliveryFee ?? farmer.deliveryFee,
+      regionalDeliveryFees: regionalFees ?? farmer.regionalDeliveryFees,
+      isPickupEnabled: isPickupEnabled ?? farmer.isPickupEnabled,
+      location: (location != null && location.trim().isNotEmpty)
+          ? location.trim()
+          : farmer.location,
+    );
+  }
+
+  Future<void> updateFarmerDeliverySettings({
     required String farmerId,
     required bool isDeliveryEnabled,
     required String deliveryCity,
@@ -392,7 +598,7 @@ class MarketplaceNotifier extends Notifier<MarketplaceState> {
     required bool isPickupEnabled,
     String? location,
     bool updateAllDemoFarmers = false,
-  }) {
+  }) async {
     final cleanDays = deliveryDays.map(normalizeDayName).toSet().toList();
     cleanDays.sort((a, b) => weekdayOrderIndex(a).compareTo(weekdayOrderIndex(b)));
 
@@ -421,7 +627,7 @@ class MarketplaceNotifier extends Notifier<MarketplaceState> {
         farmName: 'ჩემი მეურნეობა',
         farmerName: 'ფერმერი',
         location: location ?? 'კახეთი',
-        rating: 5.0,
+        rating: 0.0,
         reviewCount: 0,
         totalRatings: 0,
         isDeliveryEnabled: isDeliveryEnabled,
@@ -458,6 +664,57 @@ class MarketplaceNotifier extends Notifier<MarketplaceState> {
     }
 
     state = state.copyWith(farmers: updatedFarmers);
+
+    final payload = <String, dynamic>{
+      'isDeliveryEnabled': isDeliveryEnabled,
+      'deliveryCity': deliveryCity,
+      'deliveryDays': cleanDays,
+      'deliveryFee': deliveryFee,
+      'regionalDeliveryFees': regionalDeliveryFees,
+      'isPickupEnabled': isPickupEnabled,
+      if (location != null && location.trim().isNotEmpty)
+        'location': location.trim(),
+    };
+
+    try {
+      if (!ref.mounted) return;
+      final storage = ref.read(secureStorageProvider);
+      await storage.saveFarmerDeliverySettings(
+        farmerId: farmerId,
+        settings: payload,
+      );
+      if (updateAllDemoFarmers) {
+        if (!ref.mounted) return;
+        await storage.saveFarmerDeliverySettings(
+          farmerId: 'farmer_1',
+          settings: payload,
+        );
+        if (!ref.mounted) return;
+        await storage.saveFarmerDeliverySettings(
+          farmerId: 'farmer_2',
+          settings: payload,
+        );
+      }
+    } catch (_) {}
+
+    try {
+      if (!ref.mounted) return;
+      final auth = ref.read(authStateProvider);
+      final api = ref.read(apiClientProvider);
+      final targetProfileId = auth.farmerId ?? auth.userId ?? farmerId;
+      if (targetProfileId.isNotEmpty) {
+        await api.patch('/api/profile/$targetProfileId', data: {
+          'isDeliveryEnabled': isDeliveryEnabled,
+          'deliveryFee': deliveryFee,
+          'city': deliveryCity,
+          'deliveryCity': deliveryCity,
+          'deliveryDays': cleanDays,
+          'regionalDeliveryFees': regionalDeliveryFees,
+          if (location != null && location.trim().isNotEmpty)
+            'address': location.trim(),
+        });
+      }
+    } catch (_) {}
   }
 
   void updateFarmerLocation({
@@ -482,7 +739,7 @@ class MarketplaceNotifier extends Notifier<MarketplaceState> {
         farmName: 'ჩემი მეურნეობა',
         farmerName: 'ფერმერი',
         location: clean,
-        rating: 5.0,
+        rating: 0.0,
         reviewCount: 0,
         totalRatings: 0,
         avatarUrl:
@@ -566,6 +823,39 @@ class MarketplaceNotifier extends Notifier<MarketplaceState> {
     }).toList();
 
     state = state.copyWith(farmers: updatedFarmers);
+  }
+
+  /// Updates farmer rating and review count from new reviews
+  void updateFarmerRating({
+    required String farmerId,
+    required double newRating,
+    required int newReviewCount,
+  }) {
+    final updatedFarmers = state.farmers.map((f) {
+      if (f.id == farmerId) {
+        return f.copyWith(
+          rating: newRating,
+          reviewCount: newReviewCount,
+          totalRatings: newReviewCount,
+        );
+      }
+      return f;
+    }).toList();
+
+    final updatedProducts = state.products.map((p) {
+      if (p.farmerId == farmerId) {
+        return p.copyWith(
+          rating: newRating,
+          reviewCount: newReviewCount,
+        );
+      }
+      return p;
+    }).toList();
+
+    state = state.copyWith(
+      farmers: updatedFarmers,
+      products: updatedProducts,
+    );
   }
 }
 

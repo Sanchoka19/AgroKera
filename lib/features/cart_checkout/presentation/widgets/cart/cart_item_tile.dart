@@ -65,6 +65,20 @@ class _CartItemTileState extends ConsumerState<CartItemTile> {
     super.dispose();
   }
 
+  double _calculateQtyWidth(String text) {
+    final digits = text.isEmpty ? 1 : text.length;
+    switch (digits) {
+      case 1:
+        return 20.0;
+      case 2:
+        return 28.0;
+      case 3:
+        return 36.0;
+      default:
+        return 44.0;
+    }
+  }
+
   void _commitTypedQuantity(String rawValue) {
     final item = widget.item;
     final parsed = int.tryParse(rawValue.trim());
@@ -140,14 +154,16 @@ class _CartItemTileState extends ConsumerState<CartItemTile> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isOwn ? const Color(0xFFFCA5A5) : const Color(0xFFF3F4F6),
-          width: isOwn ? 1.5 : 1,
-        ),
+        border: isOwn
+            ? Border.all(
+                color: const Color(0xFFFCA5A5),
+                width: 1.5,
+              )
+            : null,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 6,
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 10,
             offset: const Offset(0, 2),
           ),
         ],
@@ -210,11 +226,8 @@ class _CartItemTileState extends ConsumerState<CartItemTile> {
                       vertical: 2,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFEF2F2),
-                      borderRadius: BorderRadius.circular(4),
-                      border: Border.all(
-                        color: const Color(0xFFFCA5A5),
-                      ),
+                      color: const Color(0xFFFEE2E2),
+                      borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
                       'თქვენი პროდუქტი (ამოიღეთ გასაგრძელებლად)',
@@ -300,15 +313,9 @@ class _CartItemTileState extends ConsumerState<CartItemTile> {
                           child: Container(
                             width: 32,
                             height: 32,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF1F5F9),
+                            decoration: const BoxDecoration(
+                              color: Color(0xFFF1F5F9),
                               shape: BoxShape.circle,
-                              border: Border.all(
-                                color: item.quantity <= item.minOrderQuantity
-                                    ? const Color(0xFFE2E8F0)
-                                        .withValues(alpha: 0.6)
-                                    : const Color(0xFFCBD5E1),
-                              ),
                             ),
                             alignment: Alignment.center,
                             child: Icon(
@@ -321,17 +328,21 @@ class _CartItemTileState extends ConsumerState<CartItemTile> {
                             ),
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 2),
 
-                        // Editable Quantity Number in the middle
-                        Container(
-                          height: 32,
-                          constraints: const BoxConstraints(
-                            minWidth: 38,
-                            maxWidth: 58,
-                          ),
-                          padding: const EdgeInsets.symmetric(horizontal: 4),
-                          alignment: Alignment.center,
+                        // Editable Quantity Number in the middle with dynamic width
+                        AnimatedBuilder(
+                          animation: _qtyController,
+                          builder: (context, child) {
+                            return AnimatedContainer(
+                              duration: const Duration(milliseconds: 140),
+                              curve: Curves.easeOutCubic,
+                              height: 32,
+                              width: _calculateQtyWidth(_qtyController.text),
+                              alignment: Alignment.center,
+                              child: child,
+                            );
+                          },
                           child: TextField(
                             controller: _qtyController,
                             focusNode: _qtyFocusNode,
@@ -366,7 +377,7 @@ class _CartItemTileState extends ConsumerState<CartItemTile> {
                             },
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 2),
 
                         // Circular Plus Button
                         InkWell(

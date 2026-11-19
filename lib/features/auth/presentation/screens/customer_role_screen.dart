@@ -141,18 +141,18 @@ class CustomerRoleScreen extends ConsumerWidget {
                     center: Alignment(0.85, -0.2),
                     radius: 1.25,
                     colors: [
-                      Color(0xFF10B981), // Radiant Emerald spotlight behind character
-                      Color(0xFF0F766E), // Vibrant Brand Deep Teal
-                      Color(0xFF134E4A), // Rich Deep Teal
-                      Color(0xFF062824), // Dark Pine for high-contrast text backing
+                      Color(0xFF22C55E), // Radiant Emerald spotlight behind character
+                      Color(0xFF16A34A), // Brand Vibrant Emerald
+                      Color(0xFF15803D), // Deep Forest Green
+                      Color(0xFF14532D), // Rich Dark Emerald for high-contrast text backing
                     ],
                     stops: [0.0, 0.35, 0.70, 1.0],
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF062824).withValues(alpha: 0.28),
+                      color: const Color(0xFF14532D).withValues(alpha: 0.22),
                       blurRadius: 18,
-                      offset: const Offset(0, 8),
+                      offset: const Offset(0, 6),
                     ),
                   ],
                 ),

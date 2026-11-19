@@ -157,7 +157,11 @@ class ProductFarmerCard extends StatelessWidget {
                         ),
                         const SizedBox(width: 2),
                         Text(
-                          '${farmer.rating} (${farmer.reviewCount})',
+                          farmer.reviewCount > 0
+                              ? '${farmer.rating.toStringAsFixed(1)} (${farmer.reviewCount})'
+                              : (farmer.rating > 0
+                                  ? farmer.rating.toStringAsFixed(1)
+                                  : 'ახალი'),
                           style: GoogleFonts.notoSansGeorgian(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,

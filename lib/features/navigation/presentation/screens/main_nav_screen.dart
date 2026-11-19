@@ -8,6 +8,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:agrokera/core/auth/auth_state_provider.dart';
 import 'package:agrokera/core/constants/app_assets.dart';
 import 'package:agrokera/core/theme/app_colors.dart';
+import 'package:agrokera/core/widgets/offline_status_banner.dart';
 import 'package:agrokera/features/farm_inventory/presentation/screens/farmer_dashboard_screen.dart';
 import '../../../marketplace/presentation/providers/marketplace_provider.dart';
 import '../../../marketplace/presentation/screens/categories_screen.dart';
@@ -107,9 +108,16 @@ class _MainNavScreenState extends ConsumerState<MainNavScreen> {
     final safeIndex = _currentIndex.clamp(0, screens.length - 1);
 
     return Scaffold(
-      body: IndexedStack(
-        index: safeIndex,
-        children: screens,
+      body: Column(
+        children: [
+          const OfflineStatusBanner(),
+          Expanded(
+            child: IndexedStack(
+              index: safeIndex,
+              children: screens,
+            ),
+          ),
+        ],
       ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(

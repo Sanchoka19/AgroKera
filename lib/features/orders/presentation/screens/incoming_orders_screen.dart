@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -21,10 +22,24 @@ class IncomingOrdersScreen extends ConsumerStatefulWidget {
 
 class _IncomingOrdersScreenState extends ConsumerState<IncomingOrdersScreen> {
   Timer? _liveSyncTimer;
+  late final PageController _pageController;
+
+  static const List<OrderStatus?> _filterTabs = [
+    null,
+    OrderStatus.pending,
+    OrderStatus.inProgress,
+    OrderStatus.completed,
+    OrderStatus.cancelled,
+  ];
 
   @override
   void initState() {
     super.initState();
+    final initialFilter = ref.read(farmerOrdersProvider).selectedFilter;
+    final initialIndex = _filterTabs.indexOf(initialFilter);
+    _pageController = PageController(
+      initialPage: initialIndex >= 0 ? initialIndex : 0,
+    );
     unawaited(
       Future.microtask(
         () => ref.read(farmerOrdersProvider.notifier).refreshFromBackend(),
@@ -39,8 +54,21 @@ class _IncomingOrdersScreenState extends ConsumerState<IncomingOrdersScreen> {
 
   @override
   void dispose() {
+    _pageController.dispose();
     _liveSyncTimer?.cancel();
     super.dispose();
+  }
+
+  void _onFilterSelected(int index, FarmerOrdersNotifier ordersNotifier) {
+    HapticFeedback.lightImpact();
+    ordersNotifier.setFilter(_filterTabs[index]);
+    if (_pageController.hasClients) {
+      _pageController.animateToPage(
+        index,
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOutCubic,
+      );
+    }
   }
 
   Widget _buildSectionHeader(OrderStatus status, int count) {
@@ -110,7 +138,6 @@ class _IncomingOrdersScreenState extends ConsumerState<IncomingOrdersScreen> {
   Widget build(BuildContext context) {
     final ordersState = ref.watch(farmerOrdersProvider);
     final ordersNotifier = ref.read(farmerOrdersProvider.notifier);
-    final filteredOrders = ordersState.filteredOrders;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
@@ -147,7 +174,7 @@ class _IncomingOrdersScreenState extends ConsumerState<IncomingOrdersScreen> {
                     count: ordersState.countForStatus(null),
                     showZeroCount: true,
                     isSelected: ordersState.selectedFilter == null,
-                    onTap: () => ordersNotifier.setFilter(null),
+                    onTap: () => _onFilterSelected(0, ordersNotifier),
                   ),
                   const SizedBox(width: 8),
                   AppFilterTab(
@@ -156,7 +183,7 @@ class _IncomingOrdersScreenState extends ConsumerState<IncomingOrdersScreen> {
                     count: ordersState.countForStatus(OrderStatus.pending),
                     showZeroCount: true,
                     isSelected: ordersState.selectedFilter == OrderStatus.pending,
-                    onTap: () => ordersNotifier.setFilter(OrderStatus.pending),
+                    onTap: () => _onFilterSelected(1, ordersNotifier),
                   ),
                   const SizedBox(width: 8),
                   AppFilterTab(
@@ -165,7 +192,7 @@ class _IncomingOrdersScreenState extends ConsumerState<IncomingOrdersScreen> {
                     count: ordersState.countForStatus(OrderStatus.inProgress),
                     showZeroCount: true,
                     isSelected: ordersState.selectedFilter == OrderStatus.inProgress,
-                    onTap: () => ordersNotifier.setFilter(OrderStatus.inProgress),
+                    onTap: () => _onFilterSelected(2, ordersNotifier),
                   ),
                   const SizedBox(width: 8),
                   AppFilterTab(
@@ -174,7 +201,7 @@ class _IncomingOrdersScreenState extends ConsumerState<IncomingOrdersScreen> {
                     count: ordersState.countForStatus(OrderStatus.completed),
                     showZeroCount: true,
                     isSelected: ordersState.selectedFilter == OrderStatus.completed,
-                    onTap: () => ordersNotifier.setFilter(OrderStatus.completed),
+                    onTap: () => _onFilterSelected(3, ordersNotifier),
                   ),
                   const SizedBox(width: 8),
                   AppFilterTab(
@@ -183,7 +210,7 @@ class _IncomingOrdersScreenState extends ConsumerState<IncomingOrdersScreen> {
                     count: ordersState.countForStatus(OrderStatus.cancelled),
                     showZeroCount: true,
                     isSelected: ordersState.selectedFilter == OrderStatus.cancelled,
-                    onTap: () => ordersNotifier.setFilter(OrderStatus.cancelled),
+                    onTap: () => _onFilterSelected(4, ordersNotifier),
                   ),
                 ],
               ),
@@ -191,64 +218,79 @@ class _IncomingOrdersScreenState extends ConsumerState<IncomingOrdersScreen> {
           ),
         ),
       ),
-      body: RefreshIndicator(
-        onRefresh: () => ordersNotifier.refreshFromBackend(),
-        child: filteredOrders.isEmpty
-            ? EmptyOrdersView(
-                filter: ordersState.selectedFilter,
-                onResetFilter: () => ordersNotifier.setFilter(null),
-              )
-            : ListView.separated(
-                padding: const EdgeInsets.fromLTRB(14, 10, 14, 24),
-                itemCount: filteredOrders.length,
-                separatorBuilder: (context, index) => const SizedBox(height: 10),
-                itemBuilder: (context, index) {
-                  final order = filteredOrders[index];
-                  final isUpdating = ordersState.isOrderUpdating(order.id);
-                  final showSectionHeader = ordersState.selectedFilter == null &&
-                      (index == 0 ||
-                          filteredOrders[index - 1].status != order.status);
+      body: PageView.builder(
+        controller: _pageController,
+        itemCount: _filterTabs.length,
+        onPageChanged: (index) {
+          HapticFeedback.selectionClick();
+          ordersNotifier.setFilter(_filterTabs[index]);
+        },
+        itemBuilder: (context, index) {
+          final filter = _filterTabs[index];
+          final list = ordersState.ordersForFilter(filter);
 
-                  final card = FarmerOrderCard(
-                    key: ValueKey('farmer_order_${order.id}'),
-                    order: order,
-                    isUpdating: isUpdating,
-                    onAccept: () async {
-                      AppToast.success(
-                        context,
-                        'შეკვეთა #${order.id} დადასტურებულია და გადავიდა მიმდინარეში!',
+          return RefreshIndicator(
+            onRefresh: () => ordersNotifier.refreshFromBackend(),
+            child: list.isEmpty
+                ? EmptyOrdersView(
+                    filter: filter,
+                    onResetFilter: () => _onFilterSelected(0, ordersNotifier),
+                  )
+                : ListView.separated(
+                    padding: const EdgeInsets.fromLTRB(14, 10, 14, 24),
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    itemCount: list.length,
+                    separatorBuilder: (context, index) =>
+                        const SizedBox(height: 10),
+                    itemBuilder: (context, index) {
+                      final order = list[index];
+                      final isUpdating = ordersState.isOrderUpdating(order.id);
+                      final showSectionHeader = filter == null &&
+                          (index == 0 ||
+                              list[index - 1].status != order.status);
+
+                      final card = FarmerOrderCard(
+                        key: ValueKey('farmer_order_${order.id}'),
+                        order: order,
+                        isUpdating: isUpdating,
+                        onAccept: () async {
+                          AppToast.success(
+                            context,
+                            'შეკვეთა #${order.id} დადასტურებულია და გადავიდა მიმდინარეში!',
+                          );
+                          final error =
+                              await ordersNotifier.acceptOrder(order.id);
+                          if (error != null && context.mounted) {
+                            AppToast.error(context, error);
+                          }
+                        },
+                        onCancel: (reason) {
+                          ordersNotifier.cancelOrder(order.id, reason: reason);
+                          AppToast.info(
+                            context,
+                            'შეკვეთა #${order.id} გაუქმებულია ($reason)',
+                          );
+                        },
                       );
-                      final error = await ordersNotifier.acceptOrder(order.id);
-                      if (error != null && context.mounted) {
-                        AppToast.error(context, error);
+
+                      if (showSectionHeader) {
+                        final sectionCount =
+                            ordersState.countForStatus(order.status);
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildSectionHeader(order.status, sectionCount),
+                            card,
+                          ],
+                        );
                       }
-                    },
-                    onCancel: (reason) {
-                      ordersNotifier.cancelOrder(order.id, reason: reason);
-                      AppToast.info(
-                        context,
-                        'შეკვეთა #${order.id} გაუქმებულია ($reason)',
-                      );
-                    },
-                  );
 
-                  if (showSectionHeader) {
-                    final sectionCount =
-                        ordersState.countForStatus(order.status);
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildSectionHeader(order.status, sectionCount),
-                        card,
-                      ],
-                    );
-                  }
-
-                  return card;
-                },
-              ),
+                      return card;
+                    },
+                  ),
+          );
+        },
       ),
     );
   }
-
 }

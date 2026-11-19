@@ -5,6 +5,7 @@ import 'package:agrokera/features/orders/presentation/controllers/order_chat_act
 import 'package:agrokera/features/orders/presentation/providers/order_chat_provider.dart';
 import 'package:agrokera/features/orders/presentation/widgets/order_chat/order_chat_card_bubble.dart';
 import 'package:agrokera/features/orders/presentation/widgets/order_chat/order_chat_quick_actions_sheet.dart';
+import 'package:agrokera/features/profile/presentation/providers/user_address_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -54,6 +55,45 @@ void main() {
       expect(last.type, equals(OrderMessageType.address));
       expect(last.text, contains('მიწოდების მისამართი:'));
       expect(last.text, contains(sampleOrder.deliveryAddress!));
+    });
+
+    test(
+        'sendDeliveryAddress shares customer personal address, never leaking farm pickup location',
+        () async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      const customerHomeAddress = 'რუსთაველის გამზ. 14, თბილისი';
+      await container
+          .read(userAddressProvider.notifier)
+          .setActiveAddress(customerHomeAddress);
+
+      final pickupOrder = sampleOrder.copyWith(
+        isPickup: true,
+        deliveryAddress: 'თვითგატანა მეურნეობიდან: მწვანე ველი (კახეთი, თელავი)',
+      );
+
+      final controller = container.read(orderChatActionsControllerProvider);
+      final element = createElement();
+
+      final success = await controller.sendDeliveryAddress(
+        context: element,
+        order: pickupOrder,
+      );
+
+      expect(success, isTrue);
+
+      final chatMap = container.read(orderChatProvider);
+      final messages = chatMap[pickupOrder.id] ?? [];
+      expect(messages.isNotEmpty, isTrue);
+
+      final last = messages.last;
+      expect(last.type, equals(OrderMessageType.address));
+      // Must contain customer's actual address
+      expect(last.text, contains(customerHomeAddress));
+      // Must NOT contain farm address
+      expect(last.text, isNot(contains('თვითგატანა მეურნეობიდან')));
+      expect(last.text, isNot(contains('მწვანე ველი')));
     });
 
     test('sendIntercomCode sends intercom details with OrderMessageType.intercom', () async {

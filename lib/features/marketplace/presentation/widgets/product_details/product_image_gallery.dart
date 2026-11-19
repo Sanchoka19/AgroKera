@@ -5,9 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:agrokera/core/theme/app_colors.dart';
-import 'package:agrokera/core/widgets/app_toast.dart';
 import 'package:agrokera/core/widgets/auth_required_bottom_sheet.dart';
 import 'package:agrokera/features/marketplace/data/models/product_model.dart';
+import 'package:agrokera/features/marketplace/domain/services/product_share_service.dart';
 import 'package:agrokera/features/marketplace/presentation/providers/favorites_provider.dart';
 
 /// Pinned SliverAppBar containing product photo carousel, pagination dots,
@@ -54,14 +54,26 @@ class _ProductImageGalleryState extends ConsumerState<ProductImageGallery> {
           padding: const EdgeInsets.symmetric(vertical: 8.0),
           child: CircleAvatar(
             backgroundColor: AppColors.surface.withValues(alpha: 0.9),
-            child: IconButton(
-              icon: const Icon(
-                LucideIcons.share2,
-                color: AppColors.textPrimary,
-                size: 19,
-              ),
-              onPressed: () {
-                AppToast.info(context, 'პროდუქტის ლინკი დაკოპირებულია!');
+            child: Builder(
+              builder: (buttonContext) {
+                return IconButton(
+                  icon: const Icon(
+                    LucideIcons.share2,
+                    color: AppColors.textPrimary,
+                    size: 19,
+                  ),
+                  onPressed: () {
+                    final box =
+                        buttonContext.findRenderObject() as RenderBox?;
+                    final origin = box != null && box.hasSize
+                        ? box.localToGlobal(Offset.zero) & box.size
+                        : null;
+                    ref.read(productShareServiceProvider).shareProduct(
+                          product,
+                          sharePositionOrigin: origin,
+                        );
+                  },
+                );
               },
             ),
           ),

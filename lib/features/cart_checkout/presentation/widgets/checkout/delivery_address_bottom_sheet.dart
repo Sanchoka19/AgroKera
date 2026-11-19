@@ -72,10 +72,12 @@ class _DeliveryAddressBottomSheetState
         decoration: BoxDecoration(
           color: isSelected ? AppColors.primaryLight : const Color(0xFFF1F5F9),
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: isSelected ? AppColors.primary : const Color(0xFFE2E8F0),
-            width: isSelected ? 1.5 : 1,
-          ),
+          border: isSelected
+              ? Border.all(
+                  color: AppColors.primary,
+                  width: 1.5,
+                )
+              : null,
         ),
         child: Text(
           label,

@@ -60,13 +60,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     final marketplace = ref.read(marketplaceProvider);
     final cartItems = ref.read(cartProvider);
     final farmer = CheckoutService.resolveFarmer(marketplace, cartItems);
+    final schedules = CheckoutService.generateDeliverySchedules(farmer);
     final slots = CheckoutService.generateDeliverySlots(farmer);
     final activeSlot = _deliverySlot ?? slots.first;
 
     DeliverySlotBottomSheet.show(
       context: context,
       farmer: farmer,
-      slots: slots,
+      schedules: schedules,
       activeSlot: activeSlot,
       onSlotSelected: (slot) {
         setState(() => _deliverySlot = slot);
@@ -94,9 +95,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     final isCovered = matchedZone != null && farmer.isDeliveryEnabled;
     final isWeightExceeded = cartItems.isWeightLimitExceeded;
     final isPickup = isWeightExceeded || _isPickupSelected || !isCovered;
-    final finalDeliveryAddress = isPickup
-        ? 'თვითგატანა მეურნეობიდან: ${farmer.farmName} (${farmer.location})'
-        : _address;
+    final finalDeliveryAddress = _address;
 
     final baseDeliveryFee = isPickup ? 0.0 : matchedZone.value;
     final effectiveHeavyFee = isPickup ? 0.0 : cartItems.heavyFee;

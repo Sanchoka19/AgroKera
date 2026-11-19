@@ -79,7 +79,7 @@ class ProfileImageView extends StatelessWidget {
       placeholder: Image.network(
         defaultFallbackUrl,
         fit: fit,
-        errorBuilder: (_, __, ___) => Container(
+        errorBuilder: (context, error, stackTrace) => Container(
           color: AppColors.primaryLight,
           width: width,
           height: height,

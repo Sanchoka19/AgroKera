@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../../core/theme/app_colors.dart';
 import '../../../../../core/widgets/app_toast.dart';
+import '../../../../profile/presentation/widgets/profile_image_view.dart';
 import '../../../domain/models/farmer_order_model.dart';
 import '../../../domain/models/order_message_model.dart';
 import '../../controllers/order_chat_actions_controller.dart';
@@ -19,6 +20,7 @@ class OrderChatCardBubble extends ConsumerWidget {
   final bool isMe;
   final FarmerOrder? order;
   final bool isFarmer;
+  final String? partnerAvatarUrl;
 
   const OrderChatCardBubble({
     super.key,
@@ -26,6 +28,7 @@ class OrderChatCardBubble extends ConsumerWidget {
     required this.isMe,
     this.order,
     this.isFarmer = false,
+    this.partnerAvatarUrl,
   });
 
   void _copyToClipboard(BuildContext context, String text, String label) {
@@ -48,33 +51,30 @@ class OrderChatCardBubble extends ConsumerWidget {
       String copyLabel,
     ) = _resolveCardDetails(message);
 
-    return Align(
-      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 10),
-        constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.82,
+    final cardContent = Container(
+      constraints: BoxConstraints(
+        maxWidth: MediaQuery.of(context).size.width * 0.78,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.only(
+          topLeft: const Radius.circular(16),
+          topRight: const Radius.circular(16),
+          bottomLeft: Radius.circular(isMe ? 16 : 4),
+          bottomRight: Radius.circular(isMe ? 4 : 16),
         ),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.only(
-            topLeft: const Radius.circular(16),
-            topRight: const Radius.circular(16),
-            bottomLeft: Radius.circular(isMe ? 16 : 4),
-            bottomRight: Radius.circular(isMe ? 4 : 16),
+        border: Border.all(color: borderColor, width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: accentColor.withValues(alpha: 0.06),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
           ),
-          border: Border.all(color: borderColor, width: 1.2),
-          boxShadow: [
-            BoxShadow(
-              color: accentColor.withValues(alpha: 0.06),
-              blurRadius: 6,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
             // Top Badge Header
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -192,6 +192,60 @@ class OrderChatCardBubble extends ConsumerWidget {
             ),
           ],
         ),
+      );
+
+    if (isMe) {
+      return Align(
+        alignment: Alignment.centerRight,
+        child: Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: cardContent,
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: accentColor.withValues(alpha: 0.25),
+                width: 1.2,
+              ),
+            ),
+            child: ClipOval(
+              child: (partnerAvatarUrl != null && partnerAvatarUrl!.isNotEmpty)
+                  ? ProfileImageView.avatar(
+                      avatarUrl: partnerAvatarUrl,
+                      size: 32,
+                      backgroundColor: bgColor,
+                      iconColor: accentColor,
+                    )
+                  : Container(
+                      color: bgColor,
+                      alignment: Alignment.center,
+                      child: Text(
+                        message.senderName.isNotEmpty
+                            ? message.senderName[0].toUpperCase()
+                            : '?',
+                        style: GoogleFonts.notoSansGeorgian(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: accentColor,
+                        ),
+                      ),
+                    ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Flexible(child: cardContent),
+        ],
       ),
     );
   }

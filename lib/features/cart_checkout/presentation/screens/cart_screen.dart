@@ -159,14 +159,11 @@ class _CartScreenState extends ConsumerState<CartScreen>
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(
+              color: Colors.white,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: const Color(0xFFE2E8F0),
-                width: 1,
-              ),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF0F172A).withValues(alpha: 0.03),
+                  color: Colors.black.withValues(alpha: 0.04),
                   blurRadius: 10,
                   offset: const Offset(0, 2),
                 ),
@@ -181,9 +178,6 @@ class _CartScreenState extends ConsumerState<CartScreen>
                   decoration: BoxDecoration(
                     color: const Color(0xFFE8F7EE),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: AppColors.primary.withValues(alpha: 0.2),
-                    ),
                   ),
                   clipBehavior: Clip.antiAlias,
                   child: avatarUrl.isNotEmpty
@@ -259,9 +253,6 @@ class _CartScreenState extends ConsumerState<CartScreen>
                     decoration: BoxDecoration(
                       color: const Color(0xFFF0FDF4),
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: const Color(0xFFBBF7D0),
-                      ),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,

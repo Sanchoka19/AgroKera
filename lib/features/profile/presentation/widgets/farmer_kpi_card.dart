@@ -1,18 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:agrokera/core/auth/auth_state_provider.dart';
+import 'package:agrokera/core/theme/app_colors.dart';
+import 'package:agrokera/features/marketplace/presentation/providers/marketplace_provider.dart';
+import 'package:agrokera/features/orders/domain/models/farmer_order_model.dart';
+import 'package:agrokera/features/orders/presentation/providers/farmer_orders_provider.dart';
 
-/// Emerald Gradient KPI Hero Card showing farm performance metrics (Revenue, Orders, Rating)
-class FarmerKpiCard extends StatelessWidget {
-  final String revenue;
-  final String orderCount;
-  final String rating;
+/// Clean White Dashboard KPI Card showing farm performance metrics (Revenue, Orders, Rating)
+/// dynamically calculated from real incoming orders and farmer profile data.
+class FarmerKpiCard extends ConsumerWidget {
+  final String? revenue;
+  final String? orderCount;
+  final String? rating;
 
   const FarmerKpiCard({
     super.key,
-    this.revenue = '5000₾',
-    this.orderCount = '100',
-    this.rating = '4.5',
+    this.revenue,
+    this.orderCount,
+    this.rating,
   });
 
   Widget _buildMetricCol({required String value, required String label}) {
@@ -23,7 +30,7 @@ class FarmerKpiCard extends StatelessWidget {
           style: GoogleFonts.notoSansGeorgian(
             fontSize: 20,
             fontWeight: FontWeight.w800,
-            color: Colors.white,
+            color: const Color(0xFF0F172A),
           ),
         ),
         const SizedBox(height: 4),
@@ -33,9 +40,9 @@ class FarmerKpiCard extends StatelessWidget {
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
           style: GoogleFonts.notoSansGeorgian(
-            fontSize: 10.5,
+            fontSize: 11,
             fontWeight: FontWeight.w500,
-            color: Colors.white.withValues(alpha: 0.85),
+            color: const Color(0xFF64748B),
             height: 1.25,
           ),
         ),
@@ -44,26 +51,46 @@ class FarmerKpiCard extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final authState = ref.watch(authStateProvider);
+    final ordersState = ref.watch(farmerOrdersProvider);
+    final marketplace = ref.watch(marketplaceProvider);
+
+    final incomingOrders = ordersState.incomingOrders;
+    final nonCancelledOrders =
+        incomingOrders.where((o) => o.status != OrderStatus.cancelled);
+    final totalRevenue =
+        nonCancelledOrders.fold(0.0, (sum, o) => sum + o.totalAmount);
+
+    final displayRevenue = revenue ??
+        (totalRevenue > 0 ? '${totalRevenue.toStringAsFixed(0)} ₾' : '0 ₾');
+
+    final displayOrderCount = orderCount ?? '${incomingOrders.length}';
+
+    final farmerId = authState.farmerId;
+    final matchingFarmer = marketplace.farmers.where((f) =>
+        (farmerId != null && f.id == farmerId) ||
+        (authState.farmName != null && f.farmName == authState.farmName) ||
+        (authState.userId != null && f.farmerName == authState.userName)
+    ).firstOrNull;
+
+    final displayRating = rating ??
+        (matchingFarmer != null
+            ? (matchingFarmer.reviewCount > 0
+                ? matchingFarmer.rating.toStringAsFixed(1)
+                : (matchingFarmer.rating > 0 ? matchingFarmer.rating.toStringAsFixed(1) : '—'))
+            : '—');
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(22),
-        gradient: const RadialGradient(
-          center: Alignment(-0.85, -0.75),
-          radius: 1.35,
-          colors: [
-            Color(0xFF059669), // Vibrant Radiant Emerald around trophy
-            Color(0xFF0D7A68), // Rich Teal
-            Color(0xFF044E46), // Deep Forest Teal at bottom-right
-          ],
-          stops: [0.0, 0.45, 1.0],
-        ),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF044E46).withValues(alpha: 0.28),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 14,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
@@ -72,24 +99,26 @@ class FarmerKpiCard extends StatelessWidget {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.18),
+                padding: const EdgeInsets.all(7),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFE8F7EE),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
                   LucideIcons.trophy,
-                  color: Colors.white,
+                  color: AppColors.primary,
                   size: 16,
                 ),
               ),
               const SizedBox(width: 10),
-              Text(
-                'საფერმო მაჩვენებლები და KPI',
-                style: GoogleFonts.notoSansGeorgian(
-                  fontSize: 14.5,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
+              Expanded(
+                child: Text(
+                  'საფერმო მაჩვენებლები და KPI',
+                  style: GoogleFonts.notoSansGeorgian(
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF0F172A),
+                  ),
                 ),
               ),
             ],
@@ -99,29 +128,29 @@ class FarmerKpiCard extends StatelessWidget {
             children: [
               Expanded(
                 child: _buildMetricCol(
-                  value: revenue,
+                  value: displayRevenue,
                   label: 'ჯამური შემოსავალი',
                 ),
               ),
               Container(
                 width: 1,
                 height: 38,
-                color: Colors.white.withValues(alpha: 0.22),
+                color: const Color(0xFFF1F5F9),
               ),
               Expanded(
                 child: _buildMetricCol(
-                  value: orderCount,
+                  value: displayOrderCount,
                   label: 'შეკვეთების რაოდენობა',
                 ),
               ),
               Container(
                 width: 1,
                 height: 38,
-                color: Colors.white.withValues(alpha: 0.22),
+                color: const Color(0xFFF1F5F9),
               ),
               Expanded(
                 child: _buildMetricCol(
-                  value: rating,
+                  value: displayRating,
                   label: 'საშუალო შეფასება',
                 ),
               ),
@@ -132,4 +161,3 @@ class FarmerKpiCard extends StatelessWidget {
     );
   }
 }
-

@@ -7,6 +7,8 @@ import '../../../../core/auth/auth_state_provider.dart';
 import '../../../../core/services/push_notification_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_toast.dart';
+import '../../../marketplace/presentation/providers/marketplace_provider.dart';
+import '../../../profile/presentation/widgets/profile_image_view.dart';
 import '../../domain/models/farmer_order_model.dart';
 import '../../domain/models/order_message_model.dart';
 import '../controllers/order_chat_actions_controller.dart';
@@ -16,6 +18,7 @@ import '../widgets/order_chat/order_chat_card_bubble.dart';
 import '../widgets/order_chat/order_chat_intercom_dialog.dart';
 import '../widgets/order_chat/order_chat_pin_dialog.dart';
 import '../widgets/order_chat/order_chat_quick_actions_sheet.dart';
+import '../../../reviews/presentation/widgets/order_review_prompt_card.dart';
 
 /// Live Order Communication Chat Screen between Farmer & Customer
 class OrderChatScreen extends ConsumerStatefulWidget {
@@ -144,6 +147,20 @@ class _OrderChatScreenState extends ConsumerState<OrderChatScreen> {
         ? widget.order.customerName
         : (widget.order.farmerName ?? 'ფერმერი');
 
+    final marketplace = ref.watch(marketplaceProvider);
+    final matchedFarmer = marketplace.farmers.where((f) =>
+        (widget.order.farmerId != null && f.id == widget.order.farmerId) ||
+        (widget.order.farmerName != null &&
+            (f.farmName == widget.order.farmerName ||
+                f.farmerName == widget.order.farmerName))).firstOrNull;
+
+    final partnerAvatarUrl = widget.order.resolvePartnerAvatar(
+      isFarmer: isFarmer,
+      fallbackFarmerAvatar: matchedFarmer?.avatarUrl,
+      fallbackCustomerAvatar:
+          (auth.userId == widget.order.clientId) ? auth.userAvatarUrl : null,
+    );
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
@@ -213,31 +230,39 @@ class _OrderChatScreenState extends ConsumerState<OrderChatScreen> {
             ),
           Padding(
             padding: const EdgeInsets.only(right: 12),
-            child: Builder(
-              builder: (ctx) {
-                final avatarUrl = widget.order.farmerAvatarUrl;
-                return CircleAvatar(
-                  radius: 18,
-                  backgroundColor: const Color(0xFFE6F4EA),
-                  backgroundImage: (!isFarmer &&
-                          avatarUrl != null &&
-                          avatarUrl.isNotEmpty)
-                      ? NetworkImage(avatarUrl)
-                      : null,
-                  child: (isFarmer || avatarUrl == null || avatarUrl.isEmpty)
-                      ? Text(
+            child: Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: AppColors.primary.withValues(alpha: 0.2),
+                  width: 1.5,
+                ),
+              ),
+              child: ClipOval(
+                child: (partnerAvatarUrl != null && partnerAvatarUrl.isNotEmpty)
+                    ? ProfileImageView.avatar(
+                        avatarUrl: partnerAvatarUrl,
+                        size: 38,
+                        backgroundColor: const Color(0xFFE6F4EA),
+                        iconColor: AppColors.primary,
+                      )
+                    : Container(
+                        color: const Color(0xFFE6F4EA),
+                        alignment: Alignment.center,
+                        child: Text(
                           partnerName.isNotEmpty
                               ? partnerName[0].toUpperCase()
-                              : '?',
-                          style: const TextStyle(
+                              : (isFarmer ? 'მ' : 'ფ'),
+                          style: GoogleFonts.notoSansGeorgian(
                             color: AppColors.primary,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 14,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 15,
                           ),
-                        )
-                      : null,
-                );
-              },
+                        ),
+                      ),
+              ),
             ),
           ),
         ],
@@ -249,10 +274,16 @@ class _OrderChatScreenState extends ConsumerState<OrderChatScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // Pinned Security Banner
+            // Pinned Security Banner or Review Prompt for completed orders
             if (widget.order.status == OrderStatus.pending)
               _buildPendingBanner()
-            else
+            else if (widget.order.status == OrderStatus.completed && !isFarmer)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                child: OrderReviewPromptCard(order: widget.order),
+              )
+            else if (widget.order.status != OrderStatus.completed &&
+                widget.order.status != OrderStatus.cancelled)
               _buildSecurityBanner(isFarmer),
 
             // Messages List
@@ -296,10 +327,15 @@ class _OrderChatScreenState extends ConsumerState<OrderChatScreen> {
                             isMe: isMe,
                             order: widget.order,
                             isFarmer: isFarmer,
+                            partnerAvatarUrl: partnerAvatarUrl,
                           );
                         }
 
-                        return _buildMessageBubble(msg, isMe);
+                        return _buildMessageBubble(
+                          msg,
+                          isMe,
+                          partnerAvatarUrl,
+                        );
                       },
                     ),
             ),
@@ -448,71 +484,128 @@ class _OrderChatScreenState extends ConsumerState<OrderChatScreen> {
     );
   }
 
-  Widget _buildMessageBubble(OrderMessage msg, bool isMe) {
+  Widget _buildMessageBubble(
+    OrderMessage msg,
+    bool isMe,
+    String? partnerAvatarUrl,
+  ) {
     final timeStr =
         '${msg.createdAt.hour.toString().padLeft(2, '0')}:${msg.createdAt.minute.toString().padLeft(2, '0')}';
 
-    return Align(
-      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.75,
+    final bubble = Container(
+      constraints: BoxConstraints(
+        maxWidth: MediaQuery.of(context).size.width * 0.72,
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: isMe ? AppColors.primary : Colors.white,
+        borderRadius: BorderRadius.only(
+          topLeft: const Radius.circular(16),
+          topRight: const Radius.circular(16),
+          bottomLeft: Radius.circular(isMe ? 16 : 4),
+          bottomRight: Radius.circular(isMe ? 4 : 16),
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        decoration: BoxDecoration(
-          color: isMe ? AppColors.primary : Colors.white,
-          borderRadius: BorderRadius.only(
-            topLeft: const Radius.circular(16),
-            topRight: const Radius.circular(16),
-            bottomLeft: Radius.circular(isMe ? 16 : 4),
-            bottomRight: Radius.circular(isMe ? 4 : 16),
+        border: isMe ? null : Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
           ),
-          border: isMe ? null : Border.all(color: const Color(0xFFE2E8F0)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.03),
-              blurRadius: 4,
-              offset: const Offset(0, 1),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment:
+            isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        children: [
+          if (!isMe) ...[
+            Text(
+              msg.senderName,
+              style: GoogleFonts.notoSansGeorgian(
+                fontSize: 10.5,
+                fontWeight: FontWeight.w700,
+                color: AppColors.primary,
+              ),
             ),
+            const SizedBox(height: 3),
           ],
+          Text(
+            msg.text,
+            style: GoogleFonts.notoSansGeorgian(
+              fontSize: 13.5,
+              fontWeight: FontWeight.w500,
+              color: isMe ? Colors.white : const Color(0xFF0F172A),
+              height: 1.35,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            timeStr,
+            style: GoogleFonts.firaCode(
+              fontSize: 10,
+              color: isMe
+                  ? Colors.white.withValues(alpha: 0.7)
+                  : const Color(0xFF94A3B8),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (isMe) {
+      return Align(
+        alignment: Alignment.centerRight,
+        child: Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: bubble,
         ),
-        child: Column(
-          crossAxisAlignment:
-              isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-          children: [
-            if (!isMe) ...[
-              Text(
-                msg.senderName,
-                style: GoogleFonts.notoSansGeorgian(
-                  fontSize: 10.5,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.primary,
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          _buildSenderAvatar(partnerAvatarUrl, msg.senderName),
+          const SizedBox(width: 8),
+          Flexible(child: bubble),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSenderAvatar(String? avatarUrl, String senderName) {
+    return Container(
+      width: 32,
+      height: 32,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: AppColors.primary.withValues(alpha: 0.15),
+          width: 1.2,
+        ),
+      ),
+      child: ClipOval(
+        child: (avatarUrl != null && avatarUrl.isNotEmpty)
+            ? ProfileImageView.avatar(
+                avatarUrl: avatarUrl,
+                size: 32,
+                backgroundColor: const Color(0xFFE6F4EA),
+                iconColor: AppColors.primary,
+              )
+            : Container(
+                color: const Color(0xFFE6F4EA),
+                alignment: Alignment.center,
+                child: Text(
+                  senderName.isNotEmpty ? senderName[0].toUpperCase() : '?',
+                  style: GoogleFonts.notoSansGeorgian(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.primary,
+                  ),
                 ),
               ),
-              const SizedBox(height: 3),
-            ],
-            Text(
-              msg.text,
-              style: GoogleFonts.notoSansGeorgian(
-                fontSize: 13.5,
-                fontWeight: FontWeight.w500,
-                color: isMe ? Colors.white : const Color(0xFF0F172A),
-                height: 1.35,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              timeStr,
-              style: GoogleFonts.firaCode(
-                fontSize: 10,
-                color: isMe
-                    ? Colors.white.withValues(alpha: 0.7)
-                    : const Color(0xFF94A3B8),
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

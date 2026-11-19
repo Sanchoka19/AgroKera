@@ -25,6 +25,39 @@ function errorResponse(message: string, status = 400): Response {
   return jsonResponse({ error: message }, status);
 }
 
+const farmerDeliverySettingsMap = new Map<string, {
+  isDeliveryEnabled?: boolean;
+  deliveryCity?: string;
+  deliveryDays?: string[];
+  deliveryFee?: number;
+  regionalDeliveryFees?: Record<string, number>;
+  location?: string;
+}>();
+
+const orderMetadataMap = new Map<string, {
+  deliveryFee?: number;
+  heavyFee?: number;
+  platformFee?: number;
+  paymentMethod?: string;
+  isPickup?: boolean;
+}>();
+
+interface ReviewEntry {
+  id: string;
+  orderId: string;
+  clientId: string;
+  clientName: string;
+  clientAvatarUrl?: string;
+  farmerId: string;
+  rating: number;
+  tags: string[];
+  comment?: string;
+  createdAt: string;
+}
+
+// Clean runtime reviews cache (populated by real customer submissions and DB queries)
+const farmerReviewsList: ReviewEntry[] = [];
+
 /**
  * Neon Function Web-Standard Handler (`fetch(request: Request): Promise<Response>`)
  */
@@ -623,6 +656,15 @@ export default {
         if (method === "GET") {
           const user = await findUserByIdOrEmail(userId);
           if (!user) return errorResponse("User not found", 404);
+          if (user.farmerProfile) {
+            const custom = farmerDeliverySettingsMap.get(user.farmerProfile.id);
+            if (custom) {
+              (user.farmerProfile as any).deliveryDays =
+                custom.deliveryDays || (user.farmerProfile.id === "farmer_2" ? ["ოთხშაბათი", "შაბათი"] : ["შაბათი"]);
+              (user.farmerProfile as any).regionalDeliveryFees =
+                custom.regionalDeliveryFees || { [user.farmerProfile.city || "თბილისი"]: user.farmerProfile.deliveryFee || 7.0 };
+            }
+          }
           return jsonResponse(user);
         }
 
@@ -641,6 +683,12 @@ export default {
             coverUrl?: string;
             avatarUrl?: string;
             isVatPayer?: boolean;
+            isDeliveryEnabled?: boolean;
+            deliveryFee?: number;
+            city?: string;
+            deliveryCity?: string;
+            deliveryDays?: string[];
+            regionalDeliveryFees?: Record<string, number>;
           };
 
           let existingUser = await findUserByIdOrEmail(userId);
@@ -684,6 +732,11 @@ export default {
                           coverUrl: body.coverUrl,
                           avatarUrl: body.avatarUrl,
                           isVatPayer: body.isVatPayer ?? false,
+                          isDeliveryEnabled:
+                            body.isDeliveryEnabled !== undefined
+                              ? body.isDeliveryEnabled
+                              : true,
+                          deliveryFee: body.deliveryFee ?? 0.0,
                         },
                       },
                     }
@@ -703,7 +756,11 @@ export default {
               body.idCardBackUrl ||
               body.coverUrl ||
               body.avatarUrl ||
-              body.isVatPayer !== undefined
+              body.isVatPayer !== undefined ||
+              body.isDeliveryEnabled !== undefined ||
+              body.deliveryFee !== undefined ||
+              body.city ||
+              body.deliveryCity
           );
 
           const user = await prisma.user.update({
@@ -732,6 +789,15 @@ export default {
                       ...(body.isVatPayer !== undefined
                         ? { isVatPayer: body.isVatPayer }
                         : {}),
+                      ...(body.isDeliveryEnabled !== undefined
+                        ? { isDeliveryEnabled: body.isDeliveryEnabled }
+                        : {}),
+                      ...(body.deliveryFee !== undefined
+                        ? { deliveryFee: body.deliveryFee }
+                        : {}),
+                      ...(body.city || body.deliveryCity
+                        ? { city: body.city || body.deliveryCity }
+                        : {}),
                     },
                   },
                 }
@@ -739,6 +805,57 @@ export default {
             },
             include: { farmerProfile: true },
           });
+
+          const profileFarmerId =
+            existingUser.farmerProfile?.id ||
+            (userId.startsWith("farmer_")
+              ? userId
+              : `farmer_${userId.replace(/^user_(farmer|client)_/, "")}`);
+          if (
+            body.deliveryDays ||
+            body.regionalDeliveryFees ||
+            body.isDeliveryEnabled !== undefined ||
+            body.deliveryFee !== undefined ||
+            body.city ||
+            body.deliveryCity
+          ) {
+            const current = farmerDeliverySettingsMap.get(profileFarmerId) || {};
+            const updated = {
+              ...current,
+              ...(body.isDeliveryEnabled !== undefined
+                ? { isDeliveryEnabled: body.isDeliveryEnabled }
+                : {}),
+              ...(body.deliveryFee !== undefined ? { deliveryFee: body.deliveryFee } : {}),
+              ...(body.city || body.deliveryCity
+                ? { deliveryCity: body.city || body.deliveryCity }
+                : {}),
+              ...(body.deliveryDays ? { deliveryDays: body.deliveryDays } : {}),
+              ...(body.regionalDeliveryFees
+                ? { regionalDeliveryFees: body.regionalDeliveryFees }
+                : {}),
+            };
+            farmerDeliverySettingsMap.set(profileFarmerId, updated);
+            if (profileFarmerId === "farmer_1" || profileFarmerId === "farmer_2") {
+              farmerDeliverySettingsMap.set("farmer_1", { ...updated });
+              farmerDeliverySettingsMap.set("farmer_2", { ...updated });
+            }
+          }
+
+          if (user.farmerProfile) {
+            const custom = farmerDeliverySettingsMap.get(user.farmerProfile.id);
+            if (custom) {
+              (user.farmerProfile as any).deliveryDays =
+                custom.deliveryDays ||
+                (user.farmerProfile.id === "farmer_2"
+                  ? ["ოთხშაბათი", "შაბათი"]
+                  : ["შაბათი"]);
+              (user.farmerProfile as any).regionalDeliveryFees =
+                custom.regionalDeliveryFees || {
+                  [user.farmerProfile.city || "თბილისი"]:
+                    user.farmerProfile.deliveryFee || 7.0,
+                };
+            }
+          }
 
           return jsonResponse(user);
         }
@@ -749,30 +866,67 @@ export default {
       // ==========================================
       if (method === "GET" && path === "/api/farmers") {
         const farmers = await prisma.farmerProfile.findMany({
-          include: { user: true },
+          include: {
+            user: true,
+            reviews: { select: { rating: true } },
+          },
           orderBy: { rating: "desc" },
         });
 
-        const formatted = farmers.map((f) => ({
-          id: f.id,
-          farmName: f.farmName,
-          farmerName: f.user.fullName,
-          location: f.address || `${f.city || ""}, ${f.region}`.replace(/^, /, ""),
-          rating: f.rating,
-          reviewCount: f.reviewCount,
-          totalRatings: f.totalRatings,
-          isVerified: f.user.verificationStatus === VerificationStatus.VERIFIED,
-          isVatPayer: f.isVatPayer,
-          avatarUrl:
-            f.avatarUrl ||
-            f.user.avatarUrl ||
-            "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80",
-          coverUrl:
-            f.coverUrl ||
-            "https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=1000&auto=format&fit=crop&q=80",
-          about: f.about || "",
-          phone: "", // phone numbers are never exposed publicly
-        }));
+        const formatted = farmers.map((f) => {
+          const custom = farmerDeliverySettingsMap.get(f.id);
+          const defaultDays =
+            f.id === "farmer_2" ? ["ოთხშაბათი", "შაბათი"] : ["შაბათი"];
+          const defaultFees = { [f.city || "თბილისი"]: f.deliveryFee ?? 7.0 };
+
+          const dbRevs = (f as any).reviews as { rating: number }[] | undefined;
+          const memoryRevs = farmerReviewsList.filter((r) => r.farmerId === f.id);
+          const allRatings = (dbRevs && dbRevs.length > 0)
+            ? dbRevs.map((r) => r.rating)
+            : memoryRevs.map((r) => r.rating);
+
+          const computedRating =
+            allRatings.length > 0
+              ? Number(
+                  (
+                    allRatings.reduce((sum, r) => sum + r, 0) /
+                    allRatings.length
+                  ).toFixed(1)
+                )
+              : (f.reviewCount > 0 ? f.rating : 0.0);
+          const computedReviewCount =
+            allRatings.length > 0 ? allRatings.length : f.reviewCount;
+
+          return {
+            id: f.id,
+            farmName: f.farmName,
+            farmerName: f.user.fullName,
+            location: f.address || `${f.city || ""}, ${f.region}`.replace(/^, /, ""),
+            rating: computedRating,
+            reviewCount: computedReviewCount,
+            totalRatings: computedReviewCount,
+            isVerified: f.user.verificationStatus === VerificationStatus.VERIFIED,
+            isVatPayer: f.isVatPayer,
+            avatarUrl:
+              f.avatarUrl ||
+              f.user.avatarUrl ||
+              "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80",
+            coverUrl:
+              f.coverUrl ||
+              "https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=1000&auto=format&fit=crop&q=80",
+            about: f.about || "",
+            phone: "", // phone numbers are never exposed publicly
+            isDeliveryEnabled:
+              custom?.isDeliveryEnabled !== undefined
+                ? custom.isDeliveryEnabled
+                : f.isDeliveryEnabled,
+            deliveryFee:
+              custom?.deliveryFee !== undefined ? custom.deliveryFee : f.deliveryFee,
+            deliveryCity: custom?.deliveryCity || f.city || "თბილისი",
+            deliveryDays: custom?.deliveryDays || defaultDays,
+            regionalDeliveryFees: custom?.regionalDeliveryFees || defaultFees,
+          };
+        });
 
         return jsonResponse(formatted);
       }
@@ -798,7 +952,13 @@ export default {
               }
               : {}),
           },
-          include: { farmer: true },
+          include: {
+            farmer: {
+              include: {
+                reviews: { select: { rating: true } },
+              },
+            },
+          },
           orderBy: { createdAt: "desc" },
         });
 
@@ -810,6 +970,23 @@ export default {
           const imageList =
             p.images && p.images.length > 0 ? p.images : [primaryImage];
 
+          const farmerRevs = (p.farmer as any)?.reviews as { rating: number }[] | undefined;
+          const memoryRevs = farmerReviewsList.filter((r) => r.farmerId === p.farmerId);
+          const allRatings = (farmerRevs && farmerRevs.length > 0)
+            ? farmerRevs.map((r) => r.rating)
+            : memoryRevs.map((r) => r.rating);
+
+          const dynamicRating =
+            allRatings.length > 0
+              ? Number(
+                  (
+                    allRatings.reduce((sum, r) => sum + r, 0) /
+                    allRatings.length
+                  ).toFixed(1)
+                )
+              : 0.0;
+          const dynamicReviewCount = allRatings.length;
+
           return {
             id: p.id,
             title: p.title,
@@ -819,8 +996,8 @@ export default {
             price: p.pricePerUnit,
             unit: p.unit,
             discountPercent: p.discountPercent,
-            rating: p.rating,
-            reviewCount: p.reviewCount,
+            rating: dynamicRating,
+            reviewCount: dynamicReviewCount,
             isAvailable: p.isAvailable,
             stockQuantity: p.stockQuantity,
             stockStatus:
@@ -1112,37 +1289,54 @@ export default {
           : [];
         const farmerById = new Map(farmerProfiles.map((f) => [f.id, f]));
 
-        const formatted = orders.map((o) => ({
-          id: o.id,
-          farmerId: o.farmerId,
-          farmerName: o.farmerId ? farmerById.get(o.farmerId)?.farmName ?? null : null,
-          farmerAvatarUrl: o.farmerId ? farmerById.get(o.farmerId)?.avatarUrl ?? null : null,
-          clientId: o.clientId,
-          createdAt: o.createdAt.toISOString(),
-          status: o.status,
-          customerName: o.client.fullName,
-          contactPerson: o.contactPerson || o.client.fullName,
-          // Phone numbers are never shared between client and farmer
-          contactPhone: null,
-          hasVat: o.hasVat,
-          totalAmount: o.totalAmount,
-          fulfillmentType: o.fulfillmentType,
-          deliveryTimeWindow: o.deliveryTimeWindow || "დღეს, 16:00 - 19:00",
-          deliveryAddress: o.deliveryAddress,
-          cancellationReason: o.cancellationReason,
-          cancellationDeadline: o.cancellationDeadline?.toISOString() ?? null,
-          shipmentStatus: o.shipment?.status ?? "PENDING",
-          trackingNumber: o.shipment?.trackingNumber ?? `AK-${o.id.slice(-5)}`,
-          items: o.items.map((item) => ({
-            productId: item.productId,
-            name: item.product.title,
-            quantity: item.quantity,
-            unit: item.product.unit,
-            quantityText: `${item.quantity}${item.product.unit}`,
-            pricePerUnit: item.pricePerUnit,
-            price: item.subtotal,
-          })),
-        }));
+        const formatted = orders.map((o) => {
+          const meta = orderMetadataMap.get(o.id);
+          const isPickup =
+            o.fulfillmentType === FulfillmentType.SELF_PICKUP ||
+            Boolean(meta?.isPickup);
+          const deliveryFee = isPickup ? 0 : (meta?.deliveryFee ?? 0);
+          const heavyFee = isPickup ? 0 : (meta?.heavyFee ?? 0);
+          const platformFee = meta?.platformFee ?? 0;
+          const paymentMethod = meta?.paymentMethod || "ESCROW";
+
+          return {
+            id: o.id,
+            farmerId: o.farmerId,
+            farmerName: o.farmerId ? farmerById.get(o.farmerId)?.farmName ?? null : null,
+            farmerAvatarUrl: o.farmerId ? farmerById.get(o.farmerId)?.avatarUrl ?? null : null,
+            customerAvatarUrl: o.client?.avatarUrl ?? null,
+            clientId: o.clientId,
+            createdAt: o.createdAt.toISOString(),
+            status: o.status,
+            customerName: o.client.fullName,
+            contactPerson: o.contactPerson || o.client.fullName,
+            // Phone numbers are never shared between client and farmer
+            contactPhone: null,
+            hasVat: o.hasVat,
+            totalAmount: o.totalAmount,
+            fulfillmentType: o.fulfillmentType,
+            isPickup,
+            deliveryFee,
+            heavyFee,
+            platformFee,
+            paymentMethod,
+            deliveryTimeWindow: o.deliveryTimeWindow || "დღეს, 16:00 - 19:00",
+            deliveryAddress: o.deliveryAddress,
+            cancellationReason: o.cancellationReason,
+            cancellationDeadline: o.cancellationDeadline?.toISOString() ?? null,
+            shipmentStatus: o.shipment?.status ?? "PENDING",
+            trackingNumber: o.shipment?.trackingNumber ?? `AK-${o.id.slice(-5)}`,
+            items: o.items.map((item) => ({
+              productId: item.productId,
+              name: item.product.title,
+              quantity: item.quantity,
+              unit: item.product.unit,
+              quantityText: `${item.quantity}${item.product.unit}`,
+              pricePerUnit: item.pricePerUnit,
+              price: item.subtotal,
+            })),
+          };
+        });
 
         return jsonResponse(formatted);
       }
@@ -1159,6 +1353,12 @@ export default {
           deliveryNotes?: string;
           hasVat?: boolean;
           fulfillmentType?: string;
+          isPickup?: boolean;
+          deliveryFee?: number;
+          heavyFee?: number;
+          platformFee?: number;
+          paymentMethod?: string;
+          totalAmount?: number;
           items: Array<{
             productId: string;
             quantity: number;
@@ -1170,11 +1370,24 @@ export default {
           return errorResponse("Order must contain at least one item", 400);
         }
 
+        const isPickup =
+          body.fulfillmentType === "SELF_PICKUP" ||
+          body.isPickup === true;
+        const deliveryFee = isPickup ? 0 : (body.deliveryFee ?? 0);
+        const heavyFee = isPickup ? 0 : (body.heavyFee ?? 0);
+        const platformFee = body.platformFee ?? 0;
+        const paymentMethod = body.paymentMethod || "ESCROW";
+
         const subtotal = body.items.reduce(
           (sum, item) => sum + Number(item.quantity) * Number(item.pricePerUnit),
           0
         );
-        const totalAmount = body.hasVat ? subtotal * 1.18 : subtotal;
+        const totalAmount =
+          body.totalAmount ??
+          ((body.hasVat ? subtotal * 1.18 : subtotal) +
+            deliveryFee +
+            heavyFee +
+            platformFee);
 
         const createdOrder = await prisma.$transaction(async (tx) => {
           // Resolve valid isolated client user (never fall back to another client's account)
@@ -1269,7 +1482,7 @@ export default {
               totalAmount,
               hasVat: body.hasVat ?? false,
               fulfillmentType:
-                body.fulfillmentType === "SELF_PICKUP"
+                body.fulfillmentType === "SELF_PICKUP" || (body as { isPickup?: boolean }).isPickup === true
                   ? FulfillmentType.SELF_PICKUP
                   : FulfillmentType.FARMER_DELIVERY,
               contactPerson:
@@ -1347,10 +1560,20 @@ export default {
             console.error("[FCM Order Error]:", pushErr);
           }
         })();
+
+        orderMetadataMap.set(createdOrder.id, {
+          deliveryFee,
+          heavyFee,
+          platformFee,
+          paymentMethod,
+          isPickup,
+        });
+
         return jsonResponse(
           {
             id: createdOrder.id,
             farmerId: createdOrder.farmerId,
+            customerAvatarUrl: createdOrder.client?.avatarUrl ?? null,
             clientId: createdOrder.clientId,
             createdAt: createdOrder.createdAt.toISOString(),
             status: createdOrder.status,
@@ -1360,6 +1583,11 @@ export default {
             hasVat: createdOrder.hasVat,
             totalAmount: createdOrder.totalAmount,
             fulfillmentType: createdOrder.fulfillmentType,
+            isPickup,
+            deliveryFee,
+            heavyFee,
+            platformFee,
+            paymentMethod,
             deliveryTimeWindow:
               createdOrder.deliveryTimeWindow || "დღეს, 16:00 - 19:00",
             deliveryAddress: createdOrder.deliveryAddress,
@@ -1727,6 +1955,180 @@ export default {
             text: message.text,
             isSystem: message.isSystem,
             createdAt: message.createdAt.toISOString(),
+          },
+          201
+        );
+      }
+
+      // ==========================================
+      // 4.6 REVIEWS & RATINGS
+      // ==========================================
+      if (path.startsWith("/api/reviews/farmer/") && method === "GET") {
+        const farmerId = path.replace("/api/reviews/farmer/", "");
+        let reviews: ReviewEntry[] = [];
+        try {
+          const dbReviews = await prisma.review.findMany({
+            where: { farmerId },
+            include: { client: true },
+            orderBy: { createdAt: "desc" },
+          });
+          if (dbReviews && dbReviews.length > 0) {
+            reviews = dbReviews.map((r) => ({
+              id: r.id,
+              orderId: r.orderId,
+              clientId: r.clientId,
+              clientName: r.client.fullName,
+              clientAvatarUrl: r.client.avatarUrl || undefined,
+              farmerId: r.farmerId,
+              rating: r.rating,
+              tags: r.tags,
+              comment: r.comment || undefined,
+              createdAt: r.createdAt.toISOString(),
+            }));
+          }
+        } catch (_) {}
+
+        if (reviews.length === 0) {
+          reviews = farmerReviewsList.filter((r) => r.farmerId === farmerId);
+        }
+
+        reviews.sort(
+          (a, b) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+
+        const averageRating =
+          reviews.length > 0
+            ? Number(
+                (
+                  reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
+                ).toFixed(1)
+              )
+            : 0.0;
+
+        return jsonResponse({
+          farmerId,
+          averageRating,
+          reviewCount: reviews.length,
+          reviews,
+        });
+      }
+
+      if (path.startsWith("/api/reviews/order/") && method === "GET") {
+        const orderId = path.replace("/api/reviews/order/", "");
+        try {
+          const dbReview = await prisma.review.findUnique({
+            where: { orderId },
+            include: { client: true },
+          });
+          if (dbReview) {
+            return jsonResponse({
+              id: dbReview.id,
+              orderId: dbReview.orderId,
+              clientId: dbReview.clientId,
+              clientName: dbReview.client.fullName,
+              clientAvatarUrl: dbReview.client.avatarUrl || undefined,
+              farmerId: dbReview.farmerId,
+              rating: dbReview.rating,
+              tags: dbReview.tags,
+              comment: dbReview.comment || undefined,
+              createdAt: dbReview.createdAt.toISOString(),
+            });
+          }
+        } catch (_) {}
+
+        const existing = farmerReviewsList.find((r) => r.orderId === orderId);
+        return jsonResponse(existing || null);
+      }
+
+      if (path === "/api/reviews" && method === "POST") {
+        const body = (await request.json()) as {
+          orderId: string;
+          clientId?: string;
+          farmerId?: string;
+          clientName?: string;
+          clientAvatarUrl?: string;
+          rating: number;
+          tags?: string[];
+          comment?: string;
+        };
+
+        if (!body.orderId || !body.rating) {
+          return errorResponse("orderId and rating are required", 400);
+        }
+
+        const rating = Math.max(1, Math.min(5, Math.round(Number(body.rating))));
+        const existingIndex = farmerReviewsList.findIndex(
+          (r) => r.orderId === body.orderId
+        );
+
+        const entry: ReviewEntry = {
+          id:
+            existingIndex >= 0
+              ? farmerReviewsList[existingIndex].id
+              : `rev_${Date.now()}`,
+          orderId: body.orderId,
+          clientId: body.clientId || "user_client_1",
+          clientName: body.clientName || "მომხმარებელი",
+          clientAvatarUrl: body.clientAvatarUrl,
+          farmerId: body.farmerId || "farmer_2",
+          rating,
+          tags: Array.isArray(body.tags) ? body.tags : [],
+          comment: body.comment?.trim() || undefined,
+          createdAt: new Date().toISOString(),
+        };
+
+        if (existingIndex >= 0) {
+          farmerReviewsList[existingIndex] = entry;
+        } else {
+          farmerReviewsList.unshift(entry);
+        }
+
+        try {
+          await prisma.review.upsert({
+            where: { orderId: entry.orderId },
+            create: {
+              id: entry.id,
+              orderId: entry.orderId,
+              clientId: entry.clientId,
+              farmerId: entry.farmerId,
+              rating: entry.rating,
+              tags: entry.tags,
+              comment: entry.comment,
+            },
+            update: {
+              rating: entry.rating,
+              tags: entry.tags,
+              comment: entry.comment,
+            },
+          });
+        } catch (_) {}
+
+        const farmerRevs = farmerReviewsList.filter(
+          (r) => r.farmerId === entry.farmerId
+        );
+        const averageRating = Number(
+          (
+            farmerRevs.reduce((sum, r) => sum + r.rating, 0) / farmerRevs.length
+          ).toFixed(1)
+        );
+        const reviewCount = farmerRevs.length;
+
+        try {
+          await prisma.farmerProfile.update({
+            where: { id: entry.farmerId },
+            data: {
+              rating: averageRating,
+              reviewCount,
+            },
+          });
+        } catch (_) {}
+
+        return jsonResponse(
+          {
+            review: entry,
+            farmerRating: averageRating,
+            farmerReviewCount: reviewCount,
           },
           201
         );

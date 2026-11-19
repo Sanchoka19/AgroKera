@@ -51,10 +51,12 @@ class _PaymentSelectionSheetState extends ConsumerState<PaymentSelectionSheet> {
         decoration: BoxDecoration(
           color: isSelected ? AppColors.primaryLight : const Color(0xFFF8FAFC),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: isSelected ? AppColors.primary : const Color(0xFFE2E8F0),
-            width: isSelected ? 1.6 : 1.0,
-          ),
+          border: isSelected
+              ? Border.all(
+                  color: AppColors.primary,
+                  width: 1.6,
+                )
+              : null,
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,

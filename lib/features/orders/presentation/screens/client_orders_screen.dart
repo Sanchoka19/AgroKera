@@ -23,10 +23,12 @@ enum ClientOrderTab { all, active, completed, cancelled }
 class _ClientOrdersScreenState extends ConsumerState<ClientOrdersScreen> {
   ClientOrderTab _selectedTab = ClientOrderTab.all;
   Timer? _liveSyncTimer;
+  late final PageController _pageController;
 
   @override
   void initState() {
     super.initState();
+    _pageController = PageController(initialPage: _selectedTab.index);
     unawaited(
       Future.microtask(
         () => ref.read(farmerOrdersProvider.notifier).refreshFromBackend(),
@@ -41,8 +43,19 @@ class _ClientOrdersScreenState extends ConsumerState<ClientOrdersScreen> {
 
   @override
   void dispose() {
+    _pageController.dispose();
     _liveSyncTimer?.cancel();
     super.dispose();
+  }
+
+  void _onTabSelected(ClientOrderTab tab) {
+    if (_selectedTab == tab) return;
+    setState(() => _selectedTab = tab);
+    _pageController.animateToPage(
+      tab.index,
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeOutCubic,
+    );
   }
 
   Widget _buildSectionHeader(OrderStatus status, int count) {
@@ -192,6 +205,63 @@ class _ClientOrdersScreenState extends ConsumerState<ClientOrdersScreen> {
     return orders.where((o) => o.status == status).length;
   }
 
+  Widget _buildOrdersList({
+    required List<FarmerOrder> orders,
+    required List<FarmerOrder> allOrders,
+    required ClientOrderTab tab,
+  }) {
+    return RefreshIndicator(
+      onRefresh: () =>
+          ref.read(farmerOrdersProvider.notifier).refreshFromBackend(),
+      child: orders.isEmpty
+          ? Center(
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Text(
+                    'შეკვეთები არ მოიძებნა',
+                    style: GoogleFonts.notoSansGeorgian(
+                      fontSize: 14,
+                      color: const Color(0xFF64748B),
+                    ),
+                  ),
+                ),
+              ),
+            )
+          : ListView.separated(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+              physics: const AlwaysScrollableScrollPhysics(),
+              itemCount: orders.length,
+              separatorBuilder: (_, _) => const SizedBox(height: 12),
+              itemBuilder: (context, index) {
+                final order = orders[index];
+                final showSectionHeader = tab == ClientOrderTab.all &&
+                    (index == 0 ||
+                        !_isSameGroup(
+                          orders[index - 1].status,
+                          order.status,
+                        ));
+
+                final card = ClientOrderCard(order: order);
+
+                if (showSectionHeader) {
+                  final groupCount = _countForGroup(allOrders, order.status);
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildSectionHeader(order.status, groupCount),
+                      card,
+                    ],
+                  );
+                }
+
+                return card;
+              },
+            ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final ordersState = ref.watch(farmerOrdersProvider);
@@ -207,13 +277,6 @@ class _ClientOrdersScreenState extends ConsumerState<ClientOrdersScreen> {
     final cancelledOrders = allOrders
         .where((o) => o.status == OrderStatus.cancelled)
         .toList();
-
-    final orders = switch (_selectedTab) {
-      ClientOrderTab.all => allOrders,
-      ClientOrderTab.active => activeOrders,
-      ClientOrderTab.completed => completedOrders,
-      ClientOrderTab.cancelled => cancelledOrders,
-    };
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
@@ -240,83 +303,62 @@ class _ClientOrdersScreenState extends ConsumerState<ClientOrdersScreen> {
                     label: 'ყველა',
                     count: allOrders.length,
                     isSelected: _selectedTab == ClientOrderTab.all,
-                    onTap: () =>
-                        setState(() => _selectedTab = ClientOrderTab.all),
+                    onTap: () => _onTabSelected(ClientOrderTab.all),
                   ),
                   const SizedBox(width: 8),
                   _buildTabButton(
                     label: 'მიმდინარე',
                     count: activeOrders.length,
                     isSelected: _selectedTab == ClientOrderTab.active,
-                    onTap: () =>
-                        setState(() => _selectedTab = ClientOrderTab.active),
+                    onTap: () => _onTabSelected(ClientOrderTab.active),
                   ),
                   const SizedBox(width: 8),
                   _buildTabButton(
                     label: 'დასრულებული',
                     count: completedOrders.length,
                     isSelected: _selectedTab == ClientOrderTab.completed,
-                    onTap: () =>
-                        setState(() => _selectedTab = ClientOrderTab.completed),
+                    onTap: () => _onTabSelected(ClientOrderTab.completed),
                   ),
                   const SizedBox(width: 8),
                   _buildTabButton(
                     label: 'გაუქმებული',
                     count: cancelledOrders.length,
                     isSelected: _selectedTab == ClientOrderTab.cancelled,
-                    onTap: () =>
-                        setState(() => _selectedTab = ClientOrderTab.cancelled),
+                    onTap: () => _onTabSelected(ClientOrderTab.cancelled),
                   ),
                 ],
               ),
             ),
 
             Expanded(
-              child: RefreshIndicator(
-                onRefresh: () => ref
-                    .read(farmerOrdersProvider.notifier)
-                    .refreshFromBackend(),
-                child: orders.isEmpty
-                    ? Center(
-                        child: Text(
-                          'შეკვეთები არ მოიძებნა',
-                          style: GoogleFonts.notoSansGeorgian(
-                            fontSize: 14,
-                            color: const Color(0xFF64748B),
-                          ),
-                        ),
-                      )
-                    : ListView.separated(
-                        padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
-                        itemCount: orders.length,
-                        separatorBuilder: (_, _) => const SizedBox(height: 12),
-                        itemBuilder: (context, index) {
-                          final order = orders[index];
-                          final showSectionHeader =
-                              _selectedTab == ClientOrderTab.all &&
-                                  (index == 0 ||
-                                      !_isSameGroup(
-                                        orders[index - 1].status,
-                                        order.status,
-                                      ));
-
-                          final card = ClientOrderCard(order: order);
-
-                          if (showSectionHeader) {
-                            final groupCount =
-                                _countForGroup(allOrders, order.status);
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                _buildSectionHeader(order.status, groupCount),
-                                card,
-                              ],
-                            );
-                          }
-
-                          return card;
-                        },
-                      ),
+              child: PageView(
+                controller: _pageController,
+                onPageChanged: (index) {
+                  HapticFeedback.selectionClick();
+                  setState(() => _selectedTab = ClientOrderTab.values[index]);
+                },
+                children: [
+                  _buildOrdersList(
+                    orders: allOrders,
+                    allOrders: allOrders,
+                    tab: ClientOrderTab.all,
+                  ),
+                  _buildOrdersList(
+                    orders: activeOrders,
+                    allOrders: allOrders,
+                    tab: ClientOrderTab.active,
+                  ),
+                  _buildOrdersList(
+                    orders: completedOrders,
+                    allOrders: allOrders,
+                    tab: ClientOrderTab.completed,
+                  ),
+                  _buildOrdersList(
+                    orders: cancelledOrders,
+                    allOrders: allOrders,
+                    tab: ClientOrderTab.cancelled,
+                  ),
+                ],
               ),
             ),
           ],

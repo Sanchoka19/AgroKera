@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../theme/app_colors.dart';
 
-/// Interactive Add-to-Cart circular button with brief checkmark feedback animation.
-/// When pressed, transitions smoothly from '+' to a confirmed checkmark for 700ms
-/// before reverting, giving immediate tactile and visual satisfaction.
+/// Interactive Add-to-Cart circular button with smooth spring-pop feedback animation.
+/// On tap, single continuous elastic movement: compresses to 0.88, springs to 1.06,
+/// and smoothly settles to 1.0 with a soft checkmark transition and tactile haptic impact.
 class AnimatedAddToCartButton extends StatefulWidget {
   final VoidCallback? onPressed;
   final bool isOwner;
@@ -35,15 +36,30 @@ class AnimatedAddToCartButtonState extends State<AnimatedAddToCartButton>
     super.initState();
     _scaleController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 140),
-      lowerBound: 0.85,
-      upperBound: 1.0,
-      value: 1.0,
+      duration: const Duration(milliseconds: 340),
     );
-    _scaleAnimation = CurvedAnimation(
-      parent: _scaleController,
-      curve: Curves.easeOutBack,
-    );
+
+    // Continuous single-phase elastic spring sequence: 1.0 -> 0.88 -> 1.06 -> 1.0
+    _scaleAnimation = TweenSequence<double>([
+      // 1. Soft compression on press
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 1.0, end: 0.88)
+            .chain(CurveTween(curve: Curves.easeInOutCubic)),
+        weight: 28.0,
+      ),
+      // 2. Spring pop & overshoot
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 0.88, end: 1.06)
+            .chain(CurveTween(curve: Curves.easeOutBack)),
+        weight: 42.0,
+      ),
+      // 3. Smooth settling to resting scale
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 1.06, end: 1.0)
+            .chain(CurveTween(curve: Curves.easeOutCubic)),
+        weight: 30.0,
+      ),
+    ]).animate(_scaleController);
   }
 
   @override
@@ -52,15 +68,14 @@ class AnimatedAddToCartButtonState extends State<AnimatedAddToCartButton>
     super.dispose();
   }
 
-  /// Triggers the checkmark feedback state
+  /// Triggers the spring pop checkmark feedback state
   void triggerSuccessFeedback() {
     if (!mounted) return;
     setState(() => _isChecked = true);
-    _scaleController.reverse().then((_) {
-      if (mounted) _scaleController.forward();
-    });
+    HapticFeedback.lightImpact();
+    _scaleController.forward(from: 0.0);
 
-    Future.delayed(const Duration(milliseconds: 700), () {
+    Future.delayed(const Duration(milliseconds: 750), () {
       if (mounted) {
         setState(() => _isChecked = false);
       }
@@ -83,13 +98,9 @@ class AnimatedAddToCartButtonState extends State<AnimatedAddToCartButton>
       return Container(
         width: widget.size,
         height: widget.size,
-        decoration: BoxDecoration(
-          color: const Color(0xFFF1F5F9),
+        decoration: const BoxDecoration(
+          color: Color(0xFFF1F5F9),
           shape: BoxShape.circle,
-          border: Border.all(
-            color: const Color(0xFFCBD5E1),
-            width: 1,
-          ),
         ),
         alignment: Alignment.center,
         child: const Icon(
@@ -117,7 +128,7 @@ class AnimatedAddToCartButtonState extends State<AnimatedAddToCartButton>
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: bgColor.withValues(alpha: 0.35),
+                color: bgColor.withValues(alpha: _isChecked ? 0.38 : 0.25),
                 blurRadius: _isChecked ? 8 : 4,
                 spreadRadius: _isChecked ? 1 : 0,
                 offset: const Offset(0, 2),
@@ -127,21 +138,27 @@ class AnimatedAddToCartButtonState extends State<AnimatedAddToCartButton>
           alignment: Alignment.center,
           child: AnimatedSwitcher(
             duration: const Duration(milliseconds: 180),
-            transitionBuilder: (child, animation) => ScaleTransition(
-              scale: animation,
-              child: child,
+            transitionBuilder: (child, animation) => FadeTransition(
+              opacity: animation,
+              child: ScaleTransition(
+                scale: CurvedAnimation(
+                  parent: animation,
+                  curve: Curves.easeOutBack,
+                ),
+                child: child,
+              ),
             ),
             child: _isChecked
                 ? const Icon(
                     LucideIcons.check,
                     key: ValueKey('checked'),
-                    size: 18,
+                    size: 17,
                     color: Colors.white,
                   )
                 : const Icon(
                     LucideIcons.plus,
                     key: ValueKey('plus'),
-                    size: 18,
+                    size: 17,
                     color: AppColors.textOnPrimary,
                   ),
           ),

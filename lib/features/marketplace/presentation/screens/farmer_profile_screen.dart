@@ -16,7 +16,9 @@ import '../../../cart_checkout/presentation/providers/cart_provider.dart';
 import '../../../cart_checkout/presentation/screens/cart_screen.dart';
 import '../../data/models/farmer_model.dart';
 import '../providers/marketplace_provider.dart';
+import '../widgets/farmer_profile/farmer_info_cards.dart';
 import '../widgets/product_details/product_delivery_info_card.dart';
+import '../../../reviews/presentation/widgets/farmer_reviews_section.dart';
 import 'product_details_screen.dart';
 
 /// Farmer Profile Screen:
@@ -357,16 +359,25 @@ class _FarmerProfileScreenState extends ConsumerState<FarmerProfileScreen>
                           children: [
                             ...List.generate(
                               5,
-                              (index) => const Icon(
-                                Icons.star_rounded,
-                                size: 19,
-                                color: AppColors.rating,
-                              ),
+                              (index) {
+                                final starVal = index + 1;
+                                final isFull = farmer.rating >= starVal;
+                                final isHalf = farmer.rating >= starVal - 0.5 && !isFull;
+                                return Icon(
+                                  isFull
+                                      ? Icons.star_rounded
+                                      : (isHalf ? Icons.star_half_rounded : Icons.star_border_rounded),
+                                  size: 19,
+                                  color: AppColors.rating,
+                                );
+                              },
                             ),
                             const SizedBox(width: 6),
                             Expanded(
                               child: Text(
-                                '${farmer.rating} (${farmer.reviewCount}) (${farmer.totalRatings} შეფასება)',
+                                farmer.reviewCount > 0
+                                    ? '${farmer.rating.toStringAsFixed(1)} (${farmer.reviewCount} შეფასება)'
+                                    : 'შეფასებების გარეშე',
                                 style: AppTypography.caption.copyWith(
                                   fontWeight: FontWeight.w600,
                                   fontSize: 12.5,
@@ -431,103 +442,145 @@ class _FarmerProfileScreenState extends ConsumerState<FarmerProfileScreen>
             ),
             const SizedBox(height: 12),
 
-            // 5. Tab Content: Products Grid or About Section
-            if (_selectedTabIndex == 0) ...[
-              if (farmerProducts.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 40,
-                  ),
-                  child: Center(
-                    child: Text(
-                      'ამ ფერმერს ჯერ არ აქვს დამატებული პროდუქტი.',
-                      style: AppTypography.bodyMedium.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ),
-                )
-              else
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-                  child: GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate:
-                        const SliverGridDelegateWithMaxCrossAxisExtent(
-                          maxCrossAxisExtent: 210,
-                          crossAxisSpacing: 12,
-                          mainAxisSpacing: 12,
-                          childAspectRatio: 0.70,
-                        ),
-                    itemCount: farmerProducts.length,
-                    itemBuilder: (context, index) {
-                      final product = farmerProducts[index];
-                      final isOwner = product.isOwnedBy(
-                        ref.watch(authStateProvider),
-                      );
-                      return StaggeredEntrance(
-                        index: index,
-                        child: ProductCard(
-                          product: product,
-                          isOwner: isOwner,
-                          onTap: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    ProductDetailsScreen(product: product),
-                              ),
-                            );
-                          },
-                          onAddWithContext: isOwner
-                              ? null
-                              : (btnContext) => ProductCartHelper.handleAddToCart(
-                                    context: context,
-                                    ref: ref,
-                                    product: product,
-                                    buttonContext: btnContext,
-                                    floatingCartKey: _floatingCartKey,
+            // 5. Tab Content: Products Grid or About Section (with horizontal swipe gesture)
+            GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onHorizontalDragEnd: (details) {
+                final vx = details.primaryVelocity ?? 0;
+                if (vx < -250 && _selectedTabIndex == 0) {
+                  HapticFeedback.selectionClick();
+                  _tabController.animateTo(1);
+                  setState(() => _selectedTabIndex = 1);
+                } else if (vx > 250 && _selectedTabIndex == 1) {
+                  HapticFeedback.selectionClick();
+                  _tabController.animateTo(0);
+                  setState(() => _selectedTabIndex = 0);
+                }
+              },
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 220),
+                child: _selectedTabIndex == 0
+                    ? KeyedSubtree(
+                        key: const ValueKey('tab_products'),
+                        child: farmerProducts.isEmpty
+                            ? Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 40,
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    'ამ ფერმერს ჯერ არ აქვს დამატებული პროდუქტი.',
+                                    style: AppTypography.bodyMedium.copyWith(
+                                      color: AppColors.textSecondary,
+                                    ),
                                   ),
+                                ),
+                              )
+                            : MediaQuery.removePadding(
+                                context: context,
+                                removeTop: true,
+                                child: GridView.builder(
+                                  shrinkWrap: true,
+                                  physics: const NeverScrollableScrollPhysics(),
+                                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                                  gridDelegate:
+                                      const SliverGridDelegateWithMaxCrossAxisExtent(
+                                    maxCrossAxisExtent: 210,
+                                    crossAxisSpacing: 12,
+                                    mainAxisSpacing: 12,
+                                    childAspectRatio: 0.68,
+                                  ),
+                                  itemCount: farmerProducts.length,
+                                  itemBuilder: (context, index) {
+                                    final product = farmerProducts[index];
+                                    final isOwner = product.isOwnedBy(
+                                      ref.watch(authStateProvider),
+                                    );
+                                    return StaggeredEntrance(
+                                      index: index,
+                                      child: ProductCard(
+                                        product: product,
+                                        isOwner: isOwner,
+                                        onTap: () {
+                                          Navigator.of(context).push(
+                                            MaterialPageRoute(
+                                              builder: (context) =>
+                                                  ProductDetailsScreen(product: product),
+                                            ),
+                                          );
+                                        },
+                                        onAddWithContext: isOwner
+                                            ? null
+                                            : (btnContext) => ProductCartHelper.handleAddToCart(
+                                                  context: context,
+                                                  ref: ref,
+                                                  product: product,
+                                                  buttonContext: btnContext,
+                                                  floatingCartKey: _floatingCartKey,
+                                                ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                      )
+                    : KeyedSubtree(
+                        key: const ValueKey('tab_about'),
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (farmer.about.trim().isNotEmpty) ...[
+                                Text('ფერმის ისტორია', style: AppTypography.h2),
+                                const SizedBox(height: 10),
+                                Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.surface,
+                                    borderRadius: BorderRadius.circular(16),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withValues(alpha: 0.04),
+                                        blurRadius: 10,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Text(
+                                    farmer.about.trim(),
+                                    style: AppTypography.bodyMedium.copyWith(
+                                      height: 1.5,
+                                      color: AppColors.textPrimary,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 18),
+                              ],
+                              Text('მიწოდების პირობები', style: AppTypography.h2),
+                              const SizedBox(height: 10),
+                              ProductDeliveryInfoCard(
+                                farmer: farmer,
+                                farmerId: farmer.id,
+                              ),
+                              const SizedBox(height: 18),
+                              Text('მდებარეობა', style: AppTypography.h2),
+                              const SizedBox(height: 10),
+                              FarmerLocationCard(location: farmer.location),
+                              const SizedBox(height: 18),
+                              Text('კონტაქტი', style: AppTypography.h2),
+                              const SizedBox(height: 10),
+                              FarmerContactCard(phone: farmer.phone),
+                              const SizedBox(height: 24),
+                              FarmerReviewsSection(farmer: farmer),
+                            ],
+                          ),
                         ),
-                      );
-                    },
-                  ),
-                ),
-            ] else ...[
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('ფერმის ისტორია', style: AppTypography.h2),
-                    const SizedBox(height: 8),
-                    Text(
-                      farmer.about,
-                      style: AppTypography.bodyMedium.copyWith(height: 1.5),
-                    ),
-                    const SizedBox(height: 20),
-                    Text('მდებარეობა', style: AppTypography.h2),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        const Icon(
-                          LucideIcons.mapPin,
-                          size: 16,
-                          color: AppColors.primary,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(farmer.location, style: AppTypography.bodyMedium),
-                      ],
-                    ),
-                    const SizedBox(height: 22),
-                    Text('მიწოდების პირობები', style: AppTypography.h2),
-                    const SizedBox(height: 10),
-                    ProductDeliveryInfoCard(farmer: farmer, farmerId: farmer.id),
-                  ],
-                ),
+                      ),
               ),
-            ],
+            ),
           ],
         ),
       ),

@@ -60,6 +60,7 @@ model User {
 
   farmerProfile      FarmerProfile?
   orders             Order[]
+  reviews            Review[]
   notifications      Notification[]
 }
 
@@ -88,6 +89,7 @@ model FarmerProfile {
   updatedAt          DateTime           @updatedAt
 
   products           Product[]
+  reviews            Review[]
 }
 
 model Product {
@@ -137,6 +139,7 @@ model Order {
 
   items                OrderItem[]
   shipment             Shipment?
+  review               Review?
 }
 
 model OrderMessage {
@@ -192,4 +195,22 @@ model Notification {
 
   @@index([userId, createdAt])
 }
+
+model Review {
+  id        String        @id @default(cuid())
+  orderId   String        @unique
+  order     Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  clientId  String
+  client    User          @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  farmerId  String
+  farmer    FarmerProfile @relation(fields: [farmerId], references: [id], onDelete: Cascade)
+  rating    Int           @default(5)
+  tags      String[]      @default([])
+  comment   String?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@index([farmerId, createdAt])
+}
+
 

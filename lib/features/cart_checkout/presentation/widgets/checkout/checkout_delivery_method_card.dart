@@ -39,11 +39,11 @@ class CheckoutDeliveryMethodCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 8,
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 10,
             offset: const Offset(0, 2),
           ),
         ],
@@ -69,7 +69,6 @@ class CheckoutDeliveryMethodCard extends StatelessWidget {
               decoration: BoxDecoration(
                 color: const Color(0xFFFEF2F2),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFFFECACA)),
               ),
               child: Row(
                 children: [
@@ -102,7 +101,6 @@ class CheckoutDeliveryMethodCard extends StatelessWidget {
               decoration: BoxDecoration(
                 color: const Color(0xFFEFF6FF),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFFBFDBFE)),
               ),
               child: Row(
                 children: [
@@ -158,12 +156,12 @@ class CheckoutDeliveryMethodCard extends StatelessWidget {
                       ? AppColors.primaryLight
                       : const Color(0xFFF9FAFB),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: (!isPickup && isCovered)
-                        ? AppColors.primary
-                        : const Color(0xFFE5E7EB),
-                    width: (!isPickup && isCovered) ? 1.5 : 1,
-                  ),
+                  border: (!isPickup && isCovered)
+                      ? Border.all(
+                          color: AppColors.primary,
+                          width: 1.5,
+                        )
+                      : null,
                 ),
                 child: Row(
                   children: [
@@ -251,12 +249,12 @@ class CheckoutDeliveryMethodCard extends StatelessWidget {
                     ? AppColors.primaryLight
                     : const Color(0xFFF9FAFB),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: isPickup
-                      ? AppColors.primary
-                      : const Color(0xFFE5E7EB),
-                  width: isPickup ? 1.5 : 1,
-                ),
+                border: isPickup
+                    ? Border.all(
+                        color: AppColors.primary,
+                        width: 1.5,
+                      )
+                    : null,
               ),
               child: Row(
                 children: [
@@ -331,7 +329,6 @@ class CheckoutDeliveryMethodCard extends StatelessWidget {
               decoration: BoxDecoration(
                 color: const Color(0xFFF0FDF4),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFFBBF7D0)),
               ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,

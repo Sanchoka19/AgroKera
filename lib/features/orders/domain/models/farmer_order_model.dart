@@ -139,6 +139,7 @@ class FarmerOrder {
   final bool isPickup;
   final String? farmerName;
   final String? farmerAvatarUrl;
+  final String? customerAvatarUrl;
 
   const FarmerOrder({
     required this.id,
@@ -166,7 +167,29 @@ class FarmerOrder {
     this.isPickup = false,
     this.farmerName,
     this.farmerAvatarUrl,
+    this.customerAvatarUrl,
   });
+
+  /// Resolves the most accurate avatar URL for the order's counterparty.
+  /// If [isFarmer] is true, returns the customer's avatar.
+  /// If [isFarmer] is false, returns the farmer's avatar.
+  String? resolvePartnerAvatar({
+    required bool isFarmer,
+    String? fallbackFarmerAvatar,
+    String? fallbackCustomerAvatar,
+  }) {
+    if (isFarmer) {
+      if (customerAvatarUrl != null && customerAvatarUrl!.trim().isNotEmpty) {
+        return customerAvatarUrl!.trim();
+      }
+      return fallbackCustomerAvatar?.trim();
+    } else {
+      if (farmerAvatarUrl != null && farmerAvatarUrl!.trim().isNotEmpty) {
+        return farmerAvatarUrl!.trim();
+      }
+      return fallbackFarmerAvatar?.trim();
+    }
+  }
 
   static String generatePinForId(String id) {
     final code = (id.hashCode.abs() % 9000) + 1000;
@@ -202,9 +225,12 @@ class FarmerOrder {
       deliveryFee: (json['deliveryFee'] as num?)?.toDouble() ?? 0.0,
       heavyFee: (json['heavyFee'] as num?)?.toDouble() ?? 0.0,
       platformFee: (json['platformFee'] as num?)?.toDouble() ?? 0.0,
-      isPickup: json['isPickup'] as bool? ?? false,
+      isPickup: json['isPickup'] as bool? ??
+          (json['fulfillmentType'] == 'SELF_PICKUP'),
       farmerName: json['farmerName'] as String?,
       farmerAvatarUrl: json['farmerAvatarUrl'] as String?,
+      customerAvatarUrl: json['customerAvatarUrl'] as String? ??
+          json['clientAvatarUrl'] as String?,
       items: rawItems
           .whereType<Map<String, dynamic>>()
           .map(FarmerOrderItem.fromJson)
@@ -367,6 +393,7 @@ class FarmerOrder {
       'isPickup': isPickup,
       if (farmerName != null) 'farmerName': farmerName,
       if (farmerAvatarUrl != null) 'farmerAvatarUrl': farmerAvatarUrl,
+      if (customerAvatarUrl != null) 'customerAvatarUrl': customerAvatarUrl,
       'items': items.map((i) => i.toJson()).toList(),
     };
   }
@@ -397,6 +424,7 @@ class FarmerOrder {
     bool? isPickup,
     String? farmerName,
     String? farmerAvatarUrl,
+    String? customerAvatarUrl,
   }) {
     return FarmerOrder(
       id: id ?? this.id,
@@ -425,6 +453,7 @@ class FarmerOrder {
       isPickup: isPickup ?? this.isPickup,
       farmerName: farmerName ?? this.farmerName,
       farmerAvatarUrl: farmerAvatarUrl ?? this.farmerAvatarUrl,
+      customerAvatarUrl: customerAvatarUrl ?? this.customerAvatarUrl,
     );
   }
 }

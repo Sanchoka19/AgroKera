@@ -19,3 +19,6 @@
 # Flutter Secure Storage
 -keep class com.it_nomads.fluttersecurestorage.** { *; }
 
+# Play Core & Split Compat
+-dontwarn com.google.android.play.core.**
+

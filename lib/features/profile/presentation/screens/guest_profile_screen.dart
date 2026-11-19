@@ -427,9 +427,12 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
                     ] else ...[
                       CustomerProfileHeader(
                         avatarUrl: authState.userAvatarUrl,
-                        userName: authState.userName ?? 'საბა ევგენიძე',
-                        userEmail: authState.userEmail ??
-                            'sabaevgenidze0919@gmail.com',
+                        userName: authState.userName ??
+                            (authState.userEmail != null &&
+                                    authState.userEmail!.contains('@')
+                                ? authState.userEmail!.split('@').first
+                                : 'მომხმარებელი'),
+                        userEmail: authState.userEmail ?? '',
                         onAvatarTap: () =>
                             AvatarPickerModal.show(context, ref),
                         onEditTap: () => EditProfileBottomSheet.show(context),

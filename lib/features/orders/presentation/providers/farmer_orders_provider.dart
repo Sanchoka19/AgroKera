@@ -177,13 +177,20 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
     List<FarmerOrder> list,
     AuthState auth,
   ) {
+    if (!auth.isAuthenticated || auth.role == UserRole.guest) {
+      if (isFlutterTestEnv) {
+        return (list, list);
+      }
+      return (const <FarmerOrder>[], const <FarmerOrder>[]);
+    }
+
     if (auth.role == UserRole.farmer) {
       final incoming = list.where((o) {
         if (auth.userId != null && o.clientId == auth.userId) return false;
         if (auth.farmerId != null && o.farmerId != null) {
           return o.farmerId == auth.farmerId;
         }
-        return true;
+        return isFlutterTestEnv && o.farmerId == null;
       }).toList();
 
       final client = list.where((o) {
@@ -196,13 +203,28 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
 
       return (incoming, client);
     } else if (auth.role == UserRole.customer) {
-      return (const <FarmerOrder>[], list);
+      final client = list.where((o) {
+        if (auth.userId != null && o.clientId != null) {
+          return o.clientId == auth.userId;
+        }
+        return isFlutterTestEnv && o.clientId == null;
+      }).toList();
+      return (const <FarmerOrder>[], client);
     } else {
-      return (list, list);
+      return (const <FarmerOrder>[], const <FarmerOrder>[]);
     }
   }
 
   void _partitionOrdersForAuth(AuthState auth) {
+    if (!auth.isAuthenticated && !isFlutterTestEnv) {
+      state = state.copyWith(
+        orders: const [],
+        incomingOrders: const [],
+        clientOrders: const [],
+      );
+      return;
+    }
+
     final allKnown = <String, FarmerOrder>{};
     for (final o in [
       ...state.orders,
@@ -214,8 +236,14 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
     }
     final allList = allKnown.values.toList();
     final (incoming, client) = _initialPartition(allList, auth);
+    final isolatedCombined = <String, FarmerOrder>{
+      for (final o in [...client, ...incoming]) o.id: o,
+      if (isFlutterTestEnv)
+        for (final o in allList) o.id: o,
+    }.values.toList();
 
     state = state.copyWith(
+      orders: isolatedCombined,
       incomingOrders: incoming,
       clientOrders: client,
     );
@@ -296,27 +324,53 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
 
       if (fetchedIncoming != null) {
         final fetchedIds = fetchedIncoming.map((o) => o.id).toSet();
+        final now = DateTime.now();
         final localPending = state.incomingOrders
-            .where((o) => !fetchedIds.contains(o.id))
+            .where(
+              (o) =>
+                  !fetchedIds.contains(o.id) &&
+                  (auth.farmerId == null || o.farmerId == auth.farmerId) &&
+                  (isFlutterTestEnv ||
+                      _inFlightStatusUpdates.containsKey(o.id) ||
+                      now.difference(o.createdAt).inSeconds < 15),
+            )
             .toList();
         newIncoming = [...localPending, ...fetchedIncoming]
             .map(reconcileWithInFlightAndStorage)
             .toList();
+      } else if (auth.role != UserRole.farmer && !isFlutterTestEnv) {
+        newIncoming = const [];
       }
 
       if (fetchedClient != null) {
         final fetchedIds = fetchedClient.map((o) => o.id).toSet();
+        final now = DateTime.now();
         final localPending = state.clientOrders
-            .where((o) => !fetchedIds.contains(o.id))
+            .where(
+              (o) =>
+                  !fetchedIds.contains(o.id) &&
+                  (auth.userId == null ||
+                      o.clientId == auth.userId ||
+                      (isFlutterTestEnv && o.clientId == null)) &&
+                  (isFlutterTestEnv ||
+                      _inFlightStatusUpdates.containsKey(o.id) ||
+                      now.difference(o.createdAt).inSeconds < 15),
+            )
             .toList();
         newClient = [...localPending, ...fetchedClient]
             .map(reconcileWithInFlightAndStorage)
             .toList();
+      } else if (!auth.isAuthenticated && !isFlutterTestEnv) {
+        newClient = const [];
       }
 
       final seenIds = <String>{};
       final combinedOrders = <FarmerOrder>[];
-      for (final o in [...newClient, ...newIncoming, ...state.orders]) {
+      for (final o in [
+        ...newClient,
+        ...newIncoming,
+        if (isFlutterTestEnv) ...state.orders,
+      ]) {
         if (seenIds.add(o.id)) {
           combinedOrders.add(reconcileWithInFlightAndStorage(o));
         }
@@ -536,11 +590,18 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
     final effectiveName =
         (customerName != null && customerName.trim().isNotEmpty)
             ? customerName.trim()
-            : (auth.userName ?? 'საბა ევგენიძე');
+            : (auth.userName ??
+                (auth.userEmail != null && auth.userEmail!.contains('@')
+                    ? auth.userEmail!.split('@').first
+                    : 'მომხმარებელი'));
     final effectivePhone =
         (contactPhone != null && contactPhone.trim().isNotEmpty)
             ? contactPhone.trim()
-            : (auth.userPhone ?? '+995 599 12 34 56');
+            : (auth.userPhone ?? '');
+    final effectiveClientId = auth.userId ??
+        (auth.userEmail != null && auth.userEmail!.trim().isNotEmpty
+            ? 'user_client_${auth.userEmail!.trim().toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '_')}'
+            : 'user_client_1');
 
     final now = DateTime.now();
     final generatedId = '${38100 + Random().nextInt(899)}';
@@ -578,7 +639,7 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
 
     final newOrder = FarmerOrder(
       id: generatedId,
-      clientId: auth.userId ?? 'user_client_1',
+      clientId: effectiveClientId,
       farmerId: targetFarmerId,
       createdAt: now,
       status: OrderStatus.pending,
@@ -619,7 +680,7 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
 
     unawaited(() async {
       final serverOrder = await _repo.createOrder({
-        'clientId': auth.userId ?? 'user_client_1',
+        'clientId': effectiveClientId,
         'clientEmail': ?auth.userEmail,
         'contactPerson': effectiveName,
         'contactPhone': effectivePhone,

@@ -281,7 +281,7 @@ async function main() {
       totalAmount: 59.0,
       hasVat: true,
       fulfillmentType: FulfillmentType.FARMER_DELIVERY,
-      contactPerson: "საბა ევგენიძე",
+      contactPerson: 'შპს "გემრიელი რესტორანი"',
       contactPhone: "+995 599 12 34 56",
       deliveryTimeWindow: "ივლ 29, 10:00 - 13:00",
       deliveryAddress: "32 ჭავჭავაძე, ბათუმი",

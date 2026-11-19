@@ -4,7 +4,7 @@ import '../network/api_client.dart';
 
 /// Persistent secure storage for user session, JWT token, and role data
 class SecureStorageService {
-  static final Map<String, String> _testMemoryStore = {};
+  final Map<String, String> _testMemoryStore = {};
   static const _tokenKey = 'agrokera_auth_token';
   static const _userIdKey = 'agrokera_user_id';
   static const _farmerIdKey = 'agrokera_farmer_id';
@@ -27,7 +27,7 @@ class SecureStorageService {
 
   final FlutterSecureStorage _storage;
 
-  const SecureStorageService([
+  SecureStorageService([
     this._storage = const FlutterSecureStorage(),
   ]);
 
@@ -229,57 +229,73 @@ class SecureStorageService {
     }
   }
 
-  Future<void> saveActiveAddress(String address) async {
+  Future<String> _scopedKey(String baseKey, [String? userId]) async {
+    final uid = userId ?? await _read(_userIdKey);
+    if (uid != null && uid.trim().isNotEmpty) {
+      return '${baseKey}_${uid.trim()}';
+    }
+    return baseKey;
+  }
+
+  Future<void> saveActiveAddress(String address, {String? userId}) async {
     try {
-      await _write(_activeAddressKey, address);
+      final key = await _scopedKey(_activeAddressKey, userId);
+      await _write(key, address);
     } catch (_) {}
   }
 
-  Future<String?> readActiveAddress() async {
+  Future<String?> readActiveAddress({String? userId}) async {
     try {
-      return await _read(_activeAddressKey);
+      final key = await _scopedKey(_activeAddressKey, userId);
+      return await _read(key);
     } catch (_) {
       return null;
     }
   }
 
-  Future<void> saveFarmLocation(String location) async {
+  Future<void> saveFarmLocation(String location, {String? userId}) async {
     try {
-      await _write(_farmLocationKey, location);
+      final key = await _scopedKey(_farmLocationKey, userId);
+      await _write(key, location);
     } catch (_) {}
   }
 
-  Future<String?> readFarmLocation() async {
+  Future<String?> readFarmLocation({String? userId}) async {
     try {
-      return await _read(_farmLocationKey);
+      final key = await _scopedKey(_farmLocationKey, userId);
+      return await _read(key);
     } catch (_) {
       return null;
     }
   }
 
-  Future<void> saveFarmLandmark(String landmark) async {
+  Future<void> saveFarmLandmark(String landmark, {String? userId}) async {
     try {
-      await _write(_farmLandmarkKey, landmark);
+      final key = await _scopedKey(_farmLandmarkKey, userId);
+      await _write(key, landmark);
     } catch (_) {}
   }
 
-  Future<String?> readFarmLandmark() async {
+  Future<String?> readFarmLandmark({String? userId}) async {
     try {
-      return await _read(_farmLandmarkKey);
+      final key = await _scopedKey(_farmLandmarkKey, userId);
+      return await _read(key);
     } catch (_) {
       return null;
     }
   }
 
-  Future<void> saveAddressesJson(String json) async {
+  Future<void> saveAddressesJson(String json, {String? userId}) async {
     try {
-      await _write(_addressesJsonKey, json);
+      final key = await _scopedKey(_addressesJsonKey, userId);
+      await _write(key, json);
     } catch (_) {}
   }
 
-  Future<String?> readAddressesJson() async {
+  Future<String?> readAddressesJson({String? userId}) async {
     try {
-      return await _read(_addressesJsonKey);
+      final key = await _scopedKey(_addressesJsonKey, userId);
+      return await _read(key);
     } catch (_) {
       return null;
     }
@@ -299,9 +315,13 @@ class SecureStorageService {
     }
   }
 
-  Future<void> clearAddresses() async {
+  Future<void> clearAddresses({String? userId}) async {
     try {
+      final activeKey = await _scopedKey(_activeAddressKey, userId);
+      final listKey = await _scopedKey(_addressesJsonKey, userId);
       await Future.wait([
+        _delete(activeKey),
+        _delete(listKey),
         _delete(_activeAddressKey),
         _delete(_addressesJsonKey),
       ]);
@@ -310,6 +330,6 @@ class SecureStorageService {
 }
 
 final secureStorageProvider = Provider<SecureStorageService>((ref) {
-  return const SecureStorageService();
+  return SecureStorageService();
 });
 

@@ -183,7 +183,7 @@ class _FarmerDeliverySettingsScreenState
         _regionalFees.values.isNotEmpty ? _regionalFees.values.first : 7.0;
 
     final shouldUpdateAllDemo =
-        authState.farmerId == null || widget.farmerId == null;
+        authState.farmerId == null && widget.farmerId == null;
 
     ref.read(marketplaceProvider.notifier).updateFarmerDeliverySettings(
           farmerId: farmer.id,

@@ -129,14 +129,28 @@ abstract final class MockAccountResolver {
       );
     }
 
-    final slug =
-        normalizedEmail.isEmpty || normalizedEmail == 'example@gmail.com'
-            ? '1'
-            : normalizedEmail.replaceAll(RegExp(r'[^a-z0-9]'), '_');
+    if (normalizedEmail == 'sabaevgenidze0919@gmail.com') {
+      return ResolvedAccountIdentity(
+        userId: 'user_client_sabaevgenidze0919_gmail_com',
+        name: explicitName ?? 'საბა ევგენიძე',
+        phone: explicitPhone ?? '+995 599 15 60 56',
+      );
+    }
+
+    if (normalizedEmail.isEmpty || normalizedEmail == 'example@gmail.com') {
+      return ResolvedAccountIdentity(
+        userId: 'user_client_1',
+        name: explicitName ?? 'გიორგი ბერიძე',
+        phone: explicitPhone ?? '+995 599 12 34 56',
+      );
+    }
+
+    final slug = normalizedEmail.replaceAll(RegExp(r'[^a-z0-9]'), '_');
+    final emailPrefix = normalizedEmail.split('@').first;
     return ResolvedAccountIdentity(
       userId: 'user_client_$slug',
-      name: explicitName ?? 'გიორგი ბერიძე',
-      phone: explicitPhone ?? '+995 599 12 34 56',
+      name: explicitName ?? emailPrefix,
+      phone: explicitPhone ?? '+995 599 00 00 00',
     );
   }
 }

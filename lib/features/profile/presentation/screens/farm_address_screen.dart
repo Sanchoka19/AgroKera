@@ -156,11 +156,12 @@ class _FarmAddressScreenState extends ConsumerState<FarmAddressScreen> {
             location: clean,
           );
 
-      // 2. Persist locally in secure storage
+      // 2. Persist locally in secure storage & sync to backend farmer profile
       await Future.wait([
         ref.read(secureStorageProvider).saveFarmLocation(clean),
         if (landmark.isNotEmpty)
           ref.read(secureStorageProvider).saveFarmLandmark(landmark),
+        ref.read(authStateProvider.notifier).updateFarmLocation(clean),
       ]);
 
       if (!mounted) return;

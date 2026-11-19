@@ -35,6 +35,7 @@ class AuthNotifier extends Notifier<AuthState> {
   /// Restores persisted user session from FlutterSecureStorage
   Future<void> restoreSession() async {
     final saved = await _storage.readSession();
+    if (!ref.mounted) return;
     final token = saved['token'];
     if (token == null || token.isEmpty) return;
 
@@ -43,6 +44,7 @@ class AuthNotifier extends Notifier<AuthState> {
 
     final savedEmail = saved['email'] ?? 'example@gmail.com';
     final savedAddress = await _storage.readActiveAddress();
+    if (!ref.mounted) return;
     final fallback = MockAccountResolver.resolve(
       email: savedEmail,
       role: role,
@@ -50,20 +52,47 @@ class AuthNotifier extends Notifier<AuthState> {
       explicitPhone: saved['phone'],
       explicitFarmName: saved['farmName'],
     );
+    final rawSavedUserId = saved['userId'];
+    final normalizedEmail = savedEmail.trim().toLowerCase();
+    final isStaleSharedClientId = rawSavedUserId == 'user_client_1' &&
+        normalizedEmail.isNotEmpty &&
+        normalizedEmail != 'client@agrokera.ge' &&
+        normalizedEmail != 'example@gmail.com';
+    final effectiveUserId = (rawSavedUserId == null ||
+            rawSavedUserId.isEmpty ||
+            isStaleSharedClientId)
+        ? fallback.userId
+        : rawSavedUserId;
+
     state = AuthState(
       isAuthenticated: true,
-      userId: saved['userId'] ?? fallback.userId,
-      farmerId: saved['farmerId'] ?? fallback.farmerId,
-      farmName: saved['farmName'] ?? fallback.farmName,
-      userName: saved['name'] ?? fallback.name,
-      userPhone: saved['phone'] ?? fallback.phone,
+      userId: effectiveUserId,
+      farmerId: role == UserRole.farmer
+          ? (saved['farmerId'] ?? fallback.farmerId)
+          : null,
+      farmName: role == UserRole.farmer
+          ? (saved['farmName'] ?? fallback.farmName)
+          : null,
+      userName: isStaleSharedClientId
+          ? fallback.name
+          : (saved['name'] ?? fallback.name),
+      userPhone: isStaleSharedClientId
+          ? fallback.phone
+          : (saved['phone'] ?? fallback.phone),
       userEmail: savedEmail,
-      farmCoverUrl: saved['farmCoverUrl'] ?? fallback.coverUrl,
-      userAvatarUrl: saved['userAvatarUrl'] ?? fallback.avatarUrl,
+      farmCoverUrl: role == UserRole.farmer
+          ? (saved['farmCoverUrl'] ?? fallback.coverUrl)
+          : null,
+      userAvatarUrl: isStaleSharedClientId
+          ? fallback.avatarUrl
+          : (saved['userAvatarUrl'] ?? fallback.avatarUrl),
       userAddress: savedAddress,
       role: role,
       kycStatus: KycStatus.fromString(saved['kycStatus']),
     );
+    if (isStaleSharedClientId) {
+      unawaited(_resaveSession());
+    }
     unawaited(syncFcmToken());
     unawaited(_syncProfileFromBackend());
   }
@@ -73,23 +102,55 @@ class AuthNotifier extends Notifier<AuthState> {
     if (uid == null || uid.isEmpty) return;
     try {
       final user = await _repo.getProfile(uid);
-      if (user == null || !state.isAuthenticated) return;
+      if (!state.isAuthenticated) return;
+
+      final currentEmail = state.userEmail?.trim().toLowerCase();
+      final serverEmail = (user?['email'] as String?)?.trim().toLowerCase();
+
+      // If stored userId does not exist or belongs to a different email on the server,
+      // re-authenticate by email so strict per-account isolation is enforced.
+      if (user == null ||
+          (currentEmail != null &&
+              currentEmail.isNotEmpty &&
+              currentEmail != 'example@gmail.com' &&
+              serverEmail != null &&
+              serverEmail != currentEmail)) {
+        if (currentEmail != null && currentEmail.isNotEmpty) {
+          await _syncLoginWithBackend(
+            name: state.userName ?? currentEmail.split('@').first,
+            phone: state.userPhone,
+            email: currentEmail,
+            farmName: state.farmName,
+            role: state.role,
+          );
+        }
+        return;
+      }
+
       final farmerProfile = user['farmerProfile'] as Map<String, dynamic>?;
+      final serverFullName = user['fullName'] as String?;
+      final serverFarmName = farmerProfile?['farmName'] as String?;
       final serverAvatarUrl = (farmerProfile?['avatarUrl'] as String?) ??
           (user['avatarUrl'] as String?);
       final serverCoverUrl = farmerProfile?['coverUrl'] as String?;
 
+      final hasNewName =
+          serverFullName != null && serverFullName.trim().isNotEmpty;
+      final hasNewFarmName =
+          serverFarmName != null && serverFarmName.trim().isNotEmpty;
       final hasNewAvatar =
           serverAvatarUrl != null && serverAvatarUrl.trim().isNotEmpty;
       final hasNewCover =
           serverCoverUrl != null && serverCoverUrl.trim().isNotEmpty;
 
-      if (hasNewAvatar || hasNewCover) {
+      if (hasNewName || hasNewFarmName || hasNewAvatar || hasNewCover) {
         state = state.copyWith(
+          userName: hasNewName ? serverFullName : state.userName,
+          farmName: hasNewFarmName ? serverFarmName : state.farmName,
           userAvatarUrl: hasNewAvatar ? serverAvatarUrl : state.userAvatarUrl,
           farmCoverUrl: hasNewCover ? serverCoverUrl : state.farmCoverUrl,
         );
-        if (state.isFarmer) {
+        if (state.isFarmer && (hasNewAvatar || hasNewCover)) {
           ref.read(marketplaceProvider.notifier).updateFarmerMedia(
                 farmerId: state.farmerId,
                 avatarUrl: hasNewAvatar ? serverAvatarUrl : null,
@@ -128,19 +189,32 @@ class AuthNotifier extends Notifier<AuthState> {
       explicitFarmName: farmName,
     );
 
-    state = state.copyWith(
+    final isSameAccount = state.userId == resolved.userId;
+    state = AuthState(
       isAuthenticated: true,
       userId: resolved.userId,
-      farmerId: resolved.farmerId,
-      farmName: resolved.farmName,
+      farmerId: role == UserRole.farmer ? resolved.farmerId : null,
+      farmName: role == UserRole.farmer ? resolved.farmName : null,
       userName: resolved.name,
       userPhone: resolved.phone,
       userEmail: email,
-      userAvatarUrl: resolved.avatarUrl,
-      farmCoverUrl: resolved.coverUrl ?? state.farmCoverUrl,
+      userAvatarUrl:
+          resolved.avatarUrl ?? (isSameAccount ? state.userAvatarUrl : null),
+      farmCoverUrl: role == UserRole.farmer
+          ? (resolved.coverUrl ?? (isSameAccount ? state.farmCoverUrl : null))
+          : null,
+      userAddress: isSameAccount ? state.userAddress : null,
       role: role,
       kycStatus: KycStatus.verified,
     );
+
+    if (!isSameAccount) {
+      unawaited(
+        Future.microtask(() {
+          if (ref.mounted) ref.invalidate(userAddressProvider);
+        }),
+      );
+    }
 
     // Immediately persist session so reopening the app never loses auth state
     unawaited(_saveOptimisticSession(
@@ -180,7 +254,7 @@ class AuthNotifier extends Notifier<AuthState> {
       explicitFarmName: cleanFarmName,
     );
 
-    state = state.copyWith(
+    state = AuthState(
       isAuthenticated: true,
       userId: resolved.userId,
       farmerId: resolved.farmerId,
@@ -188,7 +262,8 @@ class AuthNotifier extends Notifier<AuthState> {
       userName: resolved.name,
       userPhone: resolved.phone,
       userEmail: email,
-      farmCoverUrl: coverUrl,
+      userAvatarUrl: state.userAvatarUrl ?? resolved.avatarUrl,
+      farmCoverUrl: coverUrl ?? resolved.coverUrl,
       role: UserRole.farmer,
       kycStatus: KycStatus.verified,
     );
@@ -221,12 +296,11 @@ class AuthNotifier extends Notifier<AuthState> {
     required String name,
     required String email,
   }) {
-    state = state.copyWith(
+    state = AuthState(
       isAuthenticated: false,
       role: UserRole.guest,
       userName: name,
       userEmail: email,
-      clearUserAddress: true,
     );
   }
 
@@ -252,17 +326,18 @@ class AuthNotifier extends Notifier<AuthState> {
       unawaited(ref.read(userAddressProvider.notifier).clearAddresses());
     }
 
-    state = state.copyWith(
+    state = AuthState(
       isAuthenticated: true,
       userId: resolved.userId,
-      farmerId: resolved.farmerId,
-      farmName: resolved.farmName,
+      farmerId: role == UserRole.farmer ? resolved.farmerId : null,
+      farmName: role == UserRole.farmer ? resolved.farmName : null,
       userName: resolved.name,
       userPhone: resolved.phone,
       userEmail: email,
+      userAvatarUrl: resolved.avatarUrl,
+      farmCoverUrl: role == UserRole.farmer ? resolved.coverUrl : null,
       role: role,
       kycStatus: initialKyc,
-      clearUserAddress: role == UserRole.customer,
     );
 
     // Immediately persist session so reopening the app never loses auth state
@@ -341,7 +416,7 @@ class AuthNotifier extends Notifier<AuthState> {
       'farmName': ?farmName,
       'region': ?region,
       'address': ?address,
-    }, fallbackUserId: 'user_farmer_2');
+    }, fallbackUserId: state.farmerId ?? 'user_farmer_2');
   }
 
   Future<void> updateKycStatus(KycStatus newStatus) async {
@@ -349,7 +424,7 @@ class AuthNotifier extends Notifier<AuthState> {
     await _storage.updateKycStatus(newStatus.apiValue);
     await _patchProfileSilently(
       {'verificationStatus': newStatus.apiValue},
-      fallbackUserId: 'user_farmer_2',
+      fallbackUserId: state.farmerId ?? 'user_farmer_2',
     );
   }
 
@@ -372,7 +447,7 @@ class AuthNotifier extends Notifier<AuthState> {
     if (syncBackend) {
       await _patchProfileSilently(
         {'coverUrl': coverUrl},
-        fallbackUserId: 'user_farmer_2',
+        fallbackUserId: state.farmerId ?? 'user_farmer_2',
       );
     }
   }
@@ -414,14 +489,24 @@ class AuthNotifier extends Notifier<AuthState> {
     unawaited(_resaveSession());
   }
 
-  /// Updates current user address in auth state and persists to secure storage and backend
+  /// Updates current user personal delivery address in auth state and persists to secure storage
   void updateUserAddress(String newAddress) {
     final clean = newAddress.trim();
     state = state.copyWith(userAddress: clean);
     unawaited(_storage.saveActiveAddress(clean));
-    if (state.isAuthenticated) {
+    if (state.isAuthenticated && !state.isFarmer) {
       unawaited(_patchProfileSilently({'address': clean}));
     }
+  }
+
+  /// Updates public farm pickup location for the logged-in farmer in backend profile
+  Future<void> updateFarmLocation(String newLocation) async {
+    final clean = newLocation.trim();
+    if (clean.isEmpty) return;
+    await _patchProfileSilently(
+      {'address': clean},
+      fallbackUserId: state.farmerId,
+    );
   }
 
   /// Updates user name and optionally farm name in state, secure storage and backend
@@ -452,7 +537,10 @@ class AuthNotifier extends Notifier<AuthState> {
     }
 
     if (patchData.isNotEmpty) {
-      await _patchProfileSilently(patchData, fallbackUserId: 'user_farmer_2');
+      await _patchProfileSilently(
+        patchData,
+        fallbackUserId: state.farmerId ?? 'user_farmer_2',
+      );
     }
   }
 
@@ -653,9 +741,16 @@ class AuthNotifier extends Notifier<AuthState> {
     final farmerProfile = user?['farmerProfile'] as Map<String, dynamic>?;
     final token = data['token'] as String? ?? 'ak_token';
     final userId = user?['id'] as String? ?? state.userId ?? 'user_1';
-    final farmerId = farmerProfile?['id'] as String? ?? state.farmerId;
-    final serverFarmName =
-        farmerProfile?['farmName'] as String? ?? state.farmName ?? farmName;
+    final isSameUser = state.userId == userId;
+    final farmerId = role == UserRole.farmer
+        ? (farmerProfile?['id'] as String? ??
+            (isSameUser ? state.farmerId : null))
+        : null;
+    final serverFarmName = role == UserRole.farmer
+        ? (farmerProfile?['farmName'] as String? ??
+            (isSameUser ? state.farmName : null) ??
+            farmName)
+        : null;
     final serverFullName =
         user?['fullName'] as String? ?? state.userName ?? name;
     final serverPhone = user?['phoneNumber'] as String? ??
@@ -668,13 +763,16 @@ class AuthNotifier extends Notifier<AuthState> {
     final serverAvatarUrl =
         (rawServerAvatar != null && rawServerAvatar.trim().isNotEmpty)
             ? rawServerAvatar
-            : state.userAvatarUrl;
-    final serverCoverUrl = farmerProfile?['coverUrl'] as String? ??
-        state.farmCoverUrl ??
-        coverUrl;
+            : (isSameUser ? state.userAvatarUrl : null);
+    final serverCoverUrl = role == UserRole.farmer
+        ? (farmerProfile?['coverUrl'] as String? ??
+            (isSameUser ? state.farmCoverUrl : null) ??
+            coverUrl)
+        : null;
     final kycStr = user?['verificationStatus'] as String?;
 
-    state = state.copyWith(
+    state = AuthState(
+      isAuthenticated: true,
       userId: userId,
       farmerId: farmerId,
       farmName: serverFarmName,
@@ -683,6 +781,8 @@ class AuthNotifier extends Notifier<AuthState> {
       userEmail: serverEmail,
       userAvatarUrl: serverAvatarUrl,
       farmCoverUrl: serverCoverUrl,
+      userAddress: isSameUser ? state.userAddress : null,
+      role: role,
       kycStatus: KycStatus.fromString(kycStr),
     );
 

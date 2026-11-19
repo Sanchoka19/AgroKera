@@ -568,4 +568,67 @@ void main() {
       expect(find.textContaining('შეკვეთა გაუქმდა მარაგის არ არსებობის გამო'), findsOneWidget);
     });
   });
+
+  group('Multi-Customer Account Isolation Tests', () {
+    test('sabaevgenidze0919@gmail.com and client@agrokera.ge have isolated userIds, names, phones and orders', () async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      // 1. Login as client@agrokera.ge
+      container.read(authStateProvider.notifier).login(
+        email: 'client@agrokera.ge',
+        role: UserRole.customer,
+      );
+      final client1Auth = container.read(authStateProvider);
+      expect(client1Auth.userId, equals('user_client_1'));
+      expect(client1Auth.userName, equals('შპს "გემრიელი რესტორანი"'));
+
+      final orderForClient1 = await container
+          .read(farmerOrdersProvider.notifier)
+          .createOrderFromCart(
+            cartItems: const [
+              CartItemModel(
+                id: 'prod_1',
+                title: 'კომბოსტო',
+                packageText: '1 კგ',
+                farmerName: 'გიორგის ფერმა',
+                farmerId: 'farmer_2',
+                pricePerUnit: 15.0,
+                quantity: 2,
+                imageUrl: '',
+              ),
+            ],
+            deliveryAddress: 'თბილისი',
+            deliveryTimeWindow: 'დღეს, 14:00 - 16:00',
+          );
+      expect(orderForClient1.clientId, equals('user_client_1'));
+      expect(
+        container
+            .read(farmerOrdersProvider)
+            .clientOrders
+            .any((o) => o.id == orderForClient1.id),
+        isTrue,
+      );
+
+      // 2. Switch to sabaevgenidze0919@gmail.com
+      container.read(authStateProvider.notifier).login(
+        email: 'sabaevgenidze0919@gmail.com',
+        role: UserRole.customer,
+      );
+      final sabaAuth = container.read(authStateProvider);
+      expect(sabaAuth.userId, equals('user_client_sabaevgenidze0919_gmail_com'));
+      expect(sabaAuth.userId, isNot(equals(client1Auth.userId)));
+      expect(sabaAuth.userName, equals('საბა ევგენიძე'));
+      expect(sabaAuth.userPhone, isNot(equals(client1Auth.userPhone)));
+
+      // Saba must NOT see client@agrokera.ge's order!
+      expect(
+        container
+            .read(farmerOrdersProvider)
+            .clientOrders
+            .any((o) => o.id == orderForClient1.id),
+        isFalse,
+      );
+    });
+  });
 }

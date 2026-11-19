@@ -15,6 +15,11 @@ import 'farmer_orders_provider.dart';
 class OrderChatNotifier extends Notifier<Map<String, List<OrderMessage>>> {
   @override
   Map<String, List<OrderMessage>> build() {
+    ref.listen(authStateProvider, (prev, next) {
+      if (prev?.userId != next.userId) {
+        state = const {};
+      }
+    });
     return const {};
   }
 
@@ -154,7 +159,14 @@ final orderChatProvider =
 /// Tracks the last read timestamp per order chat in the current session
 class OrderChatReadNotifier extends Notifier<Map<String, DateTime>> {
   @override
-  Map<String, DateTime> build() => const {};
+  Map<String, DateTime> build() {
+    ref.listen(authStateProvider, (prev, next) {
+      if (prev?.userId != next.userId) {
+        state = const {};
+      }
+    });
+    return const {};
+  }
 
   /// Marks all messages and chat notifications for [orderId] as read
   void markAsRead(String orderId) {

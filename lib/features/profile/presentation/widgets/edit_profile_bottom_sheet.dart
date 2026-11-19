@@ -45,7 +45,7 @@ class _EditProfileBottomSheetState extends ConsumerState<EditProfileBottomSheet>
     super.initState();
     final auth = ref.read(authStateProvider);
     _nameController = TextEditingController(
-      text: auth.userName ?? (auth.isFarmer ? 'რევაზ ბერიძე' : 'საბა ევგენიძე'),
+      text: auth.userName ?? (auth.isFarmer ? 'ფერმერი' : 'მომხმარებელი'),
     );
     _farmNameController = TextEditingController(
       text: auth.farmName ?? (auth.isFarmer ? 'ჩემი მეურნეობა' : ''),

@@ -471,7 +471,7 @@ class MarketplaceNotifier extends Notifier<MarketplaceState> {
     List<FarmerModel> updatedFarmers;
     if (exists) {
       updatedFarmers = state.farmers.map((f) {
-        if (f.id == farmerId || f.id == 'farmer_1' || f.id == 'farmer_2') {
+        if (f.id == farmerId) {
           return f.copyWith(location: clean);
         }
         return f;
@@ -501,6 +501,7 @@ class MarketplaceNotifier extends Notifier<MarketplaceState> {
     String? farmName,
     String? farmerName,
   }) {
+    if (farmerId == null || farmerId.isEmpty) return;
     final cleanFarm = farmName?.trim();
     final cleanFarmer = farmerName?.trim();
     if ((cleanFarm == null || cleanFarm.isEmpty) &&
@@ -509,10 +510,7 @@ class MarketplaceNotifier extends Notifier<MarketplaceState> {
     }
 
     final updatedFarmers = state.farmers.map((f) {
-      final matches = (farmerId != null && f.id == farmerId) ||
-          f.id == 'farmer_1' ||
-          f.id == 'farmer_2';
-      if (matches) {
+      if (f.id == farmerId) {
         return f.copyWith(
           farmName: (cleanFarm != null && cleanFarm.isNotEmpty)
               ? cleanFarm
@@ -525,7 +523,19 @@ class MarketplaceNotifier extends Notifier<MarketplaceState> {
       return f;
     }).toList();
 
-    state = state.copyWith(farmers: updatedFarmers);
+    final updatedProducts = (cleanFarm != null && cleanFarm.isNotEmpty)
+        ? state.products.map((p) {
+            if (p.farmerId == farmerId) {
+              return p.copyWith(farmerName: cleanFarm);
+            }
+            return p;
+          }).toList()
+        : state.products;
+
+    state = state.copyWith(
+      farmers: updatedFarmers,
+      products: updatedProducts,
+    );
   }
 
   void updateFarmerMedia({
@@ -533,6 +543,7 @@ class MarketplaceNotifier extends Notifier<MarketplaceState> {
     String? avatarUrl,
     String? coverUrl,
   }) {
+    if (farmerId == null || farmerId.isEmpty) return;
     final cleanAvatar = avatarUrl?.trim();
     final cleanCover = coverUrl?.trim();
     if ((cleanAvatar == null || cleanAvatar.isEmpty) &&
@@ -541,9 +552,7 @@ class MarketplaceNotifier extends Notifier<MarketplaceState> {
     }
 
     final updatedFarmers = state.farmers.map((f) {
-      final matches = (farmerId != null && f.id == farmerId) ||
-          (farmerId == null && (f.id == 'farmer_1' || f.id == 'farmer_2'));
-      if (matches) {
+      if (f.id == farmerId) {
         return f.copyWith(
           avatarUrl: (cleanAvatar != null && cleanAvatar.isNotEmpty)
               ? cleanAvatar

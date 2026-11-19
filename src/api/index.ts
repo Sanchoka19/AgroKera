@@ -337,12 +337,15 @@ export default {
         if (!user) {
           const slug = (normalizedEmail || `${Date.now()}`)
             .replace(/[^a-z0-9]/g, "_");
+          const emailPrefix = normalizedEmail
+            ? normalizedEmail.split("@")[0]
+            : "მომხმარებელი";
           user = await prisma.user.create({
             data: {
               id: roleEnum === Role.FARMER ? `user_farmer_${slug}` : `user_client_${slug}`,
               fullName:
                 body.name ||
-                (roleEnum === Role.FARMER ? "გიორგი ბერიძე" : "საბა ევგენიძე"),
+                (roleEnum === Role.FARMER ? "ფერმერი" : emailPrefix),
               phoneNumber:
                 body.phone && body.phone !== "+995 599 12 34 56"
                   ? body.phone
@@ -1147,6 +1150,7 @@ export default {
       if (method === "POST" && path === "/api/orders") {
         const body = (await request.json()) as {
           clientId?: string;
+          clientEmail?: string;
           farmerId?: string;
           contactPerson?: string;
           contactPhone?: string;
@@ -1173,28 +1177,45 @@ export default {
         const totalAmount = body.hasVat ? subtotal * 1.18 : subtotal;
 
         const createdOrder = await prisma.$transaction(async (tx) => {
-          // Resolve valid client user
-          let resolvedClientId = body.clientId || "user_client_1";
-          const existingClient = await tx.user.findUnique({
+          // Resolve valid isolated client user (never fall back to another client's account)
+          const normalizedClientEmail = body.clientEmail?.trim().toLowerCase();
+          let resolvedClientId =
+            body.clientId ||
+            (normalizedClientEmail
+              ? `user_client_${normalizedClientEmail.replace(/[^a-z0-9]/g, "_")}`
+              : "user_client_1");
+
+          let existingClient = await tx.user.findUnique({
             where: { id: resolvedClientId },
           });
-          if (!existingClient) {
-            const firstClient = await tx.user.findFirst({
-              where: { role: Role.CLIENT },
-            });
-            if (firstClient) {
-              resolvedClientId = firstClient.id;
-            } else {
-              const createdClient = await tx.user.create({
-                data: {
-                  fullName: body.contactPerson || "საბა ევგენიძე",
-                  phoneNumber: body.contactPhone || `+995599${Math.floor(100000 + Math.random() * 900000)}`,
-                  role: Role.CLIENT,
-                  verificationStatus: VerificationStatus.VERIFIED,
+          if (!existingClient && normalizedClientEmail) {
+            existingClient = await tx.user.findFirst({
+              where: {
+                email: {
+                  equals: normalizedClientEmail,
+                  mode: "insensitive",
                 },
-              });
-              resolvedClientId = createdClient.id;
-            }
+              },
+            });
+          }
+          if (existingClient) {
+            resolvedClientId = existingClient.id;
+          } else {
+            const createdClient = await tx.user.create({
+              data: {
+                id: resolvedClientId,
+                email: normalizedClientEmail || `${resolvedClientId}@agrokera.ge`,
+                fullName:
+                  body.contactPerson ||
+                  (normalizedClientEmail
+                    ? normalizedClientEmail.split("@")[0]
+                    : "მომხმარებელი"),
+                phoneNumber: `+995599${Math.floor(100000 + Math.random() * 900000)}`,
+                role: Role.CLIENT,
+                verificationStatus: VerificationStatus.VERIFIED,
+              },
+            });
+            resolvedClientId = createdClient.id;
           }
 
           // Resolve products & decrement product stock
@@ -1251,7 +1272,8 @@ export default {
                 body.fulfillmentType === "SELF_PICKUP"
                   ? FulfillmentType.SELF_PICKUP
                   : FulfillmentType.FARMER_DELIVERY,
-              contactPerson: body.contactPerson || "საბა ევგენიძე",
+              contactPerson:
+                body.contactPerson || existingClient?.fullName || "მომხმარებელი",
               contactPhone: body.contactPhone || "+995 599 12 34 56",
               deliveryAddress: body.deliveryAddress || "თბილისი, რუსთაველის 14",
               deliveryTimeWindow: body.deliveryTimeWindow || "დღეს, 16:00 - 19:00",

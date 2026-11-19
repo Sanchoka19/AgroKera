@@ -5,6 +5,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:agrokera/core/theme/app_colors.dart';
 import 'package:agrokera/core/widgets/app_toast.dart';
 import 'package:agrokera/core/widgets/primary_button.dart';
+import 'package:agrokera/features/auth/presentation/screens/auth_success_splash_screen.dart';
 import '../models/farmer_onboarding_state.dart';
 import '../providers/farmer_onboarding_provider.dart';
 import '../providers/farmer_onboarding_validator.dart';
@@ -160,11 +161,7 @@ class _FarmerOnboardingScreenState extends ConsumerState<FarmerOnboardingScreen>
 
   void _onCompleteOnboarding() {
     ref.read(farmerOnboardingProvider.notifier).completeOnboarding();
-    Navigator.of(context).popUntil((route) => route.isFirst);
-    AppToast.success(
-      context,
-      'ფერმერის პროფილი წარმატებით შეიქმნა და ვერიფიცირდა!',
-    );
+    AuthSuccessSplashScreen.navigate(context, message: 'ფერმერის პროფილი შეიქმნა');
   }
 
   Widget _buildStepContent(int currentStep) {

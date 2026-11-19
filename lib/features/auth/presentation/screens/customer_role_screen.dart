@@ -6,8 +6,8 @@ import '../../../../core/auth/auth_state_provider.dart';
 import '../../../../core/constants/app_assets.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
-import '../../../../core/widgets/app_toast.dart';
 import '../../../../core/widgets/primary_button.dart';
+import 'auth_success_splash_screen.dart';
 
 /// Screen: მომხმარებელი (Customer Role Modern Overview Screen)
 /// Reimagined with Modern Hero Card & 2x2 Bento Feature Grid (No Emojis):
@@ -28,8 +28,7 @@ class CustomerRoleScreen extends ConsumerWidget {
       phone: currentAuth.userPhone,
       email: email.isNotEmpty ? email : 'customer@agrokera.ge',
     );
-    Navigator.of(context).popUntil((route) => route.isFirst);
-    AppToast.success(context, 'წარმატებით დარეგისტრირდით მომხმარებლად!');
+    AuthSuccessSplashScreen.navigate(context, message: 'რეგისტრაცია წარმატებულია');
   }
 
   @override

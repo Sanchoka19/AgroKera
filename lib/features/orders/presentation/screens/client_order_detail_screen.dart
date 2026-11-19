@@ -213,19 +213,6 @@ class _ClientOrderDetailScreenState
                         context,
                         'ჩაბარების PIN კოდი (${order.deliveryPin}) გაეგზავნა ფერმერს შეკვეთის დასასრულებლად!',
                       );
-
-                      // Prompt review prompt immediately after handing over PIN
-                      final reviewsState = ref.read(reviewsProvider);
-                      if (reviewsState.reviewsByOrder[order.id] == null) {
-                        Future.delayed(const Duration(milliseconds: 600), () {
-                          if (mounted) {
-                            OrderReviewBottomSheet.show(
-                              context: context,
-                              order: order,
-                            );
-                          }
-                        });
-                      }
                     }
                   },
                 ),

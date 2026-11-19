@@ -3,10 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'core/services/push_notification_service.dart';
 import 'core/auth/auth_state_provider.dart';
+import 'core/storage/secure_storage_service.dart';
 import 'core/theme/app_theme.dart';
 import 'features/cart_checkout/presentation/providers/cart_provider.dart';
 import 'features/marketplace/presentation/providers/favorites_provider.dart';
 import 'features/navigation/presentation/screens/main_nav_screen.dart';
+import 'features/splash/presentation/screens/splash_screen.dart';
 import 'features/notifications/data/models/notification_model.dart';
 import 'features/notifications/presentation/providers/notifications_provider.dart';
 import 'features/notifications/presentation/notification_navigator.dart';
@@ -64,16 +66,20 @@ Future<void> main() async {
     debugPrint('Push notification service error: $e');
   }
 
-  await Future.wait([
+  final storage = container.read(secureStorageProvider);
+  final results = await Future.wait([
     container.read(authStateProvider.notifier).restoreSession(),
     container.read(cartProvider.notifier).restoreCart(),
     container.read(favoritesProvider.notifier).restoreFavorites(),
+    storage.hasSeenSplash(),
   ]);
+
+  final hasSeenSplash = results[3] as bool;
 
   runApp(
     UncontrolledProviderScope(
       container: container,
-      child: const AgroKeraApp(),
+      child: AgroKeraApp(hasSeenSplash: hasSeenSplash),
     ),
   );
 
@@ -93,7 +99,12 @@ Future<void> main() async {
 }
 
 class AgroKeraApp extends StatelessWidget {
-  const AgroKeraApp({super.key});
+  final bool hasSeenSplash;
+
+  const AgroKeraApp({
+    super.key,
+    this.hasSeenSplash = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -103,7 +114,9 @@ class AgroKeraApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       themeMode: ThemeMode.light,
-      home: const MainNavScreen(),
+      home: hasSeenSplash
+          ? const MainNavScreen(initialIndex: 2)
+          : const SplashScreen(),
     );
   }
 }

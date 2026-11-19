@@ -27,6 +27,7 @@ class SecureStorageService {
   static const _notificationSettingsKey = 'agrokera_notification_settings_json';
   static const _farmerDeliverySettingsMapKey =
       'agrokera_farmer_delivery_settings_map';
+  static const _hasSeenSplashKey = 'agrokera_has_seen_splash';
 
   final FlutterSecureStorage _storage;
 
@@ -60,6 +61,17 @@ class SecureStorageService {
   Future<void> saveGenericString(String key, String value) => _write(key, value);
   Future<String?> readGenericString(String key) => _read(key);
   Future<void> deleteGenericString(String key) => _delete(key);
+
+  /// Checks if the user has already seen the first-time animated splash screen.
+  Future<bool> hasSeenSplash() async {
+    final value = await _read(_hasSeenSplashKey);
+    return value == 'true';
+  }
+
+  /// Marks the first-time splash screen as seen so subsequent launches are instant.
+  Future<void> markSplashAsSeen() async {
+    await _write(_hasSeenSplashKey, 'true');
+  }
 
   Future<void> saveSession({
     required String token,

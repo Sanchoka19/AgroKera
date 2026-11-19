@@ -11,6 +11,7 @@ import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/app_toast.dart';
 import '../widgets/forgot_password_sheet.dart';
 import '../widgets/google_sign_in_sheet.dart';
+import 'auth_success_splash_screen.dart';
 import 'register_screen.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -59,8 +60,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       email: email,
       role: isFarmerEmail ? UserRole.farmer : UserRole.customer,
     );
-    Navigator.of(context).popUntil((route) => route.isFirst);
-    AppToast.success(context, 'წარმატებით გაიარეთ ავტორიზაცია!');
+    AuthSuccessSplashScreen.navigate(context, message: 'ავტორიზაცია წარმატებულია');
   }
 
   Future<void> _onGoogleSignIn() async {
@@ -75,8 +75,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     );
 
     if (mounted) {
-      Navigator.of(context).popUntil((route) => route.isFirst);
-      AppToast.success(context, 'მოგესალმებით, ${account.name}!');
+      AuthSuccessSplashScreen.navigate(context, message: 'მოგესალმებით, ${account.name}');
     }
   }
 

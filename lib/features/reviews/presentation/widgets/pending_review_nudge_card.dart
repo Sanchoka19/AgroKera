@@ -20,6 +20,10 @@ class DismissedReviewPromptsNotifier extends Notifier<Set<String>> {
   void dismiss(String orderId) {
     state = {...state, orderId};
   }
+
+  void dismissAll(Iterable<String> orderIds) {
+    state = {...state, ...orderIds};
+  }
 }
 
 final dismissedReviewPromptOrderIdsProvider =
@@ -166,17 +170,18 @@ class PendingReviewNudgeCard extends ConsumerWidget {
               ),
               IconButton(
                 tooltip: 'დახურვა',
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
+                padding: const EdgeInsets.all(8),
+                constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                splashRadius: 20,
                 onPressed: () {
                   HapticFeedback.selectionClick();
                   ref
                       .read(dismissedReviewPromptOrderIdsProvider.notifier)
-                      .dismiss(pendingOrder.id);
+                      .dismissAll(clientOrders.map((o) => o.id));
                 },
                 icon: const Icon(
                   LucideIcons.x,
-                  size: 16,
+                  size: 18,
                   color: Color(0xFFB45309),
                 ),
               ),
@@ -199,6 +204,11 @@ class PendingReviewNudgeCard extends ConsumerWidget {
                         context: context,
                         order: pendingOrder,
                         initialRating: starRating,
+                        onReviewSubmitted: () {
+                          ref
+                              .read(dismissedReviewPromptOrderIdsProvider.notifier)
+                              .dismiss(pendingOrder.id);
+                        },
                       );
                     },
                     borderRadius: BorderRadius.circular(16),
@@ -222,6 +232,11 @@ class PendingReviewNudgeCard extends ConsumerWidget {
                     context: context,
                     order: pendingOrder,
                     initialRating: 5,
+                    onReviewSubmitted: () {
+                      ref
+                          .read(dismissedReviewPromptOrderIdsProvider.notifier)
+                          .dismiss(pendingOrder.id);
+                    },
                   );
                 },
                 style: ElevatedButton.styleFrom(

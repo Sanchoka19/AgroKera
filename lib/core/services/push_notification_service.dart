@@ -107,26 +107,19 @@ class PushNotificationService {
     }
   }
 
-  Future<void> initialize({Function(RemoteMessage)? onForegroundMessage}) async {
+  Future<void> initialize({
+    Function(RemoteMessage)? onForegroundMessage,
+    bool requestPermissionImmediately = false,
+  }) async {
     final fcm = _fcm;
     if (fcm == null) return;
 
     // 1. Set background messaging handler
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
-    // 2. Request permissions (Android 13+ and iOS)
-    NotificationSettings settings = await fcm.requestPermission(
-      alert: true,
-      announcement: false,
-      badge: true,
-      carPlay: false,
-      criticalAlert: false,
-      provisional: false,
-      sound: true,
-    );
-
-    if (kDebugMode) {
-      print('FCM Permission status: ${settings.authorizationStatus}');
+    // 2. Request permissions only if explicitly requested
+    if (requestPermissionImmediately) {
+      await requestPermission();
     }
 
     // 3. Setup Android notification channels for head-up notifications
@@ -262,6 +255,37 @@ class PushNotificationService {
     });
 
     await refreshToken();
+  }
+
+  /// Explicitly requests notification permissions from the OS (Android 13+ & iOS).
+  /// Should be called after user registration or sign-in, not on cold boot.
+  Future<NotificationSettings?> requestPermission() async {
+    final fcm = _fcm;
+    if (fcm == null) return null;
+
+    try {
+      final settings = await fcm.requestPermission(
+        alert: true,
+        announcement: false,
+        badge: true,
+        carPlay: false,
+        criticalAlert: false,
+        provisional: false,
+        sound: true,
+      );
+
+      if (kDebugMode) {
+        print('FCM Permission status: ${settings.authorizationStatus}');
+      }
+
+      await refreshToken();
+      return settings;
+    } catch (e) {
+      if (kDebugMode) {
+        print('FCM Permission request error: $e');
+      }
+      return null;
+    }
   }
 
   /// Fetches the FCM registration token. Safe to call multiple times.

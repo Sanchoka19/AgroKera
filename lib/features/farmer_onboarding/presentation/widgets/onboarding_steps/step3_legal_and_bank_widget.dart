@@ -88,10 +88,22 @@ class _Step3LegalAndBankWidgetState
                 ),
                 const SizedBox(height: 12),
                 ListTile(
-                  leading: const Icon(LucideIcons.camera, color: AppColors.primary),
+                  contentPadding: EdgeInsets.zero,
+                  leading: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryLight,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      LucideIcons.camera,
+                      color: AppColors.primary,
+                      size: 22,
+                    ),
+                  ),
                   title: const Text(
                     'კამერით გადაღება',
-                    style: TextStyle(fontWeight: FontWeight.w600),
+                    style: TextStyle(fontWeight: FontWeight.w700),
                   ),
                   subtitle: const Text('მოითხოვს კამერის ნებართვას'),
                   onTap: () async {
@@ -103,11 +115,24 @@ class _Step3LegalAndBankWidgetState
                     );
                   },
                 ),
+                const Divider(height: 1, color: Color(0xFFF1F5F9)),
                 ListTile(
-                  leading: const Icon(LucideIcons.image, color: AppColors.primary),
+                  contentPadding: EdgeInsets.zero,
+                  leading: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryLight,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      LucideIcons.image,
+                      color: AppColors.primary,
+                      size: 22,
+                    ),
+                  ),
                   title: const Text(
                     'გალერეიდან არჩევა',
-                    style: TextStyle(fontWeight: FontWeight.w600),
+                    style: TextStyle(fontWeight: FontWeight.w700),
                   ),
                   onTap: () async {
                     Navigator.pop(ctx);
@@ -206,7 +231,7 @@ class _Step3LegalAndBankWidgetState
                 Expanded(
                   child: OnboardingUploadBox(
                     label: 'წინა მხარე',
-                    icon: LucideIcons.contact,
+                    icon: LucideIcons.idCard,
                     isDone: state.uploadedIdFront,
                     onTap: () => _pickPhotoOrDocument(
                       label: 'პირადობის წინა მხარე',

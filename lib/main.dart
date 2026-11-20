@@ -22,7 +22,12 @@ Future<void> main() async {
   final storage = container.read(secureStorageProvider);
 
   // Fast splash check to launch UI immediately (<30ms) without blocking on heavy network/services
-  final hasSeenSplash = await storage.hasSeenSplash();
+  bool hasSeenSplash = false;
+  try {
+    hasSeenSplash = await storage.hasSeenSplash();
+  } catch (e) {
+    debugPrint('Splash check error: $e');
+  }
 
   runApp(
     UncontrolledProviderScope(

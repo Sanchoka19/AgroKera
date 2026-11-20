@@ -186,13 +186,13 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('აირჩიე სანიმუშო გარეკანი'), findsOneWidget);
-      expect(find.text('ვენახი & მინდორი (კახეთი)'), findsOneWidget);
+      expect(find.text('სოფლის პეიზაჟი & სახლი'), findsOneWidget);
 
-      await tester.tap(find.text('ვენახი & მინდორი (კახეთი)'));
+      await tester.tap(find.text('სოფლის პეიზაჟი & სახლი'));
       await tester.pumpAndSettle();
 
       expect(selected, isNotNull);
-      expect(selected?.title, 'ვენახი & მინდორი (კახეთი)');
+      expect(selected?.title, 'სოფლის პეიზაჟი & სახლი');
       expect(selected?.url, isNotEmpty);
     });
   });

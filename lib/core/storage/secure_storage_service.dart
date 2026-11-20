@@ -41,14 +41,20 @@ class SecureStorageService {
       _testMemoryStore[key] = value;
       return;
     }
-    await _storage.write(key: key, value: value);
+    try {
+      await _storage.write(key: key, value: value);
+    } catch (_) {}
   }
 
   Future<String?> _read(String key) async {
     if (isFlutterTestEnv) {
       return _testMemoryStore[key];
     }
-    return await _storage.read(key: key);
+    try {
+      return await _storage.read(key: key);
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<void> _delete(String key) async {
@@ -56,7 +62,9 @@ class SecureStorageService {
       _testMemoryStore.remove(key);
       return;
     }
-    await _storage.delete(key: key);
+    try {
+      await _storage.delete(key: key);
+    } catch (_) {}
   }
 
   Future<void> saveGenericString(String key, String value) => _write(key, value);

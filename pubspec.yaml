@@ -78,6 +78,7 @@ flutter:
     - assets/illustrations/
     - assets/illustrations/categories/
     - assets/illustrations/onboarding/
+    - assets/covers/
 
   # To add assets to your application, add an assets section, like this:
   # assets:

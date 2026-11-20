@@ -168,24 +168,40 @@ class FarmerOnboardingState {
 
   static const List<Map<String, String>> presetFarmCovers = [
     {
-      'title': 'ვენახი & მინდორი (კახეთი)',
-      'url':
-          'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=1000&auto=format&fit=crop&q=80',
+      'title': 'სოფლის პეიზაჟი & სახლი',
+      'url': 'assets/covers/cover_1.webp',
     },
     {
-      'title': 'სათბური & ბოსტანი',
-      'url':
-          'https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?w=1000&auto=format&fit=crop&q=80',
+      'title': 'ფერმერი მეურნეობაში',
+      'url': 'assets/covers/cover_2.webp',
     },
     {
-      'title': 'ხეხილის ბაღი',
-      'url':
-          'https://images.unsplash.com/photo-1618160702438-9b02ab6515c9?w=1000&auto=format&fit=crop&q=80',
+      'title': 'ხის ღობე & მწვანე მინდორი',
+      'url': 'assets/covers/cover_3.webp',
     },
     {
-      'title': 'საოჯახო მეურნეობა & მთები',
-      'url':
-          'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=1000&auto=format&fit=crop&q=80',
+      'title': 'საძოვარი & ღია სივრცე',
+      'url': 'assets/covers/cover_4.webp',
+    },
+    {
+      'title': 'სოფლის ეზო & მეცხოველეობა',
+      'url': 'assets/covers/cover_5.webp',
+    },
+    {
+      'title': 'მწვანე მინდვრები & ბუნება',
+      'url': 'assets/covers/cover_6.webp',
+    },
+    {
+      'title': 'რანჩო & ცხენები',
+      'url': 'assets/covers/cover_7.webp',
+    },
+    {
+      'title': 'აგრო-ველი & ბორცვები',
+      'url': 'assets/covers/cover_8.webp',
+    },
+    {
+      'title': 'მთის საძოვარი & ცხენები',
+      'url': 'assets/covers/cover_9.webp',
     },
   ];
 

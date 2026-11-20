@@ -3,11 +3,13 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import '../../../../core/constants/app_assets.dart';
 import '../../../../core/theme/app_colors.dart';
 
 /// Reusable, robust image viewer for Profile Avatars and Farm Cover Banners.
 ///
 /// Seamlessly handles:
+/// * Local asset images (assets/...)
 /// * Remote HTTP/HTTPS URLs
 /// * Local device files (from ImagePicker)
 /// * Inline data URLs (data:image/...)
@@ -63,8 +65,7 @@ class ProfileImageView extends StatelessWidget {
     BoxFit fit = BoxFit.cover,
     double? width,
     double? height,
-    String defaultFallbackUrl =
-        'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=1000&auto=format&fit=crop&q=80',
+    String defaultFallbackUrl = AppAssets.defaultFarmCover,
   }) {
     final effectiveUrl = (coverUrl != null && coverUrl.trim().isNotEmpty)
         ? coverUrl.trim()
@@ -76,15 +77,25 @@ class ProfileImageView extends StatelessWidget {
       fit: fit,
       width: width,
       height: height,
-      placeholder: Image.network(
-        defaultFallbackUrl,
-        fit: fit,
-        errorBuilder: (context, error, stackTrace) => Container(
-          color: AppColors.primaryLight,
-          width: width,
-          height: height,
-        ),
-      ),
+      placeholder: defaultFallbackUrl.startsWith('assets/')
+          ? Image.asset(
+              defaultFallbackUrl,
+              fit: fit,
+              errorBuilder: (context, error, stackTrace) => Container(
+                color: AppColors.primaryLight,
+                width: width,
+                height: height,
+              ),
+            )
+          : Image.network(
+              defaultFallbackUrl,
+              fit: fit,
+              errorBuilder: (context, error, stackTrace) => Container(
+                color: AppColors.primaryLight,
+                width: width,
+                height: height,
+              ),
+            ),
     );
   }
 
@@ -104,6 +115,17 @@ class ProfileImageView extends StatelessWidget {
     final url = imageUrl?.trim();
     if (url == null || url.isEmpty) {
       return _defaultFallback();
+    }
+
+    // 0. Asset image
+    if (url.startsWith('assets/')) {
+      return Image.asset(
+        url,
+        width: width,
+        height: height,
+        fit: fit,
+        errorBuilder: (context, error, stackTrace) => _defaultFallback(),
+      );
     }
 
     // 1. Network image

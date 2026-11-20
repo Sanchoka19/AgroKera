@@ -69,4 +69,16 @@ abstract final class AppAssets {
       'assets/illustrations/categories/cat_honey.svg';
   static const String categorySvgWine =
       'assets/illustrations/categories/cat_wine.svg';
+
+  // Farm Covers
+  static const String defaultFarmCover = 'assets/covers/cover_1.webp';
+  static const String cover1 = 'assets/covers/cover_1.webp';
+  static const String cover2 = 'assets/covers/cover_2.webp';
+  static const String cover3 = 'assets/covers/cover_3.webp';
+  static const String cover4 = 'assets/covers/cover_4.webp';
+  static const String cover5 = 'assets/covers/cover_5.webp';
+  static const String cover6 = 'assets/covers/cover_6.webp';
+  static const String cover7 = 'assets/covers/cover_7.webp';
+  static const String cover8 = 'assets/covers/cover_8.webp';
+  static const String cover9 = 'assets/covers/cover_9.webp';
 }

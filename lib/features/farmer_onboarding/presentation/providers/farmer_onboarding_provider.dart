@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:agrokera/core/auth/auth_state_provider.dart';
+import 'package:agrokera/core/constants/app_assets.dart';
 import 'package:agrokera/core/storage/secure_storage_service.dart';
 import 'package:agrokera/features/marketplace/presentation/providers/marketplace_provider.dart';
 import '../models/farmer_onboarding_state.dart';
@@ -308,8 +309,7 @@ class FarmerOnboardingNotifier extends Notifier<FarmerOnboardingState> {
   }
 
   void completeOnboarding() {
-    final effectiveCover = state.farmPhotoPath ??
-        'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=1000&auto=format&fit=crop&q=80';
+    final effectiveCover = state.farmPhotoPath ?? AppAssets.defaultFarmCover;
     final effectiveAddress = state.dynamicAddress.trim().isNotEmpty
         ? state.dynamicAddress.trim()
         : '${state.selectedCity}, ${state.selectedRegion}';

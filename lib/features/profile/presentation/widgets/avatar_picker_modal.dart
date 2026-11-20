@@ -105,12 +105,12 @@ class AvatarPickerModal extends StatelessWidget {
               leading: Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF1F5F9),
+                  color: AppColors.primaryLight,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(
                   LucideIcons.image,
-                  color: Color(0xFF475569),
+                  color: AppColors.primary,
                   size: 22,
                 ),
               ),

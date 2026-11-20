@@ -6,6 +6,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../farmer_onboarding/presentation/models/farmer_onboarding_state.dart';
 import '../controllers/profile_media_controller.dart';
+import 'profile_image_view.dart';
 
 /// Selection result from the [CoverPhotoPickerModal].
 sealed class CoverPickerResult {
@@ -111,8 +112,8 @@ class CoverPhotoPickerModal extends StatelessWidget {
                           child: Stack(
                             fit: StackFit.expand,
                             children: [
-                              Image.network(
-                                preset['url']!,
+                              ProfileImageView(
+                                imageUrl: preset['url']!,
                                 fit: BoxFit.cover,
                               ),
                               Container(
@@ -193,45 +194,105 @@ class CoverPhotoPickerModal extends StatelessWidget {
                 color: AppColors.textSecondary,
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
             ListTile(
-              leading: const Icon(LucideIcons.camera, color: AppColors.primary),
+              contentPadding: EdgeInsets.zero,
+              leading: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryLight,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  LucideIcons.camera,
+                  color: AppColors.primary,
+                  size: 22,
+                ),
+              ),
               title: Text(
                 'კამერით გადაღება',
                 style: GoogleFonts.notoSansGeorgian(
-                  fontWeight: FontWeight.w600,
+                  fontSize: 14.5,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF0F172A),
                 ),
               ),
-              subtitle: const Text('გადაუღე ფერმას ან მეურნეობას'),
+              subtitle: Text(
+                'გადაუღე ფერმას ან მეურნეობას',
+                style: GoogleFonts.notoSansGeorgian(
+                  fontSize: 12,
+                  color: const Color(0xFF64748B),
+                ),
+              ),
               onTap: () => Navigator.pop(
                 context,
                 const CoverSourceResult(ImageSource.camera),
               ),
             ),
+            const Divider(height: 1, color: Color(0xFFF1F5F9)),
             ListTile(
-              leading: const Icon(LucideIcons.image, color: AppColors.primary),
+              contentPadding: EdgeInsets.zero,
+              leading: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryLight,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  LucideIcons.image,
+                  color: AppColors.primary,
+                  size: 22,
+                ),
+              ),
               title: Text(
                 'გალერეიდან არჩევა',
                 style: GoogleFonts.notoSansGeorgian(
-                  fontWeight: FontWeight.w600,
+                  fontSize: 14.5,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF0F172A),
                 ),
               ),
-              subtitle: const Text('ატვირთე ლანდშაფტური სურათი'),
+              subtitle: Text(
+                'ატვირთე ლანდშაფტური სურათი',
+                style: GoogleFonts.notoSansGeorgian(
+                  fontSize: 12,
+                  color: const Color(0xFF64748B),
+                ),
+              ),
               onTap: () => Navigator.pop(
                 context,
                 const CoverSourceResult(ImageSource.gallery),
               ),
             ),
+            const Divider(height: 1, color: Color(0xFFF1F5F9)),
             ListTile(
-              leading: const Icon(LucideIcons.image, color: AppColors.primary),
+              contentPadding: EdgeInsets.zero,
+              leading: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryLight,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  LucideIcons.galleryThumbnails,
+                  color: AppColors.primary,
+                  size: 22,
+                ),
+              ),
               title: Text(
                 'სანიმუშო აგრო-გარეკანის არჩევა',
                 style: GoogleFonts.notoSansGeorgian(
-                  fontWeight: FontWeight.w600,
+                  fontSize: 14.5,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF0F172A),
                 ),
               ),
-              subtitle: const Text(
+              subtitle: Text(
                 'მზა თემატური ფოტოები (ვენახი, ბაღი, სათბური)',
+                style: GoogleFonts.notoSansGeorgian(
+                  fontSize: 12,
+                  color: const Color(0xFF64748B),
+                ),
               ),
               onTap: () async {
                 final presetResult = await showPresetPicker(context);

@@ -25,10 +25,13 @@ class _KycVerificationScreenState extends ConsumerState<KycVerificationScreen> {
   String? _backFileName;
   bool _isSubmitting = false;
 
-  Future<void> _captureKycPhoto({required bool isFront}) async {
+  Future<void> _pickKycPhoto({
+    required bool isFront,
+    required ImageSource source,
+  }) async {
     try {
       final XFile? file = await _imagePicker.pickImage(
-        source: ImageSource.camera,
+        source: source,
         preferredCameraDevice: CameraDevice.rear,
         imageQuality: 85,
       );
@@ -46,17 +49,138 @@ class _KycVerificationScreenState extends ConsumerState<KycVerificationScreen> {
         AppToast.success(
           context,
           isFront
-              ? 'პირადობის წინა მხარე წარმატებით გადაღებულია'
-              : 'პირადობის უკანა მხარე წარმატებით გადაღებულია',
+              ? 'პირადობის წინა მხარე წარმატებით აიტვირთა'
+              : 'პირადობის უკანა მხარე წარმატებით აიტვირთა',
         );
       }
     } catch (_) {
       if (!mounted) return;
       AppToast.error(
         context,
-        'კამერის გახსნა ვერ მოხერხდა. გთხოვთ დართოთ კამერის ნებართვა.',
+        'ფოტოს არჩევა ვერ მოხერხდა',
       );
     }
+  }
+
+  void _showDocumentSourceModal({required bool isFront}) {
+    final label = isFront ? 'პირადობის წინა მხარე' : 'პირადობის უკანა მხარე';
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 36,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFCBD5E1),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  label,
+                  style: GoogleFonts.notoSansGeorgian(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'აირჩიეთ დოკუმენტის ატვირთვის მეთოდი',
+                  style: GoogleFonts.notoSansGeorgian(
+                    fontSize: 12.5,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryLight,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      LucideIcons.camera,
+                      color: AppColors.primary,
+                      size: 22,
+                    ),
+                  ),
+                  title: Text(
+                    'კამერით გადაღება',
+                    style: GoogleFonts.notoSansGeorgian(
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF0F172A),
+                    ),
+                  ),
+                  subtitle: Text(
+                    'გადაუღე დოკუმენტს მკაფიო ფოტო',
+                    style: GoogleFonts.notoSansGeorgian(
+                      fontSize: 12,
+                      color: const Color(0xFF64748B),
+                    ),
+                  ),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _pickKycPhoto(isFront: isFront, source: ImageSource.camera);
+                  },
+                ),
+                const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryLight,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      LucideIcons.image,
+                      color: AppColors.primary,
+                      size: 22,
+                    ),
+                  ),
+                  title: Text(
+                    'გალერეიდან არჩევა',
+                    style: GoogleFonts.notoSansGeorgian(
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF0F172A),
+                    ),
+                  ),
+                  subtitle: Text(
+                    'აირჩიე სურათი ტელეფონის მეხსიერებიდან',
+                    style: GoogleFonts.notoSansGeorgian(
+                      fontSize: 12,
+                      color: const Color(0xFF64748B),
+                    ),
+                  ),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _pickKycPhoto(isFront: isFront, source: ImageSource.gallery);
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   Future<void> _submitForReview() async {
@@ -246,19 +370,19 @@ class _KycVerificationScreenState extends ConsumerState<KycVerificationScreen> {
                     _buildDocumentSlot(
                       title: 'პირადობის წინა მხარე (ID Front)',
                       subtitle: _frontUploaded
-                          ? 'ფოტო გადაღებულია (${_frontFileName ?? "id_front.jpg"})'
-                          : 'დააჭირეთ კამერით გადასაღებად (მოითხოვს ნებართვას)',
+                          ? 'ფოტო ატვირთულია (${_frontFileName ?? "id_front.jpg"})'
+                          : 'დააჭირეთ გადასაღებად ან ასატვირთად',
                       isUploaded: _frontUploaded,
-                      onTap: () => _captureKycPhoto(isFront: true),
+                      onTap: () => _showDocumentSourceModal(isFront: true),
                     ),
                     const SizedBox(height: 12),
                     _buildDocumentSlot(
                       title: 'პირადობის უკანა მხარე (ID Back)',
                       subtitle: _backUploaded
-                          ? 'ფოტო გადაღებულია (${_backFileName ?? "id_back.jpg"})'
-                          : 'დააჭირეთ კამერით გადასაღებად (მოითხოვს ნებართვას)',
+                          ? 'ფოტო ატვირთულია (${_backFileName ?? "id_back.jpg"})'
+                          : 'დააჭირეთ გადასაღებად ან ასატვირთად',
                       isUploaded: _backUploaded,
-                      onTap: () => _captureKycPhoto(isFront: false),
+                      onTap: () => _showDocumentSourceModal(isFront: false),
                     ),
 
                     const SizedBox(height: 24),
@@ -377,14 +501,14 @@ class _KycVerificationScreenState extends ConsumerState<KycVerificationScreen> {
               decoration: BoxDecoration(
                 color: isUploaded
                     ? const Color(0xFFDCFCE7)
-                    : const Color(0xFFF1F5F9),
+                    : AppColors.primaryLight,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
-                isUploaded ? LucideIcons.circleCheck : LucideIcons.camera,
+                isUploaded ? LucideIcons.circleCheck : LucideIcons.idCard,
                 color: isUploaded
                     ? const Color(0xFF16A34A)
-                    : const Color(0xFF64748B),
+                    : AppColors.primary,
                 size: 20,
               ),
             ),
@@ -414,10 +538,10 @@ class _KycVerificationScreenState extends ConsumerState<KycVerificationScreen> {
                 ],
               ),
             ),
-            const Icon(
-              LucideIcons.refreshCw,
+            Icon(
+              isUploaded ? LucideIcons.refreshCw : LucideIcons.chevronRight,
               size: 18,
-              color: Color(0xFF94A3B8),
+              color: isUploaded ? AppColors.primary : const Color(0xFF94A3B8),
             ),
           ],
         ),

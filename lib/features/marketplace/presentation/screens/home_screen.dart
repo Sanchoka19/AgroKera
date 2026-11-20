@@ -19,6 +19,7 @@ import '../providers/marketplace_provider.dart';
 import '../widgets/global_search_dialog.dart';
 import '../widgets/guest_promo_banner.dart';
 import '../widgets/nearby_farms_section.dart';
+import '../widgets/popular_products_section.dart';
 import '../widgets/quick_categories_bar.dart';
 import '../../../reviews/presentation/widgets/pending_review_nudge_card.dart';
 import 'categories_screen.dart';
@@ -244,6 +245,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
               // Section 1: "ახლოს მდებარე" (Nearby Farms with Real Proximity Calculation)
               const NearbyFarmsSection(),
+              const SizedBox(height: 20),
+
+              // Section 2: "პოპულარული პროდუქტები" (Horizontal Slider with Ranking Algorithm)
+              const PopularProductsSection(),
+
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Column(
@@ -251,9 +257,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   children: [
                     const SizedBox(height: 22),
 
-                    // Section 2: "პოპულარული პროდუქტები"
+                    // Section 3: "ყველა პროდუქტი"
                     Text(
-                      'პოპულარული პროდუქტები',
+                      'ყველა პროდუქტი',
                       style: AppTypography.h1.copyWith(
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
@@ -261,7 +267,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ),
                     const SizedBox(height: 12),
 
-                    // Responsive grid of products (auto 2, 3, 4+ columns based on screen width)
+                    // Responsive grid of products (capped at 16 for clean layout)
                     if (products.isEmpty)
                       marketplace.isSyncing
                           ? const ProductGridSkeleton(itemCount: 4)
@@ -288,7 +294,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 ),
                               ),
                             )
-                    else
+                    else ...[
                       MediaQuery.removePadding(
                         context: context,
                         removeTop: true,
@@ -303,7 +309,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             mainAxisSpacing: 12,
                             childAspectRatio: 0.68,
                           ),
-                          itemCount: products.length,
+                          itemCount: products.take(16).length,
                           itemBuilder: (context, index) {
                         final product = products[index];
                         final isOwner = product.isOwnedBy(
@@ -336,6 +342,52 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       },
                     ),
                   ),
+                      if (products.isNotEmpty) ...[
+                        const SizedBox(height: 16),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 48,
+                          child: OutlinedButton(
+                            onPressed: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => const CategoriesScreen(),
+                                ),
+                              );
+                            },
+                            style: OutlinedButton.styleFrom(
+                              side: const BorderSide(
+                                color: AppColors.primary,
+                                width: 1.2,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              backgroundColor: Colors.white,
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  'სრული კატალოგის ნახვა',
+                                  style: AppTypography.button.copyWith(
+                                    color: AppColors.primary,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                const Icon(
+                                  LucideIcons.arrowRight,
+                                  size: 18,
+                                  color: AppColors.primary,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
                     const SizedBox(height: 16),
                   ],
                 ),

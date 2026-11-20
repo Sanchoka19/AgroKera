@@ -31,7 +31,7 @@ class MarketplaceState {
   });
 
   List<ProductModel> get availableProducts =>
-      products.where((p) => p.isAvailable).toList();
+      products.where((p) => p.isAvailable && !p.isOutOfStock).toList();
 
   List<ProductModel> productsForFarmer(String farmerId) =>
       products.where((p) => p.farmerId == farmerId).toList();

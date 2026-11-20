@@ -171,7 +171,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           deliveryAddress: finalDeliveryAddress,
           deliveryTimeWindow: activeDeliverySlot,
           paymentMethod: paymentMethod.name.toUpperCase(),
-          hasVat: farmer.isVatPayer,
+          hasVat: false,
           deliveryFee: totalDeliveryFee,
           heavyFee: 0.0,
           platformFee: platformFee,

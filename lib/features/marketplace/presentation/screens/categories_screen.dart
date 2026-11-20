@@ -63,6 +63,7 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
             // Unified App Header (Title, Search Bar, Notifications & Cart)
             AppHeader(
               title: 'აგრო მარკეტი',
+              showBack: Navigator.canPop(context),
               showNotificationBell: true,
               showCart: true,
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),

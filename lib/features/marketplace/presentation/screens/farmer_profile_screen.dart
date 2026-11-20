@@ -259,45 +259,6 @@ class _FarmerProfileScreenState extends ConsumerState<FarmerProfileScreen>
                                           overflow: TextOverflow.ellipsis,
                                         ),
                                       ),
-                                      // Logical Placement 1: VAT badge on top right of profile card
-                                      if (farmer.isVatPayer) ...[
-                                        const SizedBox(width: 8),
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 8,
-                                            vertical: 3,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: const Color(0xFFE8F4FD),
-                                            borderRadius:
-                                                BorderRadius.circular(6),
-                                            border: Border.all(
-                                              color: AppColors.info
-                                                  .withValues(alpha: 0.3),
-                                            ),
-                                          ),
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              const Icon(
-                                                LucideIcons.landmark,
-                                                size: 11,
-                                                color: AppColors.info,
-                                              ),
-                                              const SizedBox(width: 4),
-                                              Text(
-                                                'დღგ',
-                                                style: AppTypography.caption
-                                                    .copyWith(
-                                                  color: AppColors.info,
-                                                  fontWeight: FontWeight.w800,
-                                                  fontSize: 10,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ],
                                     ],
                                   ),
                                   const SizedBox(height: 3),

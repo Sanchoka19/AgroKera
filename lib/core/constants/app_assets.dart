@@ -26,6 +26,14 @@ abstract final class AppAssets {
   static const String emptyProducts = 'assets/illustrations/empty_products.svg';
   static const String emptySearch = 'assets/illustrations/empty_products.svg';
 
+  // Onboarding Illustrations
+  static const String onboarding1 =
+      'assets/illustrations/onboarding/onboarding-1.svg';
+  static const String onboarding2 =
+      'assets/illustrations/onboarding/onboarding-2.svg';
+  static const String onboarding3 =
+      'assets/illustrations/onboarding/onboarding-3.svg';
+
   // Categories (3D Bento Illustrations)
   static const String categoryFruit =
       'assets/illustrations/categories/fruit.png';

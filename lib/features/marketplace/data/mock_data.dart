@@ -16,7 +16,7 @@ abstract final class MockData {
       reviewCount: 0,
       totalRatings: 0,
       isVerified: true,
-      isVatPayer: true,
+      isVatPayer: false,
       avatarUrl:
           'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&auto=format&fit=crop&q=80',
       coverUrl:
@@ -71,7 +71,7 @@ abstract final class MockData {
       reviewCount: 0,
       totalRatings: 0,
       isVerified: true,
-      isVatPayer: true,
+      isVatPayer: false,
       avatarUrl:
           'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&auto=format&fit=crop&q=80',
       coverUrl:

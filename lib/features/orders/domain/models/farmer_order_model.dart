@@ -254,15 +254,15 @@ class FarmerOrder {
   /// Subtotal (sum of item prices)
   double get subtotal => items.fold(0.0, (sum, item) => sum + item.price);
 
-  /// Calculated 18% VAT if farmer is registered as VAT payer
-  double get vatAmount => hasVat ? (subtotal * 0.18) : 0.0;
+  /// Calculated 18% VAT (defaulted to 0.0 as VAT is excluded from standard consumer prices)
+  double get vatAmount => 0.0;
 
   /// Total logistics & delivery fee (standard delivery + heavy fee)
   double get totalDeliveryFee => isPickup ? 0.0 : (deliveryFee + heavyFee);
 
-  /// Full Total Amount (Subtotal + VAT + Delivery Fee + Heavy Fee + Platform Fee)
+  /// Full Total Amount (Subtotal + Delivery Fee + Heavy Fee + Platform Fee)
   double get totalAmount =>
-      subtotal + vatAmount + (isPickup ? 0.0 : (deliveryFee + heavyFee)) + platformFee;
+      subtotal + (isPickup ? 0.0 : (deliveryFee + heavyFee)) + platformFee;
 
   /// User friendly summary text of products for cards
   String get productsSummary {

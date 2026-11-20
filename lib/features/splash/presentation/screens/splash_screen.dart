@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/auth/auth_state_provider.dart';
 import '../../../../core/storage/secure_storage_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../navigation/presentation/screens/main_nav_screen.dart';
+import '../../../onboarding/presentation/screens/onboarding_screen.dart';
 import '../widgets/splash_logo_badge.dart';
 
 /// Animated Splash Screen delivering a continuous, fluid brand reveal.
@@ -96,22 +98,33 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
     _controller.addStatusListener((status) {
       if (status == AnimationStatus.completed) {
-        _navigateToHomeScreen();
+        _navigateToNextScreen();
       }
     });
   }
 
-  void _navigateToHomeScreen() {
+  Future<void> _navigateToNextScreen() async {
     if (_navigated || !mounted) return;
     _navigated = true;
 
-    ref.read(secureStorageProvider).markSplashAsSeen();
+    final storage = ref.read(secureStorageProvider);
+    await storage.markSplashAsSeen();
+    final hasSeenOnboarding = await storage.hasSeenOnboarding();
+    final isAuthenticated = ref.read(authStateProvider).isAuthenticated;
+
+    if (!mounted) return;
+
+    final Widget targetScreen = (!isAuthenticated && !hasSeenOnboarding)
+        ? const OnboardingScreen()
+        : const MainNavScreen(initialIndex: 0);
 
     Navigator.of(context).pushReplacement(
       PageRouteBuilder(
-        transitionDuration: Duration.zero,
-        pageBuilder: (context, animation, secondaryAnimation) =>
-            const MainNavScreen(initialIndex: 0),
+        transitionDuration: const Duration(milliseconds: 250),
+        pageBuilder: (context, animation, secondaryAnimation) => targetScreen,
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
       ),
     );
   }

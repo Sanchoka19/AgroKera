@@ -692,7 +692,7 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
     final resolvedFarmer = matchedFarmer ??
         marketplace.farmers.where((f) => f.id == targetFarmerId).firstOrNull;
 
-    final resolvedHasVat = hasVat ?? (matchedFarmer?.isVatPayer ?? false);
+    final resolvedHasVat = false;
 
     final newOrder = FarmerOrder(
       id: generatedId,

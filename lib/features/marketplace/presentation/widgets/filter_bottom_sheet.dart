@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import '../../../../core/constants/app_categories.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/primary_button.dart';
@@ -55,14 +56,10 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
     'სამეგრელო',
   ];
 
-  final List<String> _categories = const [
-    'ყველა',
-    'ბოსტნეული',
-    'ხილი',
-    'კენკრა',
-    'ციტრუსი',
-    'ცხოველური პროდუქტები',
-  ];
+  List<String> get _categories => [
+        'ყველა',
+        ...AppCategories.categories.map((c) => c.name),
+      ];
 
   final List<String> _sortOptions = const [
     'პოპულარული',

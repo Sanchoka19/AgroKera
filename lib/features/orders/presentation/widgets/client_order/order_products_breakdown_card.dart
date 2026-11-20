@@ -265,13 +265,6 @@ class OrderProductsBreakdownCard extends ConsumerWidget {
             'პროდუქტების ჯამი',
             '₾${order.subtotal.toStringAsFixed(2)}',
           ),
-          if (order.hasVat) ...[
-            const SizedBox(height: 4),
-            _buildSummaryRow(
-              'დღგ (18%)',
-              '₾${order.vatAmount.toStringAsFixed(2)}',
-            ),
-          ],
           if (order.isPickup) ...[
             const SizedBox(height: 4),
             _buildSummaryRow('მიტანა', 'თვითგატანა (0 ₾)'),

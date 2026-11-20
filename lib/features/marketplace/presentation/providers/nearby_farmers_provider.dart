@@ -26,9 +26,17 @@ final nearbyFarmersProvider = Provider<NearbyFarmersState>((ref) {
   final addressState = ref.watch(userAddressProvider);
   final activeAddress = addressState.activeAddressModel;
 
-  final visibleFarmers = authState.isFarmer
-      ? marketplace.farmers.where((f) => !f.isOwnedBy(authState)).toList()
-      : marketplace.farmers;
+  // Only include farmers who have at least one purchasable product in stock
+  // (under Rule B: isAvailable and stockQuantity >= minOrderQuantity)
+  final activeFarmerIdsWithStock = marketplace.availableProducts
+      .map((p) => p.farmerId)
+      .toSet();
+
+  final visibleFarmers = (authState.isFarmer
+          ? marketplace.farmers.where((f) => !f.isOwnedBy(authState))
+          : marketplace.farmers)
+      .where((f) => activeFarmerIdsWithStock.contains(f.id))
+      .toList();
 
   LatLng origin;
   bool hasUserAddressOrigin = false;
@@ -57,7 +65,7 @@ final nearbyFarmersProvider = Provider<NearbyFarmersState>((ref) {
   );
 
   return NearbyFarmersState(
-    farmers: sortedFarmers,
+    farmers: sortedFarmers.take(8).toList(),
     hasUserAddressOrigin: hasUserAddressOrigin,
     originDescription: originDescription,
   );

@@ -28,6 +28,7 @@ class SecureStorageService {
   static const _farmerDeliverySettingsMapKey =
       'agrokera_farmer_delivery_settings_map';
   static const _hasSeenSplashKey = 'agrokera_has_seen_splash';
+  static const _hasSeenOnboardingKey = 'agrokera_has_seen_onboarding';
 
   final FlutterSecureStorage _storage;
 
@@ -71,6 +72,17 @@ class SecureStorageService {
   /// Marks the first-time splash screen as seen so subsequent launches are instant.
   Future<void> markSplashAsSeen() async {
     await _write(_hasSeenSplashKey, 'true');
+  }
+
+  /// Checks if the user has completed or skipped the onboarding flow.
+  Future<bool> hasSeenOnboarding() async {
+    final value = await _read(_hasSeenOnboardingKey);
+    return value == 'true';
+  }
+
+  /// Marks the onboarding flow as seen.
+  Future<void> markOnboardingAsSeen() async {
+    await _write(_hasSeenOnboardingKey, 'true');
   }
 
   Future<void> saveSession({

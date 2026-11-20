@@ -40,17 +40,21 @@ class _OrderChatScreenState extends ConsumerState<OrderChatScreen> {
   final _scrollController = ScrollController();
   bool _isSending = false;
   Timer? _liveSyncTimer;
+  late final OrderChatReadNotifier _readNotifier;
 
   @override
   void initState() {
     super.initState();
     PushNotificationService.activeChatOrderId = widget.order.id;
-    ref.read(orderChatReadProvider.notifier).markAsRead(widget.order.id);
+    _readNotifier = ref.read(orderChatReadProvider.notifier);
     unawaited(
       Future.microtask(() async {
-        await ref.read(orderChatProvider.notifier).loadMessages(widget.order.id);
         if (mounted) {
-          ref.read(orderChatReadProvider.notifier).markAsRead(widget.order.id);
+          _readNotifier.markAsRead(widget.order.id);
+          await ref.read(orderChatProvider.notifier).loadMessages(widget.order.id);
+          if (mounted) {
+            _readNotifier.markAsRead(widget.order.id);
+          }
         }
       }),
     );
@@ -74,7 +78,6 @@ class _OrderChatScreenState extends ConsumerState<OrderChatScreen> {
     _liveSyncTimer?.cancel();
     _textController.dispose();
     _scrollController.dispose();
-    ref.read(orderChatReadProvider.notifier).markAsRead(widget.order.id);
     super.dispose();
   }
 

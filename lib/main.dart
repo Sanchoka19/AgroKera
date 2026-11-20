@@ -130,7 +130,7 @@ class AgroKeraApp extends StatelessWidget {
       theme: AppTheme.lightTheme,
       themeMode: ThemeMode.light,
       home: hasSeenSplash
-          ? const MainNavScreen(initialIndex: 2)
+          ? const MainNavScreen(initialIndex: 0)
           : const SplashScreen(),
     );
   }

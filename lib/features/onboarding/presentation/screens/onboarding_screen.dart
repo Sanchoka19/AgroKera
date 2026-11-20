@@ -1,6 +1,9 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import '../../../../core/constants/app_assets.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../auth/presentation/screens/login_screen.dart';
 import '../../../navigation/presentation/screens/main_nav_screen.dart';
@@ -31,7 +34,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
     _pageController = PageController();
     _exitController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 450),
+      duration: const Duration(milliseconds: 400),
     );
     _curtainSlideAnimation = Tween<Offset>(
       begin: Offset.zero,
@@ -47,6 +50,17 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
         _finalizeNavigation();
       }
     });
+
+    _precacheRemainingAssets();
+  }
+
+  void _precacheRemainingAssets() {
+    unawaited(Future.wait([
+      const SvgAssetLoader(AppAssets.onboarding1).loadBytes(null),
+      const SvgAssetLoader(AppAssets.onboarding2).loadBytes(null),
+      const SvgAssetLoader(AppAssets.onboarding3).loadBytes(null),
+      const SvgAssetLoader(AppAssets.logoGreen).loadBytes(null),
+    ]));
   }
 
   @override
@@ -61,7 +75,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
     final state = ref.read(onboardingProvider);
     if (!state.isLastPage) {
       _pageController.nextPage(
-        duration: const Duration(milliseconds: 350),
+        duration: const Duration(milliseconds: 320),
         curve: Curves.easeInOutCubic,
       );
     }
@@ -72,16 +86,16 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
     final state = ref.read(onboardingProvider);
     if (!state.isFirstPage) {
       _pageController.previousPage(
-        duration: const Duration(milliseconds: 350),
+        duration: const Duration(milliseconds: 320),
         curve: Curves.easeInOutCubic,
       );
     }
   }
 
-  Future<void> _onFinish() async {
+  void _onFinish() {
     if (_isExiting) return;
-    await ref.read(onboardingProvider.notifier).completeOnboarding();
-    if (!mounted) return;
+    // Mark as seen concurrently without delaying the exit animation
+    unawaited(ref.read(onboardingProvider.notifier).completeOnboarding());
 
     setState(() {
       _isExiting = true;
@@ -100,10 +114,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
     );
   }
 
-  Future<void> _onSignIn() async {
+  void _onSignIn() {
     if (_isExiting) return;
-    await ref.read(onboardingProvider.notifier).completeOnboarding();
-    if (!mounted) return;
+    unawaited(ref.read(onboardingProvider.notifier).completeOnboarding());
 
     Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => const LoginScreen()),
@@ -119,65 +132,69 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
       children: [
         // Base: MainNavScreen resting underneath, unveiled by the sliding curtain
         if (_isExiting)
-          const MainNavScreen(initialIndex: 0),
+          const RepaintBoundary(
+            child: MainNavScreen(initialIndex: 0),
+          ),
 
         // Sliding Curtain: The Onboarding Screen
         SlideTransition(
           position: _curtainSlideAnimation,
-          child: Container(
-            decoration: BoxDecoration(
-              color: AppColors.bgPrimary,
-              boxShadow: _isExiting
-                  ? [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.25),
-                        blurRadius: 24,
-                        spreadRadius: 4,
-                        offset: const Offset(8, 0),
-                      ),
-                    ]
-                  : null,
-            ),
-            child: Scaffold(
-              backgroundColor: AppColors.bgPrimary,
-              body: AnnotatedRegion<SystemUiOverlayStyle>(
-                value: SystemUiOverlayStyle.dark,
-                child: SafeArea(
-                  child: Column(
-                    children: [
-                      // Top Bar with AgroKera Logo on Left and Skip Action on Right
-                      OnboardingHeader(
-                        isLastPage: state.isLastPage,
-                        onSkip: _onFinish,
-                      ),
-
-                      // Page Carousel
-                      Expanded(
-                        child: PageView.builder(
-                          controller: _pageController,
-                          itemCount: state.totalPages,
-                          onPageChanged: (index) {
-                            ref.read(onboardingProvider.notifier).setPage(index);
-                          },
-                          itemBuilder: (context, index) {
-                            return OnboardingSlideWidget(
-                              item: state.items[index],
-                            );
-                          },
+          child: RepaintBoundary(
+            child: Container(
+              decoration: BoxDecoration(
+                color: AppColors.bgPrimary,
+                boxShadow: _isExiting
+                    ? [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.25),
+                          blurRadius: 24,
+                          spreadRadius: 4,
+                          offset: const Offset(8, 0),
                         ),
-                      ),
+                      ]
+                    : null,
+              ),
+              child: Scaffold(
+                backgroundColor: AppColors.bgPrimary,
+                body: AnnotatedRegion<SystemUiOverlayStyle>(
+                  value: SystemUiOverlayStyle.dark,
+                  child: SafeArea(
+                    child: Column(
+                      children: [
+                        // Top Bar with AgroKera Logo on Left and Skip Action on Right
+                        OnboardingHeader(
+                          isLastPage: state.isLastPage,
+                          onSkip: _onFinish,
+                        ),
 
-                      // Bottom Navigation Controls with Arrow Buttons & Indicator
-                      OnboardingBottomControls(
-                        currentIndex: state.currentIndex,
-                        totalPages: state.totalPages,
-                        isLastPage: state.isLastPage,
-                        onNext: _onNext,
-                        onPrevious: _onPrevious,
-                        onFinish: _onFinish,
-                        onSignIn: _onSignIn,
-                      ),
-                    ],
+                        // Page Carousel
+                        Expanded(
+                          child: PageView.builder(
+                            controller: _pageController,
+                            itemCount: state.totalPages,
+                            onPageChanged: (index) {
+                              ref.read(onboardingProvider.notifier).setPage(index);
+                            },
+                            itemBuilder: (context, index) {
+                              return OnboardingSlideWidget(
+                                item: state.items[index],
+                              );
+                            },
+                          ),
+                        ),
+
+                        // Bottom Navigation Controls with Arrow Buttons & Indicator
+                        OnboardingBottomControls(
+                          currentIndex: state.currentIndex,
+                          totalPages: state.totalPages,
+                          isLastPage: state.isLastPage,
+                          onNext: _onNext,
+                          onPrevious: _onPrevious,
+                          onFinish: _onFinish,
+                          onSignIn: _onSignIn,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),

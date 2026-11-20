@@ -8,11 +8,12 @@ import '../../../navigation/presentation/screens/main_nav_screen.dart';
 import '../../../splash/presentation/widgets/splash_logo_badge.dart';
 
 /// Animated Celebration Splash Screen shown upon successful login or registration.
-/// Choreography:
-/// - 0% - 20%: Anticipation squish (1.0 -> 0.92)
-/// - 20% - 70%: Green background circle expands outward into a screen-wide wave (0.92 -> 32.0),
+/// Optimized choreography (snappy 1400ms):
+/// - 0% - 18%: Anticipation squish (1.0 -> 0.92)
+/// - 18% - 68%: Green background circle expands outward into a screen-wide wave (0.92 -> 25.0),
 ///   while the logo settles cleanly at normal scale (0.92 -> 1.0) displaying the success message.
-/// - 70% - 100%: Brief brand stabilization and smooth fade navigation into MainNavScreen.
+/// - 68% - 78%: Brief brand stabilization.
+/// - 78% - 100%: Curtain slide reveal unveiling MainNavScreen underneath.
 class AuthSuccessSplashScreen extends ConsumerStatefulWidget {
   final String? message;
   final int targetIndex;
@@ -68,7 +69,7 @@ class _AuthSuccessSplashScreenState extends ConsumerState<AuthSuccessSplashScree
   void _setupAnimations() {
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 2300),
+      duration: const Duration(milliseconds: 1400),
     );
 
     // 1. Green circle expands to fill the screen (0-18% squish, 18-68% expand, 68-100% solid)
@@ -79,12 +80,12 @@ class _AuthSuccessSplashScreenState extends ConsumerState<AuthSuccessSplashScree
         weight: 18,
       ),
       TweenSequenceItem(
-        tween: Tween<double>(begin: 0.92, end: 32.0)
+        tween: Tween<double>(begin: 0.92, end: 25.0)
             .chain(CurveTween(curve: Curves.easeInOutCubic)),
         weight: 50,
       ),
       TweenSequenceItem(
-        tween: ConstantTween<double>(32.0),
+        tween: ConstantTween<double>(25.0),
         weight: 32,
       ),
     ]).animate(_controller);
@@ -133,7 +134,7 @@ class _AuthSuccessSplashScreenState extends ConsumerState<AuthSuccessSplashScree
     if (_navigated || !mounted) return;
     _navigated = true;
 
-    // Request notification permission in context upon sign-in/registration completion
+    // Request notification permission asynchronously upon sign-in/registration completion
     unawaited(PushNotificationService().requestPermission());
 
     Navigator.of(context).pushReplacement(
@@ -159,78 +160,84 @@ class _AuthSuccessSplashScreenState extends ConsumerState<AuthSuccessSplashScree
         value: SystemUiOverlayStyle.light,
         child: AnimatedBuilder(
           animation: _controller,
-          builder: (context, _) {
+          builder: (context, child) {
             final circleScale = _circleScaleAnimation.value;
             final logoScale = _logoScaleAnimation.value;
             final curtainOffset = _curtainSlideAnimation.value;
-            final isFullyCovered = circleScale >= 25.0;
+            final isFullyCovered = circleScale >= 20.0;
+            final isCurtainSliding = curtainOffset.dx < 0;
 
             return Stack(
               fit: StackFit.expand,
               children: [
-                // Base: MainNavScreen resting underneath, unveiled by the sliding curtain
-                MainNavScreen(initialIndex: widget.targetIndex),
+                // Base: Only mount the destination screen once the curtain begins sliding
+                if (isCurtainSliding)
+                  RepaintBoundary(
+                    child: MainNavScreen(initialIndex: widget.targetIndex),
+                  ),
 
                 // Top Layer: The Emerald Curtain with logo and success message that slides to the left
                 SlideTransition(
                   position: _curtainSlideAnimation,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: isFullyCovered
-                          ? AppColors.primary
-                          : AppColors.bgPrimary,
-                      boxShadow: curtainOffset.dx < 0
-                          ? [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.25),
-                                blurRadius: 24,
-                                spreadRadius: 4,
-                                offset: const Offset(8, 0),
-                              ),
-                            ]
-                          : null,
-                    ),
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        // Expanding green circular wave
-                        if (!isFullyCovered)
-                          Center(
-                            child: Transform.scale(
-                              scale: circleScale,
-                              child: Container(
-                                width: 140,
-                                height: 140,
-                                decoration: const BoxDecoration(
-                                  color: AppColors.primary,
-                                  shape: BoxShape.circle,
+                  child: RepaintBoundary(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: isFullyCovered
+                            ? AppColors.primary
+                            : AppColors.bgPrimary,
+                        boxShadow: isCurtainSliding
+                            ? [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.25),
+                                  blurRadius: 24,
+                                  spreadRadius: 4,
+                                  offset: const Offset(8, 0),
+                                ),
+                              ]
+                            : null,
+                      ),
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          // Expanding green background circle
+                          if (!isFullyCovered)
+                            Center(
+                              child: Transform.scale(
+                                scale: circleScale,
+                                child: Container(
+                                  width: 140,
+                                  height: 140,
+                                  decoration: const BoxDecoration(
+                                    color: AppColors.primary,
+                                    shape: BoxShape.circle,
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
 
-                        // Logo and success message
-                        Center(
-                          child: Transform.scale(
-                            scale: logoScale,
-                            child: SplashLogoBadge(
-                              iconSize: 64,
-                              fontSize: 22,
-                              showSubtitle: true,
-                              subtitleText: widget.message ?? 'ავტორიზაცია წარმატებულია',
+                          // Foreground Logo & Success Slogan (anchored at center)
+                          Center(
+                            child: Transform.scale(
+                              scale: logoScale,
+                              child: child,
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
               ],
             );
           },
+          child: SplashLogoBadge(
+            iconSize: 64,
+            fontSize: 22,
+            showSubtitle: true,
+            subtitleText: widget.message ?? 'ავტორიზაცია წარმატებულია',
+          ),
         ),
       ),
     );
   }
 }
-

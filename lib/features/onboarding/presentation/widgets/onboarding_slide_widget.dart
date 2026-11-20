@@ -5,7 +5,8 @@ import '../../../../core/theme/app_colors.dart';
 import '../../domain/models/onboarding_item.dart';
 
 /// Single slide presentation widget displaying the vector illustration, badge, title, and description.
-class OnboardingSlideWidget extends StatelessWidget {
+/// Uses [AutomaticKeepAliveClientMixin] to prevent rebuilding or re-parsing SVGs when swiping.
+class OnboardingSlideWidget extends StatefulWidget {
   final OnboardingItem item;
 
   const OnboardingSlideWidget({
@@ -14,12 +15,22 @@ class OnboardingSlideWidget extends StatelessWidget {
   });
 
   @override
+  State<OnboardingSlideWidget> createState() => _OnboardingSlideWidgetState();
+}
+
+class _OnboardingSlideWidgetState extends State<OnboardingSlideWidget>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
   Widget build(BuildContext context) {
+    super.build(context);
     final size = MediaQuery.sizeOf(context);
     final illustrationHeight = (size.height * 0.36).clamp(220.0, 320.0);
 
     return SingleChildScrollView(
-      physics: const BouncingScrollPhysics(),
+      physics: const ClampingScrollPhysics(),
       padding: const EdgeInsets.symmetric(horizontal: 28),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -30,7 +41,7 @@ class OnboardingSlideWidget extends StatelessWidget {
             height: illustrationHeight,
             width: double.infinity,
             child: SvgPicture.asset(
-              item.illustrationAsset,
+              widget.item.illustrationAsset,
               fit: BoxFit.contain,
             ),
           ),
@@ -44,7 +55,7 @@ class OnboardingSlideWidget extends StatelessWidget {
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
-              item.subtitle,
+              widget.item.subtitle,
               style: GoogleFonts.notoSansGeorgian(
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
@@ -57,7 +68,7 @@ class OnboardingSlideWidget extends StatelessWidget {
 
           // Main Title
           Text(
-            item.title,
+            widget.item.title,
             textAlign: TextAlign.center,
             style: GoogleFonts.notoSansGeorgian(
               fontSize: 22,
@@ -70,7 +81,7 @@ class OnboardingSlideWidget extends StatelessWidget {
 
           // Description
           Text(
-            item.description,
+            widget.item.description,
             textAlign: TextAlign.center,
             style: GoogleFonts.notoSansGeorgian(
               fontSize: 14,
@@ -85,4 +96,3 @@ class OnboardingSlideWidget extends StatelessWidget {
     );
   }
 }
-

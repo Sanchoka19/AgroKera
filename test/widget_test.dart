@@ -18,7 +18,7 @@ void main() {
   });
 
   testWidgets('AgroKera Guest Mode smoke test', (WidgetTester tester) async {
-    await tester.pumpWidget(const ProviderScope(child: AgroKeraApp()));
+    await tester.pumpWidget(const ProviderScope(child: AgroKeraApp(hasSeenSplash: true)));
     await tester.pumpAndSettle();
 
     // Verify AppLogo and Navigation Tabs are present
@@ -33,7 +33,7 @@ void main() {
     expect(find.text('არ გაქვს ანგარიში?'), findsOneWidget);
 
     // Verify Quick Categories Bar is rendered on Home screen
-    expect(find.text('სწრაფი კატეგორიები'), findsOneWidget);
+    expect(find.text('პოპულარული კატეგორიები'), findsOneWidget);
     expect(find.text('ხილი'), findsWidgets);
     expect(find.text('ბოსტნეული'), findsWidgets);
   });

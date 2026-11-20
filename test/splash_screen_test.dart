@@ -116,8 +116,8 @@ void main() {
       await tester.pump(const Duration(milliseconds: 500));
       expect(find.byType(SplashScreen), findsOneWidget);
 
-      // Advance to full completion and navigation to MainNavScreen
-      await tester.pump(const Duration(milliseconds: 1700));
+      // Advance to full completion and curtain slide navigation to MainNavScreen
+      await tester.pump(const Duration(milliseconds: 2300));
       await tester.pumpAndSettle();
 
       expect(find.byType(SplashScreen), findsNothing);

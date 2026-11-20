@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -17,13 +18,29 @@ import 'features/notifications/presentation/in_app_notification_banner.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  final container = ProviderContainer();
+  final storage = container.read(secureStorageProvider);
+
+  // Fast splash check to launch UI immediately (<30ms) without blocking on heavy network/services
+  final hasSeenSplash = await storage.hasSeenSplash();
+
+  runApp(
+    UncontrolledProviderScope(
+      container: container,
+      child: AgroKeraApp(hasSeenSplash: hasSeenSplash),
+    ),
+  );
+
+  // Background services and state restoration run concurrently with splash animation
+  unawaited(_initBackgroundServices(container));
+}
+
+Future<void> _initBackgroundServices(ProviderContainer container) async {
   try {
     await Firebase.initializeApp();
   } catch (e) {
     debugPrint('Firebase initialization error: $e');
   }
-
-  final container = ProviderContainer();
 
   try {
     await PushNotificationService().initialize(
@@ -62,40 +79,33 @@ Future<void> main() async {
     PushNotificationService().onTokenUpdated = (newToken) {
       container.read(authStateProvider.notifier).syncFcmToken(newToken);
     };
+
+    // Open the related screen when a push notification is tapped
+    PushNotificationService().onNotificationTap = (data) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        NotificationNavigator.open(
+          container: container,
+          orderId: data['orderId']?.toString(),
+          type: data['type']?.toString(),
+          title: data['title']?.toString(),
+        );
+        container.read(notificationsProvider.notifier).fetchNotifications();
+      });
+      WidgetsBinding.instance.scheduleFrame();
+    };
   } catch (e) {
     debugPrint('Push notification service error: $e');
   }
 
-  final storage = container.read(secureStorageProvider);
-  final results = await Future.wait([
-    container.read(authStateProvider.notifier).restoreSession(),
-    container.read(cartProvider.notifier).restoreCart(),
-    container.read(favoritesProvider.notifier).restoreFavorites(),
-    storage.hasSeenSplash(),
-  ]);
-
-  final hasSeenSplash = results[3] as bool;
-
-  runApp(
-    UncontrolledProviderScope(
-      container: container,
-      child: AgroKeraApp(hasSeenSplash: hasSeenSplash),
-    ),
-  );
-
-  // Open the related screen when a push notification is tapped
-  PushNotificationService().onNotificationTap = (data) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      NotificationNavigator.open(
-        container: container,
-        orderId: data['orderId']?.toString(),
-        type: data['type']?.toString(),
-        title: data['title']?.toString(),
-      );
-      container.read(notificationsProvider.notifier).fetchNotifications();
-    });
-    WidgetsBinding.instance.scheduleFrame();
-  };
+  try {
+    await Future.wait([
+      container.read(authStateProvider.notifier).restoreSession(),
+      container.read(cartProvider.notifier).restoreCart(),
+      container.read(favoritesProvider.notifier).restoreFavorites(),
+    ]);
+  } catch (e) {
+    debugPrint('State restoration error: $e');
+  }
 }
 
 class AgroKeraApp extends StatelessWidget {

@@ -68,39 +68,91 @@ export async function handleAuthRoute(
       expiresAt: expiresAt.getTime(),
     });
 
+    const brevoApiKey = (process.env.BREVO_API_KEY || "").trim();
+    const brevoSender = (process.env.BREVO_SENDER_EMAIL || process.env.SMTP_USER || "sabaevgenidze0919@gmail.com").trim();
+
+    // 1. Prioritize Brevo HTTPS REST API (100% allowed on Render Free Tier via Port 443)
+    if (brevoApiKey) {
+      try {
+        const brevoRes = await fetch("https://api.brevo.com/v3/smtp/email", {
+          method: "POST",
+          headers: {
+            "accept": "application/json",
+            "api-key": brevoApiKey,
+            "content-type": "application/json",
+          },
+          body: JSON.stringify({
+            sender: {
+              name: "AgroKera ვერიფიკაცია",
+              email: brevoSender,
+            },
+            to: [{ email: targetEmail }],
+            subject: `AgroKera — თქვენი ვერიფიკაციის კოდია: ${code}`,
+            htmlContent: `
+              <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 16px;">
+                <h2 style="color: #0f766e; margin-top: 0;">AgroKera ვერიფიკაცია</h2>
+                <p style="color: #334155; font-size: 15px;">თქვენი 5-ნიშნა დადასტურების კოდია:</p>
+                <div style="font-size: 32px; font-weight: 800; letter-spacing: 6px; color: #0f172a; background: #f8fafc; padding: 16px; text-align: center; border-radius: 12px; margin: 16px 0;">
+                  ${code}
+                </div>
+                <p style="color: #64748b; font-size: 13px;">კოდი აქტიურია 9 წუთის განმავლობაში.</p>
+              </div>
+            `,
+          }),
+        });
+
+        if (brevoRes.ok) {
+          return jsonResponse({
+            sent: true,
+            email: targetEmail,
+            delivery: "brevo_https",
+          });
+        } else {
+          const errData = await brevoRes.json().catch(() => ({}));
+          console.error("[Brevo API Error]:", errData);
+        }
+      } catch (brevoErr) {
+        console.error("[Brevo Exception]:", brevoErr);
+      }
+    }
+
     const smtpUser = (process.env.SMTP_USER || "").trim();
     const smtpPass = (process.env.SMTP_PASS || "").replace(/\s+/g, "");
 
     if (smtpUser && smtpPass && smtpUser !== "your_email@gmail.com") {
-      const transporter = nodemailer.createTransport({
-        service: "gmail",
-        auth: {
-          user: smtpUser,
-          pass: smtpPass,
-        },
-      });
+      try {
+        const transporter = nodemailer.createTransport({
+          service: "gmail",
+          auth: {
+            user: smtpUser,
+            pass: smtpPass,
+          },
+        });
 
-      await transporter.sendMail({
-        from: `"AgroKera ვერიფიკაცია" <${smtpUser}>`,
-        to: targetEmail,
-        subject: `AgroKera — თქვენი ვერიფიკაციის კოდია: ${code}`,
-        html: `
-          <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 16px;">
-            <h2 style="color: #0f766e; margin-top: 0;">AgroKera ვერიფიკაცია</h2>
-            <p style="color: #334155; font-size: 15px;">თქვენი 5-ნიშნა დადასტურების კოდია:</p>
-            <div style="font-size: 32px; font-weight: 800; letter-spacing: 6px; color: #0f172a; background: #f8fafc; padding: 16px; text-align: center; border-radius: 12px; margin: 16px 0;">
-              ${code}
+        await transporter.sendMail({
+          from: `"AgroKera ვერიფიკაცია" <${smtpUser}>`,
+          to: targetEmail,
+          subject: `AgroKera — თქვენი ვერიფიკაციის კოდია: ${code}`,
+          html: `
+            <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 16px;">
+              <h2 style="color: #0f766e; margin-top: 0;">AgroKera ვერიფიკაცია</h2>
+              <p style="color: #334155; font-size: 15px;">თქვენი 5-ნიშნა დადასტურების კოდია:</p>
+              <div style="font-size: 32px; font-weight: 800; letter-spacing: 6px; color: #0f172a; background: #f8fafc; padding: 16px; text-align: center; border-radius: 12px; margin: 16px 0;">
+                ${code}
+              </div>
+              <p style="color: #64748b; font-size: 13px;">კოდი აქტიურია 9 წუთის განმავლობაში.</p>
             </div>
-            <p style="color: #64748b; font-size: 13px;">კოდი აქტიურია 9 წუთის განმავლობაში.</p>
-          </div>
-        `,
-      });
+          `,
+        });
 
-      return jsonResponse({
-        sent: true,
-        email: targetEmail,
-        delivery: "gmail_smtp",
-      });
+        return jsonResponse({
+          sent: true,
+          email: targetEmail,
+          delivery: "gmail_smtp",
+        });
+      } catch (smtpErr) {
+        console.error("[SMTP Delivery Error]:", smtpErr);
+      }
     }
 
     console.log(`[AgroKera OTP Demo] Code for ${targetEmail}: ${code}`);

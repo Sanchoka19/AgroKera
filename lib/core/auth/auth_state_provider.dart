@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -156,6 +157,7 @@ class AuthNotifier extends Notifier<AuthState> {
         if (state.isFarmer && (hasNewAvatar || hasNewCover)) {
           ref.read(marketplaceProvider.notifier).updateFarmerMedia(
                 farmerId: state.farmerId,
+                farmName: state.farmName,
                 avatarUrl: hasNewAvatar ? serverAvatarUrl : null,
                 coverUrl: hasNewCover ? serverCoverUrl : null,
               );
@@ -182,6 +184,8 @@ class AuthNotifier extends Notifier<AuthState> {
     String? name,
     String? phone,
     String email = 'example@gmail.com',
+    String? password,
+    bool isGoogleAuth = false,
     String? farmName,
     UserRole role = UserRole.customer,
   }) {
@@ -233,9 +237,77 @@ class AuthNotifier extends Notifier<AuthState> {
       name: resolved.name,
       phone: phone,
       email: email,
+      password: password,
+      isGoogleAuth: isGoogleAuth,
       farmName: resolved.farmName,
       role: role,
     ));
+  }
+
+  /// Live server login with real password verification.
+  /// Returns null on success, or an error message string on failure.
+  Future<String?> signInWithPassword({
+    required String email,
+    required String password,
+  }) async {
+    final cleanEmail = email.trim().toLowerCase();
+    final cleanPassword = password.trim();
+
+    try {
+      final data = await _repo.login(
+        name: cleanEmail.split('@').first,
+        email: cleanEmail,
+        password: cleanPassword,
+        role: UserRole.customer,
+      );
+
+      if (data == null) {
+        return 'სისტემაში შესვლა ვერ მოხერხდა';
+      }
+
+      final user = data['user'] as Map<String, dynamic>?;
+      final roleStr = (user?['role'] as String?)?.toUpperCase();
+      final role = roleStr == 'FARMER' ? UserRole.farmer : UserRole.customer;
+      final farmerProfile = user?['farmerProfile'] as Map<String, dynamic>?;
+      final resolvedName = user?['fullName'] as String? ?? cleanEmail.split('@').first;
+      final resolvedPhone = user?['phoneNumber'] as String?;
+      final resolvedFarmName = farmerProfile?['farmName'] as String?;
+      final userId = user?['id'] as String? ?? 'user_${cleanEmail.hashCode}';
+
+      state = AuthState(
+        isAuthenticated: true,
+        userId: userId,
+        farmerId: role == UserRole.farmer ? (farmerProfile?['id'] as String?) : null,
+        farmName: resolvedFarmName,
+        userName: resolvedName,
+        userPhone: resolvedPhone,
+        userEmail: cleanEmail,
+        userAvatarUrl: user?['avatarUrl'] as String?,
+        farmCoverUrl: farmerProfile?['coverUrl'] as String?,
+        role: role,
+        kycStatus: KycStatus.verified,
+      );
+
+      await _applyServerAuthResponse(
+        data,
+        role: role,
+        name: resolvedName,
+        phone: resolvedPhone,
+        email: cleanEmail,
+        farmName: resolvedFarmName,
+        defaultPhone: '+995 599 11 22 33',
+      );
+      unawaited(syncFcmToken());
+      return null;
+    } catch (e) {
+      if (e is DioException) {
+        final resp = e.response?.data;
+        if (resp is Map && resp['error'] != null) {
+          return resp['error'].toString();
+        }
+      }
+      return 'ელ-ფოსტა ან პაროლი არასწორია';
+    }
   }
 
   /// Completes 5-step Farmer Onboarding and registers an isolated FarmerProfile
@@ -284,6 +356,7 @@ class AuthNotifier extends Notifier<AuthState> {
       name: resolved.name,
       phone: state.userPhone,
       email: email,
+      password: state.pendingPassword,
       farmName: cleanFarmName,
       region: region,
       city: city,
@@ -299,12 +372,14 @@ class AuthNotifier extends Notifier<AuthState> {
   void savePendingRegistrationDraft({
     required String name,
     required String email,
+    String? password,
   }) {
     state = AuthState(
       isAuthenticated: false,
       role: UserRole.guest,
       userName: name,
       userEmail: email,
+      pendingPassword: password,
     );
   }
 
@@ -313,8 +388,10 @@ class AuthNotifier extends Notifier<AuthState> {
     String name = 'ახალი მომხმარებელი',
     String? phone,
     String email = 'example@gmail.com',
+    String? password,
     String? farmName,
   }) {
+    final effectivePassword = password ?? state.pendingPassword;
     final resolved = MockAccountResolver.resolve(
       email: email,
       role: role,
@@ -356,6 +433,7 @@ class AuthNotifier extends Notifier<AuthState> {
       name: resolved.name,
       phone: phone,
       email: email,
+      password: effectivePassword,
       farmName: resolved.farmName,
       role: role,
     ));
@@ -379,13 +457,20 @@ class AuthNotifier extends Notifier<AuthState> {
   // Email OTP
   // ---------------------------------------------------------------------------
 
-  /// Sends a 5-digit OTP verification code to the specified Gmail/Email via backend SMTP
-  Future<bool> sendEmailOtp(String email) async {
+  /// Sends a 5-digit OTP verification code to the specified Gmail/Email via backend SMTP.
+  /// Returns null on success, or an error message string on failure.
+  Future<String?> sendEmailOtp(String email) async {
     try {
-      await _repo.sendEmailOtp(email);
-      return true;
-    } catch (_) {
-      return false;
+      await _repo.sendEmailOtp(email.trim().toLowerCase());
+      return null;
+    } catch (e) {
+      if (e is DioException) {
+        final resp = e.response?.data;
+        if (resp is Map && resp['error'] != null) {
+          return resp['error'].toString();
+        }
+      }
+      return 'კოდის გაგზავნა ვერ მოხერხდა, გთხოვთ სცადოთ თავიდან';
     }
   }
 
@@ -447,6 +532,7 @@ class AuthNotifier extends Notifier<AuthState> {
     if (state.isFarmer) {
       ref.read(marketplaceProvider.notifier).updateFarmerMedia(
             farmerId: state.farmerId,
+            farmName: state.farmName,
             coverUrl: coverUrl,
           );
     }
@@ -467,6 +553,7 @@ class AuthNotifier extends Notifier<AuthState> {
     if (state.isFarmer) {
       ref.read(marketplaceProvider.notifier).updateFarmerMedia(
             farmerId: state.farmerId,
+            farmName: state.farmName,
             avatarUrl: avatarUrl,
           );
     }
@@ -660,6 +747,8 @@ class AuthNotifier extends Notifier<AuthState> {
     required String name,
     String? phone,
     required String email,
+    String? password,
+    bool? isGoogleAuth,
     String? farmName,
     required UserRole role,
   }) async {
@@ -668,6 +757,8 @@ class AuthNotifier extends Notifier<AuthState> {
         name: name,
         phone: phone,
         email: email,
+        password: password,
+        isGoogleAuth: isGoogleAuth,
         farmName: farmName,
         role: role,
       );
@@ -696,6 +787,7 @@ class AuthNotifier extends Notifier<AuthState> {
     required String name,
     String? phone,
     required String email,
+    String? password,
     String? farmName,
     String? region,
     String? city,
@@ -708,6 +800,7 @@ class AuthNotifier extends Notifier<AuthState> {
         name: name,
         phone: phone,
         email: email,
+        password: password,
         farmName: farmName,
         region: region,
         city: city,

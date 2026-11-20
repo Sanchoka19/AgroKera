@@ -809,10 +809,14 @@ class MarketplaceNotifier extends Notifier<MarketplaceState> {
 
   void updateFarmerMedia({
     required String? farmerId,
+    String? farmName,
     String? avatarUrl,
     String? coverUrl,
   }) {
-    if (farmerId == null || farmerId.isEmpty) return;
+    if ((farmerId == null || farmerId.isEmpty) &&
+        (farmName == null || farmName.isEmpty)) {
+      return;
+    }
     final cleanAvatar = avatarUrl?.trim();
     final cleanCover = coverUrl?.trim();
     if ((cleanAvatar == null || cleanAvatar.isEmpty) &&
@@ -821,7 +825,15 @@ class MarketplaceNotifier extends Notifier<MarketplaceState> {
     }
 
     final updatedFarmers = state.farmers.map((f) {
-      if (f.id == farmerId) {
+      final matchesId = farmerId != null &&
+          (f.id == farmerId ||
+              f.id == farmerId.replaceFirst('user_', '') ||
+              'user_${f.id}' == farmerId);
+      final matchesName = farmName != null &&
+          farmName.isNotEmpty &&
+          f.farmName.trim().toLowerCase() == farmName.trim().toLowerCase();
+
+      if (matchesId || matchesName) {
         return f.copyWith(
           avatarUrl: (cleanAvatar != null && cleanAvatar.isNotEmpty)
               ? cleanAvatar
@@ -835,6 +847,12 @@ class MarketplaceNotifier extends Notifier<MarketplaceState> {
     }).toList();
 
     state = state.copyWith(farmers: updatedFarmers);
+    unawaited(
+      ref.read(localCacheServiceProvider).saveEntityList(
+        LocalCacheService.farmersKey,
+        updatedFarmers.map((f) => f.toJson()).toList(),
+      ),
+    );
   }
 
   /// Updates farmer rating and review count from new reviews

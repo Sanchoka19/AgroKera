@@ -1,7 +1,13 @@
 import prisma from "../../lib/prisma.ts";
 import { Role, VerificationStatus } from "@prisma/client";
 import nodemailer from "nodemailer";
-import { jsonResponse, errorResponse, createAuthToken } from "../utils.ts";
+import {
+  jsonResponse,
+  errorResponse,
+  createAuthToken,
+  hashPassword,
+  verifyPassword,
+} from "../utils.ts";
 
 const otpStore = new Map<string, { code: string; expiresAt: number }>();
 const otpRateLimitMap = new Map<string, { lastSentAt: number; count: number }>();
@@ -144,6 +150,8 @@ export async function handleAuthRoute(
     const body = (await request.json()) as {
       phone?: string;
       email?: string;
+      password?: string;
+      isGoogleAuth?: boolean;
       name?: string;
       farmName?: string;
       role?: string;
@@ -175,45 +183,61 @@ export async function handleAuthRoute(
       });
     }
 
-    // 3. If user does not exist yet, create a dedicated isolated User (& FarmerProfile if FARMER)
+    // 3. User verification and password checking
     if (!user) {
-      const slug = (normalizedEmail || `${Date.now()}`)
-        .replace(/[^a-z0-9]/g, "_");
-      const emailPrefix = normalizedEmail
-        ? normalizedEmail.split("@")[0]
-        : "მომხმარებელი";
-      user = await prisma.user.create({
-        data: {
-          id: roleEnum === Role.FARMER ? `user_farmer_${slug}` : `user_client_${slug}`,
-          fullName:
-            body.name ||
-            (roleEnum === Role.FARMER ? "ფერმერი" : emailPrefix),
-          phoneNumber:
-            body.phone && body.phone !== "+995 599 12 34 56"
-              ? body.phone
-              : `+995599${Math.floor(100000 + Math.random() * 900000)}`,
-          email: normalizedEmail || `user_${Date.now()}@agrokera.ge`,
-          role: roleEnum,
-          verificationStatus: VerificationStatus.VERIFIED,
-          ...(roleEnum === Role.FARMER
-            ? {
-              farmerProfile: {
-                create: {
-                  id: `farmer_${slug}`,
-                  farmName:
-                    body.farmName ||
-                    `${body.name || "ახალი ფერმერი"}-ის მეურნეობა`,
-                  region: "კახეთი",
-                  city: "თელავი",
-                  address: "თელავი, კახეთი",
+      // If logging in via Google OAuth, create profile if first time
+      if (body.isGoogleAuth) {
+        const slug = (normalizedEmail || `${Date.now()}`).replace(/[^a-z0-9]/g, "_");
+        const emailPrefix = normalizedEmail ? normalizedEmail.split("@")[0] : "მომხმარებელი";
+        user = await prisma.user.create({
+          data: {
+            id: roleEnum === Role.FARMER ? `user_farmer_${slug}` : `user_client_${slug}`,
+            fullName: body.name || (roleEnum === Role.FARMER ? "ფერმერი" : emailPrefix),
+            phoneNumber:
+              body.phone && body.phone !== "+995 599 12 34 56"
+                ? body.phone
+                : `+995599${Math.floor(100000 + Math.random() * 900000)}`,
+            email: normalizedEmail || `user_${Date.now()}@agrokera.ge`,
+            role: roleEnum,
+            verificationStatus: VerificationStatus.VERIFIED,
+            ...(roleEnum === Role.FARMER
+              ? {
+                farmerProfile: {
+                  create: {
+                    id: `farmer_${slug}`,
+                    farmName: body.farmName || `${body.name || "ახალი ფერმერი"}-ის მეურნეობა`,
+                    region: "კახეთი",
+                    city: "თელავი",
+                    address: "თელავი, კახეთი",
+                  },
                 },
-              },
-            }
-            : {}),
-        },
-        include: { farmerProfile: true },
-      });
-    } else if (roleEnum === Role.FARMER && !user.farmerProfile) {
+              }
+              : {}),
+          },
+          include: { farmerProfile: true },
+        });
+      } else {
+        return errorResponse("მომხმარებელი ამ ელ-ფოსტით არ არსებობს. გთხოვთ გაიაროთ რეგისტრაცია", 401);
+      }
+    } else if (!body.isGoogleAuth) {
+      // Regular login requires valid password if passwordHash exists
+      if (user.passwordHash) {
+        if (!body.password) {
+          return errorResponse("გთხოვთ შეიყვანოთ პაროლი", 400);
+        }
+        if (!verifyPassword(body.password, user.passwordHash)) {
+          return errorResponse("არასწორი პაროლი", 401);
+        }
+      } else if (body.password) {
+        // First-time password set for legacy accounts without password
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { passwordHash: hashPassword(body.password) },
+        });
+      }
+    }
+
+    if (roleEnum === Role.FARMER && !user.farmerProfile) {
       // Ensure existing farmer user always has its own isolated FarmerProfile
       const slug = (user.email || user.id).toLowerCase().replace(/[^a-z0-9]/g, "_");
       await prisma.farmerProfile.create({
@@ -253,6 +277,7 @@ export async function handleAuthRoute(
       fullName: string;
       phoneNumber?: string;
       email?: string;
+      password?: string;
       role?: string;
       farmName?: string;
       region?: string;
@@ -268,6 +293,7 @@ export async function handleAuthRoute(
     const normalizedEmail = body.email?.trim().toLowerCase();
     const slug = (normalizedEmail || `${Date.now()}`)
       .replace(/[^a-z0-9]/g, "_");
+    const passwordHash = body.password?.trim() ? hashPassword(body.password.trim()) : undefined;
 
     let existingUser = normalizedEmail
       ? await prisma.user.findFirst({
@@ -288,6 +314,7 @@ export async function handleAuthRoute(
         data: {
           fullName: body.fullName || existingUser.fullName,
           role: roleEnum,
+          ...(passwordHash ? { passwordHash } : {}),
           ...(roleEnum === Role.FARMER
             ? {
               farmerProfile: existingUser.farmerProfile
@@ -336,6 +363,7 @@ export async function handleAuthRoute(
           email: normalizedEmail || `user_${Date.now()}@agrokera.ge`,
           role: roleEnum,
           verificationStatus: VerificationStatus.VERIFIED,
+          ...(passwordHash ? { passwordHash } : {}),
           ...(roleEnum === Role.FARMER
             ? {
               farmerProfile: {

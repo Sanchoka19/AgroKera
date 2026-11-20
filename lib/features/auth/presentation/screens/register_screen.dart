@@ -26,6 +26,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -49,10 +50,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     super.dispose();
   }
 
-  void _onSignUp() {
+  Future<void> _onSignUp() async {
     HapticFeedback.lightImpact();
     final name = _nameController.text.trim();
-    final email = _emailController.text.trim();
+    final email = _emailController.text.trim().toLowerCase();
     final password = _passwordController.text;
 
     if (name.isEmpty) {
@@ -68,15 +69,30 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       return;
     }
 
+    setState(() => _isLoading = true);
+
+    final error = await ref.read(authStateProvider.notifier).sendEmailOtp(email);
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+
+    if (error != null) {
+      AppToast.error(context, error);
+      return;
+    }
+
+    AppToast.success(context, '5-ნიშნა კოდი გაიგზავნა: $email');
+
     ref.read(authStateProvider.notifier).savePendingRegistrationDraft(
       name: name,
       email: email,
+      password: password,
     );
 
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => SmsVerificationScreen(
           email: email,
+          autoSendOnOpen: false,
           title: 'ელ-ფოსტის დადასტურება',
           subtitle: 'შეიყვანეთ დამადასტურებელი კოდი',
           onVerified: (ctx) async {
@@ -101,13 +117,23 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       email: account.email,
     );
 
-    if (mounted) {
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (context) => const RoleSelectionScreen(),
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => SmsVerificationScreen(
+          email: account.email,
+          autoSendOnOpen: false,
+          title: 'Gmail ვერიფიკაცია',
+          subtitle: 'შეიყვანეთ ${account.email}-ზე მოსული 5-ნიშნა კოდი',
+          onVerified: (ctx) async {
+            Navigator.of(ctx).pushReplacement(
+              MaterialPageRoute(
+                builder: (_) => const RoleSelectionScreen(),
+              ),
+            );
+          },
         ),
-      );
-    }
+      ),
+    );
   }
 
   @override
@@ -308,7 +334,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                 width: double.infinity,
                                 height: 48,
                                 child: ElevatedButton(
-                                  onPressed: _onSignUp,
+                                  onPressed: _isLoading ? null : _onSignUp,
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: AppColors.primary,
                                     foregroundColor: Colors.white,
@@ -317,14 +343,23 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                       borderRadius: BorderRadius.circular(14),
                                     ),
                                   ),
-                                  child: Text(
-                                    'რეგისტრაცია',
-                                    style: AppTypography.button.copyWith(
-                                      fontSize: 15.5,
-                                      fontWeight: FontWeight.w700,
-                                      color: Colors.white,
-                                    ),
-                                  ),
+                                  child: _isLoading
+                                      ? const SizedBox(
+                                          width: 22,
+                                          height: 22,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2.2,
+                                            color: Colors.white,
+                                          ),
+                                        )
+                                      : Text(
+                                          'რეგისტრაცია',
+                                          style: AppTypography.button.copyWith(
+                                            fontSize: 15.5,
+                                            fontWeight: FontWeight.w700,
+                                            color: Colors.white,
+                                          ),
+                                        ),
                                 ),
                               ),
                               const SizedBox(height: 10),

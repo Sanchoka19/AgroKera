@@ -91,6 +91,7 @@ class AuthState {
   final String? userAvatarUrl;
   final String? farmCoverUrl;
   final String? userAddress;
+  final String? pendingPassword;
   final UserRole role;
   final KycStatus kycStatus;
 
@@ -108,6 +109,7 @@ class AuthState {
     this.userAvatarUrl,
     this.farmCoverUrl,
     this.userAddress,
+    this.pendingPassword,
     this.role = UserRole.guest,
     this.kycStatus = KycStatus.verified,
   });
@@ -123,6 +125,7 @@ class AuthState {
     String? userAvatarUrl,
     String? farmCoverUrl,
     String? userAddress,
+    String? pendingPassword,
     bool clearUserAddress = false,
     UserRole? role,
     KycStatus? kycStatus,
@@ -138,6 +141,7 @@ class AuthState {
       userAvatarUrl: userAvatarUrl ?? this.userAvatarUrl,
       farmCoverUrl: farmCoverUrl ?? this.farmCoverUrl,
       userAddress: clearUserAddress ? null : (userAddress ?? this.userAddress),
+      pendingPassword: pendingPassword ?? this.pendingPassword,
       role: role ?? this.role,
       kycStatus: kycStatus ?? this.kycStatus,
     );

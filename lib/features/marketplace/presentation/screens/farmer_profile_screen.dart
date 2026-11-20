@@ -18,6 +18,7 @@ import '../../data/models/farmer_model.dart';
 import '../providers/marketplace_provider.dart';
 import '../widgets/farmer_profile/farmer_info_cards.dart';
 import '../widgets/product_details/product_delivery_info_card.dart';
+import '../../../profile/presentation/widgets/profile_image_view.dart';
 import '../../../reviews/presentation/widgets/farmer_reviews_section.dart';
 import 'product_details_screen.dart';
 
@@ -564,33 +565,11 @@ class _FarmerProfileScreenState extends ConsumerState<FarmerProfileScreen>
   }
 
   Widget _buildCoverImage(String coverUrl) {
-    if (coverUrl.startsWith('http://') || coverUrl.startsWith('https://')) {
-      return Image.network(
-        coverUrl,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) =>
-            Container(color: AppColors.primaryLight),
-      );
-    }
-    if (coverUrl.startsWith('data:image/')) {
-      try {
-        final base64Str = coverUrl.split(',').last;
-        return Image.memory(
-          base64Decode(base64Str),
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) =>
-              Container(color: AppColors.primaryLight),
-        );
-      } catch (_) {}
-    }
-    if (!kIsWeb && File(coverUrl).existsSync()) {
-      return Image.file(
-        File(coverUrl),
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) =>
-            Container(color: AppColors.primaryLight),
-      );
-    }
-    return Container(color: AppColors.primaryLight);
+    return ProfileImageView.cover(
+      coverUrl: coverUrl,
+      fit: BoxFit.cover,
+      width: double.infinity,
+      height: double.infinity,
+    );
   }
 }

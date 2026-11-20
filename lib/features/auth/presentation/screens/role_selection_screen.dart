@@ -7,6 +7,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import 'customer_role_screen.dart';
 import 'farmer_role_screen.dart';
+import 'login_screen.dart';
 
 /// Screen 4: აირჩიე როლი (Role Selection Screen)
 /// Evolution:
@@ -17,28 +18,41 @@ import 'farmer_role_screen.dart';
 class RoleSelectionScreen extends StatelessWidget {
   const RoleSelectionScreen({super.key});
 
+  void _onBackToLogin(BuildContext context) {
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+      (route) => false,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(LucideIcons.chevronLeft, color: AppColors.textPrimary, size: 28),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: Text(
-          'აირჩიე როლი',
-          style: AppTypography.h1.copyWith(
-            fontSize: 20,
-            fontWeight: FontWeight.w700,
-            color: AppColors.textPrimary,
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        _onBackToLogin(context);
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF8FAFC),
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          elevation: 0,
+          centerTitle: true,
+          leading: IconButton(
+            icon: const Icon(LucideIcons.chevronLeft, color: AppColors.textPrimary, size: 28),
+            onPressed: () => _onBackToLogin(context),
+          ),
+          title: Text(
+            'აირჩიე როლი',
+            style: AppTypography.h1.copyWith(
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+            ),
           ),
         ),
-      ),
-      body: SafeArea(
+        body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
           child: Column(
@@ -126,7 +140,8 @@ class RoleSelectionScreen extends StatelessWidget {
           ),
         ),
       ),
-    );
+    ),
+  );
   }
 
   Widget _buildRoleCard({

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:agrokera/core/auth/auth_state_provider.dart';
 import 'package:agrokera/features/marketplace/data/models/farmer_model.dart';
 import 'package:agrokera/features/marketplace/data/models/product_model.dart';
 import 'package:agrokera/features/marketplace/presentation/providers/marketplace_provider.dart';
@@ -138,6 +139,79 @@ void main() {
       expect(farmerIds, isNot(contains(f2.id)));
       expect(farmerIds, isNot(contains(f3.id)));
     });
+
+    test('nearbyFarmersProvider excludes the logged-in farmer own farm', () {
+      final f1 = MockData.farmers[0]; // farmer_1
+      final f2 = MockData.farmers[1]; // farmer_2
+
+      final p1 = ProductModel(
+        id: 'p1',
+        title: 'პომიდორი',
+        category: 'ბოსტნეული',
+        farmerId: f1.id,
+        farmerName: f1.farmName,
+        price: 4.5,
+        stockQuantity: 20.0,
+        minOrderQuantity: 1.0,
+        isAvailable: true,
+        imageUrl: '',
+        description: '',
+      );
+      final p2 = ProductModel(
+        id: 'p2',
+        title: 'კიტრი',
+        category: 'ბოსტნეული',
+        farmerId: f2.id,
+        farmerName: f2.farmName,
+        price: 3.0,
+        stockQuantity: 20.0,
+        minOrderQuantity: 1.0,
+        isAvailable: true,
+        imageUrl: '',
+        description: '',
+      );
+
+      final container = ProviderContainer(
+        overrides: [
+          marketplaceProvider.overrideWith(
+            () => _TestProximityMarketplaceNotifier([p1, p2], [f1, f2]),
+          ),
+          authStateProvider.overrideWith(
+            () => _TestFarmerAuthNotifier(farmerId: f1.id, farmName: f1.farmName),
+          ),
+        ],
+      );
+
+      final state = container.read(nearbyFarmersProvider);
+      final farmerIds = state.farmers.map((f) => f.farmer.id).toList();
+
+      // f1 is the logged-in farmer, so it should be excluded
+      expect(farmerIds, isNot(contains(f1.id)));
+      // f2 is another farmer, so it should be included
+      expect(farmerIds, contains(f2.id));
+    });
+
+    testWidgets('NearbyFarmCard renders preset asset cover without error', (WidgetTester tester) async {
+      final farmerWithAsset = MockData.farmers.first.copyWith(
+        coverUrl: 'assets/covers/cover_1.webp',
+      );
+      final distanceInfo = FarmerDistanceInfo.fromDistance(
+        farmer: farmerWithAsset,
+        distanceKm: 2.5,
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: NearbyFarmCard(info: distanceInfo),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(NearbyFarmCard), findsOneWidget);
+      expect(find.text(farmerWithAsset.farmName), findsOneWidget);
+    });
   });
 }
 
@@ -153,6 +227,23 @@ class _TestProximityMarketplaceNotifier extends MarketplaceNotifier {
       farmers: testFarmers,
       categories: MockData.categories,
       isSyncing: false,
+    );
+  }
+}
+
+class _TestFarmerAuthNotifier extends AuthNotifier {
+  final String farmerId;
+  final String farmName;
+
+  _TestFarmerAuthNotifier({required this.farmerId, required this.farmName});
+
+  @override
+  AuthState build() {
+    return AuthState(
+      isAuthenticated: true,
+      role: UserRole.farmer,
+      farmerId: farmerId,
+      farmName: farmName,
     );
   }
 }

@@ -297,7 +297,8 @@ class FarmerOnboardingNotifier extends Notifier<FarmerOnboardingState> {
 
   Future<bool> sendOtp() async {
     final email = resolveVerificationEmail();
-    return ref.read(authStateProvider.notifier).sendEmailOtp(email);
+    final error = await ref.read(authStateProvider.notifier).sendEmailOtp(email);
+    return error == null;
   }
 
   Future<String?> verifyOtp(String code) async {

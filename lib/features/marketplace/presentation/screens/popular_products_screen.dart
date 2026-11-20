@@ -9,16 +9,22 @@ import '../../../../core/constants/app_assets.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/animations/staggered_entrance.dart';
+import '../../../../core/widgets/app_search_bar.dart';
 import '../../../../core/widgets/draggable_floating_cart.dart';
+import '../../../../core/widgets/filter_button.dart';
 import '../../../../core/widgets/product_card.dart';
 import '../../../../core/widgets/product_cart_helper.dart';
 import '../../../cart_checkout/presentation/providers/cart_provider.dart';
 import '../../../cart_checkout/presentation/screens/cart_screen.dart';
+import '../../domain/models/product_filter_criteria.dart';
+import '../providers/marketplace_provider.dart';
 import '../providers/popular_products_provider.dart';
+import '../widgets/active_filter_chips.dart';
+import '../widgets/filter_bottom_sheet.dart';
 import 'product_details_screen.dart';
 
-/// Dedicated screen for displaying all popular products
-/// Opened via "ყველას ნახვა" on the popular products section
+/// Dedicated screen for displaying all popular products.
+/// Includes modular search, filter by region/category/sort, and active filter chips.
 class PopularProductsScreen extends ConsumerStatefulWidget {
   const PopularProductsScreen({super.key});
 
@@ -29,8 +35,16 @@ class PopularProductsScreen extends ConsumerStatefulWidget {
 
 class _PopularProductsScreenState extends ConsumerState<PopularProductsScreen> {
   final GlobalKey<DraggableFloatingCartState> _floatingCartKey = GlobalKey();
+  final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+  ProductFilterCriteria _filterCriteria = const ProductFilterCriteria.empty();
   DateTime _lastCartOpen = DateTime.fromMillisecondsSinceEpoch(0);
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   void _openCart() {
     final now = DateTime.now();
@@ -44,18 +58,30 @@ class _PopularProductsScreenState extends ConsumerState<PopularProductsScreen> {
     );
   }
 
+  void _clearAllFilters() {
+    HapticFeedback.lightImpact();
+    _searchController.clear();
+    setState(() {
+      _searchQuery = '';
+      _filterCriteria = const ProductFilterCriteria.empty();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final popularProducts = ref.watch(popularProductsProvider);
     final cartCount = ref.watch(cartProvider).length;
 
-    final filteredProducts = popularProducts.where((p) {
-      if (_searchQuery.trim().isEmpty) return true;
-      final q = _searchQuery.toLowerCase().trim();
-      return p.title.toLowerCase().contains(q) ||
-          p.farmerName.toLowerCase().contains(q) ||
-          p.category.toLowerCase().contains(q);
-    }).toList();
+    // Build farmer location lookup for accurate region filtering
+    final farmers = ref.watch(marketplaceProvider).farmers;
+    final farmerLocations = {for (final f in farmers) f.id: f.location};
+
+    // Filter and sort popular products using clean domain logic
+    final filteredProducts = _filterCriteria.filterProducts(
+      popularProducts,
+      searchQuery: _searchQuery,
+      farmerLocations: farmerLocations,
+    );
 
     return Scaffold(
       backgroundColor: AppColors.bgPrimary,
@@ -109,73 +135,85 @@ class _PopularProductsScreenState extends ConsumerState<PopularProductsScreen> {
                   ),
                 ),
 
-                // Search Bar
+                // Search Bar + Modular Filter Button
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Container(
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: AppColors.surfaceInput,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: const Color(0xFFE2E8F0),
-                        width: 0.8,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: AppSearchBar(
+                          controller: _searchController,
+                          hintText: 'მოძებნე პოპულარულ პროდუქტებში...',
+                          onChanged: (val) {
+                            setState(() => _searchQuery = val);
+                          },
+                          onClear: () {
+                            _searchController.clear();
+                            setState(() => _searchQuery = '');
+                          },
+                        ),
                       ),
-                    ),
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: Row(
-                      children: [
-                        const Icon(
-                          LucideIcons.search,
-                          size: 18,
-                          color: AppColors.textSecondary,
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: TextField(
-                            onChanged: (val) {
-                              setState(() => _searchQuery = val);
+                      const SizedBox(width: 10),
+                      FilterButton(
+                        isActive: _filterCriteria.hasActiveFilters,
+                        badgeCount: _filterCriteria.activeCount,
+                        onTap: () {
+                          FilterBottomSheet.show(
+                            context,
+                            criteria: _filterCriteria,
+                            onApplyCriteria: (newCriteria) {
+                              setState(() => _filterCriteria = newCriteria);
                             },
-                            style: GoogleFonts.notoSansGeorgian(
-                              fontSize: 14,
-                              color: AppColors.textPrimary,
-                            ),
-                            decoration: InputDecoration(
-                              hintText: 'მოძებნე პოპულარულ პროდუქტებში...',
-                              hintStyle: GoogleFonts.notoSansGeorgian(
-                                fontSize: 13,
-                                color: AppColors.textSecondary,
-                              ),
-                              border: InputBorder.none,
-                              isDense: true,
-                              contentPadding: EdgeInsets.zero,
-                            ),
-                          ),
-                        ),
-                        if (_searchQuery.isNotEmpty)
-                          GestureDetector(
-                            onTap: () {
-                              setState(() => _searchQuery = '');
-                            },
-                            child: const Icon(
-                              LucideIcons.x,
-                              size: 16,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                      ],
-                    ),
+                          );
+                        },
+                      ),
+                    ],
                   ),
                 ),
 
-                const SizedBox(height: 8),
+                // Active Filter Chips
+                if (_filterCriteria.hasActiveFilters) ...[
+                  const SizedBox(height: 2),
+                  ActiveFilterChips(
+                    criteria: _filterCriteria,
+                    onClearAll: () {
+                      setState(() {
+                        _filterCriteria = const ProductFilterCriteria.empty();
+                      });
+                    },
+                    onClearRegion: () {
+                      setState(() {
+                        _filterCriteria =
+                            _filterCriteria.copyWith(clearRegion: true);
+                      });
+                    },
+                    onClearCategory: () {
+                      setState(() {
+                        _filterCriteria =
+                            _filterCriteria.copyWith(clearCategory: true);
+                      });
+                    },
+                    onClearSort: () {
+                      setState(() {
+                        _filterCriteria =
+                            _filterCriteria.copyWith(sortBy: 'პოპულარული');
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 6),
+                ],
+
+                const SizedBox(height: 4),
 
                 // Product Grid or Empty State
                 Expanded(
                   child: filteredProducts.isEmpty
                       ? Center(
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 32),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 24,
+                              vertical: 32,
+                            ),
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
@@ -192,12 +230,41 @@ class _PopularProductsScreenState extends ConsumerState<PopularProductsScreen> {
                                     fontWeight: FontWeight.w700,
                                   ),
                                 ),
+                                if (_filterCriteria.hasActiveFilters ||
+                                    _searchQuery.isNotEmpty) ...[
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'სცადეთ შეცვალოთ ან გაასუფთავოთ არჩეული ფილტრები',
+                                    textAlign: TextAlign.center,
+                                    style: GoogleFonts.notoSansGeorgian(
+                                      fontSize: 13,
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  TextButton.icon(
+                                    onPressed: _clearAllFilters,
+                                    icon: const Icon(
+                                      LucideIcons.rotateCcw,
+                                      size: 16,
+                                      color: AppColors.primary,
+                                    ),
+                                    label: Text(
+                                      'ფილტრების გასუფთავება',
+                                      style: GoogleFonts.notoSansGeorgian(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColors.primary,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ],
                             ),
                           ),
                         )
                       : GridView.builder(
-                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
+                          padding: const EdgeInsets.fromLTRB(16, 4, 16, 96),
                           gridDelegate:
                               const SliverGridDelegateWithMaxCrossAxisExtent(
                             maxCrossAxisExtent: 210,

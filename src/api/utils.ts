@@ -78,6 +78,30 @@ export function errorResponse(message: string, status = 400): Response {
 }
 
 /**
+ * Secure password hashing using Node's crypto scrypt.
+ */
+export function hashPassword(password: string): string {
+  const salt = crypto.randomBytes(16).toString("hex");
+  const hash = crypto.scryptSync(password, salt, 64).toString("hex");
+  return `${salt}:${hash}`;
+}
+
+/**
+ * Verifies a plain text password against a stored scrypt hash string.
+ */
+export function verifyPassword(password: string, storedHash: string): boolean {
+  try {
+    const [salt, key] = storedHash.split(":");
+    if (!salt || !key) return false;
+    const keyBuffer = Buffer.from(key, "hex");
+    const derivedBuffer = crypto.scryptSync(password, salt, 64);
+    return crypto.timingSafeEqual(keyBuffer, derivedBuffer);
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Replaces phone numbers in chat messages so that client and farmer
  * cannot exchange numbers (e.g. "599 12 34 56", "+995599123456", "5-99-12-34-56").
  */

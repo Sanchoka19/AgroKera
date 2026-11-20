@@ -160,7 +160,8 @@ class ProfileImageView extends StatelessWidget {
     // 3. Local file on device
     if (!kIsWeb) {
       try {
-        final file = File(url);
+        final filePath = url.replaceFirst('file://', '');
+        final file = File(filePath);
         if (file.existsSync()) {
           return Image.file(
             file,

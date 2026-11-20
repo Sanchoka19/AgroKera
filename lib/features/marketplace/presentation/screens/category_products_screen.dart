@@ -9,20 +9,23 @@ import '../../../../core/constants/app_assets.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/animations/staggered_entrance.dart';
+import '../../../../core/widgets/app_search_bar.dart';
 import '../../../../core/widgets/draggable_floating_cart.dart';
+import '../../../../core/widgets/filter_button.dart';
 import '../../../../core/widgets/product_card.dart';
 import '../../../../core/widgets/product_cart_helper.dart';
 import '../../data/models/category_model.dart';
 import '../../data/models/product_model.dart';
-import '../../../cart_checkout/presentation/providers/cart_provider.dart';
+import '../../domain/models/product_filter_criteria.dart';
 import '../../../cart_checkout/presentation/screens/cart_screen.dart';
 import '../providers/marketplace_provider.dart';
+import '../widgets/active_filter_chips.dart';
 import '../widgets/filter_bottom_sheet.dart';
 import 'product_details_screen.dart';
 
 /// Category Products Screen matching Screenshot 5:
 /// - Back button & Category title ("ბოსტნეული")
-/// - Search bar + Filter button
+/// - Search bar + Modular Filter button
 /// - 2-column Grid of Product Cards
 /// - Floating Cart button with item count badge
 class CategoryProductsScreen extends ConsumerStatefulWidget {
@@ -38,15 +41,24 @@ class CategoryProductsScreen extends ConsumerStatefulWidget {
 class _CategoryProductsScreenState
     extends ConsumerState<CategoryProductsScreen> {
   final GlobalKey<DraggableFloatingCartState> _floatingCartKey = GlobalKey();
+  final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
-  String? _selectedRegion;
-  String? _selectedCategory;
+  late ProductFilterCriteria _filterCriteria;
   DateTime _lastCartOpen = DateTime.fromMillisecondsSinceEpoch(0);
 
   @override
   void initState() {
     super.initState();
-    _selectedCategory = widget.category.name;
+    _filterCriteria = ProductFilterCriteria(
+      category: widget.category.name,
+      sortBy: 'პოპულარული',
+    );
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   void _openCart() {
@@ -71,21 +83,32 @@ class _CategoryProductsScreenState
     );
   }
 
+  void _clearAllFilters() {
+    HapticFeedback.lightImpact();
+    _searchController.clear();
+    setState(() {
+      _searchQuery = '';
+      _filterCriteria = ProductFilterCriteria(
+        category: widget.category.name,
+        sortBy: 'პოპულარული',
+      );
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final allProducts = ref.watch(buyerProductsProvider);
-    final cartCount = ref.watch(cartProvider).length;
-    // Filter products
-    List<ProductModel> products = allProducts.where((p) {
-      final matchesSearch = p.title.toLowerCase().contains(
-        _searchQuery.toLowerCase(),
-      );
-      final matchesCategory =
-          _selectedCategory == null ||
-          _selectedCategory == 'ყველა' ||
-          p.category == _selectedCategory;
-      return matchesSearch && matchesCategory;
-    }).toList();
+
+    // Lookup farmer locations for region filter
+    final farmers = ref.watch(marketplaceProvider).farmers;
+    final farmerLocations = {for (final f in farmers) f.id: f.location};
+
+    // Filter and sort products using clean domain logic
+    List<ProductModel> products = _filterCriteria.filterProducts(
+      allProducts,
+      searchQuery: _searchQuery,
+      farmerLocations: farmerLocations,
+    );
 
     return Scaffold(
       backgroundColor: AppColors.bgPrimary,
@@ -111,86 +134,72 @@ class _CategoryProductsScreenState
               child: Column(
             children: [
               const SizedBox(height: 8),
-              // Search bar + Filter button row
+              // Search bar + Modular Filter button row
               Row(
                 children: [
                   Expanded(
-                    child: Container(
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: AppColors.border, width: 1),
-                      ),
-                      padding: const EdgeInsets.symmetric(horizontal: 14),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            LucideIcons.search,
-                            size: 20,
-                            color: AppColors.textSecondary,
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: TextField(
-                              onChanged: (val) =>
-                                  setState(() => _searchQuery = val),
-                              style: AppTypography.bodyMedium,
-                              decoration: InputDecoration(
-                                hintText: 'ძებნა...',
-                                hintStyle: AppTypography.bodyMedium.copyWith(
-                                  color: AppColors.textSecondary,
-                                ),
-                                border: InputBorder.none,
-                                enabledBorder: InputBorder.none,
-                                focusedBorder: InputBorder.none,
-                                filled: false,
-                                isDense: true,
-                                contentPadding: EdgeInsets.zero,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                    child: AppSearchBar(
+                      controller: _searchController,
+                      hintText: 'მოძებნე ${widget.category.name}...',
+                      onChanged: (val) =>
+                          setState(() => _searchQuery = val),
+                      onClear: () {
+                        _searchController.clear();
+                        setState(() => _searchQuery = '');
+                      },
                     ),
                   ),
                   const SizedBox(width: 10),
-                  // Filter button
-                  InkWell(
+                  // Modular Filter button
+                  FilterButton(
+                    isActive: _filterCriteria.hasActiveFilters,
+                    badgeCount: _filterCriteria.activeCount,
                     onTap: () {
                       FilterBottomSheet.show(
                         context,
-                        initialRegion: _selectedRegion,
-                        initialCategory: widget.category.name,
+                        criteria: _filterCriteria,
                         showCategoryFilter: false,
-                        onApply: (reg, cat) {
+                        onApplyCriteria: (newCriteria) {
                           setState(() {
-                            _selectedRegion = reg;
-                            _selectedCategory = widget.category.name;
+                            _filterCriteria = newCriteria.copyWith(
+                              category: widget.category.name,
+                            );
                           });
                         },
                       );
                     },
-                    borderRadius: BorderRadius.circular(14),
-                    child: Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: AppColors.border, width: 1),
-                      ),
-                      alignment: Alignment.center,
-                      child: const Icon(
-                        LucideIcons.slidersHorizontal,
-                        size: 20,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+
+              // Active Filter Chips
+              if (_filterCriteria.hasActiveFilters) ...[
+                const SizedBox(height: 8),
+                ActiveFilterChips(
+                  criteria: _filterCriteria,
+                  onClearAll: () {
+                    setState(() {
+                      _filterCriteria = ProductFilterCriteria(
+                        category: widget.category.name,
+                        sortBy: 'პოპულარული',
+                      );
+                    });
+                  },
+                  onClearRegion: () {
+                    setState(() {
+                      _filterCriteria =
+                          _filterCriteria.copyWith(clearRegion: true);
+                    });
+                  },
+                  onClearSort: () {
+                    setState(() {
+                      _filterCriteria =
+                          _filterCriteria.copyWith(sortBy: 'პოპულარული');
+                    });
+                  },
+                ),
+              ],
+              const SizedBox(height: 14),
 
               // Product Grid
               Expanded(
@@ -212,44 +221,61 @@ class _CategoryProductsScreenState
                               const SizedBox(height: 16),
                               Text(
                                 'პროდუქტები ვერ მოიძებნა',
-                                textAlign: TextAlign.center,
-                                style: GoogleFonts.notoSansGeorgian(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w700,
+                                style: AppTypography.titleMedium.copyWith(
                                   color: AppColors.textPrimary,
+                                  fontWeight: FontWeight.w700,
                                 ),
                               ),
                               const SizedBox(height: 8),
                               Text(
                                 _searchQuery.isNotEmpty
-                                    ? '„$_searchQuery“-ის შესაბამისი პროდუქცია ამ კატეგორიაში არ მოიძებნა.'
-                                    : 'ამ კატეგორიაში შესაბამისი პროდუქცია არ მოიძებნა.',
+                                    ? 'არჩეული ძიებით შედეგები არ არის'
+                                    : 'ამ კატეგორიაში პროდუქტი ჯერ არ არის დამატებული',
                                 textAlign: TextAlign.center,
-                                style: GoogleFonts.notoSansGeorgian(
-                                  fontSize: 13.5,
+                                style: AppTypography.bodyMedium.copyWith(
                                   color: AppColors.textSecondary,
-                                  height: 1.4,
                                 ),
                               ),
+                              if (_filterCriteria.hasActiveFilters ||
+                                  _searchQuery.isNotEmpty) ...[
+                                const SizedBox(height: 16),
+                                TextButton.icon(
+                                  onPressed: _clearAllFilters,
+                                  icon: const Icon(
+                                    LucideIcons.rotateCcw,
+                                    size: 16,
+                                    color: AppColors.primary,
+                                  ),
+                                  label: Text(
+                                    'ფილტრების გასუფთავება',
+                                    style: GoogleFonts.notoSansGeorgian(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.primary,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ],
                           ),
                         ),
                       )
                     : GridView.builder(
-                        padding: const EdgeInsets.only(bottom: 80),
+                        padding: const EdgeInsets.only(bottom: 96),
                         gridDelegate:
-                            const SliverGridDelegateWithMaxCrossAxisExtent(
-                              maxCrossAxisExtent: 210,
-                              crossAxisSpacing: 12,
-                              mainAxisSpacing: 12,
-                              childAspectRatio: 0.68,
-                            ),
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 14,
+                          mainAxisSpacing: 14,
+                          childAspectRatio: 0.65,
+                        ),
                         itemCount: products.length,
                         itemBuilder: (context, index) {
                           final product = products[index];
-                          final isOwner = ref
-                              .watch(authStateProvider)
-                              .isOwnerOfProduct(product);
+                          final isOwner = product.isOwnedBy(
+                            ref.watch(authStateProvider),
+                          );
+
                           return StaggeredEntrance(
                             index: index,
                             child: ProductCard(
@@ -258,15 +284,18 @@ class _CategoryProductsScreenState
                               onTap: () {
                                 Navigator.of(context).push(
                                   MaterialPageRoute(
-                                    builder: (context) =>
-                                        ProductDetailsScreen(product: product),
+                                    builder: (_) => ProductDetailsScreen(
+                                      product: product,
+                                    ),
                                   ),
                                 );
                               },
                               onAddWithContext: isOwner
                                   ? null
-                                  : (btnContext) =>
-                                      _onAddToCart(product, btnContext),
+                                  : (btnContext) => _onAddToCart(
+                                        product,
+                                        btnContext,
+                                      ),
                             ),
                           );
                         },
@@ -276,14 +305,13 @@ class _CategoryProductsScreenState
           ),
         ),
       ),
-      DraggableFloatingCart(
-        key: _floatingCartKey,
-        cartCount: cartCount,
-        bottomOffset: 24.0,
-        onTap: _openCart,
+          // Draggable Floating Cart widget
+          DraggableFloatingCart(
+            key: _floatingCartKey,
+            onTap: _openCart,
+          ),
+        ],
       ),
-    ],
-  ),
-);
+    );
   }
 }

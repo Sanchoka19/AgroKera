@@ -13,6 +13,7 @@ import '../widgets/forgot_password_sheet.dart';
 import '../widgets/google_sign_in_sheet.dart';
 import 'auth_success_splash_screen.dart';
 import 'register_screen.dart';
+import 'sms_verification_screen.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -25,6 +26,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -33,7 +35,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     super.dispose();
   }
 
-  void _onSignIn() {
+  Future<void> _onSignIn() async {
     HapticFeedback.lightImpact();
     final email = _emailController.text.trim();
     final password = _passwordController.text;
@@ -51,15 +53,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       return;
     }
 
-    final isFarmerEmail = email.toLowerCase().contains('farmer') ||
-        email.toLowerCase().contains('giorgi') ||
-        email.toLowerCase().contains('lana') ||
-        email.toLowerCase().contains('davit');
+    setState(() => _isLoading = true);
 
-    ref.read(authStateProvider.notifier).login(
+    final error = await ref.read(authStateProvider.notifier).signInWithPassword(
       email: email,
-      role: isFarmerEmail ? UserRole.farmer : UserRole.customer,
+      password: password,
     );
+
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+
+    if (error != null) {
+      AppToast.error(context, error);
+      return;
+    }
+
     AuthSuccessSplashScreen.navigate(context, message: 'ავტორიზაცია წარმატებულია');
   }
 
@@ -68,15 +76,25 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     if (account == null || !mounted) return;
 
     HapticFeedback.lightImpact();
-    ref.read(authStateProvider.notifier).login(
-      name: account.name,
-      email: account.email,
-      role: UserRole.customer,
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => SmsVerificationScreen(
+          email: account.email,
+          autoSendOnOpen: false,
+          title: 'Gmail ავტორიზაცია',
+          subtitle: 'შეიყვანეთ ${account.email}-ზე მოსული 5-ნიშნა კოდი',
+          onVerified: (ctx) async {
+            ref.read(authStateProvider.notifier).login(
+              name: account.name,
+              email: account.email,
+              isGoogleAuth: true,
+              role: UserRole.customer,
+            );
+            AuthSuccessSplashScreen.navigate(ctx, message: 'მოგესალმებით, ${account.name}');
+          },
+        ),
+      ),
     );
-
-    if (mounted) {
-      AuthSuccessSplashScreen.navigate(context, message: 'მოგესალმებით, ${account.name}');
-    }
   }
 
   @override
@@ -331,7 +349,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 width: double.infinity,
                                 height: 48,
                                 child: ElevatedButton(
-                                  onPressed: _onSignIn,
+                                  onPressed: _isLoading ? null : _onSignIn,
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: AppColors.primary,
                                     foregroundColor: Colors.white,
@@ -340,14 +358,23 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                       borderRadius: BorderRadius.circular(14),
                                     ),
                                   ),
-                                  child: Text(
-                                    'სისტემაში შესვლა',
-                                    style: AppTypography.button.copyWith(
-                                      fontSize: 15.5,
-                                      fontWeight: FontWeight.w700,
-                                      color: Colors.white,
-                                    ),
-                                  ),
+                                  child: _isLoading
+                                      ? const SizedBox(
+                                          width: 22,
+                                          height: 22,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2.2,
+                                            color: Colors.white,
+                                          ),
+                                        )
+                                      : Text(
+                                          'სისტემაში შესვლა',
+                                          style: AppTypography.button.copyWith(
+                                            fontSize: 15.5,
+                                            fontWeight: FontWeight.w700,
+                                            color: Colors.white,
+                                          ),
+                                        ),
                                 ),
                               ),
                               const SizedBox(height: 10),

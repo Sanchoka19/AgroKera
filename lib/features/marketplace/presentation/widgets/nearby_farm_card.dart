@@ -1,12 +1,10 @@
-import 'dart:convert';
-import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../profile/presentation/widgets/profile_image_view.dart';
 import '../../domain/services/farmer_proximity_service.dart';
 import '../screens/farmer_profile_screen.dart';
 
@@ -24,48 +22,11 @@ class NearbyFarmCard extends StatelessWidget {
   });
 
   Widget _buildCoverImage(String coverUrl) {
-    if (coverUrl.startsWith('data:image/')) {
-      try {
-        final base64Str = coverUrl.split(',').last;
-        return Image.memory(
-          base64Decode(base64Str),
-          fit: BoxFit.cover,
-          width: double.infinity,
-          height: double.infinity,
-        );
-      } catch (_) {}
-    }
-
-    if (!kIsWeb &&
-        (coverUrl.startsWith('/') ||
-            coverUrl.startsWith('file://') ||
-            File(coverUrl).existsSync())) {
-      final path = coverUrl.replaceFirst('file://', '');
-      final file = File(path);
-      if (file.existsSync()) {
-        return Image.file(
-          file,
-          fit: BoxFit.cover,
-          width: double.infinity,
-          height: double.infinity,
-        );
-      }
-    }
-
-    return Image.network(
-      coverUrl,
+    return ProfileImageView.cover(
+      coverUrl: coverUrl,
       fit: BoxFit.cover,
       width: double.infinity,
       height: double.infinity,
-      errorBuilder: (context, error, stackTrace) => Container(
-        color: const Color(0xFFE2E8F0),
-        alignment: Alignment.center,
-        child: const Icon(
-          LucideIcons.image,
-          color: Color(0xFF94A3B8),
-          size: 28,
-        ),
-      ),
     );
   }
 

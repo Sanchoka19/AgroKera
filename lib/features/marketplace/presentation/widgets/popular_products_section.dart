@@ -29,23 +29,25 @@ class PopularProductsSection extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Section Header Row with "ყველას ნახვა"
+        // Section Header Row with See All action (arrow only)
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Text(
-                'პოპულარული პროდუქტები',
-                style: AppTypography.h1.copyWith(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
+              Expanded(
+                child: Text(
+                  'პოპულარული პროდუქტები',
+                  style: AppTypography.h1.copyWith(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
                 ),
               ),
               InkWell(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(20),
                 onTap: () {
                   Navigator.of(context).push(
                     MaterialPageRoute(
@@ -53,28 +55,12 @@ class PopularProductsSection extends ConsumerWidget {
                     ),
                   );
                 },
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 4,
-                    vertical: 4,
-                  ),
-                  child: Row(
-                    children: [
-                      Text(
-                        'ყველას ნახვა',
-                        style: AppTypography.caption.copyWith(
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                      const SizedBox(width: 2),
-                      const Icon(
-                        LucideIcons.chevronRight,
-                        size: 16,
-                        color: AppColors.primary,
-                      ),
-                    ],
+                child: const Padding(
+                  padding: EdgeInsets.all(6),
+                  child: Icon(
+                    LucideIcons.chevronRight,
+                    size: 20,
+                    color: AppColors.primary,
                   ),
                 ),
               ),

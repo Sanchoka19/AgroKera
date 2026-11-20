@@ -18,6 +18,7 @@ class SmsVerificationScreen extends ConsumerStatefulWidget {
   final String? title;
   final String? subtitle;
   final FutureOr<void> Function(BuildContext context)? onVerified;
+  final bool autoSendOnOpen;
 
   const SmsVerificationScreen({
     super.key,
@@ -25,6 +26,7 @@ class SmsVerificationScreen extends ConsumerStatefulWidget {
     this.title,
     this.subtitle,
     this.onVerified,
+    this.autoSendOnOpen = true,
   });
 
   @override
@@ -44,9 +46,17 @@ class _SmsVerificationScreenState extends ConsumerState<SmsVerificationScreen> {
   void initState() {
     super.initState();
     _startTimer();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      unawaited(ref.read(authStateProvider.notifier).sendEmailOtp(widget.email));
-    });
+    if (widget.autoSendOnOpen) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        final error = await ref.read(authStateProvider.notifier).sendEmailOtp(widget.email);
+        if (!mounted) return;
+        if (error != null) {
+          AppToast.error(context, error);
+        } else {
+          AppToast.success(context, '5-ნიშნა კოდი გაიგზავნა: ${widget.email}');
+        }
+      });
+    }
   }
 
   void _startTimer() {
@@ -182,9 +192,13 @@ class _SmsVerificationScreenState extends ConsumerState<SmsVerificationScreen> {
                   onTap: () async {
                     setState(() => _secondsRemaining = 540);
                     _startTimer();
-                    await ref.read(authStateProvider.notifier).sendEmailOtp(widget.email);
+                    final error = await ref.read(authStateProvider.notifier).sendEmailOtp(widget.email);
                     if (!context.mounted) return;
-                    AppToast.success(context, 'ახალი კოდი გაიგზავნა ${widget.email}-ზე.');
+                    if (error != null) {
+                      AppToast.error(context, error);
+                    } else {
+                      AppToast.success(context, 'ახალი კოდი გაიგზავნა ${widget.email}-ზე.');
+                    }
                   },
                   child: RichText(
                     text: TextSpan(

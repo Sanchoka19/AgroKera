@@ -61,21 +61,18 @@ class GoogleSignInSheet extends ConsumerStatefulWidget {
 class _GoogleSignInSheetState extends ConsumerState<GoogleSignInSheet> {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
-  final _otpController = TextEditingController();
 
   bool _isLoading = false;
-  bool _codeSent = false;
   String? _errorText;
 
   @override
   void dispose() {
     _nameController.dispose();
     _emailController.dispose();
-    _otpController.dispose();
     super.dispose();
   }
 
-  Future<void> _handleSendCode() async {
+  Future<void> _handleContinue() async {
     HapticFeedback.lightImpact();
     final name = _nameController.text.trim();
     final email = _emailController.text.trim().toLowerCase();
@@ -94,40 +91,7 @@ class _GoogleSignInSheetState extends ConsumerState<GoogleSignInSheet> {
       _isLoading = true;
     });
 
-    final sent = await ref.read(authStateProvider.notifier).sendEmailOtp(email);
-    if (!mounted) return;
-
-    setState(() => _isLoading = false);
-
-    if (!sent) {
-      setState(() => _errorText = 'კოდის გაგზავნა ვერ მოხერხდა, სცადეთ თავიდან');
-      return;
-    }
-
-    setState(() => _codeSent = true);
-    AppToast.success(context, '5-ნიშნა კოდი გაიგზავნა: $email');
-  }
-
-  Future<void> _handleVerifyCode() async {
-    HapticFeedback.lightImpact();
-    final name = _nameController.text.trim();
-    final email = _emailController.text.trim().toLowerCase();
-    final code = _otpController.text.trim();
-
-    if (code.length < 5) {
-      setState(() => _errorText = 'გთხოვთ შეიყვანოთ მეილზე მოსული 5-ნიშნა კოდი');
-      return;
-    }
-
-    setState(() {
-      _errorText = null;
-      _isLoading = true;
-    });
-
-    final error = await ref.read(authStateProvider.notifier).verifyEmailOtp(
-          email: email,
-          code: code,
-        );
+    final error = await ref.read(authStateProvider.notifier).sendEmailOtp(email);
     if (!mounted) return;
 
     setState(() => _isLoading = false);
@@ -137,6 +101,7 @@ class _GoogleSignInSheetState extends ConsumerState<GoogleSignInSheet> {
       return;
     }
 
+    AppToast.success(context, '5-ნიშნა კოდი გაიგზავნა: $email');
     final initials = name.isNotEmpty ? name.characters.first.toUpperCase() : 'G';
     widget.onAccountSelected(
       GoogleAccount(
@@ -211,9 +176,7 @@ class _GoogleSignInSheetState extends ConsumerState<GoogleSignInSheet> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        _codeSent
-                            ? 'შეიყვანეთ ${_emailController.text.trim()}-ზე მოსული 5-ნიშნა კოდი'
-                            : 'შეიყვანეთ თქვენი Gmail და მიიღეთ დადასტურების კოდი',
+                        'შეიყვანეთ მონაცემები და გაიარეთ ვერიფიკაცია',
                         style: AppTypography.caption.copyWith(
                           fontSize: 12.5,
                           color: const Color(0xFF64748B),
@@ -226,113 +189,61 @@ class _GoogleSignInSheetState extends ConsumerState<GoogleSignInSheet> {
             ),
             const SizedBox(height: 18),
 
-            if (!_codeSent) ...[
-              Text(
-                'სრული სახელი *',
-                style: AppTypography.bodyMedium.copyWith(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: const Color(0xFF334155),
+            Text(
+              'სრული სახელი *',
+              style: AppTypography.bodyMedium.copyWith(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF334155),
+              ),
+            ),
+            const SizedBox(height: 6),
+            TextField(
+              controller: _nameController,
+              textCapitalization: TextCapitalization.words,
+              decoration: InputDecoration(
+                hintText: 'მაგ: საბა ევგენიძე',
+                prefixIcon: const Icon(LucideIcons.user, size: 18, color: Color(0xFF94A3B8)),
+                filled: true,
+                fillColor: const Color(0xFFF8FAFC),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
                 ),
               ),
-              const SizedBox(height: 6),
-              TextField(
-                controller: _nameController,
-                textCapitalization: TextCapitalization.words,
-                decoration: InputDecoration(
-                  hintText: 'მაგ: საბა ევგენიძე',
-                  prefixIcon: const Icon(LucideIcons.user, size: 18, color: Color(0xFF94A3B8)),
-                  filled: true,
-                  fillColor: const Color(0xFFF8FAFC),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                  ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Gmail მისამართი *',
+              style: AppTypography.bodyMedium.copyWith(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF334155),
+              ),
+            ),
+            const SizedBox(height: 6),
+            TextField(
+              controller: _emailController,
+              keyboardType: TextInputType.emailAddress,
+              decoration: InputDecoration(
+                hintText: 'example@gmail.com',
+                prefixIcon: const Icon(LucideIcons.mail, size: 18, color: Color(0xFF94A3B8)),
+                filled: true,
+                fillColor: const Color(0xFFF8FAFC),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
                 ),
               ),
-              const SizedBox(height: 12),
-              Text(
-                'Gmail მისამართი *',
-                style: AppTypography.bodyMedium.copyWith(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: const Color(0xFF334155),
-                ),
-              ),
-              const SizedBox(height: 6),
-              TextField(
-                controller: _emailController,
-                keyboardType: TextInputType.emailAddress,
-                decoration: InputDecoration(
-                  hintText: 'example@gmail.com',
-                  prefixIcon: const Icon(LucideIcons.mail, size: 18, color: Color(0xFF94A3B8)),
-                  filled: true,
-                  fillColor: const Color(0xFFF8FAFC),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                  ),
-                ),
-              ),
-            ] else ...[
-              Text(
-                '5-ნიშნა ვერიფიკაციის კოდი *',
-                style: AppTypography.bodyMedium.copyWith(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: const Color(0xFF334155),
-                ),
-              ),
-              const SizedBox(height: 6),
-              TextField(
-                controller: _otpController,
-                keyboardType: TextInputType.number,
-                maxLength: 5,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 8,
-                  color: AppColors.textPrimary,
-                ),
-                decoration: InputDecoration(
-                  counterText: '',
-                  hintText: '•••••',
-                  filled: true,
-                  fillColor: const Color(0xFFF8FAFC),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton(
-                  onPressed: _isLoading
-                      ? null
-                      : () => setState(() {
-                            _codeSent = false;
-                            _errorText = null;
-                          }),
-                  child: const Text('მეილის შეცვლა'),
-                ),
-              ),
-            ],
+            ),
 
             if (_errorText != null) ...[
               const SizedBox(height: 10),
@@ -348,11 +259,11 @@ class _GoogleSignInSheetState extends ConsumerState<GoogleSignInSheet> {
 
             const SizedBox(height: 18),
             PrimaryButton(
-              text: _codeSent ? 'კოდის დადასტურება' : 'კოდის გაგზავნა Gmail-ზე',
+              text: 'კოდის მიღება და გაგრძელება',
               height: 48,
               isLoading: _isLoading,
               borderRadius: BorderRadius.circular(14),
-              onPressed: _codeSent ? _handleVerifyCode : _handleSendCode,
+              onPressed: _handleContinue,
             ),
           ],
         ),

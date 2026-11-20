@@ -157,6 +157,38 @@ class ReviewsNotifier extends Notifier<ReviewsState> {
     }
     return review;
   }
+
+  /// Synchronizes a known review for an order into in-memory state
+  void registerOrderReview(String orderId, OrderReviewModel review) {
+    if (state.reviewsByOrder[orderId] != null) return;
+    final updatedOrdersMap =
+        Map<String, OrderReviewModel>.from(state.reviewsByOrder);
+    updatedOrdersMap[orderId] = review;
+    state = state.copyWith(reviewsByOrder: updatedOrdersMap);
+  }
+
+  /// Bulk synchronizes reviews already loaded on order objects
+  void syncReviewsFromOrders(Iterable<dynamic> orders) {
+    if (orders.isEmpty) return;
+    final updatedOrdersMap =
+        Map<String, OrderReviewModel>.from(state.reviewsByOrder);
+    bool changed = false;
+
+    for (final o in orders) {
+      try {
+        final orderId = (o as dynamic).id as String?;
+        final review = (o as dynamic).review as OrderReviewModel?;
+        if (orderId != null && review != null && updatedOrdersMap[orderId] == null) {
+          updatedOrdersMap[orderId] = review;
+          changed = true;
+        }
+      } catch (_) {}
+    }
+
+    if (changed) {
+      state = state.copyWith(reviewsByOrder: updatedOrdersMap);
+    }
+  }
 }
 
 final reviewsProvider =

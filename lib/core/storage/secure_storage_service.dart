@@ -184,6 +184,7 @@ class SecureStorageService {
         _delete(_kycStatusKey),
         _delete(_activeAddressKey),
         _delete(_addressesJsonKey),
+        _delete(_cartJsonKey),
       ]);
     } catch (_) {}
   }

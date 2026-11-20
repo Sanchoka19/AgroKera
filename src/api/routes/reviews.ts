@@ -144,16 +144,46 @@ export async function handleReviewsRoute(
       (r) => r.orderId === body.orderId
     );
 
+    let targetFarmerId = body.farmerId || "farmer_2";
+    let targetClientId = body.clientId || "user_client_1";
+    let targetClientName = body.clientName || "მომხმარებელი";
+    let targetClientAvatar = body.clientAvatarUrl;
+
+    try {
+      const dbOrder = await prisma.order.findUnique({
+        where: { id: body.orderId },
+        include: { client: true },
+      });
+      if (dbOrder) {
+        if (dbOrder.farmerId) targetFarmerId = dbOrder.farmerId;
+        if (dbOrder.clientId) targetClientId = dbOrder.clientId;
+        if (dbOrder.client?.fullName) targetClientName = dbOrder.client.fullName;
+        if (dbOrder.client?.avatarUrl) targetClientAvatar = dbOrder.client.avatarUrl;
+      }
+    } catch (_) {}
+
+    try {
+      const fp = await prisma.farmerProfile.findFirst({
+        where: {
+          OR: [{ id: targetFarmerId }, { userId: targetFarmerId }],
+        },
+        select: { id: true },
+      });
+      if (fp) {
+        targetFarmerId = fp.id;
+      }
+    } catch (_) {}
+
     const entry: ReviewEntry = {
       id:
         existingIndex >= 0
           ? farmerReviewsList[existingIndex].id
           : `rev_${Date.now()}`,
       orderId: body.orderId,
-      clientId: body.clientId || "user_client_1",
-      clientName: body.clientName || "მომხმარებელი",
-      clientAvatarUrl: body.clientAvatarUrl,
-      farmerId: body.farmerId || "farmer_2",
+      clientId: targetClientId,
+      clientName: targetClientName,
+      clientAvatarUrl: targetClientAvatar,
+      farmerId: targetFarmerId,
       rating,
       tags: Array.isArray(body.tags) ? body.tags : [],
       comment: body.comment?.trim() || undefined,
@@ -184,7 +214,9 @@ export async function handleReviewsRoute(
           comment: entry.comment,
         },
       });
-    } catch (_) {}
+    } catch (err: any) {
+      console.error("[Reviews] Error saving review to PostgreSQL:", err?.message);
+    }
 
     let averageRating = entry.rating;
     let reviewCount = 1;

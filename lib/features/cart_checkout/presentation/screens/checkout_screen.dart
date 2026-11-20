@@ -6,6 +6,7 @@ import '../../../../core/auth/auth_state_provider.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/app_toast.dart';
+import '../../../../core/widgets/auth_required_bottom_sheet.dart';
 import '../../../marketplace/presentation/providers/marketplace_provider.dart';
 import '../../../orders/presentation/providers/farmer_orders_provider.dart';
 import '../../../orders/presentation/screens/client_orders_screen.dart';
@@ -103,8 +104,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         isPickup ? 0.0 : (baseDeliveryFee + effectiveHeavyFee);
     const platformFee = 0.0;
 
-    // Domain guard: Farmer cannot order their own product or order from themselves
+    // Domain guard: Must be authenticated customer/farmer
     final auth = ref.read(authStateProvider);
+    if (!auth.isAuthenticated || auth.role == UserRole.guest) {
+      AuthRequiredBottomSheet.show(context);
+      return;
+    }
+
+    // Domain guard: Farmer cannot order their own product or order from themselves
     final hasOwnItem = cartItems.any((it) => auth.isOwnerOfCartItem(it));
     final isOwnFarmer = auth.isOwner(
       farmerId: farmer.id,

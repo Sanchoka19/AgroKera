@@ -98,10 +98,11 @@ class OrderChatNotifier extends Notifier<Map<String, List<OrderMessage>>> {
     required String senderId,
     required UserRole senderRole,
     required String senderName,
+    String? imageUrl,
     OrderMessageType type = OrderMessageType.text,
   }) async {
     final cleanText = text.trim();
-    if (cleanText.isEmpty) return;
+    if (cleanText.isEmpty && imageUrl == null) return;
 
     final currentMessages = state[orderId] ?? const [];
     final message = OrderMessage(
@@ -110,7 +111,8 @@ class OrderChatNotifier extends Notifier<Map<String, List<OrderMessage>>> {
       senderId: senderId,
       senderRole: senderRole,
       senderName: senderName,
-      text: cleanText,
+      text: cleanText.isNotEmpty ? cleanText : (imageUrl != null ? 'ფოტო' : ''),
+      imageUrl: imageUrl,
       type: type,
       createdAt: DateTime.now(),
     );

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../reviews/domain/models/order_review_model.dart';
 
 /// Status of an incoming farmer order
 enum OrderStatus {
@@ -144,6 +145,7 @@ class FarmerOrder {
   final String? farmerName;
   final String? farmerAvatarUrl;
   final String? customerAvatarUrl;
+  final OrderReviewModel? review;
 
   const FarmerOrder({
     required this.id,
@@ -172,6 +174,7 @@ class FarmerOrder {
     this.farmerName,
     this.farmerAvatarUrl,
     this.customerAvatarUrl,
+    this.review,
   });
 
   /// Resolves the most accurate avatar URL for the order's counterparty.
@@ -235,12 +238,18 @@ class FarmerOrder {
       farmerAvatarUrl: json['farmerAvatarUrl'] as String?,
       customerAvatarUrl: json['customerAvatarUrl'] as String? ??
           json['clientAvatarUrl'] as String?,
+      review: json['review'] != null && json['review'] is Map<String, dynamic>
+          ? OrderReviewModel.fromJson(json['review'] as Map<String, dynamic>)
+          : null,
       items: rawItems
           .whereType<Map<String, dynamic>>()
           .map(FarmerOrderItem.fromJson)
           .toList(),
     );
   }
+
+  /// Whether the order has already been reviewed by the customer
+  bool get isReviewed => review != null;
 
   /// Subtotal (sum of item prices)
   double get subtotal => items.fold(0.0, (sum, item) => sum + item.price);
@@ -398,6 +407,7 @@ class FarmerOrder {
       if (farmerName != null) 'farmerName': farmerName,
       if (farmerAvatarUrl != null) 'farmerAvatarUrl': farmerAvatarUrl,
       if (customerAvatarUrl != null) 'customerAvatarUrl': customerAvatarUrl,
+      if (review != null) 'review': review!.toJson(),
       'items': items.map((i) => i.toJson()).toList(),
     };
   }
@@ -429,6 +439,7 @@ class FarmerOrder {
     String? farmerName,
     String? farmerAvatarUrl,
     String? customerAvatarUrl,
+    OrderReviewModel? review,
   }) {
     return FarmerOrder(
       id: id ?? this.id,
@@ -458,6 +469,7 @@ class FarmerOrder {
       farmerName: farmerName ?? this.farmerName,
       farmerAvatarUrl: farmerAvatarUrl ?? this.farmerAvatarUrl,
       customerAvatarUrl: customerAvatarUrl ?? this.customerAvatarUrl,
+      review: review ?? this.review,
     );
   }
 }

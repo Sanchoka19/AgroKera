@@ -452,7 +452,7 @@ class ClientOrderCard extends ConsumerWidget {
             if (order.status == OrderStatus.completed) ...[
               const SizedBox(height: 10),
               () {
-                final review =
+                final review = order.review ??
                     ref.watch(reviewsProvider).reviewsByOrder[order.id];
                 if (review == null) {
                   return InkWell(

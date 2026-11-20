@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../../core/theme/app_colors.dart';
 import '../../../../../core/widgets/custom_text_field.dart';
+import '../../../domain/models/product_pricing_advisory.dart';
 
 class ProductStep2Pricing extends StatelessWidget {
   final String selectedUnit;
@@ -22,6 +23,8 @@ class ProductStep2Pricing extends StatelessWidget {
   final double currentPrice;
   final double discountedPrice;
   final double bulkUnitPrice;
+  final TextEditingController? estimatedWeightController;
+  final ValueChanged<String>? onQuickWeightPresetSelected;
 
   static const List<String> availableUnits = [
     'კგ',
@@ -50,6 +53,8 @@ class ProductStep2Pricing extends StatelessWidget {
     required this.currentPrice,
     required this.discountedPrice,
     required this.bulkUnitPrice,
+    this.estimatedWeightController,
+    this.onQuickWeightPresetSelected,
   });
 
   @override
@@ -112,6 +117,110 @@ class ProductStep2Pricing extends StatelessWidget {
             );
           }).toList(),
         ),
+
+        // Estimated Weight Section for Piece ('ცალი') Units
+        if (selectedUnit == 'ცალი') ...[
+          const SizedBox(height: 14),
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(LucideIcons.scale, size: 16, color: AppColors.primary),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'სავარაუდო წონა 1 ცალზე (რეკომენდებული)',
+                        style: GoogleFonts.notoSansGeorgian(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF1E293B),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'მიუთითეთ დიაპაზონი, რათა მყიდველთან წონაზე გაუგებრობა გამოირიცხოს',
+                  style: GoogleFonts.notoSansGeorgian(
+                    fontSize: 11.5,
+                    color: const Color(0xFF64748B),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: ProductPricingAdvisory.quickWeightPresets.map((preset) {
+                    final isSel = estimatedWeightController?.text.trim() == preset;
+                    return ActionChip(
+                      label: Text(
+                        preset,
+                        style: GoogleFonts.notoSansGeorgian(
+                          fontSize: 11.5,
+                          fontWeight: isSel ? FontWeight.w700 : FontWeight.w600,
+                          color: isSel ? Colors.white : const Color(0xFF334155),
+                        ),
+                      ),
+                      backgroundColor: isSel ? AppColors.primary : Colors.white,
+                      side: BorderSide(
+                        color: isSel ? AppColors.primary : const Color(0xFFCBD5E1),
+                      ),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      onPressed: () {
+                        if (onQuickWeightPresetSelected != null) {
+                          onQuickWeightPresetSelected!(preset);
+                        }
+                      },
+                    );
+                  }).toList(),
+                ),
+                if (estimatedWeightController != null) ...[
+                  const SizedBox(height: 10),
+                  CustomTextField(
+                    labelText: 'ზუსტი ან სხვა სავარაუდო წონა',
+                    hintText: 'მაგ: ~1.4 - 1.6 კგ ან მინიმუმ 1.5 კგ',
+                    controller: estimatedWeightController!,
+                    prefixIcon: const Icon(LucideIcons.tag, size: 16),
+                  ),
+                ],
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryLight,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(LucideIcons.info, size: 14, color: AppColors.primary),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'ეს მონაცემი დაეხმარება მომხმარებელს ზუსტი მოცულობის განსაზღვრაში.',
+                          style: GoogleFonts.notoSansGeorgian(
+                            fontSize: 11,
+                            color: const Color(0xFF0F766E),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+
         const SizedBox(height: 16),
 
         // Price & Stock Row

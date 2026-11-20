@@ -65,6 +65,7 @@ class _ClientOrderDetailScreenState
           final reviewsState = ref.read(reviewsProvider);
           if (order != null &&
               order.status == OrderStatus.completed &&
+              order.review == null &&
               reviewsState.reviewsByOrder[order.id] == null) {
             OrderReviewBottomSheet.show(context: context, order: order);
           }
@@ -248,7 +249,8 @@ class _ClientOrderDetailScreenState
 
     if (order.status == OrderStatus.completed) {
       final reviewsState = ref.watch(reviewsProvider);
-      final hasReviewed = reviewsState.reviewsByOrder[order.id] != null;
+      final hasReviewed = order.review != null ||
+          reviewsState.reviewsByOrder[order.id] != null;
       if (!hasReviewed) {
         return Container(
           padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),

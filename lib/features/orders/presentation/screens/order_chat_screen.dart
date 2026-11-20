@@ -12,9 +12,11 @@ import '../../../profile/presentation/widgets/profile_image_view.dart';
 import '../../domain/models/farmer_order_model.dart';
 import '../../domain/models/order_message_model.dart';
 import '../controllers/order_chat_actions_controller.dart';
+import 'package:image_picker/image_picker.dart';
 import '../providers/order_chat_provider.dart';
 import '../widgets/order_chat/order_chat_bank_dialog.dart';
 import '../widgets/order_chat/order_chat_card_bubble.dart';
+import '../widgets/order_chat/order_chat_image_bubble.dart';
 import '../widgets/order_chat/order_chat_intercom_dialog.dart';
 import '../widgets/order_chat/order_chat_pin_dialog.dart';
 import '../widgets/order_chat/order_chat_quick_actions_sheet.dart';
@@ -325,6 +327,15 @@ class _OrderChatScreenState extends ConsumerState<OrderChatScreen> {
 
                         if (msg.isSystem) {
                           return _buildSystemMessage(msg);
+                        }
+
+                        if (msg.type == OrderMessageType.image ||
+                            (msg.imageUrl != null && msg.imageUrl!.isNotEmpty)) {
+                          return OrderChatImageBubble(
+                            message: msg,
+                            isMe: isMe,
+                            partnerAvatarUrl: partnerAvatarUrl,
+                          );
                         }
 
                         if (msg.type != OrderMessageType.text) {
@@ -861,6 +872,124 @@ class _OrderChatScreenState extends ConsumerState<OrderChatScreen> {
     );
   }
 
+  Future<void> _openPhotoSourceSheet() async {
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: EdgeInsets.fromLTRB(
+          20,
+          12,
+          20,
+          MediaQuery.of(ctx).viewInsets.bottom + 24,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 38,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFCBD5E1),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            Text(
+              'ფოტოს გაგზავნა',
+              style: GoogleFonts.notoSansGeorgian(
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+                color: const Color(0xFF0F172A),
+              ),
+            ),
+            const SizedBox(height: 14),
+            ListTile(
+              leading: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: AppColors.primaryLight,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(LucideIcons.camera, size: 20, color: AppColors.primary),
+              ),
+              title: Text(
+                'კამერით გადაღება',
+                style: GoogleFonts.notoSansGeorgian(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF0F172A),
+                ),
+              ),
+              subtitle: Text(
+                'გადაუღეთ ფოტო სასწორს ან პროდუქტს',
+                style: GoogleFonts.notoSansGeorgian(
+                  fontSize: 12,
+                  color: const Color(0xFF64748B),
+                ),
+              ),
+              onTap: () => Navigator.of(ctx).pop(ImageSource.camera),
+            ),
+            const SizedBox(height: 6),
+            ListTile(
+              leading: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEFF6FF),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(LucideIcons.image, size: 20, color: Color(0xFF2563EB)),
+              ),
+              title: Text(
+                'გალერეიდან არჩევა',
+                style: GoogleFonts.notoSansGeorgian(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF0F172A),
+                ),
+              ),
+              subtitle: Text(
+                'ატვირთეთ არსებული ფოტო მოწყობილობიდან',
+                style: GoogleFonts.notoSansGeorgian(
+                  fontSize: 12,
+                  color: const Color(0xFF64748B),
+                ),
+              ),
+              onTap: () => Navigator.of(ctx).pop(ImageSource.gallery),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (source == null || !mounted) return;
+
+    final caption = _textController.text.trim();
+    final sent = await ref
+        .read(orderChatActionsControllerProvider)
+        .pickAndSendImage(
+          context: context,
+          order: widget.order,
+          source: source,
+          caption: caption.isNotEmpty ? caption : null,
+        );
+    if (sent && caption.isNotEmpty && mounted) {
+      _textController.clear();
+    }
+    if (sent && mounted) {
+      _scrollToBottom();
+    }
+  }
+
   Widget _buildBottomBar(bool isActive, bool isFarmer) {
     if (!isActive) {
       final isCancelled = widget.order.status == OrderStatus.cancelled;
@@ -901,7 +1030,7 @@ class _OrderChatScreenState extends ConsumerState<OrderChatScreen> {
         children: [
           // Quick actions '+' button
           Container(
-            margin: const EdgeInsets.only(right: 8),
+            margin: const EdgeInsets.only(right: 6),
             decoration: const BoxDecoration(
               color: Color(0xFFF1F5F9),
               shape: BoxShape.circle,
@@ -918,6 +1047,24 @@ class _OrderChatScreenState extends ConsumerState<OrderChatScreen> {
                 order: widget.order,
                 isFarmer: isFarmer,
               ),
+            ),
+          ),
+
+          // Camera / Photo attach button
+          Container(
+            margin: const EdgeInsets.only(right: 8),
+            decoration: const BoxDecoration(
+              color: Color(0xFFF1F5F9),
+              shape: BoxShape.circle,
+            ),
+            child: IconButton(
+              icon: const Icon(
+                LucideIcons.camera,
+                size: 19,
+                color: Color(0xFF334155),
+              ),
+              tooltip: 'ფოტოს გაგზავნა',
+              onPressed: () => _openPhotoSourceSheet(),
             ),
           ),
           Expanded(

@@ -57,6 +57,7 @@ class PendingReviewNudgeCard extends ConsumerWidget {
     // Find the most recent completed order without a review
     final pendingOrder = clientOrders.where((order) {
       return order.status == OrderStatus.completed &&
+          order.review == null &&
           reviewsState.reviewsByOrder[order.id] == null &&
           !dismissedIds.contains(order.id);
     }).firstOrNull;

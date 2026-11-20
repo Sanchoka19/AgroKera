@@ -3,6 +3,7 @@ import '../../../../core/auth/auth_state_provider.dart';
 /// Semantic message types for custom structured rendering
 enum OrderMessageType {
   text,
+  image,
   pin,
   pinRequest,
   bankDetails,
@@ -13,6 +14,9 @@ enum OrderMessageType {
 
   static OrderMessageType fromString(String? val) {
     switch (val?.toLowerCase()) {
+      case 'image':
+      case 'photo':
+        return OrderMessageType.image;
       case 'pin':
         return OrderMessageType.pin;
       case 'pinrequest':
@@ -44,6 +48,7 @@ class OrderMessage {
   final UserRole senderRole;
   final String senderName;
   final String text;
+  final String? imageUrl;
   final OrderMessageType type;
   final DateTime createdAt;
   final bool isSystem;
@@ -55,6 +60,7 @@ class OrderMessage {
     required this.senderRole,
     required this.senderName,
     required this.text,
+    this.imageUrl,
     this.type = OrderMessageType.text,
     required this.createdAt,
     this.isSystem = false,
@@ -70,9 +76,21 @@ class OrderMessage {
 
     final rawText = json['text'] as String? ?? '';
     var msgType = OrderMessageType.fromString(json['type'] as String?);
+    String? resolvedImageUrl = json['imageUrl'] as String?;
+    String displayText = rawText;
 
-    // Fallback tag detection for backwards compatibility
-    if (msgType == OrderMessageType.text) {
+    if (rawText.startsWith('[IMAGE]')) {
+      msgType = OrderMessageType.image;
+      final payload = rawText.substring('[IMAGE]'.length).trim();
+      final separatorIndex = payload.indexOf('|');
+      if (separatorIndex != -1) {
+        resolvedImageUrl = resolvedImageUrl ?? payload.substring(0, separatorIndex).trim();
+        displayText = payload.substring(separatorIndex + 1).trim();
+      } else {
+        resolvedImageUrl = resolvedImageUrl ?? payload;
+        displayText = '';
+      }
+    } else if (msgType == OrderMessageType.text) {
       if (rawText.startsWith('[PIN_REQUEST]')) {
         msgType = OrderMessageType.pinRequest;
       } else if (rawText.startsWith('[BANK]')) {
@@ -96,7 +114,8 @@ class OrderMessage {
       senderId: json['senderId'] as String? ?? '',
       senderRole: role,
       senderName: json['senderName'] as String? ?? 'მომხმარებელი',
-      text: rawText,
+      text: displayText,
+      imageUrl: resolvedImageUrl,
       type: msgType,
       createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ?? DateTime.now(),
       isSystem: json['isSystem'] as bool? ?? false,
@@ -104,13 +123,21 @@ class OrderMessage {
   }
 
   Map<String, dynamic> toJson() {
+    final String serializedText;
+    if (type == OrderMessageType.image && imageUrl != null) {
+      serializedText = '[IMAGE]$imageUrl|${text.trim()}';
+    } else {
+      serializedText = text;
+    }
+
     return {
       'id': id,
       'orderId': orderId,
       'senderId': senderId,
       'senderRole': senderRole.name,
       'senderName': senderName,
-      'text': text,
+      'text': serializedText,
+      if (imageUrl != null) 'imageUrl': imageUrl,
       'type': type.name,
       'createdAt': createdAt.toIso8601String(),
       'isSystem': isSystem,

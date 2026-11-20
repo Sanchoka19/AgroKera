@@ -7,6 +7,7 @@ import '../services/push_notification_service.dart';
 import '../storage/secure_storage_service.dart';
 import '../../features/marketplace/presentation/providers/marketplace_provider.dart';
 import '../../features/profile/presentation/providers/user_address_provider.dart';
+import '../../features/cart_checkout/presentation/providers/cart_provider.dart';
 import 'auth_models.dart';
 import 'auth_repository.dart';
 import 'mock_account_resolver.dart';
@@ -366,6 +367,9 @@ class AuthNotifier extends Notifier<AuthState> {
     state = const AuthState(isAuthenticated: false);
     unawaited(_storage.clearSession());
     unawaited(ref.read(userAddressProvider.notifier).clearAddresses());
+    try {
+      ref.read(cartProvider.notifier).clearCart();
+    } catch (_) {}
     if (oldUid != null && oldUid.isNotEmpty) {
       unawaited(_repo.syncFcmToken(userId: oldUid, fcmToken: ''));
     }

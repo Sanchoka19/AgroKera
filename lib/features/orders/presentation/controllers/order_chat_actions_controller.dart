@@ -1,8 +1,11 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../../core/auth/auth_state_provider.dart';
+import '../../../../core/network/api_client.dart';
 import '../../../../core/widgets/app_toast.dart';
 import '../../../profile/presentation/providers/user_address_provider.dart';
 import '../../domain/models/farmer_order_model.dart';
@@ -358,6 +361,75 @@ class OrderChatActionsController {
     }
     Clipboard.setData(ClipboardData(text: clean));
     AppToast.info(context, 'ტელეფონის ნომერი დაკოპირდა: $clean');
+  }
+
+  /// Picks an image from [source] (camera or gallery) and sends it as an image message
+  Future<bool> pickAndSendImage({
+    required BuildContext context,
+    required FarmerOrder order,
+    required ImageSource source,
+    String? caption,
+  }) async {
+    try {
+      final picker = ImagePicker();
+      final picked = await picker.pickImage(
+        source: source,
+        imageQuality: 82,
+        maxWidth: 1600,
+        maxHeight: 1600,
+      );
+
+      if (picked == null) return false;
+
+      final bytes = await picked.readAsBytes();
+      if (bytes.isEmpty) return false;
+
+      final base64Image = 'data:image/jpeg;base64,${base64Encode(bytes)}';
+      String uploadedImageUrl = base64Image;
+
+      // 1. Upload to centralized cloud asset storage (Cloudflare R2) under 'chat' folder
+      try {
+        final api = _ref.read(apiClientProvider);
+        final response = await api.post<Map<String, dynamic>>(
+          '/api/upload',
+          data: {
+            'fileName': picked.name,
+            'base64Data': base64Image,
+            'contentType': 'image/jpeg',
+            'folder': 'chat',
+          },
+        );
+        final remoteUrl = response.data?['url'] as String?;
+        if (remoteUrl != null && remoteUrl.isNotEmpty) {
+          uploadedImageUrl = remoteUrl;
+        }
+      } catch (_) {
+        // Graceful fallback to inline Data URI if backend asset server or network is offline
+      }
+
+      final sender = _resolveSender(order);
+      final cleanCaption = caption?.trim() ?? '';
+
+      await _ref.read(orderChatProvider.notifier).sendMessage(
+            orderId: order.id,
+            text: cleanCaption.isNotEmpty ? cleanCaption : 'ფოტო',
+            senderId: sender.id,
+            senderRole: sender.role,
+            senderName: sender.name,
+            imageUrl: uploadedImageUrl,
+            type: OrderMessageType.image,
+          );
+
+      if (context.mounted) {
+        AppToast.success(context, 'ფოტო წარმატებით გაიგზავნა');
+      }
+      return true;
+    } catch (_) {
+      if (context.mounted) {
+        AppToast.error(context, 'ფოტოს გაგზავნა ვერ მოხერხდა');
+      }
+      return false;
+    }
   }
 }
 

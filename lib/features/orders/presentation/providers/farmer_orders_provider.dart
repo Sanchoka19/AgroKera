@@ -13,6 +13,7 @@ import '../../../marketplace/presentation/providers/marketplace_provider.dart';
 import '../../data/orders_mock_data.dart';
 import '../../data/orders_repository.dart';
 import '../../domain/models/farmer_order_model.dart';
+import '../../../reviews/presentation/providers/reviews_provider.dart';
 import 'order_chat_provider.dart';
 
 final ordersRepositoryProvider = Provider<OrdersRepository>((ref) {
@@ -210,6 +211,7 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
           incomingOrders: cachedIncoming,
           clientOrders: cachedClient,
         );
+        ref.read(reviewsProvider.notifier).syncReviewsFromOrders(cached);
       }
     } catch (_) {}
   }
@@ -423,6 +425,7 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
         orders: combinedOrders,
         inFlightOrderIds: _inFlightStatusUpdates.keys.toSet(),
       );
+      ref.read(reviewsProvider.notifier).syncReviewsFromOrders(combinedOrders);
       if (combinedOrders.isNotEmpty) {
         unawaited(
           ref.read(localCacheServiceProvider).saveEntityList(
@@ -630,6 +633,10 @@ class FarmerOrdersNotifier extends Notifier<FarmerOrdersState> {
     bool isPickup = false,
   }) async {
     final auth = ref.read(authStateProvider);
+    if (!isFlutterTestEnv &&
+        (!auth.isAuthenticated || auth.role == UserRole.guest)) {
+      throw StateError('შეკვეთის გასაფორმებლად აუცილებელია ავტორიზაცია');
+    }
     if (auth.role == UserRole.farmer) {
       final isOwn = cartItems.any((ci) => auth.isOwnerOfCartItem(ci));
       if (isOwn) {

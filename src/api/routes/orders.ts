@@ -66,6 +66,7 @@ export async function handleOrdersRoute(
           include: { product: true },
         },
         shipment: true,
+        review: true,
       },
       orderBy: { createdAt: "desc" },
     });
@@ -133,6 +134,18 @@ export async function handleOrdersRoute(
               ? item.product.images[0]
               : null),
         })),
+        review: o.review
+          ? {
+              id: o.review.id,
+              orderId: o.review.orderId,
+              clientId: o.review.clientId,
+              farmerId: o.review.farmerId,
+              rating: o.review.rating,
+              tags: o.review.tags,
+              comment: o.review.comment ?? null,
+              createdAt: o.review.createdAt.toISOString(),
+            }
+          : null,
       };
     });
 

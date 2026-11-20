@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../core/widgets/auth_required_bottom_sheet.dart';
+import '../../../../core/widgets/address_required_bottom_sheet.dart';
 import '../providers/cart_provider.dart';
 import '../screens/checkout_screen.dart';
 
@@ -300,11 +302,23 @@ class OrderDetailsSheet extends ConsumerWidget {
                   height: 50,
                   child: ElevatedButton(
                     onPressed: () {
-                      Navigator.of(context).pop();
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => const CheckoutScreen(),
-                        ),
+                      requireAuth(
+                        context,
+                        ref: ref,
+                        onAuthenticated: () {
+                          requireAddress(
+                            context,
+                            ref: ref,
+                            onAddressPresent: () {
+                              Navigator.of(context).pop();
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => const CheckoutScreen(),
+                                ),
+                              );
+                            },
+                          );
+                        },
                       );
                     },
                     style: ElevatedButton.styleFrom(

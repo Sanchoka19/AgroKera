@@ -83,7 +83,7 @@ export async function handleAssetsRoute(
     const rawContentType = body.contentType || "image/jpeg";
     const contentType = rawContentType.startsWith("image/") ? rawContentType : "image/jpeg";
     const ext = (body.fileName?.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "");
-    const allowedFolders = ["products", "avatars", "covers", "kyc"];
+    const allowedFolders = ["products", "avatars", "covers", "kyc", "chat"];
     const folder = allowedFolders.includes(body.folder || "") ? body.folder! : "products";
     const objectKey = `${folder}/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext || "jpg"}`;
 

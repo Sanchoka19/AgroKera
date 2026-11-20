@@ -475,6 +475,16 @@ class OrderChatCardBubble extends ConsumerWidget {
           msg.text,
           'შეკვეთის შეჯამება',
         );
+      case OrderMessageType.image:
+        return (
+          LucideIcons.image,
+          AppColors.primary,
+          AppColors.primaryLight,
+          const Color(0xFF99F6E4),
+          'ფოტო შეტყობინება',
+          msg.text,
+          'ფოტო',
+        );
       case OrderMessageType.text:
         return (
           LucideIcons.messageSquare,

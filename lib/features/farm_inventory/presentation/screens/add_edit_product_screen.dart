@@ -11,6 +11,8 @@ import 'package:agrokera/core/widgets/app_toast.dart';
 import '../../../marketplace/data/models/product_model.dart';
 import '../providers/farmer_inventory_provider.dart';
 import '../providers/product_form_validator.dart';
+import '../../domain/models/product_pricing_advisory.dart';
+import '../widgets/product_publish_confirmation_sheet.dart';
 import '../widgets/product_steps/product_photo_entry.dart';
 import '../widgets/product_steps/product_photo_picker_sheet.dart';
 import '../widgets/product_steps/product_step1_identity.dart';
@@ -60,6 +62,7 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
   bool _isBulkDiscountActive = false;
   late final TextEditingController _bulkMinQtyCtrl;
   late final TextEditingController _bulkDiscountCtrl;
+  late final TextEditingController _estimatedWeightCtrl;
 
   // Step 3 State
   late final TextEditingController _descCtrl;
@@ -128,6 +131,11 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
           ? existing!.bulkDiscountPercent.toString()
           : '',
     );
+    final initialEstimatedWeight =
+        ProductPricingAdvisory.extractEstimatedWeightFromDescription(
+            existing?.description);
+    _estimatedWeightCtrl =
+        TextEditingController(text: initialEstimatedWeight ?? '');
 
     // Step 3
     _descCtrl = TextEditingController(text: existing?.description ?? '');
@@ -141,6 +149,7 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
     _stockCtrl.addListener(_onFieldChanged);
     _titleCtrl.addListener(_onFieldChanged);
     _minOrderCtrl.addListener(_onMinOrderInputChanged);
+    _estimatedWeightCtrl.addListener(_onFieldChanged);
   }
 
   void _onFieldChanged() {
@@ -164,6 +173,7 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
     _stockCtrl.removeListener(_onFieldChanged);
     _titleCtrl.removeListener(_onFieldChanged);
     _minOrderCtrl.removeListener(_onMinOrderInputChanged);
+    _estimatedWeightCtrl.removeListener(_onFieldChanged);
 
     _titleCtrl.dispose();
     _priceCtrl.dispose();
@@ -172,6 +182,7 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
     _discountCtrl.dispose();
     _bulkMinQtyCtrl.dispose();
     _bulkDiscountCtrl.dispose();
+    _estimatedWeightCtrl.dispose();
     _descCtrl.dispose();
     _varietyCtrl.dispose();
     super.dispose();
@@ -316,6 +327,38 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
       }
       setState(() => _currentStep = 3);
     } else {
+      _confirmAndSave();
+    }
+  }
+
+  Future<void> _confirmAndSave() async {
+    final title = _titleCtrl.text.trim();
+    final price = double.tryParse(_priceCtrl.text.trim()) ?? 0.0;
+    final stock = double.tryParse(_stockCtrl.text.trim()) ?? 0.0;
+    final discount = _isDiscountActive ? int.tryParse(_discountCtrl.text.trim()) : null;
+
+    final advisory = ProductPricingAdvisory.evaluate(
+      title: title,
+      category: _selectedCategory,
+      unit: _selectedUnit,
+      basePrice: price,
+      discountPercent: discount,
+      stock: stock,
+      minOrder: _minOrder,
+      estimatedPieceWeight:
+          _selectedUnit == 'ცალი' ? _estimatedWeightCtrl.text.trim() : null,
+      description: _descCtrl.text,
+    );
+
+    final confirmed = await ProductPublishConfirmationSheet.show(
+      context,
+      advisory: advisory,
+      onEditWeightRequested: () {
+        setState(() => _currentStep = 2);
+      },
+    );
+
+    if (confirmed) {
       _handleSave();
     }
   }
@@ -354,6 +397,8 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
     final composedDescription = ProductFormValidator.composeDescription(
       variety: _varietyCtrl.text,
       agroTags: _selectedAgroTags,
+      estimatedPieceWeight:
+          _selectedUnit == 'ცალი' ? _estimatedWeightCtrl.text.trim() : null,
       rawDescription: _descCtrl.text,
     );
 
@@ -558,6 +603,10 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
                           currentPrice: _currentPrice,
                           discountedPrice: _discountedPrice,
                           bulkUnitPrice: _bulkUnitPrice,
+                          estimatedWeightController: _estimatedWeightCtrl,
+                          onQuickWeightPresetSelected: (preset) {
+                            setState(() => _estimatedWeightCtrl.text = preset);
+                          },
                         ),
                       3 => ProductStep3Review(
                           varietyController: _varietyCtrl,

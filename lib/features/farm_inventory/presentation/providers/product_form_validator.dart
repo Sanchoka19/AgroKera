@@ -97,18 +97,23 @@ class ProductFormValidator {
     return basePrice * (1.0 - (discount / 100.0));
   }
 
-  /// Composes rich description text combining variety, agro-tags, and custom description
+  /// Composes rich description text combining variety, agro-tags, estimated weight, and custom description
   static String composeDescription({
     String? variety,
     Set<String>? agroTags,
+    String? estimatedPieceWeight,
     String? rawDescription,
   }) {
     final buffer = StringBuffer();
     final cleanVariety = variety?.trim() ?? '';
     final cleanDesc = rawDescription?.trim() ?? '';
+    final cleanWeight = estimatedPieceWeight?.trim() ?? '';
 
     if (cleanVariety.isNotEmpty) {
       buffer.writeln('ჯიში/სახეობა: $cleanVariety');
+    }
+    if (cleanWeight.isNotEmpty) {
+      buffer.writeln('სავარაუდო წონა 1 ცალზე: $cleanWeight');
     }
     if (agroTags != null && agroTags.isNotEmpty) {
       buffer.writeln('მახასიათებლები: ${agroTags.join(', ')}');

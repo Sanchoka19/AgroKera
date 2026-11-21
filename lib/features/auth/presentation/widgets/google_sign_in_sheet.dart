@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../core/auth/auth_state_provider.dart';
+import '../../../../core/auth/phone_validator.dart';
 import '../../../../core/constants/app_assets.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
@@ -14,12 +15,14 @@ import '../../../../core/widgets/primary_button.dart';
 class GoogleAccount {
   final String name;
   final String email;
+  final String? phone;
   final String initials;
   final Color avatarBg;
 
   const GoogleAccount({
     required this.name,
     required this.email,
+    this.phone,
     required this.initials,
     required this.avatarBg,
   });
@@ -61,6 +64,7 @@ class GoogleSignInSheet extends ConsumerStatefulWidget {
 class _GoogleSignInSheetState extends ConsumerState<GoogleSignInSheet> {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
+  final _phoneController = TextEditingController();
 
   bool _isLoading = false;
   String? _errorText;
@@ -69,6 +73,7 @@ class _GoogleSignInSheetState extends ConsumerState<GoogleSignInSheet> {
   void dispose() {
     _nameController.dispose();
     _emailController.dispose();
+    _phoneController.dispose();
     super.dispose();
   }
 
@@ -76,6 +81,7 @@ class _GoogleSignInSheetState extends ConsumerState<GoogleSignInSheet> {
     HapticFeedback.lightImpact();
     final name = _nameController.text.trim();
     final email = _emailController.text.trim().toLowerCase();
+    final phone = _phoneController.text.trim();
 
     if (name.isEmpty) {
       setState(() => _errorText = 'გთხოვთ შეიყვანოთ თქვენი სახელი და გვარი');
@@ -83,6 +89,10 @@ class _GoogleSignInSheetState extends ConsumerState<GoogleSignInSheet> {
     }
     if (email.isEmpty || !email.contains('@')) {
       setState(() => _errorText = 'გთხოვთ შეიყვანოთ სწორი Gmail მისამართი');
+      return;
+    }
+    if (phone.isNotEmpty && !PhoneValidator.isValid(phone)) {
+      setState(() => _errorText = 'გთხოვთ შეიყვანოთ სწორი მობილური ნომერი (მაგ. 599 12 34 56)');
       return;
     }
 
@@ -107,6 +117,7 @@ class _GoogleSignInSheetState extends ConsumerState<GoogleSignInSheet> {
       GoogleAccount(
         name: name,
         email: email,
+        phone: phone.isNotEmpty ? PhoneValidator.normalize(phone) : null,
         initials: initials,
         avatarBg: AppColors.primary,
       ),
@@ -232,6 +243,34 @@ class _GoogleSignInSheetState extends ConsumerState<GoogleSignInSheet> {
               decoration: InputDecoration(
                 hintText: 'example@gmail.com',
                 prefixIcon: const Icon(LucideIcons.mail, size: 18, color: Color(0xFF94A3B8)),
+                filled: true,
+                fillColor: const Color(0xFFF8FAFC),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'ტელეფონის ნომერი',
+              style: AppTypography.bodyMedium.copyWith(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF334155),
+              ),
+            ),
+            const SizedBox(height: 6),
+            TextField(
+              controller: _phoneController,
+              keyboardType: TextInputType.phone,
+              decoration: InputDecoration(
+                hintText: '599 12 34 56',
+                prefixIcon: const Icon(LucideIcons.phone, size: 18, color: Color(0xFF94A3B8)),
                 filled: true,
                 fillColor: const Color(0xFFF8FAFC),
                 border: OutlineInputBorder(

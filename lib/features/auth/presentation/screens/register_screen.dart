@@ -5,6 +5,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../core/auth/auth_state_provider.dart';
+import '../../../../core/auth/phone_validator.dart';
 import '../../../../core/constants/app_assets.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
@@ -24,6 +25,7 @@ class RegisterScreen extends ConsumerStatefulWidget {
 class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
+  final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
   bool _isLoading = false;
@@ -40,12 +42,16 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         auth.userEmail != 'example@gmail.com') {
       _emailController.text = auth.userEmail!.trim();
     }
+    if (auth.userPhone != null && auth.userPhone!.trim().isNotEmpty) {
+      _phoneController.text = auth.userPhone!.trim();
+    }
   }
 
   @override
   void dispose() {
     _nameController.dispose();
     _emailController.dispose();
+    _phoneController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -54,6 +60,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     HapticFeedback.lightImpact();
     final name = _nameController.text.trim();
     final email = _emailController.text.trim().toLowerCase();
+    final phone = _phoneController.text.trim();
     final password = _passwordController.text;
 
     if (name.isEmpty) {
@@ -62,6 +69,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     }
     if (email.isEmpty || !email.contains('@')) {
       AppToast.error(context, 'გთხოვთ შეიყვანოთ სწორი ელექტრონული ფოსტა');
+      return;
+    }
+    if (phone.isEmpty) {
+      AppToast.error(context, 'გთხოვთ შეიყვანოთ ტელეფონის ნომერი');
+      return;
+    }
+    if (!PhoneValidator.isValid(phone)) {
+      AppToast.error(context, 'გთხოვთ შეიყვანოთ სწორი მობილური ნომერი (მაგ. 599 12 34 56)');
       return;
     }
     if (password.length < 6) {
@@ -85,6 +100,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     ref.read(authStateProvider.notifier).savePendingRegistrationDraft(
       name: name,
       email: email,
+      phone: PhoneValidator.normalize(phone),
       password: password,
     );
 
@@ -115,6 +131,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     ref.read(authStateProvider.notifier).savePendingRegistrationDraft(
       name: account.name,
       email: account.email,
+      phone: account.phone,
     );
 
     Navigator.of(context).push(
@@ -308,7 +325,18 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                               ),
                               const SizedBox(height: 10),
 
-                              // Field 3: Password
+                              // Field 3: Phone
+                              _buildFieldLabel('ტელეფონის ნომერი'),
+                              const SizedBox(height: 6),
+                              _buildInputField(
+                                controller: _phoneController,
+                                hintText: '599 12 34 56',
+                                prefixIcon: LucideIcons.phone,
+                                keyboardType: TextInputType.phone,
+                              ),
+                              const SizedBox(height: 10),
+
+                              // Field 4: Password
                               _buildFieldLabel('პაროლი'),
                               const SizedBox(height: 6),
                               _buildInputField(

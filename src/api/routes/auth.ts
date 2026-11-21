@@ -213,19 +213,55 @@ export async function handleAuthRoute(
     const roleEnum =
       body.role?.toUpperCase() === "FARMER" ? Role.FARMER : Role.CLIENT;
     const normalizedEmail = body.email?.trim().toLowerCase();
+    const slug = normalizedEmail ? normalizedEmail.replace(/[^a-z0-9]/g, "_") : "";
 
-    // 1. Always look up by email first (strict account isolation)
+    // 1. Always look up by email first (strict account isolation with resilient slug match)
     let user = normalizedEmail
       ? await prisma.user.findFirst({
         where: {
-          email: {
-            equals: normalizedEmail,
-            mode: "insensitive",
-          },
+          OR: [
+            {
+              email: {
+                equals: normalizedEmail,
+                mode: "insensitive",
+              },
+            },
+            ...(slug
+              ? [
+                  { id: `user_farmer_${slug}` },
+                  { id: `user_client_${slug}` },
+                  { email: `${slug}@agrokera.ge` },
+                ]
+              : []),
+          ],
         },
         include: { farmerProfile: true },
       })
       : null;
+
+    // Auto-heal legacy or fallback email to normalized email
+    if (user && normalizedEmail && user.email !== normalizedEmail) {
+      user = await prisma.user.update({
+        where: { id: user.id },
+        data: { email: normalizedEmail },
+        include: { farmerProfile: true },
+      });
+    }
+
+    // Auto-sync real phone number if provided
+    if (
+      user &&
+      body.phone &&
+      body.phone !== "+995 599 12 34 56" &&
+      body.phone !== "+995 599 00 00 00" &&
+      user.phoneNumber !== body.phone.trim()
+    ) {
+      user = await prisma.user.update({
+        where: { id: user.id },
+        data: { phoneNumber: body.phone.trim() },
+        include: { farmerProfile: true },
+      });
+    }
 
     // 2. Only fall back to phone lookup if no email was provided
     if (!user && !normalizedEmail && body.phone) {
@@ -364,6 +400,13 @@ export async function handleAuthRoute(
     const targetUserId = roleEnum === Role.FARMER ? `user_farmer_${slug}` : `user_client_${slug}`;
     const targetFarmerId = `farmer_${slug}`;
 
+    const safePhone =
+      (body.phoneNumber || (body as any).phone) &&
+      (body.phoneNumber || (body as any).phone) !== "+995 599 12 34 56" &&
+      (body.phoneNumber || (body as any).phone) !== "+995 599 00 00 00"
+        ? (body.phoneNumber || (body as any).phone).trim()
+        : null;
+
     let existingUser = await prisma.user.findFirst({
       where: {
         OR: [
@@ -371,7 +414,7 @@ export async function handleAuthRoute(
             ? [{ email: { equals: normalizedEmail, mode: "insensitive" as const } }]
             : []),
           { id: targetUserId },
-          ...(body.phoneNumber ? [{ phoneNumber: body.phoneNumber }] : []),
+          ...(safePhone ? [{ phoneNumber: safePhone }] : []),
         ],
       },
       include: { farmerProfile: true },
@@ -384,6 +427,7 @@ export async function handleAuthRoute(
         data: {
           fullName: body.fullName || existingUser.fullName,
           role: roleEnum,
+          ...(safePhone ? { phoneNumber: safePhone } : {}),
           ...(passwordHash ? { passwordHash } : {}),
           ...(roleEnum === Role.FARMER
             ? {

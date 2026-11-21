@@ -87,6 +87,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             ref.read(authStateProvider.notifier).login(
               name: account.name,
               email: account.email,
+              phone: account.phone,
               isGoogleAuth: true,
               role: UserRole.customer,
             );

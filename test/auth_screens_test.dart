@@ -61,17 +61,19 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('პაროლი'), findsWidgets);
-    expect(find.byType(TextField), findsNWidgets(3));
+    expect(find.text('ტელეფონის ნომერი'), findsOneWidget);
+    expect(find.byType(TextField), findsNWidgets(4));
   });
 
   testWidgets('RegisterScreen validates password minimum length', (WidgetTester tester) async {
     await tester.pumpWidget(wrapWithScaffold(const RegisterScreen()));
     await tester.pumpAndSettle();
 
-    // Enter name, email, and too short password (<6 chars)
+    // Enter name, email, phone, and too short password (<6 chars)
     await tester.enterText(find.byType(TextField).at(0), 'გიორგი ბერიძე');
     await tester.enterText(find.byType(TextField).at(1), 'giorgi@agrokera.ge');
-    await tester.enterText(find.byType(TextField).at(2), '12345');
+    await tester.enterText(find.byType(TextField).at(2), '599123456');
+    await tester.enterText(find.byType(TextField).at(3), '12345');
     await tester.pumpAndSettle();
 
     // Tap register button

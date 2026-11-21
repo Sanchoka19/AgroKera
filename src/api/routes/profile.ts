@@ -67,6 +67,8 @@ export async function handleProfileRoute(
       fullName?: string;
       name?: string;
       email?: string;
+      phone?: string;
+      phoneNumber?: string;
       role?: string;
       verificationStatus?: VerificationStatus;
       farmName?: string;
@@ -128,11 +130,22 @@ export async function handleProfileRoute(
       if (userWithId) {
         existingUser = userWithId;
       } else {
+        let resolvedEmail = body.email?.trim().toLowerCase();
+        if (!resolvedEmail) {
+          // If slug was derived from an email (e.g. "juboj317_gmail_com" -> "juboj317@gmail.com")
+          const emailPattern = slug.match(/^(.+)_([a-z0-9-]+)_(com|ge|net|org|io|ru|edu)$/i);
+          if (emailPattern) {
+            resolvedEmail = `${emailPattern[1]}@${emailPattern[2]}.${emailPattern[3]}`;
+          } else {
+            resolvedEmail = `${slug}@agrokera.ge`;
+          }
+        }
+
         existingUser = await prisma.user.create({
           data: {
             id: targetUserId,
             fullName: body.fullName || body.name || (isFarmer ? "ფერმერი" : "მომხმარებელი"),
-            email: body.email?.trim().toLowerCase() || `${slug}@agrokera.ge`,
+            email: resolvedEmail,
             phoneNumber: `+995599${Math.floor(100000 + Math.random() * 900000)}`,
             role: isFarmer ? Role.FARMER : Role.CLIENT,
             verificationStatus: body.verificationStatus || VerificationStatus.VERIFIED,
@@ -166,6 +179,7 @@ export async function handleProfileRoute(
     }
 
     const resolvedFullName = body.fullName || body.name;
+    const resolvedPhone = body.phoneNumber?.trim() || body.phone?.trim();
     const hasFarmerFieldUpdate = Boolean(
       body.farmName ||
         body.region ||
@@ -187,6 +201,7 @@ export async function handleProfileRoute(
       where: { id: existingUser.id },
       data: {
         ...(resolvedFullName ? { fullName: resolvedFullName } : {}),
+        ...(resolvedPhone ? { phoneNumber: resolvedPhone } : {}),
         ...(body.avatarUrl ? { avatarUrl: body.avatarUrl } : {}),
         ...(body.verificationStatus
           ? { verificationStatus: body.verificationStatus }

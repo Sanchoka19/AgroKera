@@ -325,13 +325,18 @@ void main() {
     await tester.enterText(nameField, 'რევაზ კობახიძე');
     await tester.pump();
 
-    // Edit farm name
-    final farmField = find.byType(TextFormField).at(1);
+    // Edit farm name (last TextFormField)
+    final farmField = find.widgetWithText(TextFormField, 'ახალი ფერმერი-ის მეურნეობა').evaluate().isNotEmpty
+        ? find.widgetWithText(TextFormField, 'ახალი ფერმერი-ის მეურნეობა')
+        : find.byType(TextFormField).last;
+    await tester.ensureVisible(farmField);
     await tester.enterText(farmField, 'ახალი ალაზანი');
     await tester.pump();
 
     // Tap Save
-    await tester.tap(find.text('შენახვა'));
+    final saveBtn = find.text('შენახვა');
+    await tester.ensureVisible(saveBtn);
+    await tester.tap(saveBtn);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 600));
 

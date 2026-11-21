@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../core/auth/auth_state_provider.dart';
+import '../../../../core/auth/phone_validator.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_toast.dart';
 import '../../../marketplace/presentation/providers/marketplace_provider.dart';
@@ -36,6 +37,7 @@ class _EditProfileBottomSheetState extends ConsumerState<EditProfileBottomSheet>
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
   late final TextEditingController _farmNameController;
+  late final TextEditingController _phoneController;
   bool _isSaving = false;
 
   @override
@@ -48,12 +50,16 @@ class _EditProfileBottomSheetState extends ConsumerState<EditProfileBottomSheet>
     _farmNameController = TextEditingController(
       text: auth.farmName ?? (auth.isFarmer ? 'ჩემი მეურნეობა' : ''),
     );
+    _phoneController = TextEditingController(
+      text: auth.userPhone ?? '',
+    );
   }
 
   @override
   void dispose() {
     _nameController.dispose();
     _farmNameController.dispose();
+    _phoneController.dispose();
     super.dispose();
   }
 
@@ -63,14 +69,24 @@ class _EditProfileBottomSheetState extends ConsumerState<EditProfileBottomSheet>
     final auth = ref.read(authStateProvider);
     final newName = _nameController.text.trim();
     final newFarmName = auth.isFarmer ? _farmNameController.text.trim() : null;
+    final newPhone = _phoneController.text.trim();
+
+    if (newPhone.isNotEmpty && !PhoneValidator.isValid(newPhone)) {
+      AppToast.error(
+        context,
+        'გთხოვთ შეიყვანოთ სწორი მობილური ნომერი (მაგ. 599 12 34 56)',
+      );
+      return;
+    }
 
     setState(() => _isSaving = true);
     HapticFeedback.mediumImpact();
 
     try {
-      await ref.read(authStateProvider.notifier).updateProfileNames(
+      await ref.read(authStateProvider.notifier).updateProfileDetails(
             userName: newName,
             farmName: newFarmName,
+            phone: newPhone.isNotEmpty ? PhoneValidator.normalize(newPhone) : null,
           );
 
       if (auth.isFarmer && newFarmName != null && newFarmName.isNotEmpty) {
@@ -439,7 +455,73 @@ class _EditProfileBottomSheetState extends ConsumerState<EditProfileBottomSheet>
                   ),
                 ),
 
-                // 2. Farm Name Field (Only for Farmer)
+                // 2. Phone Number Field
+                const SizedBox(height: 18),
+                Text(
+                  'ტელეფონის ნომერი',
+                  style: GoogleFonts.notoSansGeorgian(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF334155),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextFormField(
+                  controller: _phoneController,
+                  keyboardType: TextInputType.phone,
+                  textInputAction:
+                      isFarmer ? TextInputAction.next : TextInputAction.done,
+                  style: GoogleFonts.notoSansGeorgian(
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF0F172A),
+                  ),
+                  validator: (v) {
+                    if (v != null && v.trim().isNotEmpty && !PhoneValidator.isValid(v)) {
+                      return 'მიუთითეთ სწორი მობილური ნომერი (მაგ. 599 12 34 56)';
+                    }
+                    return null;
+                  },
+                  decoration: InputDecoration(
+                    hintText: 'მაგ: 599 12 34 56',
+                    hintStyle: GoogleFonts.notoSansGeorgian(
+                      fontSize: 13.5,
+                      color: const Color(0xFF94A3B8),
+                    ),
+                    prefixIcon: const Icon(
+                      LucideIcons.phone,
+                      size: 18,
+                      color: Color(0xFF64748B),
+                    ),
+                    filled: true,
+                    fillColor: const Color(0xFFF8FAFC),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 13,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                        color: AppColors.primary,
+                        width: 1.5,
+                      ),
+                    ),
+                    errorBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Color(0xFFEF4444)),
+                    ),
+                  ),
+                ),
+
+                // 3. Farm Name Field (Only for Farmer)
                 if (isFarmer) ...[
                   const SizedBox(height: 18),
                   Text(

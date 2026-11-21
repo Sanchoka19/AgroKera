@@ -12,6 +12,7 @@ import '../../features/cart_checkout/presentation/providers/cart_provider.dart';
 import 'auth_models.dart';
 import 'auth_repository.dart';
 import 'mock_account_resolver.dart';
+import 'phone_validator.dart';
 
 export 'auth_models.dart';
 
@@ -369,11 +370,12 @@ class AuthNotifier extends Notifier<AuthState> {
     unawaited(syncFcmToken());
   }
 
-  /// Temporarily stores the user's name and email during the multi-step registration wizard
+  /// Temporarily stores the user's name, email, and phone during the multi-step registration wizard
   /// without marking the user as authenticated until role selection & verification finish.
   void savePendingRegistrationDraft({
     required String name,
     required String email,
+    String? phone,
     String? password,
   }) {
     state = AuthState(
@@ -381,6 +383,9 @@ class AuthNotifier extends Notifier<AuthState> {
       role: UserRole.guest,
       userName: name,
       userEmail: email,
+      userPhone: phone != null && phone.trim().isNotEmpty
+          ? PhoneValidator.normalize(phone)
+          : null,
       pendingPassword: password,
     );
   }
@@ -644,13 +649,17 @@ class AuthNotifier extends Notifier<AuthState> {
     );
   }
 
-  /// Updates user name and optionally farm name in state, secure storage and backend
-  Future<void> updateProfileNames({
+  /// Updates user name, phone number, and optionally farm name in state, secure storage and backend
+  Future<void> updateProfileDetails({
     String? userName,
     String? farmName,
+    String? phone,
   }) async {
     final cleanUserName = userName?.trim();
     final cleanFarmName = farmName?.trim();
+    final cleanPhone = phone != null && phone.trim().isNotEmpty
+        ? PhoneValidator.normalize(phone)
+        : null;
 
     state = state.copyWith(
       userName: (cleanUserName != null && cleanUserName.isNotEmpty)
@@ -659,6 +668,9 @@ class AuthNotifier extends Notifier<AuthState> {
       farmName: (cleanFarmName != null && cleanFarmName.isNotEmpty)
           ? cleanFarmName
           : state.farmName,
+      userPhone: (cleanPhone != null && cleanPhone.isNotEmpty)
+          ? cleanPhone
+          : state.userPhone,
     );
 
     await _resaveSession();
@@ -666,9 +678,14 @@ class AuthNotifier extends Notifier<AuthState> {
     final patchData = <String, dynamic>{};
     if (cleanUserName != null && cleanUserName.isNotEmpty) {
       patchData['name'] = cleanUserName;
+      patchData['fullName'] = cleanUserName;
     }
     if (cleanFarmName != null && cleanFarmName.isNotEmpty) {
       patchData['farmName'] = cleanFarmName;
+    }
+    if (cleanPhone != null && cleanPhone.isNotEmpty) {
+      patchData['phone'] = cleanPhone;
+      patchData['phoneNumber'] = cleanPhone;
     }
 
     if (patchData.isNotEmpty) {
@@ -678,6 +695,14 @@ class AuthNotifier extends Notifier<AuthState> {
       );
     }
   }
+
+  /// Updates user name and optionally farm name in state, secure storage and backend.
+  /// Preserved for backward compatibility.
+  Future<void> updateProfileNames({
+    String? userName,
+    String? farmName,
+  }) =>
+      updateProfileDetails(userName: userName, farmName: farmName);
 
   // ---------------------------------------------------------------------------
   // Private helpers
@@ -719,10 +744,15 @@ class AuthNotifier extends Notifier<AuthState> {
     final uid = state.userId ?? fallbackUserId;
     if (uid == null) return;
     try {
+      String? email = state.userEmail;
+      if (email == null || email.trim().isEmpty) {
+        final saved = await _storage.readSession();
+        email = saved['email'];
+      }
       final enriched = <String, dynamic>{
         'role': state.role.apiValue,
-        if (state.userEmail != null && state.userEmail!.isNotEmpty)
-          'email': state.userEmail,
+        if (email != null && email.trim().isNotEmpty)
+          'email': email.trim(),
         if (state.userName != null && state.userName!.isNotEmpty)
           'fullName': state.userName,
         if (state.farmName != null && state.farmName!.isNotEmpty)

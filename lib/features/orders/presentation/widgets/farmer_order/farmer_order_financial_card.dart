@@ -91,6 +91,11 @@ class FarmerOrderFinancialCard extends StatelessWidget {
           // Subtotal
           _buildRow('პროდუქციის ჯამი', '₾${order.subtotal.toStringAsFixed(2)}'),
 
+          // Dynamic VAT (18%)
+          if (order.hasVat) ...[
+            _buildRow('დღგ (18%)', '₾${order.vatAmount.toStringAsFixed(2)}'),
+          ],
+
           // Delivery fee
           if (order.isPickup) ...[
             _buildRow('მიტანის მეთოდი', 'თვითგატანა (0.00 ₾)'),

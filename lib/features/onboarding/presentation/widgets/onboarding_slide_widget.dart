@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_typography.dart';
 import '../../domain/models/onboarding_item.dart';
 
 /// Single slide presentation widget displaying the vector illustration, badge, title, and description.
@@ -56,8 +56,7 @@ class _OnboardingSlideWidgetState extends State<OnboardingSlideWidget>
             ),
             child: Text(
               widget.item.subtitle,
-              style: GoogleFonts.notoSansGeorgian(
-                fontSize: 12,
+              style: AppTypography.caption.copyWith(
                 fontWeight: FontWeight.w700,
                 color: AppColors.primary,
                 letterSpacing: 0.2,
@@ -70,10 +69,9 @@ class _OnboardingSlideWidgetState extends State<OnboardingSlideWidget>
           Text(
             widget.item.title,
             textAlign: TextAlign.center,
-            style: GoogleFonts.notoSansGeorgian(
+            style: AppTypography.h1.copyWith(
               fontSize: 22,
               fontWeight: FontWeight.w800,
-              color: AppColors.textPrimary,
               height: 1.25,
             ),
           ),
@@ -83,9 +81,7 @@ class _OnboardingSlideWidgetState extends State<OnboardingSlideWidget>
           Text(
             widget.item.description,
             textAlign: TextAlign.center,
-            style: GoogleFonts.notoSansGeorgian(
-              fontSize: 14,
-              fontWeight: FontWeight.w400,
+            style: AppTypography.bodyMedium.copyWith(
               color: AppColors.textSecondary,
               height: 1.5,
             ),

@@ -1,10 +1,8 @@
-import 'dart:convert';
-import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../core/constants/app_assets.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/app_cached_image.dart';
 
 /// Reusable, robust image viewer for Profile Avatars and Farm Cover Banners.
 ///
@@ -77,25 +75,13 @@ class ProfileImageView extends StatelessWidget {
       fit: fit,
       width: width,
       height: height,
-      placeholder: defaultFallbackUrl.startsWith('assets/')
-          ? Image.asset(
-              defaultFallbackUrl,
-              fit: fit,
-              errorBuilder: (context, error, stackTrace) => Container(
-                color: AppColors.primaryLight,
-                width: width,
-                height: height,
-              ),
-            )
-          : Image.network(
-              defaultFallbackUrl,
-              fit: fit,
-              errorBuilder: (context, error, stackTrace) => Container(
-                color: AppColors.primaryLight,
-                width: width,
-                height: height,
-              ),
-            ),
+      placeholder: AppCachedImage(
+        imageUrl: defaultFallbackUrl,
+        fit: fit,
+        width: width,
+        height: height,
+        fallbackIcon: LucideIcons.image,
+      ),
     );
   }
 
@@ -112,70 +98,13 @@ class ProfileImageView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final url = imageUrl?.trim();
-    if (url == null || url.isEmpty) {
-      return _defaultFallback();
-    }
-
-    // 0. Asset image
-    if (url.startsWith('assets/')) {
-      return Image.asset(
-        url,
-        width: width,
-        height: height,
-        fit: fit,
-        errorBuilder: (context, error, stackTrace) => _defaultFallback(),
-      );
-    }
-
-    // 1. Network image
-    if (url.startsWith('http://') || url.startsWith('https://')) {
-      return Image.network(
-        url,
-        width: width,
-        height: height,
-        fit: fit,
-        errorBuilder: (context, error, stackTrace) => _defaultFallback(),
-      );
-    }
-
-    // 2. Data URL (Base64)
-    if (url.startsWith('data:image/')) {
-      try {
-        final commaIndex = url.indexOf(',');
-        final base64Str = commaIndex != -1 ? url.substring(commaIndex + 1) : url;
-        final bytes = base64Decode(base64Str);
-        return Image.memory(
-          bytes,
-          width: width,
-          height: height,
-          fit: fit,
-          errorBuilder: (context, error, stackTrace) => _defaultFallback(),
-        );
-      } catch (_) {
-        return _defaultFallback();
-      }
-    }
-
-    // 3. Local file on device
-    if (!kIsWeb) {
-      try {
-        final filePath = url.replaceFirst('file://', '');
-        final file = File(filePath);
-        if (file.existsSync()) {
-          return Image.file(
-            file,
-            width: width,
-            height: height,
-            fit: fit,
-            errorBuilder: (context, error, stackTrace) => _defaultFallback(),
-          );
-        }
-      } catch (_) {
-        return _defaultFallback();
-      }
-    }
-
-    return _defaultFallback();
+    return AppCachedImage(
+      imageUrl: imageUrl,
+      width: width,
+      height: height,
+      fit: fit,
+      fallback: _defaultFallback(),
+      placeholder: placeholder,
+    );
   }
 }

@@ -1,6 +1,3 @@
-import 'dart:convert';
-import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,6 +5,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:agrokera/core/auth/auth_state_provider.dart';
 import 'package:agrokera/core/theme/app_colors.dart';
 import 'package:agrokera/core/theme/app_typography.dart';
+import 'package:agrokera/core/widgets/app_cached_image.dart';
 import 'package:agrokera/core/widgets/app_toast.dart';
 import 'package:agrokera/features/cart_checkout/data/models/cart_item_model.dart';
 import '../../providers/cart_provider.dart';
@@ -110,37 +108,10 @@ class _CartItemTileState extends ConsumerState<CartItemTile> {
   }
 
   Widget _buildThumbnail(String url) {
-    Widget fallback() => const Center(
-          child: Icon(LucideIcons.image, color: AppColors.textSecondary),
-        );
-
-    if (url.startsWith('assets/')) {
-      return Image.asset(
-        url,
-        fit: BoxFit.cover,
-        errorBuilder: (_, _, _) => fallback(),
-      );
-    }
-    if (url.startsWith('data:image/')) {
-      try {
-        return Image.memory(
-          base64Decode(url.split(',').last),
-          fit: BoxFit.cover,
-          errorBuilder: (_, _, _) => fallback(),
-        );
-      } catch (_) {}
-    }
-    if (!kIsWeb && File(url).existsSync()) {
-      return Image.file(
-        File(url),
-        fit: BoxFit.cover,
-        errorBuilder: (_, _, _) => fallback(),
-      );
-    }
-    return Image.network(
-      url,
+    return AppCachedImage(
+      imageUrl: url,
       fit: BoxFit.cover,
-      errorBuilder: (_, _, _) => fallback(),
+      fallbackIcon: LucideIcons.image,
     );
   }
 

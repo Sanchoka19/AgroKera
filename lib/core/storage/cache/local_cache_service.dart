@@ -24,9 +24,6 @@ class LocalCacheService {
   ) async {
     final encoded = jsonEncode(items);
     _memoryCache[cacheKey] = encoded;
-    if (!isFlutterTestEnv) {
-      await _storage.saveNotificationSettingsJson(encoded); // or dedicated key
-    }
     await _writeRaw(cacheKey, encoded);
   }
 

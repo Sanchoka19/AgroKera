@@ -5,6 +5,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../core/constants/app_categories.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../core/widgets/app_cached_image.dart';
 import '../../../../core/widgets/app_header.dart';
 import '../../../../core/widgets/app_search_bar.dart';
 import '../../data/models/category_model.dart';
@@ -347,21 +348,11 @@ class _CategoryBentoCard extends StatelessWidget {
                   child: SizedBox(
                     width: imgSize,
                     height: imgSize,
-                    child: category.imageUrl.startsWith('assets/')
-                        ? Image.asset(
-                            category.imageUrl,
-                            fit: BoxFit.contain,
-                            filterQuality: FilterQuality.medium,
-                            errorBuilder: (context, error, stackTrace) =>
-                                const SizedBox.shrink(),
-                          )
-                        : Image.network(
-                            category.imageUrl,
-                            fit: BoxFit.contain,
-                            filterQuality: FilterQuality.medium,
-                            errorBuilder: (context, error, stackTrace) =>
-                                const SizedBox.shrink(),
-                          ),
+                    child: AppCachedImage(
+                      imageUrl: category.imageUrl,
+                      fit: BoxFit.contain,
+                      fallbackIcon: LucideIcons.layoutGrid,
+                    ),
                   ),
                 ),
 

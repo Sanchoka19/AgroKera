@@ -43,6 +43,32 @@ export async function handleOrdersRoute(
     let resolvedClientId = clientId;
     let resolvedFarmerId = farmerId;
 
+    const pageParam = url.searchParams.get("page");
+    const limitParam = url.searchParams.get("limit");
+    const takeParam = url.searchParams.get("take");
+    const skipParam = url.searchParams.get("skip");
+
+    let take: number | undefined;
+    let skip: number | undefined;
+
+    if (takeParam) {
+      take = parseInt(takeParam, 10);
+      if (isNaN(take) || take <= 0) take = undefined;
+    } else if (limitParam) {
+      take = parseInt(limitParam, 10);
+      if (isNaN(take) || take <= 0) take = undefined;
+    }
+
+    if (skipParam) {
+      skip = parseInt(skipParam, 10);
+      if (isNaN(skip) || skip < 0) skip = undefined;
+    } else if (pageParam && take) {
+      const page = parseInt(pageParam, 10);
+      if (!isNaN(page) && page > 0) {
+        skip = (page - 1) * take;
+      }
+    }
+
     if (!resolvedClientId && !resolvedFarmerId && authUserId) {
       const user = await prisma.user.findUnique({
         where: { id: authUserId },
@@ -69,6 +95,8 @@ export async function handleOrdersRoute(
         review: true,
       },
       orderBy: { createdAt: "desc" },
+      ...(take ? { take } : {}),
+      ...(skip !== undefined ? { skip } : {}),
     });
 
     const farmerIds = [

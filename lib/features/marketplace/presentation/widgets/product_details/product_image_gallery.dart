@@ -1,10 +1,8 @@
-import 'dart:convert';
-import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:agrokera/core/theme/app_colors.dart';
+import 'package:agrokera/core/widgets/app_cached_image.dart';
 import 'package:agrokera/core/widgets/auth_required_bottom_sheet.dart';
 import 'package:agrokera/features/marketplace/data/models/product_model.dart';
 import 'package:agrokera/features/marketplace/domain/services/product_share_service.dart';
@@ -125,44 +123,10 @@ class _ProductImageGalleryState extends ConsumerState<ProductImageGallery> {
               },
               itemBuilder: (context, idx) {
                 final imgUrl = gallery[idx];
-                Widget fallback() => Container(
-                      color: AppColors.surfaceInput,
-                      alignment: Alignment.center,
-                      child: const Icon(
-                        LucideIcons.image,
-                        color: AppColors.textSecondary,
-                        size: 48,
-                      ),
-                    );
-
-                if (imgUrl.startsWith('assets/')) {
-                  return Image.asset(
-                    imgUrl,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, _, _) => fallback(),
-                  );
-                }
-                if (imgUrl.startsWith('data:image/')) {
-                  try {
-                    final base64Str = imgUrl.split(',').last;
-                    return Image.memory(
-                      base64Decode(base64Str),
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) => fallback(),
-                    );
-                  } catch (_) {}
-                }
-                if (!kIsWeb && File(imgUrl).existsSync()) {
-                  return Image.file(
-                    File(imgUrl),
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, _, _) => fallback(),
-                  );
-                }
-                return Image.network(
-                  imgUrl,
+                return AppCachedImage(
+                  imageUrl: imgUrl,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, _, _) => fallback(),
+                  iconSize: 48,
                 );
               },
             ),

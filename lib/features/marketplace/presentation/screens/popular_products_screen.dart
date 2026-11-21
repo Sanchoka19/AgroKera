@@ -70,6 +70,7 @@ class _PopularProductsScreenState extends ConsumerState<PopularProductsScreen> {
   @override
   Widget build(BuildContext context) {
     final popularProducts = ref.watch(popularProductsProvider);
+    final authState = ref.watch(authStateProvider);
     final cartCount = ref.watch(cartProvider).length;
 
     // Build farmer location lookup for accurate region filtering
@@ -301,9 +302,7 @@ class _PopularProductsScreenState extends ConsumerState<PopularProductsScreen> {
                           itemCount: filteredProducts.length,
                           itemBuilder: (context, index) {
                             final product = filteredProducts[index];
-                            final isOwner = product.isOwnedBy(
-                              ref.watch(authStateProvider),
-                            );
+                            final isOwner = product.isOwnedBy(authState);
 
                             return StaggeredEntrance(
                               index: index,

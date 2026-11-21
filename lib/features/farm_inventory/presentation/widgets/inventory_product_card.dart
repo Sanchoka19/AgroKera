@@ -1,10 +1,8 @@
-import 'dart:convert';
-import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/app_cached_image.dart';
 import '../../../marketplace/data/models/product_model.dart';
 
 /// Pure UI widget for a single Product Card in Farmer Inventory
@@ -25,52 +23,12 @@ class InventoryProductCard extends StatelessWidget {
   });
 
   Widget _buildProductImage(String url) {
-    Widget fallback() => Container(
-          width: 64,
-          height: 64,
-          color: const Color(0xFFF1F5F9),
-          child: const Icon(
-            LucideIcons.package,
-            color: Color(0xFF94A3B8),
-          ),
-        );
-
-    if (url.startsWith('assets/')) {
-      return Image.asset(
-        url,
-        width: 64,
-        height: 64,
-        fit: BoxFit.cover,
-        errorBuilder: (_, _, _) => fallback(),
-      );
-    }
-    if (url.startsWith('data:image/')) {
-      try {
-        final base64Str = url.split(',').last;
-        return Image.memory(
-          base64Decode(base64Str),
-          width: 64,
-          height: 64,
-          fit: BoxFit.cover,
-          errorBuilder: (_, _, _) => fallback(),
-        );
-      } catch (_) {}
-    }
-    if (!kIsWeb && File(url).existsSync()) {
-      return Image.file(
-        File(url),
-        width: 64,
-        height: 64,
-        fit: BoxFit.cover,
-        errorBuilder: (_, _, _) => fallback(),
-      );
-    }
-    return Image.network(
-      url,
+    return AppCachedImage(
+      imageUrl: url,
       width: 64,
       height: 64,
       fit: BoxFit.cover,
-      errorBuilder: (_, _, _) => fallback(),
+      fallbackIcon: LucideIcons.package,
     );
   }
 

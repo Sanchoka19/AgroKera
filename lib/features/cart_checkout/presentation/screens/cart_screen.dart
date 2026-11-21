@@ -8,6 +8,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../core/constants/app_assets.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../core/widgets/app_cached_image.dart';
 import '../../../../core/widgets/app_confirmation_bottom_sheet.dart';
 import '../../../marketplace/data/models/farmer_model.dart';
 import '../../../marketplace/presentation/providers/marketplace_provider.dart';
@@ -180,21 +181,11 @@ class _CartScreenState extends ConsumerState<CartScreen>
                     borderRadius: BorderRadius.circular(12),
                   ),
                   clipBehavior: Clip.antiAlias,
-                  child: avatarUrl.isNotEmpty
-                      ? Image.network(
-                          avatarUrl,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, _, _) => const Icon(
-                            LucideIcons.sprout,
-                            size: 20,
-                            color: AppColors.primary,
-                          ),
-                        )
-                      : const Icon(
-                          LucideIcons.sprout,
-                          size: 20,
-                          color: AppColors.primary,
-                        ),
+                  child: AppCachedImage(
+                    imageUrl: avatarUrl,
+                    fit: BoxFit.cover,
+                    fallbackIcon: LucideIcons.sprout,
+                  ),
                 ),
                 const SizedBox(width: 12),
 

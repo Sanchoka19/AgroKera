@@ -1,11 +1,9 @@
-import 'dart:convert';
-import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../../core/theme/app_colors.dart';
+import '../../../../../core/widgets/app_cached_image.dart';
 import '../../../../marketplace/presentation/providers/marketplace_provider.dart';
 import '../../../domain/models/farmer_order_model.dart';
 
@@ -40,71 +38,13 @@ class OrderProductsBreakdownCard extends ConsumerWidget {
   }
 
   Widget _buildProductThumbnail(String? url) {
-    Widget fallback() => Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            color: const Color(0xFFF8FAFC),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
-          ),
-          child: const Center(
-            child: Icon(
-              LucideIcons.package,
-              size: 20,
-              color: AppColors.primary,
-            ),
-          ),
-        );
-
-    if (url == null || url.trim().isEmpty) return fallback();
-
-    final cleanUrl = url.trim();
-
-    Widget image;
-    if (cleanUrl.startsWith('assets/')) {
-      image = Image.asset(
-        cleanUrl,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) => fallback(),
-      );
-    } else if (cleanUrl.startsWith('data:image/')) {
-      try {
-        final base64Str = cleanUrl.split(',').last;
-        image = Image.memory(
-          base64Decode(base64Str),
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) => fallback(),
-        );
-      } catch (_) {
-        return fallback();
-      }
-    } else if (!kIsWeb && File(cleanUrl).existsSync()) {
-      image = Image.file(
-        File(cleanUrl),
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) => fallback(),
-      );
-    } else {
-      image = Image.network(
-        cleanUrl,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) => fallback(),
-      );
-    }
-
-    return Container(
+    return AppCachedImage(
+      imageUrl: url,
       width: 44,
       height: 44,
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(9),
-        child: image,
-      ),
+      borderRadius: BorderRadius.circular(10),
+      fallbackIcon: LucideIcons.package,
+      backgroundColor: const Color(0xFFF8FAFC),
     );
   }
 
@@ -265,6 +205,13 @@ class OrderProductsBreakdownCard extends ConsumerWidget {
             'პროდუქტების ჯამი',
             '₾${order.subtotal.toStringAsFixed(2)}',
           ),
+          if (order.hasVat) ...[
+            const SizedBox(height: 4),
+            _buildSummaryRow(
+              'დღგ (18%)',
+              '₾${order.vatAmount.toStringAsFixed(2)}',
+            ),
+          ],
           if (order.isPickup) ...[
             const SizedBox(height: 4),
             _buildSummaryRow('მიტანა', 'თვითგატანა (0 ₾)'),

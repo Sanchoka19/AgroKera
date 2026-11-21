@@ -1,10 +1,8 @@
-import 'dart:convert';
-import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../../core/theme/app_colors.dart';
+import '../../../../../core/widgets/app_cached_image.dart';
 import '../../../../../core/widgets/custom_text_field.dart';
 import 'agro_tag_item.dart';
 import 'product_photo_entry.dart';
@@ -55,28 +53,10 @@ class ProductStep3Review extends StatelessWidget {
     if (photo.bytes != null) {
       return Image.memory(photo.bytes!, fit: BoxFit.cover);
     }
-    if (photo.url.startsWith('data:image/')) {
-      try {
-        return Image.memory(
-          base64Decode(photo.url.split(',').last),
-          fit: BoxFit.cover,
-        );
-      } catch (_) {}
-    }
-    if (photo.url.startsWith('assets/')) {
-      return Image.asset(photo.url, fit: BoxFit.cover);
-    }
-    if (!kIsWeb && File(photo.url).existsSync()) {
-      return Image.file(File(photo.url), fit: BoxFit.cover);
-    }
-    return Image.network(
-      photo.url,
+    return AppCachedImage(
+      imageUrl: photo.url,
       fit: BoxFit.cover,
-      errorBuilder: (_, _, _) => const Icon(
-        LucideIcons.image,
-        size: 40,
-        color: Color(0xFF94A3B8),
-      ),
+      iconSize: 40,
     );
   }
 

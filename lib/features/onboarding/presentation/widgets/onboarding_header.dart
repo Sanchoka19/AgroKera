@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../core/constants/app_assets.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_typography.dart';
 
 /// Top bar widget with AgroKera brand logo/name on the left and skip action on the right.
 class OnboardingHeader extends StatelessWidget {
@@ -41,7 +41,7 @@ class OnboardingHeader extends StatelessWidget {
               const SizedBox(width: 8),
               Text(
                 'AGROKERA',
-                style: GoogleFonts.notoSansGeorgian(
+                style: AppTypography.titleMedium.copyWith(
                   fontSize: 15,
                   fontWeight: FontWeight.w900,
                   color: AppColors.primary,
@@ -72,7 +72,7 @@ class OnboardingHeader extends StatelessWidget {
                 ),
                 child: Text(
                   'გამოტოვება',
-                  style: GoogleFonts.notoSansGeorgian(
+                  style: AppTypography.caption.copyWith(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                     color: AppColors.textSecondary,

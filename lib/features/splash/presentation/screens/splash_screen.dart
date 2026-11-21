@@ -83,7 +83,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   void _setupAnimations() {
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 2200),
+      duration: const Duration(milliseconds: 1900),
     );
 
     // 1. Background green circle: squishes to 0.92 (0-18%), floods screen up to 25.0 (18-68%), stays solid (68-100%)
@@ -196,9 +196,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
             return Stack(
               fit: StackFit.expand,
               children: [
-                // Base: Only mount the true destination screen once the curtain begins sliding
-                // This guarantees the guest mode screen is never revealed if the user needs Onboarding.
-                if (isCurtainSliding && _destinationScreen != null)
+                // Base: Pre-mount destination screen while screen is 100% solid emerald (from 68% onwards)
+                // This warms up and layouts MainNavScreen completely in the background before the curtain starts sliding at 78%!
+                if (_destinationScreen != null && (isFullyCovered || isCurtainSliding))
                   RepaintBoundary(
                     child: _destinationScreen!,
                   ),

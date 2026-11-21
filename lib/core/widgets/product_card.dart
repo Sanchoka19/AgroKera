@@ -1,6 +1,3 @@
-import 'dart:convert';
-import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../features/marketplace/data/models/product_model.dart';
@@ -8,6 +5,7 @@ import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
 import 'animations/animated_add_to_cart_button.dart';
 import 'animations/bounce_tap.dart';
+import 'app_cached_image.dart';
 import 'app_toast.dart';
 
 /// Product card according to DESIGN_SYSTEM.md and Figma screenshots:
@@ -34,48 +32,11 @@ class ProductCard extends StatelessWidget {
   });
 
   Widget _buildProductImage(String url) {
-    Widget fallback() => Container(
-          color: AppColors.surfaceInput,
-          alignment: Alignment.center,
-          child: const Icon(
-            LucideIcons.image,
-            color: AppColors.textSecondary,
-            size: 28,
-          ),
-        );
-
-    if (url.startsWith('assets/')) {
-      return Image.asset(
-        url,
-        fit: BoxFit.cover,
-        errorBuilder: (_, _, _) => fallback(),
-      );
-    }
-    if (url.startsWith('http://') || url.startsWith('https://')) {
-      return Image.network(
-        url,
-        fit: BoxFit.cover,
-        errorBuilder: (_, _, _) => fallback(),
-      );
-    }
-    if (url.startsWith('data:image/')) {
-      try {
-        final base64Str = url.split(',').last;
-        return Image.memory(
-          base64Decode(base64Str),
-          fit: BoxFit.cover,
-          errorBuilder: (_, _, _) => fallback(),
-        );
-      } catch (_) {}
-    }
-    if (!kIsWeb && File(url).existsSync()) {
-      return Image.file(
-        File(url),
-        fit: BoxFit.cover,
-        errorBuilder: (_, _, _) => fallback(),
-      );
-    }
-    return fallback();
+    return AppCachedImage(
+      imageUrl: url,
+      fit: BoxFit.cover,
+      iconSize: 28,
+    );
   }
 
   @override

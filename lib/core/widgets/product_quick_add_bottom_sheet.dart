@@ -1,7 +1,4 @@
-import 'dart:convert';
-import 'dart:io';
 import 'dart:ui';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -9,6 +6,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../features/marketplace/data/models/product_model.dart';
+import 'app_cached_image.dart';
 import 'app_toast.dart';
 
 /// Modal Bottom Sheet that prompts the user to select / confirm quantity
@@ -184,38 +182,10 @@ class _ProductQuickAddBottomSheetState
   }
 
   Widget _buildProductThumb(String url) {
-    Widget fallback() => const Icon(
-          LucideIcons.image,
-          color: AppColors.textSecondary,
-        );
-
-    if (url.startsWith('assets/')) {
-      return Image.asset(
-        url,
-        fit: BoxFit.cover,
-        errorBuilder: (_, _, _) => fallback(),
-      );
-    }
-    if (url.startsWith('data:image/')) {
-      try {
-        return Image.memory(
-          base64Decode(url.split(',').last),
-          fit: BoxFit.cover,
-          errorBuilder: (_, _, _) => fallback(),
-        );
-      } catch (_) {}
-    }
-    if (!kIsWeb && File(url).existsSync()) {
-      return Image.file(
-        File(url),
-        fit: BoxFit.cover,
-        errorBuilder: (_, _, _) => fallback(),
-      );
-    }
-    return Image.network(
-      url,
+    return AppCachedImage(
+      imageUrl: url,
       fit: BoxFit.cover,
-      errorBuilder: (_, _, _) => fallback(),
+      fallbackIcon: LucideIcons.image,
     );
   }
 

@@ -1,11 +1,9 @@
-import 'dart:convert';
-import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../../core/constants/app_categories.dart';
 import '../../../../../core/theme/app_colors.dart';
+import '../../../../../core/widgets/app_cached_image.dart';
 import '../../../../../core/widgets/custom_text_field.dart';
 import '../../providers/farmer_inventory_provider.dart';
 import 'agro_tag_item.dart';
@@ -272,37 +270,11 @@ class ProductStep1Identity extends StatelessWidget {
                             photos[i].bytes!,
                             fit: BoxFit.cover,
                           )
-                        else if (photos[i].url.startsWith('data:image/'))
-                          Image.memory(
-                            base64Decode(photos[i].url.split(',').last),
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, _, _) => const Icon(
-                              LucideIcons.image,
-                              color: AppColors.primary,
-                            ),
-                          )
-                        else if (photos[i].url.startsWith('assets/'))
-                          Image.asset(
-                            photos[i].url,
-                            fit: BoxFit.cover,
-                          )
-                        else if (!kIsWeb && File(photos[i].url).existsSync())
-                          Image.file(
-                            File(photos[i].url),
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, _, _) => const Icon(
-                              LucideIcons.image,
-                              color: AppColors.primary,
-                            ),
-                          )
                         else
-                          Image.network(
-                            photos[i].url,
+                          AppCachedImage(
+                            imageUrl: photos[i].url,
                             fit: BoxFit.cover,
-                            errorBuilder: (_, _, _) => const Icon(
-                              LucideIcons.image,
-                              color: AppColors.primary,
-                            ),
+                            fallbackIcon: LucideIcons.image,
                           ),
 
                         // Main Photo Badge

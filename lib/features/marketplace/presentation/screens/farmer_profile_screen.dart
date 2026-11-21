@@ -1,6 +1,3 @@
-import 'dart:convert';
-import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,6 +6,7 @@ import '../../../../core/auth/auth_state_provider.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/animations/staggered_entrance.dart';
+import '../../../../core/widgets/app_cached_image.dart';
 import '../../../../core/widgets/draggable_floating_cart.dart';
 import '../../../../core/widgets/product_card.dart';
 import '../../../../core/widgets/product_cart_helper.dart';
@@ -91,6 +89,7 @@ class _FarmerProfileScreenState extends ConsumerState<FarmerProfileScreen>
   @override
   Widget build(BuildContext context) {
     final marketplaceState = ref.watch(marketplaceProvider);
+    final authState = ref.watch(authStateProvider);
     final farmer = marketplaceState.farmers.firstWhere(
       (f) => f.id == widget.farmer.id,
       orElse: () => widget.farmer,
@@ -462,9 +461,7 @@ class _FarmerProfileScreenState extends ConsumerState<FarmerProfileScreen>
                                   itemCount: farmerProducts.length,
                                   itemBuilder: (context, index) {
                                     final product = farmerProducts[index];
-                                    final isOwner = product.isOwnedBy(
-                                      ref.watch(authStateProvider),
-                                    );
+                                    final isOwner = product.isOwnedBy(authState);
                                     return StaggeredEntrance(
                                       index: index,
                                       child: ProductCard(
@@ -534,34 +531,12 @@ class _FarmerProfileScreenState extends ConsumerState<FarmerProfileScreen>
   }
 
   Widget _buildAvatarImage(String avatarUrl) {
-    if (avatarUrl.startsWith('http://') || avatarUrl.startsWith('https://')) {
-      return Image.network(
-        avatarUrl,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) =>
-            Container(color: AppColors.primaryLight),
-      );
-    }
-    if (avatarUrl.startsWith('data:image/')) {
-      try {
-        final base64Str = avatarUrl.split(',').last;
-        return Image.memory(
-          base64Decode(base64Str),
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) =>
-              Container(color: AppColors.primaryLight),
-        );
-      } catch (_) {}
-    }
-    if (!kIsWeb && File(avatarUrl).existsSync()) {
-      return Image.file(
-        File(avatarUrl),
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) =>
-            Container(color: AppColors.primaryLight),
-      );
-    }
-    return Container(color: AppColors.primaryLight);
+    return AppCachedImage(
+      imageUrl: avatarUrl,
+      fit: BoxFit.cover,
+      fallbackIcon: LucideIcons.user,
+      backgroundColor: AppColors.primaryLight,
+    );
   }
 
   Widget _buildCoverImage(String coverUrl) {

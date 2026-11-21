@@ -130,8 +130,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
     return Stack(
       fit: StackFit.expand,
       children: [
-        // Base: MainNavScreen resting underneath, unveiled by the sliding curtain
-        if (_isExiting)
+        // Base: MainNavScreen resting underneath, pre-warmed so the curtain slide has zero lag
+        if (state.isLastPage || _isExiting)
           const RepaintBoundary(
             child: MainNavScreen(initialIndex: 0),
           ),

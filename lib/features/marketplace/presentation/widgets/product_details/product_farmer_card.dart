@@ -1,12 +1,10 @@
-import 'dart:convert';
-import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:agrokera/core/constants/app_assets.dart';
 import 'package:agrokera/core/theme/app_colors.dart';
+import 'package:agrokera/core/widgets/app_cached_image.dart';
 import 'package:agrokera/features/marketplace/data/models/farmer_model.dart';
 import 'package:agrokera/features/marketplace/presentation/screens/farmer_profile_screen.dart';
 
@@ -17,47 +15,14 @@ class ProductFarmerCard extends StatelessWidget {
   const ProductFarmerCard({super.key, required this.farmer});
 
   Widget _buildAvatar(String avatarUrl) {
-    Widget fallback() => Container(
-          width: 48,
-          height: 48,
-          color: const Color(0xFFE8F7EE),
-          child: const Icon(
-            LucideIcons.user,
-            color: AppColors.primary,
-          ),
-        );
-
-    if (avatarUrl.startsWith('http://') || avatarUrl.startsWith('https://')) {
-      return Image.network(
-        avatarUrl,
-        width: 48,
-        height: 48,
-        fit: BoxFit.cover,
-        errorBuilder: (_, _, _) => fallback(),
-      );
-    }
-    if (avatarUrl.startsWith('data:image/')) {
-      try {
-        final base64Str = avatarUrl.split(',').last;
-        return Image.memory(
-          base64Decode(base64Str),
-          width: 48,
-          height: 48,
-          fit: BoxFit.cover,
-          errorBuilder: (_, _, _) => fallback(),
-        );
-      } catch (_) {}
-    }
-    if (!kIsWeb && File(avatarUrl).existsSync()) {
-      return Image.file(
-        File(avatarUrl),
-        width: 48,
-        height: 48,
-        fit: BoxFit.cover,
-        errorBuilder: (_, _, _) => fallback(),
-      );
-    }
-    return fallback();
+    return AppCachedImage(
+      imageUrl: avatarUrl,
+      width: 48,
+      height: 48,
+      fit: BoxFit.cover,
+      fallbackIcon: LucideIcons.user,
+      backgroundColor: const Color(0xFFE8F7EE),
+    );
   }
 
   @override

@@ -21,7 +21,7 @@ abstract final class OrdersMockData {
         customerName: 'შპს "გემრიელი რესტორანი"',
         contactPerson: 'საბა ევგენიძე',
         contactPhone: '+995 599 12 34 56',
-        hasVat: false,
+        hasVat: true,
         deliveryTimeWindow: 'ივლ 29, 10:00 - 13:00',
         deliveryAddress: '32 ჭავჭავაძე, ბათუმი',
         trackingNumber: 'AK-12345',
@@ -93,7 +93,7 @@ abstract final class OrdersMockData {
         customerName: 'შპს "გემრიელი რესტორანი"',
         contactPerson: 'საბა ევგენიძე',
         contactPhone: '+995 599 12 34 56',
-        hasVat: false,
+        hasVat: true,
         deliveryTimeWindow: 'ხვალ, 11:00 - 14:00',
         deliveryAddress: 'ჭავჭავაძის გამზ. 32, ბათუმი',
         cancellationDeadline: now.subtract(const Duration(minutes: 45)),
@@ -134,7 +134,7 @@ abstract final class OrdersMockData {
         contactPerson: 'საბა ევგენიძე',
         contactPhone: '+995 599 12 34 56',
         cancellationReason: 'მარაგის არ არსებობის გამო',
-        hasVat: false,
+        hasVat: true,
         trackingNumber: 'AK-12348',
         items: const [
           FarmerOrderItem(

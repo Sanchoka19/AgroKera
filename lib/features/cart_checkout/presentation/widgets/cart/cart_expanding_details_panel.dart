@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:agrokera/core/theme/app_colors.dart';
 import 'package:agrokera/core/theme/app_typography.dart';
+import 'package:agrokera/core/widgets/app_cached_image.dart';
 import 'package:agrokera/features/cart_checkout/data/models/cart_item_model.dart';
 import '../../providers/cart_provider.dart';
 
@@ -100,14 +101,10 @@ class CartExpandingDetailsPanel extends StatelessWidget {
                         width: 60,
                         height: 60,
                         color: const Color(0xFFF3F4F6),
-                        child: Image.network(
-                          item.imageUrl,
+                        child: AppCachedImage(
+                          imageUrl: item.imageUrl,
                           fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) =>
-                              const Icon(
-                            LucideIcons.shoppingBag,
-                            color: AppColors.textSecondary,
-                          ),
+                          fallbackIcon: LucideIcons.shoppingBag,
                         ),
                       ),
                     ),

@@ -20,7 +20,8 @@ class PopularProductsSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final popularProducts = ref.watch(topPopularProductsProvider);
-    final isSyncing = ref.watch(marketplaceProvider).isSyncing;
+    final isSyncing = ref.watch(marketplaceProvider.select((s) => s.isSyncing));
+    final authState = ref.watch(authStateProvider);
 
     if (popularProducts.isEmpty && !isSyncing) {
       return const SizedBox.shrink();
@@ -87,9 +88,7 @@ class PopularProductsSection extends ConsumerWidget {
               separatorBuilder: (context, index) => const SizedBox(width: 12),
               itemBuilder: (context, index) {
                 final product = popularProducts[index];
-                final isOwner = product.isOwnedBy(
-                  ref.watch(authStateProvider),
-                );
+                final isOwner = product.isOwnedBy(authState);
 
                 return SizedBox(
                   width: 168,

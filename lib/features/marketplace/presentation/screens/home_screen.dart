@@ -9,6 +9,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/animations/skeletons/product_card_skeleton.dart';
 import '../../../../core/widgets/animations/staggered_entrance.dart';
+import '../../../../core/widgets/app_cached_image.dart';
 import '../../../../core/widgets/app_header.dart';
 import '../../../../core/widgets/app_search_bar.dart';
 import '../../../../core/widgets/auth_required_bottom_sheet.dart';
@@ -157,19 +158,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 return Stack(
                                   fit: StackFit.expand,
                                   children: [
-                                    Image.network(
-                                      _bannerImages[index],
+                                    AppCachedImage(
+                                      imageUrl: _bannerImages[index],
                                       fit: BoxFit.cover,
-                                      errorBuilder: (context, error, stackTrace) =>
-                                          Container(
-                                        color: AppColors.surfaceInput,
-                                        alignment: Alignment.center,
-                                        child: const Icon(
-                                          LucideIcons.image,
-                                          color: AppColors.textSecondary,
-                                          size: 40,
-                                        ),
-                                      ),
+                                      iconSize: 40,
                                     ),
                                     // Optimized contrast gradient overlay without expensive raster blur pass
                                     Container(
@@ -305,9 +297,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           itemCount: products.take(16).length,
                           itemBuilder: (context, index) {
                         final product = products[index];
-                        final isOwner = product.isOwnedBy(
-                          ref.watch(authStateProvider),
-                        );
+                        final isOwner = product.isOwnedBy(authState);
                         return StaggeredEntrance(
                           index: index,
                           child: ProductCard(

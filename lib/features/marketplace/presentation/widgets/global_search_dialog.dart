@@ -1,7 +1,4 @@
-import 'dart:convert';
-import 'dart:io';
 import 'dart:ui';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -10,6 +7,7 @@ import '../../../../core/constants/app_assets.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/agrokera_verified_badge.dart';
+import '../../../../core/widgets/app_cached_image.dart';
 import '../../data/models/farmer_model.dart';
 import '../../data/models/product_model.dart';
 import '../providers/marketplace_provider.dart';
@@ -470,58 +468,14 @@ class _GlobalSearchDialogState extends ConsumerState<GlobalSearchDialog> {
     required double height,
     required IconData fallbackIcon,
   }) {
-    Widget fallback() => Container(
-          width: width,
-          height: height,
-          color: AppColors.surfaceInput,
-          alignment: Alignment.center,
-          child: Icon(
-            fallbackIcon,
-            size: width * 0.42,
-            color: AppColors.textSecondary,
-          ),
-        );
-
-    if (url.startsWith('assets/')) {
-      return Image.asset(
-        url,
-        width: width,
-        height: height,
-        fit: BoxFit.cover,
-        errorBuilder: (_, _, _) => fallback(),
-      );
-    }
-    if (url.startsWith('http://') || url.startsWith('https://')) {
-      return Image.network(
-        url,
-        width: width,
-        height: height,
-        fit: BoxFit.cover,
-        errorBuilder: (_, _, _) => fallback(),
-      );
-    }
-    if (url.startsWith('data:image/')) {
-      try {
-        final base64Str = url.split(',').last;
-        return Image.memory(
-          base64Decode(base64Str),
-          width: width,
-          height: height,
-          fit: BoxFit.cover,
-          errorBuilder: (_, _, _) => fallback(),
-        );
-      } catch (_) {}
-    }
-    if (!kIsWeb && File(url).existsSync()) {
-      return Image.file(
-        File(url),
-        width: width,
-        height: height,
-        fit: BoxFit.cover,
-        errorBuilder: (_, _, _) => fallback(),
-      );
-    }
-    return fallback();
+    return AppCachedImage(
+      imageUrl: url,
+      width: width,
+      height: height,
+      fit: BoxFit.cover,
+      borderRadius: BorderRadius.circular(8),
+      fallbackIcon: fallbackIcon,
+    );
   }
 
   Widget _buildProductTile(ProductModel product) {

@@ -18,6 +18,7 @@ class ProductSimilarCarousel extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (products.isEmpty) return const SizedBox.shrink();
+    final authState = ref.watch(authStateProvider);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -62,8 +63,7 @@ class ProductSimilarCarousel extends ConsumerWidget {
             separatorBuilder: (context, index) => const SizedBox(width: 12),
             itemBuilder: (context, index) {
               final item = products[index];
-              final isOwner =
-                  ref.watch(authStateProvider).isOwnerOfProduct(item);
+              final isOwner = authState.isOwnerOfProduct(item);
               return SizedBox(
                 width: 172,
                 child: ProductCard(

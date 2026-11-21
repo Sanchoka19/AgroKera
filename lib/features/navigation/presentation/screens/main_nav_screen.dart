@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,10 +9,8 @@ import 'package:agrokera/core/constants/app_assets.dart';
 import 'package:agrokera/core/theme/app_colors.dart';
 import 'package:agrokera/core/widgets/offline_status_banner.dart';
 import 'package:agrokera/features/farm_inventory/presentation/screens/farmer_dashboard_screen.dart';
-import '../../../marketplace/presentation/providers/marketplace_provider.dart';
 import '../../../marketplace/presentation/screens/categories_screen.dart';
 import '../../../marketplace/presentation/screens/home_screen.dart';
-import '../../../orders/presentation/providers/farmer_orders_provider.dart';
 import '../../../profile/presentation/screens/guest_profile_screen.dart';
 
 /// Navigation Tab Item Definition

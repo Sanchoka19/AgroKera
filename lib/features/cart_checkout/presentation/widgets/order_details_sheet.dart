@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../core/widgets/app_cached_image.dart';
 import '../../../../core/widgets/auth_required_bottom_sheet.dart';
 import '../../../../core/widgets/address_required_bottom_sheet.dart';
 import '../providers/cart_provider.dart';
@@ -114,13 +115,10 @@ class OrderDetailsSheet extends ConsumerWidget {
                           width: 64,
                           height: 64,
                           color: const Color(0xFFF3F4F6),
-                          child: Image.network(
-                            item.imageUrl,
+                          child: AppCachedImage(
+                            imageUrl: item.imageUrl,
                             fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) => const Icon(
-                              LucideIcons.shoppingBag,
-                              color: AppColors.textSecondary,
-                            ),
+                            fallbackIcon: LucideIcons.shoppingBag,
                           ),
                         ),
                       ),

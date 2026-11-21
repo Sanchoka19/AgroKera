@@ -121,6 +121,10 @@ model Product {
   updatedAt          DateTime           @updatedAt
 
   orderItems         OrderItem[]
+
+  @@index([category, isAvailable])
+  @@index([farmerId])
+  @@index([pricePerUnit])
 }
 
 model Order {
@@ -150,6 +154,10 @@ model Order {
   items                OrderItem[]
   shipment             Shipment?
   review               Review?
+
+  @@index([clientId, status])
+  @@index([farmerId, status])
+  @@index([createdAt])
 }
 
 model OrderMessage {

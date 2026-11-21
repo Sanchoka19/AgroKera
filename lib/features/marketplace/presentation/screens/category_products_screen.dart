@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../core/auth/auth_state_provider.dart';
 import '../../../../core/constants/app_assets.dart';
@@ -83,21 +82,10 @@ class _CategoryProductsScreenState
     );
   }
 
-  void _clearAllFilters() {
-    HapticFeedback.lightImpact();
-    _searchController.clear();
-    setState(() {
-      _searchQuery = '';
-      _filterCriteria = ProductFilterCriteria(
-        category: widget.category.name,
-        sortBy: 'პოპულარული',
-      );
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     final allProducts = ref.watch(buyerProductsProvider);
+    final authState = ref.watch(authStateProvider);
 
     // Lookup farmer locations for region filter
     final farmers = ref.watch(marketplaceProvider).farmers;
@@ -265,26 +253,6 @@ class _CategoryProductsScreenState
                                   color: AppColors.textSecondary,
                                 ),
                               ),
-                              if (_filterCriteria.hasActiveFilters ||
-                                  _searchQuery.isNotEmpty) ...[
-                                const SizedBox(height: 16),
-                                TextButton.icon(
-                                  onPressed: _clearAllFilters,
-                                  icon: const Icon(
-                                    LucideIcons.rotateCcw,
-                                    size: 16,
-                                    color: AppColors.primary,
-                                  ),
-                                  label: Text(
-                                    'ფილტრების გასუფთავება',
-                                    style: GoogleFonts.notoSansGeorgian(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                      color: AppColors.primary,
-                                    ),
-                                  ),
-                                ),
-                              ],
                             ],
                           ),
                         ),
@@ -301,9 +269,7 @@ class _CategoryProductsScreenState
                         itemCount: products.length,
                         itemBuilder: (context, index) {
                           final product = products[index];
-                          final isOwner = product.isOwnedBy(
-                            ref.watch(authStateProvider),
-                          );
+                          final isOwner = product.isOwnedBy(authState);
 
                           return StaggeredEntrance(
                             index: index,

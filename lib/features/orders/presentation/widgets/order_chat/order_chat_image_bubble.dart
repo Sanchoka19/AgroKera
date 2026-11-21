@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../../core/theme/app_colors.dart';
+import '../../../../../core/widgets/app_cached_image.dart';
 import '../../../../profile/presentation/widgets/profile_image_view.dart';
 import '../../../domain/models/order_message_model.dart';
 
@@ -225,23 +226,11 @@ class OrderChatImageBubble extends StatelessWidget {
       );
     }
 
-    return Image.network(
-      url,
+    return AppCachedImage(
+      imageUrl: url,
       fit: BoxFit.cover,
       width: double.infinity,
-      loadingBuilder: (_, child, progress) {
-        if (progress == null) return child;
-        return const Center(
-          child: SizedBox(
-            width: 22,
-            height: 22,
-            child: CircularProgressIndicator(strokeWidth: 2),
-          ),
-        );
-      },
-      errorBuilder: (_, error, stackTrace) => const Center(
-        child: Icon(LucideIcons.imageOff, size: 24, color: Color(0xFF94A3B8)),
-      ),
+      fallbackIcon: LucideIcons.imageOff,
     );
   }
 }
@@ -321,12 +310,10 @@ class _FullScreenImageViewerDialog extends StatelessWidget {
       return Image.file(File(cleanPath), fit: BoxFit.contain);
     }
 
-    return Image.network(
-      url,
+    return AppCachedImage(
+      imageUrl: url,
       fit: BoxFit.contain,
-      errorBuilder: (_, error, stackTrace) => const Center(
-        child: Icon(LucideIcons.imageOff, size: 36, color: Colors.white70),
-      ),
+      fallbackIcon: LucideIcons.imageOff,
     );
   }
 }

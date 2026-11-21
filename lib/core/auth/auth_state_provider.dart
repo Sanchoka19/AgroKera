@@ -87,8 +87,9 @@ class AuthNotifier extends Notifier<AuthState> {
           ? (saved['farmCoverUrl'] ?? fallback.coverUrl)
           : null,
       userAvatarUrl: isStaleSharedClientId
-          ? fallback.avatarUrl
-          : (saved['userAvatarUrl'] ?? fallback.avatarUrl),
+          ? null
+          : (saved['userAvatarUrl'] ??
+              (savedEmail.endsWith('@agrokera.ge') ? fallback.avatarUrl : null)),
       userAddress: savedAddress,
       role: role,
       kycStatus: KycStatus.fromString(saved['kycStatus']),
@@ -338,7 +339,8 @@ class AuthNotifier extends Notifier<AuthState> {
       userName: resolved.name,
       userPhone: resolved.phone,
       userEmail: email,
-      userAvatarUrl: state.userAvatarUrl ?? resolved.avatarUrl,
+      userAvatarUrl: state.userAvatarUrl ??
+          (email.endsWith('@agrokera.ge') ? resolved.avatarUrl : null),
       farmCoverUrl: coverUrl ?? resolved.coverUrl,
       role: UserRole.farmer,
       kycStatus: KycStatus.verified,
@@ -713,7 +715,8 @@ class AuthNotifier extends Notifier<AuthState> {
       farmerId: resolved.farmerId,
       farmName: farmNameOverride ?? resolved.farmName,
       farmCoverUrl: state.farmCoverUrl ?? resolved.coverUrl,
-      userAvatarUrl: state.userAvatarUrl ?? resolved.avatarUrl,
+      userAvatarUrl: state.userAvatarUrl ??
+          (email.endsWith('@agrokera.ge') ? resolved.avatarUrl : null),
       role: role.name,
       name: resolved.name,
       phone: resolved.phone,

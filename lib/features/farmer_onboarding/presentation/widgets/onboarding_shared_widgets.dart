@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:agrokera/core/theme/app_colors.dart';
 import 'package:agrokera/core/theme/app_typography.dart';
+import 'package:agrokera/features/profile/presentation/widgets/profile_image_view.dart';
 
 class OnboardingSectionCard extends StatelessWidget {
   final String title;
@@ -508,45 +509,13 @@ class OnboardingReviewRow extends StatelessWidget {
 }
 
 Widget buildCoverPreviewImage(String pathOrUrl) {
-  if (pathOrUrl.startsWith('http://') || pathOrUrl.startsWith('https://')) {
-    return Image.network(
-      pathOrUrl,
-      fit: BoxFit.cover,
-      errorBuilder: (_, _, _) => Container(
-        color: const Color(0xFFE2E8F0),
-        alignment: Alignment.center,
-        child: const Icon(LucideIcons.image, size: 36, color: Color(0xFF94A3B8)),
-      ),
-    );
-  }
-  if (pathOrUrl.startsWith('data:image/')) {
-    try {
-      final base64Str = pathOrUrl.split(',').last;
-      return Image.memory(
-        base64Decode(base64Str),
-        fit: BoxFit.cover,
-        errorBuilder: (_, _, _) => Container(
-          color: const Color(0xFFE2E8F0),
-          alignment: Alignment.center,
-          child: const Icon(LucideIcons.image, size: 36, color: Color(0xFF94A3B8)),
-        ),
-      );
-    } catch (_) {}
-  }
-  if (!kIsWeb && File(pathOrUrl).existsSync()) {
-    return Image.file(
-      File(pathOrUrl),
-      fit: BoxFit.cover,
-      errorBuilder: (_, _, _) => Container(
-        color: const Color(0xFFE2E8F0),
-        alignment: Alignment.center,
-        child: const Icon(LucideIcons.image, size: 36, color: Color(0xFF94A3B8)),
-      ),
-    );
-  }
-  return Container(
-    color: const Color(0xFFE2E8F0),
-    alignment: Alignment.center,
-    child: const Icon(LucideIcons.image, size: 36, color: Color(0xFF94A3B8)),
+  return ProfileImageView(
+    imageUrl: pathOrUrl,
+    fit: BoxFit.cover,
+    placeholder: Container(
+      color: const Color(0xFFE2E8F0),
+      alignment: Alignment.center,
+      child: const Icon(LucideIcons.image, size: 36, color: Color(0xFF94A3B8)),
+    ),
   );
 }

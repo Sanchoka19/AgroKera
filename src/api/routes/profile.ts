@@ -117,40 +117,52 @@ export async function handleProfileRoute(
         userId.startsWith("farmer_") ||
         Boolean(body.farmName || body.coverUrl);
       const slug = userId.replace(/^user_(farmer|client)_/, "").replace(/^farmer_/, "");
-      existingUser = await prisma.user.create({
-        data: {
-          id: userId.startsWith("farmer_") ? `user_${userId}` : userId,
-          fullName: body.fullName || body.name || (isFarmer ? "ფერმერი" : "მომხმარებელი"),
-          email: body.email?.trim().toLowerCase() || `${slug}@agrokera.ge`,
-          phoneNumber: `+995599${Math.floor(100000 + Math.random() * 900000)}`,
-          role: isFarmer ? Role.FARMER : Role.CLIENT,
-          verificationStatus: body.verificationStatus || VerificationStatus.VERIFIED,
-          avatarUrl: body.avatarUrl,
-          ...(isFarmer
-            ? {
-                farmerProfile: {
-                  create: {
-                    id: userId.startsWith("farmer_") ? userId : `farmer_${slug}`,
-                    farmName: body.farmName || "ჩემი მეურნეობა",
-                    region: body.region || "კახეთი",
-                    city: "თელავი",
-                    address: body.address || "თელავი, კახეთი",
-                    coverUrl: body.coverUrl,
-                    avatarUrl: body.avatarUrl,
-                    isVatPayer: body.isVatPayer ?? false,
-                    isDeliveryEnabled:
-                      body.isDeliveryEnabled !== undefined
-                        ? body.isDeliveryEnabled
-                        : true,
-                    deliveryFee: body.deliveryFee ?? 0.0,
-                  },
-                },
-              }
-            : {}),
-        },
+      const targetUserId = userId.startsWith("farmer_") ? `user_${userId}` : userId;
+      const targetFpId = userId.startsWith("farmer_") ? userId : `farmer_${slug}`;
+
+      const userWithId = await prisma.user.findUnique({
+        where: { id: targetUserId },
         include: { farmerProfile: true },
       });
-      return jsonResponse(existingUser);
+
+      if (userWithId) {
+        existingUser = userWithId;
+      } else {
+        existingUser = await prisma.user.create({
+          data: {
+            id: targetUserId,
+            fullName: body.fullName || body.name || (isFarmer ? "ფერმერი" : "მომხმარებელი"),
+            email: body.email?.trim().toLowerCase() || `${slug}@agrokera.ge`,
+            phoneNumber: `+995599${Math.floor(100000 + Math.random() * 900000)}`,
+            role: isFarmer ? Role.FARMER : Role.CLIENT,
+            verificationStatus: body.verificationStatus || VerificationStatus.VERIFIED,
+            avatarUrl: body.avatarUrl,
+            ...(isFarmer
+              ? {
+                  farmerProfile: {
+                    create: {
+                      id: targetFpId,
+                      farmName: body.farmName || "ჩემი მეურნეობა",
+                      region: body.region || "კახეთი",
+                      city: "თელავი",
+                      address: body.address || "თელავი, კახეთი",
+                      coverUrl: body.coverUrl,
+                      avatarUrl: body.avatarUrl,
+                      isVatPayer: body.isVatPayer ?? false,
+                      isDeliveryEnabled:
+                        body.isDeliveryEnabled !== undefined
+                          ? body.isDeliveryEnabled
+                          : true,
+                      deliveryFee: body.deliveryFee ?? 0.0,
+                    },
+                  },
+                }
+              : {}),
+          },
+          include: { farmerProfile: true },
+        });
+        return jsonResponse(existingUser);
+      }
     }
 
     const resolvedFullName = body.fullName || body.name;
@@ -179,40 +191,57 @@ export async function handleProfileRoute(
         ...(body.verificationStatus
           ? { verificationStatus: body.verificationStatus }
           : {}),
-        ...(existingUser.farmerProfile && hasFarmerFieldUpdate
+        ...(hasFarmerFieldUpdate
           ? {
             farmerProfile: {
-              update: {
-                ...(body.farmName ? { farmName: body.farmName } : {}),
-                ...(body.region ? { region: body.region } : {}),
-                ...(body.address ? { address: body.address } : {}),
-                ...(body.idCardFrontUrl
-                  ? { idCardFrontUrl: body.idCardFrontUrl }
-                  : {}),
-                ...(body.idCardBackUrl
-                  ? { idCardBackUrl: body.idCardBackUrl }
-                  : {}),
-                ...(body.coverUrl ? { coverUrl: body.coverUrl } : {}),
-                ...(body.avatarUrl ? { avatarUrl: body.avatarUrl } : {}),
-                ...(body.isVatPayer !== undefined
-                  ? { isVatPayer: body.isVatPayer }
-                  : {}),
-                ...(body.isDeliveryEnabled !== undefined
-                  ? { isDeliveryEnabled: body.isDeliveryEnabled }
-                  : {}),
-                ...(body.deliveryFee !== undefined
-                  ? { deliveryFee: body.deliveryFee }
-                  : {}),
-                ...(body.city || body.deliveryCity
-                  ? {
-                    city: body.city || body.deliveryCity,
-                    deliveryCity: body.deliveryCity || body.city,
-                  }
-                  : {}),
-                ...(body.deliveryDays ? { deliveryDays: body.deliveryDays } : {}),
-                ...(body.regionalDeliveryFees
-                  ? { regionalDeliveryFees: body.regionalDeliveryFees }
-                  : {}),
+              upsert: {
+                create: {
+                  id: existingUser.farmerProfile?.id || (userId.startsWith("farmer_") ? userId : `farmer_${userId.replace(/^user_(farmer|client)_/, "").replace(/^farmer_/, "")}`),
+                  farmName: body.farmName || "ჩემი მეურნეობა",
+                  region: body.region || "კახეთი",
+                  city: body.city || "თელავი",
+                  address: body.address || "თელავი, კახეთი",
+                  coverUrl: body.coverUrl,
+                  avatarUrl: body.avatarUrl,
+                  isVatPayer: body.isVatPayer ?? false,
+                  isDeliveryEnabled:
+                    body.isDeliveryEnabled !== undefined
+                      ? body.isDeliveryEnabled
+                      : true,
+                  deliveryFee: body.deliveryFee ?? 0.0,
+                },
+                update: {
+                  ...(body.farmName ? { farmName: body.farmName } : {}),
+                  ...(body.region ? { region: body.region } : {}),
+                  ...(body.address ? { address: body.address } : {}),
+                  ...(body.idCardFrontUrl
+                    ? { idCardFrontUrl: body.idCardFrontUrl }
+                    : {}),
+                  ...(body.idCardBackUrl
+                    ? { idCardBackUrl: body.idCardBackUrl }
+                    : {}),
+                  ...(body.coverUrl ? { coverUrl: body.coverUrl } : {}),
+                  ...(body.avatarUrl ? { avatarUrl: body.avatarUrl } : {}),
+                  ...(body.isVatPayer !== undefined
+                    ? { isVatPayer: body.isVatPayer }
+                    : {}),
+                  ...(body.isDeliveryEnabled !== undefined
+                    ? { isDeliveryEnabled: body.isDeliveryEnabled }
+                    : {}),
+                  ...(body.deliveryFee !== undefined
+                    ? { deliveryFee: body.deliveryFee }
+                    : {}),
+                  ...(body.city || body.deliveryCity
+                    ? {
+                      city: body.city || body.deliveryCity,
+                      deliveryCity: body.deliveryCity || body.city,
+                    }
+                    : {}),
+                  ...(body.deliveryDays ? { deliveryDays: body.deliveryDays } : {}),
+                  ...(body.regionalDeliveryFees
+                    ? { regionalDeliveryFees: body.regionalDeliveryFees }
+                    : {}),
+                },
               },
             },
           }

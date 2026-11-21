@@ -3,6 +3,7 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/auth/auth_state_provider.dart';
+import '../../../../core/constants/app_assets.dart';
 import '../../../../core/constants/app_categories.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/network/offline_queue/offline_mutation.dart';
@@ -648,10 +649,8 @@ class MarketplaceNotifier extends Notifier<MarketplaceState> {
         deliveryFee: deliveryFee,
         regionalDeliveryFees: regionalDeliveryFees,
         isPickupEnabled: isPickupEnabled,
-        avatarUrl:
-            'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80',
-        coverUrl:
-            'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=1000&auto=format&fit=crop&q=80',
+        avatarUrl: '',
+        coverUrl: AppAssets.defaultFarmCover,
         about: 'ნატურალური ქართული პროდუქცია პირდაპირ მეურნეობიდან.',
       );
 
@@ -754,10 +753,8 @@ class MarketplaceNotifier extends Notifier<MarketplaceState> {
         rating: 0.0,
         reviewCount: 0,
         totalRatings: 0,
-        avatarUrl:
-            'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80',
-        coverUrl:
-            'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=1000&auto=format&fit=crop&q=80',
+        avatarUrl: '',
+        coverUrl: AppAssets.defaultFarmCover,
         about: 'ნატურალური ქართული პროდუქცია პირდაპირ მეურნეობიდან.',
       );
       updatedFarmers = [...state.farmers, newFarmer];

@@ -49,11 +49,8 @@ class FarmerOnboardingNotifier extends Notifier<FarmerOnboardingState> {
   }
 
   void setStep(int step) {
-    if (step >= 1 && step <= 6) {
+    if (step >= 1 && step <= 5) {
       state = state.copyWith(currentStep: step);
-      if (step == 6) {
-        startTimer();
-      }
     }
   }
 
@@ -332,7 +329,8 @@ class FarmerOnboardingNotifier extends Notifier<FarmerOnboardingState> {
     }
 
     // Sync location into live marketplace state for immediate profile consistency
-    final currentFid = ref.read(authStateProvider).farmerId ?? 'farmer_1';
+    final currentFid = ref.read(authStateProvider).farmerId ??
+        'farmer_${DateTime.now().millisecondsSinceEpoch}';
     ref.read(marketplaceProvider.notifier).updateFarmerLocation(
           farmerId: currentFid,
           location: effectiveAddress,

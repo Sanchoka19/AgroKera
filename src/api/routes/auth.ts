@@ -241,33 +241,43 @@ export async function handleAuthRoute(
       if (body.isGoogleAuth) {
         const slug = (normalizedEmail || `${Date.now()}`).replace(/[^a-z0-9]/g, "_");
         const emailPrefix = normalizedEmail ? normalizedEmail.split("@")[0] : "მომხმარებელი";
-        user = await prisma.user.create({
-          data: {
-            id: roleEnum === Role.FARMER ? `user_farmer_${slug}` : `user_client_${slug}`,
-            fullName: body.name || (roleEnum === Role.FARMER ? "ფერმერი" : emailPrefix),
-            phoneNumber:
-              body.phone && body.phone !== "+995 599 12 34 56"
-                ? body.phone
-                : `+995599${Math.floor(100000 + Math.random() * 900000)}`,
-            email: normalizedEmail || `user_${Date.now()}@agrokera.ge`,
-            role: roleEnum,
-            verificationStatus: VerificationStatus.VERIFIED,
-            ...(roleEnum === Role.FARMER
-              ? {
-                farmerProfile: {
-                  create: {
-                    id: `farmer_${slug}`,
-                    farmName: body.farmName || `${body.name || "ახალი ფერმერი"}-ის მეურნეობა`,
-                    region: "კახეთი",
-                    city: "თელავი",
-                    address: "თელავი, კახეთი",
-                  },
-                },
-              }
-              : {}),
-          },
+        const targetUserId = roleEnum === Role.FARMER ? `user_farmer_${slug}` : `user_client_${slug}`;
+        const existingById = await prisma.user.findUnique({
+          where: { id: targetUserId },
           include: { farmerProfile: true },
         });
+
+        if (existingById) {
+          user = existingById;
+        } else {
+          user = await prisma.user.create({
+            data: {
+              id: targetUserId,
+              fullName: body.name || (roleEnum === Role.FARMER ? "ფერმერი" : emailPrefix),
+              phoneNumber:
+                body.phone && body.phone !== "+995 599 12 34 56"
+                  ? body.phone
+                  : `+995599${Math.floor(100000 + Math.random() * 900000)}`,
+              email: normalizedEmail || `user_${Date.now()}@agrokera.ge`,
+              role: roleEnum,
+              verificationStatus: VerificationStatus.VERIFIED,
+              ...(roleEnum === Role.FARMER
+                ? {
+                  farmerProfile: {
+                    create: {
+                      id: `farmer_${slug}`,
+                      farmName: body.farmName || `${body.name || "ახალი ფერმერი"}-ის მეურნეობა`,
+                      region: "კახეთი",
+                      city: "თელავი",
+                      address: "თელავი, კახეთი",
+                    },
+                  },
+                }
+                : {}),
+            },
+            include: { farmerProfile: true },
+          });
+        }
       } else {
         return errorResponse("მომხმარებელი ამ ელ-ფოსტით არ არსებობს. გთხოვთ გაიაროთ რეგისტრაცია", 401);
       }
@@ -292,14 +302,18 @@ export async function handleAuthRoute(
     if (roleEnum === Role.FARMER && !user.farmerProfile) {
       // Ensure existing farmer user always has its own isolated FarmerProfile
       const slug = (user.email || user.id).toLowerCase().replace(/[^a-z0-9]/g, "_");
-      await prisma.farmerProfile.create({
-        data: {
+      await prisma.farmerProfile.upsert({
+        where: { userId: user.id },
+        create: {
           id: `farmer_${slug}`,
           userId: user.id,
           farmName: body.farmName || `${user.fullName}-ის მეურნეობა`,
           region: "კახეთი",
           city: "თელავი",
           address: "თელავი, კახეთი",
+        },
+        update: {
+          farmName: body.farmName || `${user.fullName}-ის მეურნეობა`,
         },
       });
       user = await prisma.user.update({
@@ -347,17 +361,21 @@ export async function handleAuthRoute(
       .replace(/[^a-z0-9]/g, "_");
     const passwordHash = body.password?.trim() ? hashPassword(body.password.trim()) : undefined;
 
-    let existingUser = normalizedEmail
-      ? await prisma.user.findFirst({
-        where: {
-          email: {
-            equals: normalizedEmail,
-            mode: "insensitive",
-          },
-        },
-        include: { farmerProfile: true },
-      })
-      : null;
+    const targetUserId = roleEnum === Role.FARMER ? `user_farmer_${slug}` : `user_client_${slug}`;
+    const targetFarmerId = `farmer_${slug}`;
+
+    let existingUser = await prisma.user.findFirst({
+      where: {
+        OR: [
+          ...(normalizedEmail
+            ? [{ email: { equals: normalizedEmail, mode: "insensitive" as const } }]
+            : []),
+          { id: targetUserId },
+          ...(body.phoneNumber ? [{ phoneNumber: body.phoneNumber }] : []),
+        ],
+      },
+      include: { farmerProfile: true },
+    });
 
     let user;
     if (existingUser) {
@@ -369,8 +387,19 @@ export async function handleAuthRoute(
           ...(passwordHash ? { passwordHash } : {}),
           ...(roleEnum === Role.FARMER
             ? {
-              farmerProfile: existingUser.farmerProfile
-                ? {
+              farmerProfile: {
+                upsert: {
+                  create: {
+                    id: targetFarmerId,
+                    farmName:
+                      body.farmName || `${body.fullName}-ის მეურნეობა`,
+                    region: body.region || "კახეთი",
+                    city: body.city || "თელავი",
+                    address: body.address || "თელავი, კახეთი",
+                    coverUrl: body.coverUrl,
+                    avatarUrl: body.avatarUrl,
+                    isVatPayer: body.isVatPayer ?? false,
+                  },
                   update: {
                     ...(body.farmName ? { farmName: body.farmName } : {}),
                     ...(body.region ? { region: body.region } : {}),
@@ -382,10 +411,66 @@ export async function handleAuthRoute(
                     ...(body.coverUrl ? { coverUrl: body.coverUrl } : {}),
                     ...(body.avatarUrl ? { avatarUrl: body.avatarUrl } : {}),
                   },
-                }
-                : {
+                },
+              },
+            }
+            : {}),
+        },
+        include: { farmerProfile: true },
+      });
+    } else {
+      let uniqueUserId = targetUserId;
+      const userExists = await prisma.user.findUnique({
+        where: { id: uniqueUserId },
+        select: { id: true },
+      });
+      if (userExists) {
+        uniqueUserId = `${targetUserId}_${Date.now()}`;
+      }
+
+      let uniqueFarmerId = targetFarmerId;
+      const fpExists = await prisma.farmerProfile.findUnique({
+        where: { id: uniqueFarmerId },
+        select: { id: true },
+      });
+      if (fpExists) {
+        uniqueFarmerId = `${targetFarmerId}_${Date.now()}`;
+      }
+
+      let safePhone =
+        body.phoneNumber &&
+        body.phoneNumber !== "+995 599 12 34 56" &&
+        body.phoneNumber !== "+995 599 00 00 00"
+          ? body.phoneNumber
+          : null;
+
+      if (safePhone) {
+        const phoneExists = await prisma.user.findUnique({
+          where: { phoneNumber: safePhone },
+          select: { id: true },
+        });
+        if (phoneExists) {
+          safePhone = `+995599${Math.floor(100000 + Math.random() * 900000)}`;
+        }
+      } else {
+        safePhone = `+995599${Math.floor(100000 + Math.random() * 900000)}`;
+      }
+
+      try {
+        user = await prisma.user.create({
+          data: {
+            id: uniqueUserId,
+            fullName: body.fullName || "ახალი მომხმარებელი",
+            phoneNumber: safePhone,
+            email: normalizedEmail || `user_${Date.now()}@agrokera.ge`,
+            role: roleEnum,
+            verificationStatus: VerificationStatus.VERIFIED,
+            ...(passwordHash ? { passwordHash } : {}),
+            ...(roleEnum === Role.FARMER
+              ? {
+                farmerProfile: {
                   create: {
-                    id: `farmer_${slug}`,
+                    id: uniqueFarmerId,
                     farmName:
                       body.farmName || `${body.fullName}-ის მეურნეობა`,
                     region: body.region || "კახეთი",
@@ -396,46 +481,28 @@ export async function handleAuthRoute(
                     isVatPayer: body.isVatPayer ?? false,
                   },
                 },
-            }
-            : {}),
-        },
-        include: { farmerProfile: true },
-      });
-    } else {
-      user = await prisma.user.create({
-        data: {
-          id: roleEnum === Role.FARMER ? `user_farmer_${slug}` : `user_client_${slug}`,
-          fullName: body.fullName || "ახალი მომხმარებელი",
-          phoneNumber:
-            body.phoneNumber &&
-              body.phoneNumber !== "+995 599 12 34 56" &&
-              body.phoneNumber !== "+995 599 00 00 00"
-              ? body.phoneNumber
-              : `+995599${Math.floor(100000 + Math.random() * 900000)}`,
-          email: normalizedEmail || `user_${Date.now()}@agrokera.ge`,
-          role: roleEnum,
-          verificationStatus: VerificationStatus.VERIFIED,
-          ...(passwordHash ? { passwordHash } : {}),
-          ...(roleEnum === Role.FARMER
-            ? {
-              farmerProfile: {
-                create: {
-                  id: `farmer_${slug}`,
-                  farmName:
-                    body.farmName || `${body.fullName}-ის მეურნეობა`,
-                  region: body.region || "კახეთი",
-                  city: body.city || "თელავი",
-                  address: body.address || "თელავი, კახეთი",
-                  coverUrl: body.coverUrl,
-                  avatarUrl: body.avatarUrl,
-                  isVatPayer: body.isVatPayer ?? false,
-                },
-              },
-            }
-            : {}),
-        },
-        include: { farmerProfile: true },
-      });
+              }
+              : {}),
+          },
+          include: { farmerProfile: true },
+        });
+      } catch (err: any) {
+        // Fallback for race condition: find and update
+        const fallbackUser = await prisma.user.findFirst({
+          where: {
+            OR: [
+              ...(normalizedEmail ? [{ email: { equals: normalizedEmail, mode: "insensitive" as const } }] : []),
+              { id: uniqueUserId },
+            ],
+          },
+          include: { farmerProfile: true },
+        });
+        if (fallbackUser) {
+          user = fallbackUser;
+        } else {
+          throw err;
+        }
+      }
     }
 
     return jsonResponse(

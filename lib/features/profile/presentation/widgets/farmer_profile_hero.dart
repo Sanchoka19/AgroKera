@@ -129,7 +129,10 @@ class FarmerProfileHero extends ConsumerWidget {
           (authState.farmerId != null && f.id == authState.farmerId) ||
           (authState.farmName != null && f.farmName == authState.farmName),
     ).firstOrNull;
-    final farmerAvatar = authState.userAvatarUrl ?? matchedFarmer?.avatarUrl;
+    final farmerAvatar = (authState.userAvatarUrl != null &&
+            authState.userAvatarUrl!.trim().isNotEmpty)
+        ? authState.userAvatarUrl
+        : null;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,

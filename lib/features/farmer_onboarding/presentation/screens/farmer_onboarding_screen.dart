@@ -14,19 +14,17 @@ import '../widgets/onboarding_steps/step2_status_selection_widget.dart';
 import '../widgets/onboarding_steps/step3_legal_and_bank_widget.dart';
 import '../widgets/onboarding_steps/step4_delivery_widget.dart';
 import '../widgets/onboarding_steps/step4_review_and_terms_widget.dart';
-import '../widgets/onboarding_steps/step5_sms_verification_widget.dart';
 
 // Re-export LegalStatus so existing references across the app remain intact
 export '../models/farmer_onboarding_state.dart' show LegalStatus;
 
-/// 6-Step Farmer Onboarding & Verification Wizard
+/// 5-Step Farmer Onboarding & Verification Wizard
 /// Strictly adhering to Figma designs and cleanly decomposed:
-/// - Step 1/6: ფერმის ინფორმაცია & მისამართი (Name, Cover Photo, Region, City, Interactive Map)
-/// - Step 2/6: აირჩიე თქვენი სტატუსი (Centered large status cards)
-/// - Step 3/6: იურიდიული დეტალები & საბანკო ანგარიში (ID, Documents Upload, Bank & IBAN)
-/// - Step 4/6: მიწოდების პირობები & გრაფიკი (Self-Pickup, Scheduled Delivery & Day Toggle Buttons)
-/// - Step 5/6: დეტალები & წესები და პირობები (Summary review with spacious "შეცვლა" + 2 Checkboxes)
-/// - Step 6/6: SMS დადასტურება (5-digit OTP verification & complete onboarding)
+/// - Step 1/5: ფერმის ინფორმაცია & მისამართი (Name, Cover Photo, Region, City, Interactive Map)
+/// - Step 2/5: აირჩიე თქვენი სტატუსი (Centered large status cards)
+/// - Step 3/5: იურიდიული დეტალები & საბანკო ანგარიში (ID, Documents Upload, Bank & IBAN)
+/// - Step 4/5: მიწოდების პირობები & გრაფიკი (Self-Pickup, Scheduled Delivery & Day Toggle Buttons)
+/// - Step 5/5: დეტალები & წესები და პირობები (Summary review with spacious "შეცვლა" + 2 Checkboxes)
 class FarmerOnboardingScreen extends ConsumerStatefulWidget {
   const FarmerOnboardingScreen({super.key});
 
@@ -39,18 +37,10 @@ class _FarmerOnboardingScreenState extends ConsumerState<FarmerOnboardingScreen>
   final _farmNameController = TextEditingController();
   final _idNumberController = TextEditingController();
   final _ibanController = TextEditingController();
-  late final FarmerOnboardingNotifier _onboardingNotifier;
-
-  static const int _pinLength = 5;
-  final List<TextEditingController> _pinControllers =
-      List.generate(_pinLength, (_) => TextEditingController());
-  final List<FocusNode> _pinFocusNodes =
-      List.generate(_pinLength, (_) => FocusNode());
 
   @override
   void initState() {
     super.initState();
-    _onboardingNotifier = ref.read(farmerOnboardingProvider.notifier);
     final st = ref.read(farmerOnboardingProvider);
     _farmNameController.text = st.farmName;
     _idNumberController.text = st.idNumber;
@@ -62,13 +52,6 @@ class _FarmerOnboardingScreenState extends ConsumerState<FarmerOnboardingScreen>
     _farmNameController.dispose();
     _idNumberController.dispose();
     _ibanController.dispose();
-    for (final c in _pinControllers) {
-      c.dispose();
-    }
-    for (final f in _pinFocusNodes) {
-      f.dispose();
-    }
-    _onboardingNotifier.cancelTimer();
     super.dispose();
   }
 
@@ -121,30 +104,10 @@ class _FarmerOnboardingScreenState extends ConsumerState<FarmerOnboardingScreen>
       return;
     }
 
-    if (currentStep < 6) {
+    if (currentStep < 5) {
       final nextStep = currentStep + 1;
       notifier.setStep(nextStep);
-
-      if (nextStep == 6) {
-        final email = notifier.resolveVerificationEmail();
-        final sent = await notifier.sendOtp();
-        if (!mounted) return;
-        if (sent) {
-          AppToast.success(
-            context,
-            'ვერიფიკაციის კოდი გაიგზავნა: $email',
-            icon: LucideIcons.mailCheck,
-          );
-        }
-      }
     } else {
-      final otpCode = _pinControllers.map((c) => c.text.trim()).join();
-      final error = await notifier.verifyOtp(otpCode);
-      if (!mounted) return;
-      if (error != null) {
-        AppToast.error(context, error);
-        return;
-      }
       _onCompleteOnboarding();
     }
   }
@@ -184,11 +147,6 @@ class _FarmerOnboardingScreenState extends ConsumerState<FarmerOnboardingScreen>
           farmNameController: _farmNameController,
           ibanController: _ibanController,
         );
-      case 6:
-        return Step5SmsVerificationWidget(
-          pinControllers: _pinControllers,
-          pinFocusNodes: _pinFocusNodes,
-        );
       default:
         return const SizedBox.shrink();
     }
@@ -199,11 +157,11 @@ class _FarmerOnboardingScreenState extends ConsumerState<FarmerOnboardingScreen>
       children: [
         Expanded(
           child: Row(
-            children: List.generate(6, (index) {
+            children: List.generate(5, (index) {
               final isCompletedOrActive = index < currentStep;
               return Expanded(
                 child: Padding(
-                  padding: EdgeInsets.only(right: index < 5 ? 5.0 : 0.0),
+                  padding: EdgeInsets.only(right: index < 4 ? 5.0 : 0.0),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 320),
                     curve: Curves.easeInOutCubic,
@@ -230,7 +188,7 @@ class _FarmerOnboardingScreenState extends ConsumerState<FarmerOnboardingScreen>
           child: AnimatedSwitcher(
             duration: const Duration(milliseconds: 250),
             child: Text(
-              '$currentStep/6',
+              '$currentStep/5',
               key: ValueKey<int>(currentStep),
               style: const TextStyle(
                 color: AppColors.primary,
@@ -312,7 +270,7 @@ class _FarmerOnboardingScreenState extends ConsumerState<FarmerOnboardingScreen>
                 ),
               ),
               child: PrimaryButton(
-                text: currentStep == 6 ? 'დადასტურება' : 'შემდეგი',
+                text: currentStep == 5 ? 'დადასტურება' : 'შემდეგი',
                 height: 52,
                 borderRadius: BorderRadius.circular(12),
                 backgroundColor: canProceed

@@ -21,6 +21,20 @@ export async function handleNotificationsRoute(
         body.fcmToken && typeof body.fcmToken === "string" && body.fcmToken.trim().length > 0
           ? body.fcmToken.trim()
           : null;
+
+      const userExists = await prisma.user.findUnique({
+        where: { id: body.userId },
+        select: { id: true },
+      });
+
+      if (!userExists) {
+        return jsonResponse({
+          success: true,
+          pendingSync: true,
+          userId: body.userId,
+        });
+      }
+
       const updated = await prisma.user.update({
         where: { id: body.userId },
         data: { fcmToken: tokenValue },

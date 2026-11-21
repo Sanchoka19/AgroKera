@@ -8,6 +8,7 @@ import 'package:agrokera/features/farmer_onboarding/presentation/screens/farmer_
 import 'package:agrokera/features/farmer_onboarding/presentation/providers/farmer_onboarding_provider.dart';
 import 'package:agrokera/features/farmer_onboarding/presentation/widgets/farmer_map_widget.dart';
 import 'package:agrokera/features/farmer_onboarding/presentation/widgets/onboarding_shared_widgets.dart';
+import 'package:agrokera/features/farmer_onboarding/presentation/widgets/onboarding_steps/step5_sms_verification_widget.dart';
 import 'test_helper.dart';
 
 void main() {
@@ -39,7 +40,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Step 1: Farm Info
-    expect(find.text('1/6'), findsOneWidget);
+    expect(find.text('1/5'), findsOneWidget);
     expect(find.text('ფერმის ინფორმაცია'), findsOneWidget);
     expect(find.text('მისამართი'), findsOneWidget);
     expect(find.text('შემდეგი'), findsOneWidget);
@@ -47,8 +48,8 @@ void main() {
     // Blocked if required fields are empty
     await tester.tap(find.text('შემდეგი'));
     await tester.pump();
-    expect(find.text('1/6'), findsOneWidget);
-    expect(find.text('2/6'), findsNothing);
+    expect(find.text('1/5'), findsOneWidget);
+    expect(find.text('2/5'), findsNothing);
 
     // Populate required fields for Step 1
     container.read(farmerOnboardingProvider.notifier).setFarmName('მწვანე ველი');
@@ -63,7 +64,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Step 2: Choose Status
-    expect(find.text('2/6'), findsOneWidget);
+    expect(find.text('2/5'), findsOneWidget);
     expect(find.text('ფიზიკური პირი'), findsOneWidget);
     expect(find.text('ინდ. მეწარმე'), findsOneWidget);
     expect(find.text('შპს'), findsOneWidget);
@@ -73,14 +74,14 @@ void main() {
     await tester.pumpAndSettle();
 
     // Step 3: Legal & Bank
-    expect(find.text('3/6'), findsOneWidget);
+    expect(find.text('3/5'), findsOneWidget);
     expect(find.text('საბანკო ანგარიში'), findsOneWidget);
 
     // Blocked if required fields on Step 3 are empty
     await tester.tap(find.text('შემდეგი'));
     await tester.pump();
-    expect(find.text('3/6'), findsOneWidget);
-    expect(find.text('4/6'), findsNothing);
+    expect(find.text('3/5'), findsOneWidget);
+    expect(find.text('4/5'), findsNothing);
 
     // Populate required fields for Step 3
     container.read(farmerOnboardingProvider.notifier).setIdNumber('61001012345');
@@ -95,7 +96,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Step 4: Delivery Options
-    expect(find.text('4/6'), findsOneWidget);
+    expect(find.text('4/5'), findsOneWidget);
     expect(find.text('მიწოდების პირობები'), findsOneWidget);
     expect(find.text('თვითგატანა მეურნეობიდან'), findsOneWidget);
     expect(find.text('საბაზისო პირობა • მუდმივად აქტიური'), findsOneWidget);
@@ -134,15 +135,16 @@ void main() {
     await tester.pumpAndSettle();
 
     // Step 5: Review & Terms
-    expect(find.text('5/6'), findsOneWidget);
+    expect(find.text('5/5'), findsOneWidget);
     expect(find.text('დეტალები'), findsOneWidget);
     expect(find.text('მისამართი:'), findsOneWidget);
     expect(find.text('წესები და პირობები'), findsOneWidget);
+    expect(find.text('დადასტურება'), findsOneWidget);
 
     // Verify next is disabled/blocked while checkboxes are not checked
-    await tester.tap(find.text('შემდეგი'));
+    await tester.tap(find.text('დადასტურება'));
     await tester.pump();
-    expect(find.text('5/6'), findsOneWidget);
+    expect(find.text('5/5'), findsOneWidget);
 
     // Check both terms and conditions checkboxes
     await tester.ensureVisible(find.byType(OnboardingCustomCheckbox).first);
@@ -151,15 +153,11 @@ void main() {
     await tester.tap(find.byType(OnboardingCustomCheckbox).last);
     await tester.pumpAndSettle();
 
-    // Tap Next -> Step 6
-    await tester.tap(find.text('შემდეგი'));
-    await tester.pump(const Duration(milliseconds: 300));
+    // Tap Confirm -> completes onboarding directly without requiring second OTP
+    await tester.tap(find.text('დადასტურება'));
+    await tester.pumpAndSettle();
 
-    // Step 6: SMS OTP
-    expect(find.text('6/6'), findsOneWidget);
-    expect(find.text('შეიყვანეთ SMS კოდი'), findsOneWidget);
-    expect(find.text('დადასტურება'), findsOneWidget);
-    expect(find.text('შეცვლა'), findsWidgets); // in-place email editing button is present
+    expect(find.text('5/5'), findsNothing);
 
     await tester.pumpWidget(const SizedBox.shrink());
   });
@@ -221,23 +219,24 @@ void main() {
   testWidgets('FarmerOnboarding allows in-place email change and controller persistence', (WidgetTester tester) async {
     final container = ProviderContainer();
     addTearDown(container.dispose);
-    container.read(farmerOnboardingProvider.notifier).setFarmName('მწვანე ველი');
-    container.read(farmerOnboardingProvider.notifier).setIdNumber('61001012345');
-    container.read(farmerOnboardingProvider.notifier).setIban('GE29TB7777777777777777');
-    container.read(farmerOnboardingProvider.notifier).setStep(6);
+    final pinControllers = List.generate(5, (_) => TextEditingController());
+    final pinFocusNodes = List.generate(5, (_) => FocusNode());
 
     await tester.pumpWidget(
       UncontrolledProviderScope(
         container: container,
-        child: const MaterialApp(
-          home: FarmerOnboardingScreen(),
+        child: MaterialApp(
+          home: Scaffold(
+            body: Step5SmsVerificationWidget(
+              pinControllers: pinControllers,
+              pinFocusNodes: pinFocusNodes,
+            ),
+          ),
         ),
       ),
     );
     await tester.pump(const Duration(milliseconds: 300));
 
-    // Verify step 6 rendered with email
-    expect(find.text('6/6'), findsOneWidget);
     expect(find.text('შეიყვანეთ SMS კოდი'), findsOneWidget);
 
     // Tap email edit button
@@ -261,6 +260,15 @@ void main() {
     // Bottom sheet closed and verification email updated
     expect(find.text('newfarmer@agrokera.ge'), findsOneWidget);
     expect(container.read(farmerOnboardingProvider.notifier).resolveVerificationEmail(), 'newfarmer@agrokera.ge');
+
+    container.read(farmerOnboardingProvider.notifier).cancelTimer();
+
+    for (final c in pinControllers) {
+      c.dispose();
+    }
+    for (final f in pinFocusNodes) {
+      f.dispose();
+    }
 
     await tester.pumpWidget(const SizedBox.shrink());
   });

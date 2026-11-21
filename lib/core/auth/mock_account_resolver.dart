@@ -89,11 +89,7 @@ abstract final class MockAccountResolver {
           avatarUrl: _davitAvatar,
           coverUrl: _davitCover,
         );
-      // giorgi@agrokera.ge, the default demo email and an empty email all
-      // map to the "Giorgi's farm" seed account.
       case 'giorgi@agrokera.ge':
-      case 'example@gmail.com':
-      case '':
         return ResolvedAccountIdentity(
           userId: 'user_farmer_2',
           farmerId: 'farmer_2',
@@ -102,6 +98,16 @@ abstract final class MockAccountResolver {
           phone: explicitPhone ?? '+995 599 11 22 33',
           avatarUrl: _giorgiAvatar,
           coverUrl: _giorgiCover,
+        );
+      case 'example@gmail.com':
+      case '':
+        final fallbackName = explicitName ?? 'ახალი ფერმერი';
+        return ResolvedAccountIdentity(
+          userId: 'user_farmer_new',
+          farmerId: 'farmer_new',
+          farmName: explicitFarmName ?? '$fallbackName-ის მეურნეობა',
+          name: fallbackName,
+          phone: explicitPhone ?? '+995 599 00 00 00',
         );
     }
 

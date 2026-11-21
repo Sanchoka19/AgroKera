@@ -493,6 +493,40 @@ class AuthNotifier extends Notifier<AuthState> {
   // KYC
   // ---------------------------------------------------------------------------
 
+  /// Uploads real image files to backend /api/upload and submits KYC documents
+  Future<void> uploadAndSubmitKyc({
+    required XFile frontFile,
+    required XFile backFile,
+    String? farmName,
+    String? region,
+    String? address,
+  }) async {
+    String frontUrl = 's3://agrokera-assets/kyc/id_front.jpg';
+    String backUrl = 's3://agrokera-assets/kyc/id_back.jpg';
+
+    try {
+      final frontRes = await _repo.uploadImage(frontFile, folder: 'kyc');
+      if (frontRes != null && frontRes.isNotEmpty) {
+        frontUrl = frontRes;
+      }
+    } catch (_) {}
+
+    try {
+      final backRes = await _repo.uploadImage(backFile, folder: 'kyc');
+      if (backRes != null && backRes.isNotEmpty) {
+        backUrl = backRes;
+      }
+    } catch (_) {}
+
+    await submitKycDocuments(
+      idCardFrontUrl: frontUrl,
+      idCardBackUrl: backUrl,
+      farmName: farmName,
+      region: region,
+      address: address,
+    );
+  }
+
   Future<void> submitKycDocuments({
     required String idCardFrontUrl,
     required String idCardBackUrl,

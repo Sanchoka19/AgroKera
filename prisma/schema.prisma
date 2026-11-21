@@ -16,6 +16,7 @@ enum Role {
   CLIENT
   AGRO_MARKET
   LOGISTICS_PROVIDER
+  ADMIN
 }
 
 enum VerificationStatus {

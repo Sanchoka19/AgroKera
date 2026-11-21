@@ -23,6 +23,8 @@ class _KycVerificationScreenState extends ConsumerState<KycVerificationScreen> {
   bool _backUploaded = false;
   String? _frontFileName;
   String? _backFileName;
+  XFile? _frontFile;
+  XFile? _backFile;
   bool _isSubmitting = false;
 
   Future<void> _pickKycPhoto({
@@ -41,9 +43,11 @@ class _KycVerificationScreenState extends ConsumerState<KycVerificationScreen> {
           if (isFront) {
             _frontUploaded = true;
             _frontFileName = file.name;
+            _frontFile = file;
           } else {
             _backUploaded = true;
             _backFileName = file.name;
+            _backFile = file;
           }
         });
         AppToast.success(
@@ -192,10 +196,17 @@ class _KycVerificationScreenState extends ConsumerState<KycVerificationScreen> {
       return;
     }
     setState(() => _isSubmitting = true);
-    await ref.read(authStateProvider.notifier).submitKycDocuments(
-          idCardFrontUrl: 's3://agrokera-assets/kyc/id_front.jpg',
-          idCardBackUrl: 's3://agrokera-assets/kyc/id_back.jpg',
-        );
+    if (_frontFile != null && _backFile != null) {
+      await ref.read(authStateProvider.notifier).uploadAndSubmitKyc(
+            frontFile: _frontFile!,
+            backFile: _backFile!,
+          );
+    } else {
+      await ref.read(authStateProvider.notifier).submitKycDocuments(
+            idCardFrontUrl: 's3://agrokera-assets/kyc/id_front.jpg',
+            idCardBackUrl: 's3://agrokera-assets/kyc/id_back.jpg',
+          );
+    }
     if (!mounted) return;
     setState(() => _isSubmitting = false);
     AppToast.success(

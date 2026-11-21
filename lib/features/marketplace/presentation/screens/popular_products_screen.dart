@@ -199,6 +199,32 @@ class _PopularProductsScreenState extends ConsumerState<PopularProductsScreen> {
                             _filterCriteria.copyWith(sortBy: 'პოპულარული');
                       });
                     },
+                    onClearPrice: () {
+                      setState(() {
+                        _filterCriteria = _filterCriteria.copyWith(
+                          clearMinPrice: true,
+                          clearMaxPrice: true,
+                        );
+                      });
+                    },
+                    onClearBio: () {
+                      setState(() {
+                        _filterCriteria =
+                            _filterCriteria.copyWith(isBioOnly: false);
+                      });
+                    },
+                    onClearInStock: () {
+                      setState(() {
+                        _filterCriteria =
+                            _filterCriteria.copyWith(inStockOnly: false);
+                      });
+                    },
+                    onClearDiscount: () {
+                      setState(() {
+                        _filterCriteria =
+                            _filterCriteria.copyWith(hasDiscountOnly: false);
+                      });
+                    },
                   ),
                   const SizedBox(height: 6),
                 ],

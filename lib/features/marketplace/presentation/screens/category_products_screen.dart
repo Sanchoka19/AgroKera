@@ -152,8 +152,10 @@ class _CategoryProductsScreenState
                   const SizedBox(width: 10),
                   // Modular Filter button
                   FilterButton(
-                    isActive: _filterCriteria.hasActiveFilters,
-                    badgeCount: _filterCriteria.activeCount,
+                    isActive:
+                        _filterCriteria.hasActiveFiltersExcludingCategory(),
+                    badgeCount:
+                        _filterCriteria.activeCountExcludingCategory(),
                     onTap: () {
                       FilterBottomSheet.show(
                         context,
@@ -172,11 +174,12 @@ class _CategoryProductsScreenState
                 ],
               ),
 
-              // Active Filter Chips
-              if (_filterCriteria.hasActiveFilters) ...[
+              // Active Filter Chips (only shown if user applies region, price, tag, or sort filters)
+              if (_filterCriteria.hasActiveFiltersExcludingCategory()) ...[
                 const SizedBox(height: 8),
                 ActiveFilterChips(
                   criteria: _filterCriteria,
+                  showCategory: false,
                   onClearAll: () {
                     setState(() {
                       _filterCriteria = ProductFilterCriteria(
@@ -195,6 +198,32 @@ class _CategoryProductsScreenState
                     setState(() {
                       _filterCriteria =
                           _filterCriteria.copyWith(sortBy: 'პოპულარული');
+                    });
+                  },
+                  onClearPrice: () {
+                    setState(() {
+                      _filterCriteria = _filterCriteria.copyWith(
+                        clearMinPrice: true,
+                        clearMaxPrice: true,
+                      );
+                    });
+                  },
+                  onClearBio: () {
+                    setState(() {
+                      _filterCriteria =
+                          _filterCriteria.copyWith(isBioOnly: false);
+                    });
+                  },
+                  onClearInStock: () {
+                    setState(() {
+                      _filterCriteria =
+                          _filterCriteria.copyWith(inStockOnly: false);
+                    });
+                  },
+                  onClearDiscount: () {
+                    setState(() {
+                      _filterCriteria =
+                          _filterCriteria.copyWith(hasDiscountOnly: false);
                     });
                   },
                 ),

@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:agrokera/features/marketplace/data/models/product_model.dart';
 import 'package:agrokera/features/marketplace/domain/services/popular_products_service.dart';
 import 'package:agrokera/core/constants/app_categories.dart';
@@ -183,10 +184,10 @@ void main() {
 
       // Verify Header and Action
       expect(find.text('პოპულარული პროდუქტები'), findsOneWidget);
-      expect(find.text('ყველას ნახვა'), findsOneWidget);
+      expect(find.byIcon(LucideIcons.chevronRight), findsOneWidget);
 
-      // Verify tapping "ყველას ნახვა" navigates to PopularProductsScreen
-      await tester.tap(find.text('ყველას ნახვა'));
+      // Verify tapping see all chevron navigates to PopularProductsScreen
+      await tester.tap(find.byIcon(LucideIcons.chevronRight));
       await tester.pumpAndSettle();
 
       expect(find.byType(PopularProductsScreen), findsOneWidget);

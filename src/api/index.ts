@@ -7,6 +7,7 @@ import { handleProfileRoute } from "./routes/profile.ts";
 import { handleProductsRoute } from "./routes/products.ts";
 import { handleOrdersRoute } from "./routes/orders.ts";
 import { handleReviewsRoute } from "./routes/reviews.ts";
+import { handleAdminRoute } from "./routes/admin.ts";
 import {
   remindStaleOrders,
   calculatePendingOrderDeadline,
@@ -114,6 +115,12 @@ export default {
       // ==========================================
       const reviewsResponse = await handleReviewsRoute(request, url, path, method);
       if (reviewsResponse) return reviewsResponse;
+
+      // ==========================================
+      // 5. ADMIN CONTROL PANEL ENDPOINTS
+      // ==========================================
+      const adminResponse = await handleAdminRoute(request, url, path, method);
+      if (adminResponse) return adminResponse;
 
       return errorResponse(`Route not found: ${method} ${path}`, 404);
     } catch (err) {

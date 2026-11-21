@@ -59,10 +59,24 @@ void main() {
       const criteria = ProductFilterCriteria(category: 'ბოსტნეული');
       expect(criteria.hasActiveFilters, isTrue);
       expect(criteria.activeCount, 1);
+      expect(criteria.hasActiveFiltersExcludingCategory(), isFalse);
+      expect(criteria.activeCountExcludingCategory(), 0);
 
       final result = criteria.filterProducts(products);
       expect(result.length, 1);
       expect(result.first.id, '1');
+    });
+
+    test('excluding category respects region and sort filters', () {
+      const criteria = ProductFilterCriteria(
+        category: 'ბოსტნეული',
+        region: 'კახეთი',
+        sortBy: 'ჯერ იაფი',
+      );
+      expect(criteria.hasActiveFilters, isTrue);
+      expect(criteria.activeCount, 3);
+      expect(criteria.hasActiveFiltersExcludingCategory(), isTrue);
+      expect(criteria.activeCountExcludingCategory(), 2);
     });
 
     test('filters by region correctly using farmer locations', () {
@@ -100,6 +114,90 @@ void main() {
       const criteria = ProductFilterCriteria(sortBy: 'მაღალი რეიტინგი');
       final result = criteria.filterProducts(products);
       expect(result.first.id, '2'); // 4.9 rating
+    });
+
+    test('filters by price range (minPrice & maxPrice)', () {
+      const criteria = ProductFilterCriteria(minPrice: 3.0, maxPrice: 10.0);
+      expect(criteria.hasActiveFilters, isTrue);
+      expect(criteria.activeCount, 1);
+
+      final result = criteria.filterProducts(products);
+      expect(result.length, 1);
+      expect(result.first.id, '1'); // 3.50
+    });
+
+    test('filters by bio/organic agroTag', () {
+      const criteria = ProductFilterCriteria(isBioOnly: true);
+      expect(criteria.hasActiveFilters, isTrue);
+
+      final bioProducts = [
+        const ProductModel(
+          id: 'bio_1',
+          title: 'ბიო მარწყვი',
+          category: 'ხილი',
+          farmerId: 'f1',
+          farmerName: 'ფერმერი',
+          price: 10.0,
+          imageUrl: '',
+          description: '',
+          agroTags: ['ბიო / ორგანული'],
+        ),
+        const ProductModel(
+          id: 'conv_1',
+          title: 'სტანდარტული მარწყვი',
+          category: 'ხილი',
+          farmerId: 'f1',
+          farmerName: 'ფერმერი',
+          price: 6.0,
+          imageUrl: '',
+          description: '',
+          agroTags: ['ჩვეულებრივი'],
+        ),
+      ];
+
+      final result = criteria.filterProducts(bioProducts);
+      expect(result.length, 1);
+      expect(result.first.id, 'bio_1');
+    });
+
+    test('filters by inStockOnly and hasDiscountOnly', () {
+      final stockProducts = [
+        const ProductModel(
+          id: 'instock_1',
+          title: 'კარტოფილი',
+          category: 'ბოსტნეული',
+          farmerId: 'f1',
+          farmerName: 'ფერმერი',
+          price: 2.0,
+          imageUrl: '',
+          description: '',
+          isAvailable: true,
+          stockStatus: 'მარაგშია',
+          discountPercent: 15,
+        ),
+        const ProductModel(
+          id: 'out_1',
+          title: 'სტაფილო',
+          category: 'ბოსტნეული',
+          farmerId: 'f1',
+          farmerName: 'ფერმერი',
+          price: 2.5,
+          imageUrl: '',
+          description: '',
+          isAvailable: false,
+          stockStatus: 'ამოწურულია',
+        ),
+      ];
+
+      const inStockCriteria = ProductFilterCriteria(inStockOnly: true);
+      final inStockResult = inStockCriteria.filterProducts(stockProducts);
+      expect(inStockResult.length, 1);
+      expect(inStockResult.first.id, 'instock_1');
+
+      const discountCriteria = ProductFilterCriteria(hasDiscountOnly: true);
+      final discountResult = discountCriteria.filterProducts(stockProducts);
+      expect(discountResult.length, 1);
+      expect(discountResult.first.id, 'instock_1');
     });
   });
 }

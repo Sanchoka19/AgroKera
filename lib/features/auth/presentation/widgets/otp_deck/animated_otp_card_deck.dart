@@ -117,9 +117,27 @@ class AnimatedOtpCardDeckState extends State<AnimatedOtpCardDeck>
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        _keyboardFocusNode.requestFocus();
+        _requestKeyboard();
       }
     });
+  }
+
+  void _requestKeyboard() {
+    if (_phase != OtpDeckPhase.input && _phase != OtpDeckPhase.error) {
+      return;
+    }
+    _hiddenController.selection = TextSelection.collapsed(
+      offset: _hiddenController.text.length,
+    );
+    if (!_keyboardFocusNode.hasFocus) {
+      _keyboardFocusNode.requestFocus();
+    }
+    SystemChannels.textInput.invokeMethod('TextInput.show');
+  }
+
+  /// Exposes programmatic focus requesting for the OTP keyboard
+  void focus() {
+    _requestKeyboard();
   }
 
   @override
@@ -168,6 +186,7 @@ class AnimatedOtpCardDeckState extends State<AnimatedOtpCardDeck>
     if (_phase == OtpDeckPhase.verifying || _phase == OtpDeckPhase.success) return;
 
     _keyboardFocusNode.unfocus();
+    SystemChannels.textInput.invokeMethod('TextInput.hide');
     HapticFeedback.lightImpact();
 
     // Phase 1: Fan-out
@@ -221,7 +240,7 @@ class AnimatedOtpCardDeckState extends State<AnimatedOtpCardDeck>
           _phase = OtpDeckPhase.input;
         });
         widget.onPinChanged?.call('');
-        _keyboardFocusNode.requestFocus();
+        _requestKeyboard();
       }
     }
   }
@@ -267,38 +286,24 @@ class AnimatedOtpCardDeckState extends State<AnimatedOtpCardDeck>
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Hidden textfield capturing user soft keyboard input
-        Offstage(
-          offstage: true,
-          child: TextField(
-            controller: _hiddenController,
-            focusNode: _keyboardFocusNode,
-            keyboardType: TextInputType.number,
-            maxLength: count,
-            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            onChanged: _onTextChanged,
-          ),
-        ),
-
-        // Animated Card Deck Container
+        // Animated Card Deck Container & Interactive Soft Keyboard Host
         GestureDetector(
           behavior: HitTestBehavior.opaque,
-          onTap: () {
-            if (_phase == OtpDeckPhase.input || _phase == OtpDeckPhase.error) {
-              _keyboardFocusNode.requestFocus();
-            }
-          },
+          onTap: _requestKeyboard,
           child: SizedBox(
             height: 100,
             width: totalContainerWidth,
-            child: AnimatedBuilder(
-              animation: Listenable.merge([
-                _fanAnimation,
-                _stackAnimation,
-                _spinnerController,
-                _successScale,
-                _shakeAnimation,
-              ]),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                AnimatedBuilder(
+                  animation: Listenable.merge([
+                    _fanAnimation,
+                    _stackAnimation,
+                    _spinnerController,
+                    _successScale,
+                    _shakeAnimation,
+                  ]),
               builder: (context, child) {
                 double shakeDx = 0.0;
                 if (_shakeAnimation.value > 0) {
@@ -425,10 +430,49 @@ class AnimatedOtpCardDeckState extends State<AnimatedOtpCardDeck>
                 );
               },
             ),
-          ),
+
+            // Interactive transparent TextField overlaying the cards
+            if (_phase == OtpDeckPhase.input || _phase == OtpDeckPhase.error)
+              Positioned.fill(
+                child: TextField(
+                  controller: _hiddenController,
+                  focusNode: _keyboardFocusNode,
+                  keyboardType: TextInputType.number,
+                  autofocus: true,
+                  showCursor: false,
+                  cursorWidth: 0,
+                  cursorColor: Colors.transparent,
+                  enableInteractiveSelection: false,
+                  maxLength: count,
+                  autofillHints: const [AutofillHints.oneTimeCode],
+                  style: const TextStyle(
+                    color: Colors.transparent,
+                    fontSize: 1,
+                    height: 0.1,
+                  ),
+                  decoration: const InputDecoration(
+                    counterText: '',
+                    border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                    disabledBorder: InputBorder.none,
+                    errorBorder: InputBorder.none,
+                    focusedErrorBorder: InputBorder.none,
+                    fillColor: Colors.transparent,
+                    filled: true,
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  onChanged: _onTextChanged,
+                  onTap: _requestKeyboard,
+                ),
+              ),
+          ],
         ),
-      ],
-    );
+      ),
+    ),
+  ],
+);
   }
 
   Color _resolveBorderColor(int index, bool isActive) {

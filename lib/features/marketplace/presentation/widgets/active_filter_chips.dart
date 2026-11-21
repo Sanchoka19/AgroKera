@@ -6,12 +6,18 @@ import '../../../../core/theme/app_colors.dart';
 import '../../domain/models/product_filter_criteria.dart';
 
 /// Reusable modular widget that displays active filter tags with quick dismissal.
+/// Zero emojis: Uses clean Georgian text and Lucide icons.
 class ActiveFilterChips extends StatelessWidget {
   final ProductFilterCriteria criteria;
   final VoidCallback onClearAll;
   final VoidCallback? onClearRegion;
   final VoidCallback? onClearCategory;
   final VoidCallback? onClearSort;
+  final VoidCallback? onClearPrice;
+  final VoidCallback? onClearBio;
+  final VoidCallback? onClearInStock;
+  final VoidCallback? onClearDiscount;
+  final bool showCategory;
 
   const ActiveFilterChips({
     super.key,
@@ -20,21 +26,39 @@ class ActiveFilterChips extends StatelessWidget {
     this.onClearRegion,
     this.onClearCategory,
     this.onClearSort,
+    this.onClearPrice,
+    this.onClearBio,
+    this.onClearInStock,
+    this.onClearDiscount,
+    this.showCategory = true,
   });
 
   @override
   Widget build(BuildContext context) {
-    if (!criteria.hasActiveFilters) {
-      return const SizedBox.shrink();
-    }
-
     final hasRegion = criteria.region != null &&
         criteria.region != 'ყველა' &&
         criteria.region!.trim().isNotEmpty;
-    final hasCategory = criteria.category != null &&
+    final hasCategory = showCategory &&
+        criteria.category != null &&
         criteria.category != 'ყველა' &&
         criteria.category!.trim().isNotEmpty;
     final hasSort = criteria.sortBy != 'პოპულარული';
+    final hasPrice = criteria.minPrice != null || criteria.maxPrice != null;
+    final hasBio = criteria.isBioOnly;
+    final hasInStock = criteria.inStockOnly;
+    final hasDiscount = criteria.hasDiscountOnly;
+
+    if (!hasRegion &&
+        !hasCategory &&
+        !hasSort &&
+        !hasPrice &&
+        !hasBio &&
+        !hasInStock &&
+        !hasDiscount) {
+      return const SizedBox.shrink();
+    }
+
+    final priceLabel = _resolvePriceLabel();
 
     return SizedBox(
       height: 34,
@@ -42,6 +66,26 @@ class ActiveFilterChips extends StatelessWidget {
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
         children: [
+          if (hasPrice)
+            _buildChip(
+              label: priceLabel,
+              onDelete: onClearPrice ?? onClearAll,
+            ),
+          if (hasBio)
+            _buildChip(
+              label: 'ბიო / ორგანული',
+              onDelete: onClearBio ?? onClearAll,
+            ),
+          if (hasInStock)
+            _buildChip(
+              label: 'მარაგშია',
+              onDelete: onClearInStock ?? onClearAll,
+            ),
+          if (hasDiscount)
+            _buildChip(
+              label: 'ფასდაკლებით',
+              onDelete: onClearDiscount ?? onClearAll,
+            ),
           if (hasRegion)
             _buildChip(
               label: 'რეგიონი: ${criteria.region}',
@@ -80,6 +124,12 @@ class ActiveFilterChips extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String _resolvePriceLabel() {
+    final min = criteria.minPrice?.round() ?? 0;
+    final max = criteria.maxPrice != null ? '${criteria.maxPrice!.round()} ₾' : '100+ ₾';
+    return 'ფასი: $min ₾ - $max';
   }
 
   Widget _buildChip({
@@ -130,4 +180,3 @@ class ActiveFilterChips extends StatelessWidget {
     );
   }
 }
-

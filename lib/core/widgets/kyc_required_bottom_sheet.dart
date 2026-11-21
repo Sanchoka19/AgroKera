@@ -55,6 +55,8 @@ class _KycRequiredBottomSheetState
   final _imagePicker = ImagePicker();
   String? _frontFileName;
   String? _backFileName;
+  XFile? _frontFile;
+  XFile? _backFile;
   bool _isSubmitting = false;
 
   Future<void> _pickDocument({
@@ -72,8 +74,10 @@ class _KycRequiredBottomSheetState
         setState(() {
           if (isFront) {
             _frontFileName = file.name;
+            _frontFile = file;
           } else {
             _backFileName = file.name;
+            _backFile = file;
           }
         });
         AppToast.success(
@@ -207,10 +211,17 @@ class _KycRequiredBottomSheetState
 
     setState(() => _isSubmitting = true);
     try {
-      await ref.read(authStateProvider.notifier).submitKycDocuments(
-            idCardFrontUrl: 's3://agrokera-assets/kyc/id_front.jpg',
-            idCardBackUrl: 's3://agrokera-assets/kyc/id_back.jpg',
-          );
+      if (_frontFile != null && _backFile != null) {
+        await ref.read(authStateProvider.notifier).uploadAndSubmitKyc(
+              frontFile: _frontFile!,
+              backFile: _backFile!,
+            );
+      } else {
+        await ref.read(authStateProvider.notifier).submitKycDocuments(
+              idCardFrontUrl: 's3://agrokera-assets/kyc/id_front.jpg',
+              idCardBackUrl: 's3://agrokera-assets/kyc/id_back.jpg',
+            );
+      }
       if (!mounted) return;
       Navigator.of(context).pop();
       AppToast.success(context, 'დოკუმენტები გაიგზავნა გადამოწმებაზე');

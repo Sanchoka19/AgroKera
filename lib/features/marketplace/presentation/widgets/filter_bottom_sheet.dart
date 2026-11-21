@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import '../../../../core/constants/app_categories.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/primary_button.dart';
 import '../../domain/models/product_filter_criteria.dart';
+import 'filter/price_range_filter_widget.dart';
+import 'filter/quick_filter_toggles_widget.dart';
+import 'filter/region_horizontal_scroll_widget.dart';
+import 'filter/sort_options_widget.dart';
 
+/// Clean, focused modular bottom sheet for marketplace product filtering.
+/// Fully decoupled: delegates UI sections to dedicated widgets and uses pure domain criteria.
 class FilterBottomSheet extends StatefulWidget {
   final ProductFilterCriteria? initialCriteria;
   final String? initialRegion;
@@ -59,41 +64,66 @@ class FilterBottomSheet extends StatefulWidget {
 
 class _FilterBottomSheetState extends State<FilterBottomSheet> {
   late String _selectedRegion;
-  late String _selectedCategory;
   late String _selectedSort;
+  late RangeValues _priceRange;
+  late bool _isBioOnly;
+  late bool _inStockOnly;
+  late bool _hasDiscountOnly;
 
-  final List<String> _regions = const [
-    'ყველა',
-    'კახეთი',
-    'იმერეთი',
-    'ქართლი',
-    'სამეგრელო',
-  ];
-
-  List<String> get _categories => [
-        'ყველა',
-        ...AppCategories.categories.map((c) => c.name),
-      ];
-
-  final List<String> _sortOptions = const [
-    'პოპულარული',
-    'ჯერ იაფი',
-    'ჯერ ძვირი',
-    'მაღალი რეიტინგი',
-  ];
+  static const double _defaultMinPrice = 0.0;
+  static const double _defaultMaxPrice = 100.0;
 
   @override
   void initState() {
     super.initState();
-    _selectedRegion = widget.initialCriteria?.region ??
-        widget.initialRegion ??
-        'ყველა';
-    _selectedCategory = widget.initialCriteria?.category ??
-        widget.initialCategory ??
-        'ყველა';
-    _selectedSort = widget.initialCriteria?.sortBy ??
-        widget.initialSort ??
-        'პოპულარული';
+    final c = widget.initialCriteria;
+    _selectedRegion = c?.region ?? widget.initialRegion ?? 'ყველა';
+    _selectedSort = c?.sortBy ?? widget.initialSort ?? 'პოპულარული';
+    _priceRange = RangeValues(
+      c?.minPrice ?? _defaultMinPrice,
+      c?.maxPrice ?? _defaultMaxPrice,
+    );
+    _isBioOnly = c?.isBioOnly ?? false;
+    _inStockOnly = c?.inStockOnly ?? false;
+    _hasDiscountOnly = c?.hasDiscountOnly ?? false;
+  }
+
+  void _resetAll() {
+    HapticFeedback.lightImpact();
+    setState(() {
+      _selectedRegion = 'ყველა';
+      _selectedSort = 'პოპულარული';
+      _priceRange = const RangeValues(_defaultMinPrice, _defaultMaxPrice);
+      _isBioOnly = false;
+      _inStockOnly = false;
+      _hasDiscountOnly = false;
+    });
+  }
+
+  void _applyFilter() {
+    HapticFeedback.lightImpact();
+    final appliedReg = _selectedRegion == 'ყველა' ? null : _selectedRegion;
+    final appliedCat = widget.initialCategory ?? widget.initialCriteria?.category;
+
+    final double? minPrice =
+        _priceRange.start > _defaultMinPrice ? _priceRange.start : null;
+    final double? maxPrice =
+        _priceRange.end < _defaultMaxPrice ? _priceRange.end : null;
+
+    final criteria = ProductFilterCriteria(
+      region: appliedReg,
+      category: appliedCat,
+      sortBy: _selectedSort,
+      minPrice: minPrice,
+      maxPrice: maxPrice,
+      isBioOnly: _isBioOnly,
+      inStockOnly: _inStockOnly,
+      hasDiscountOnly: _hasDiscountOnly,
+    );
+
+    widget.onApplyCriteria?.call(criteria);
+    widget.onApply?.call(appliedReg, appliedCat);
+    Navigator.of(context).pop(criteria);
   }
 
   @override
@@ -108,7 +138,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
       ),
       padding: EdgeInsets.fromLTRB(
         20,
-        18,
+        16,
         20,
         MediaQuery.of(context).viewInsets.bottom + 20,
       ),
@@ -155,118 +185,48 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
           ),
           const SizedBox(height: 14),
 
-          // Scrollable filter options
+          // Scrollable Filter Sections
           Flexible(
             child: SingleChildScrollView(
               physics: const BouncingScrollPhysics(),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Region Section
-                  Text(
-                    'რეგიონი',
-                    style: AppTypography.titleMedium.copyWith(fontSize: 14),
+                  // 1. Quick Feature Toggles (Bio, In Stock, Discount)
+                  QuickFilterTogglesWidget(
+                    isBioOnly: _isBioOnly,
+                    inStockOnly: _inStockOnly,
+                    hasDiscountOnly: _hasDiscountOnly,
+                    onBioChanged: (val) => setState(() => _isBioOnly = val),
+                    onInStockChanged: (val) => setState(() => _inStockOnly = val),
+                    onDiscountChanged: (val) =>
+                        setState(() => _hasDiscountOnly = val),
                   ),
-                  const SizedBox(height: 10),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: _regions.map((reg) {
-                      final isSelected = _selectedRegion == reg;
-                      return ChoiceChip(
-                        label: Text(reg),
-                        selected: isSelected,
-                        selectedColor: AppColors.primaryLight,
-                        backgroundColor: AppColors.surfaceInput,
-                        labelStyle: AppTypography.caption.copyWith(
-                          color: isSelected ? AppColors.primary : AppColors.textPrimary,
-                          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                        ),
-                        side: BorderSide(
-                          color: isSelected ? AppColors.primary : Colors.transparent,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        onSelected: (val) {
-                          HapticFeedback.selectionClick();
-                          setState(() => _selectedRegion = reg);
-                        },
-                      );
-                    }).toList(),
-                  ),
-                  if (widget.showCategoryFilter) ...[
-                    const SizedBox(height: 18),
-                    // Category Section
-                    Text(
-                      'კატეგორია',
-                      style: AppTypography.titleMedium.copyWith(fontSize: 14),
-                    ),
-                    const SizedBox(height: 10),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: _categories.map((cat) {
-                        final isSelected = _selectedCategory == cat;
-                        return ChoiceChip(
-                          label: Text(cat),
-                          selected: isSelected,
-                          selectedColor: AppColors.primaryLight,
-                          backgroundColor: AppColors.surfaceInput,
-                          labelStyle: AppTypography.caption.copyWith(
-                            color: isSelected ? AppColors.primary : AppColors.textPrimary,
-                            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                          ),
-                          side: BorderSide(
-                            color: isSelected ? AppColors.primary : Colors.transparent,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          onSelected: (val) {
-                            HapticFeedback.selectionClick();
-                            setState(() => _selectedCategory = cat);
-                          },
-                        );
-                      }).toList(),
-                    ),
-                  ],
                   const SizedBox(height: 18),
 
-                  // Sort Section
-                  Text(
-                    'სორტირება',
-                    style: AppTypography.titleMedium.copyWith(fontSize: 14),
+                  // 2. Price Range Slider
+                  PriceRangeFilterWidget(
+                    minLimit: _defaultMinPrice,
+                    maxLimit: _defaultMaxPrice,
+                    currentRange: _priceRange,
+                    onChanged: (vals) => setState(() => _priceRange = vals),
                   ),
-                  const SizedBox(height: 10),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: _sortOptions.map((opt) {
-                      final isSelected = _selectedSort == opt;
-                      return ChoiceChip(
-                        label: Text(opt),
-                        selected: isSelected,
-                        selectedColor: AppColors.primaryLight,
-                        backgroundColor: AppColors.surfaceInput,
-                        labelStyle: AppTypography.caption.copyWith(
-                          color: isSelected ? AppColors.primary : AppColors.textPrimary,
-                          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                        ),
-                        side: BorderSide(
-                          color: isSelected ? AppColors.primary : Colors.transparent,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        onSelected: (val) {
-                          HapticFeedback.selectionClick();
-                          setState(() => _selectedSort = opt);
-                        },
-                      );
-                    }).toList(),
+                  const SizedBox(height: 18),
+
+                  // 3. Region Single-row Horizontal Scroll
+                  RegionHorizontalScrollWidget(
+                    selectedRegion: _selectedRegion,
+                    onRegionSelected: (reg) =>
+                        setState(() => _selectedRegion = reg),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 18),
+
+                  // 4. Sort Options
+                  SortOptionsWidget(
+                    selectedSort: _selectedSort,
+                    onSortSelected: (opt) => setState(() => _selectedSort = opt),
+                  ),
+                  const SizedBox(height: 14),
                 ],
               ),
             ),
@@ -281,18 +241,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                 child: PrimaryButton(
                   text: 'გასუფთავება',
                   isOutlined: true,
-                  onPressed: () {
-                    HapticFeedback.lightImpact();
-                    setState(() {
-                      _selectedRegion = 'ყველა';
-                      _selectedCategory = widget.showCategoryFilter
-                          ? 'ყველა'
-                          : (widget.initialCategory ??
-                              widget.initialCriteria?.category ??
-                              'ყველა');
-                      _selectedSort = 'პოპულარული';
-                    });
-                  },
+                  onPressed: _resetAll,
                 ),
               ),
               const SizedBox(width: 12),
@@ -300,24 +249,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                 flex: 2,
                 child: PrimaryButton(
                   text: 'გაფილტვრა',
-                  onPressed: () {
-                    HapticFeedback.lightImpact();
-                    final appliedCat = widget.showCategoryFilter
-                        ? (_selectedCategory == 'ყველა' ? null : _selectedCategory)
-                        : (widget.initialCategory ?? widget.initialCriteria?.category);
-                    final appliedReg =
-                        _selectedRegion == 'ყველა' ? null : _selectedRegion;
-
-                    final criteria = ProductFilterCriteria(
-                      region: appliedReg,
-                      category: appliedCat,
-                      sortBy: _selectedSort,
-                    );
-
-                    widget.onApplyCriteria?.call(criteria);
-                    widget.onApply?.call(appliedReg, appliedCat);
-                    Navigator.of(context).pop(criteria);
-                  },
+                  onPressed: _applyFilter,
                 ),
               ),
             ],

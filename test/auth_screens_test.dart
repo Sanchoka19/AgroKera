@@ -97,6 +97,19 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('დადასტურება'), findsOneWidget);
+
+    // Verify tapping on the OTP input focuses the TextField and accepts digits
+    final otpTextField = find.byType(TextField);
+    expect(otpTextField, findsOneWidget);
+    await tester.tap(otpTextField);
+    await tester.pump();
+
+    await tester.enterText(otpTextField, '123');
+    await tester.pump();
+
+    expect(find.text('1'), findsOneWidget);
+    expect(find.text('2'), findsOneWidget);
+    expect(find.text('3'), findsOneWidget);
   });
 
   testWidgets('ResetPasswordScreen renders password fields and button', (WidgetTester tester) async {

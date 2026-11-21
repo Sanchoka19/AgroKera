@@ -175,13 +175,17 @@ class _SmsVerificationScreenState extends ConsumerState<SmsVerificationScreen> {
 
               // Animated Card Deck OTP Component
               Center(
-                child: AnimatedOtpCardDeck(
-                  key: _deckKey,
-                  pinLength: _pinLength,
-                  accentColor: AppColors.primary,
-                  onVerify: _verifyPin,
-                  onSuccess: _handleSuccess,
-                  onPinChanged: (val) => _currentPin = val,
+                child: GestureDetector(
+                  behavior: HitTestBehavior.translucent,
+                  onTap: () => _deckKey.currentState?.focus(),
+                  child: AnimatedOtpCardDeck(
+                    key: _deckKey,
+                    pinLength: _pinLength,
+                    accentColor: AppColors.primary,
+                    onVerify: _verifyPin,
+                    onSuccess: _handleSuccess,
+                    onPinChanged: (val) => _currentPin = val,
+                  ),
                 ),
               ),
               const SizedBox(height: 28),

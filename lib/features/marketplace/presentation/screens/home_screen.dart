@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -72,7 +71,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authStateProvider);
-    final marketplace = ref.watch(marketplaceProvider);
+    final isSyncing = ref.watch(marketplaceProvider.select((s) => s.isSyncing));
     final products = ref.watch(buyerProductsProvider);
 
     return Scaffold(
@@ -172,23 +171,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                         ),
                                       ),
                                     ),
-                                    // Subtle blur overlay as requested by user
-                                    BackdropFilter(
-                                      filter: ImageFilter.blur(
-                                        sigmaX: 1.5,
-                                        sigmaY: 1.5,
-                                      ),
-                                      child: Container(
-                                        decoration: BoxDecoration(
-                                          gradient: LinearGradient(
-                                            begin: Alignment.topCenter,
-                                            end: Alignment.bottomCenter,
-                                            colors: [
-                                              Colors.black.withValues(alpha: 0.15),
-                                              Colors.transparent,
-                                              Colors.black.withValues(alpha: 0.35),
-                                            ],
-                                          ),
+                                    // Optimized contrast gradient overlay without expensive raster blur pass
+                                    Container(
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          begin: Alignment.topCenter,
+                                          end: Alignment.bottomCenter,
+                                          colors: [
+                                            Colors.black.withValues(alpha: 0.15),
+                                            Colors.transparent,
+                                            Colors.black.withValues(alpha: 0.35),
+                                          ],
                                         ),
                                       ),
                                     ),
@@ -269,7 +262,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
                     // Responsive grid of products (capped at 16 for clean layout)
                     if (products.isEmpty)
-                      marketplace.isSyncing
+                      isSyncing
                           ? const ProductGridSkeleton(itemCount: 4)
                           : Center(
                               child: Padding(

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Sidebar, type NavTab } from "./Sidebar.tsx";
 import { Header } from "./Header.tsx";
+import { ConfirmationModal } from "../ui/ConfirmationModal.tsx";
 import type { AdminUser } from "../../types/index.ts";
 
 interface AdminLayoutProps {
@@ -27,6 +28,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
   children,
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden font-['Noto_Sans_Georgian',sans-serif]">
@@ -34,7 +36,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
         currentTab={currentTab}
         onSelectTab={onSelectTab}
         pendingKycCount={pendingKycCount}
-        onLogout={onLogout}
+        onLogout={() => setShowLogoutConfirm(true)}
         isMobileOpen={mobileMenuOpen}
         onCloseMobile={() => setMobileMenuOpen(false)}
       />
@@ -50,6 +52,18 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
           <div className="max-w-7xl mx-auto">{children}</div>
         </main>
       </div>
+
+      {/* Reusable Logout Confirmation Dialog */}
+      <ConfirmationModal
+        isOpen={showLogoutConfirm}
+        onClose={() => setShowLogoutConfirm(false)}
+        onConfirm={onLogout}
+        title="ადმინიდან გამოსვლა"
+        message="ნამდვილად გსურთ ადმინისტრატორის მართვის პანელიდან გამოსვლა? სესიის გასაგრძელებლად საჭირო იქნება ხელახალი ავტორიზაცია."
+        confirmText="გამოსვლა"
+        cancelText="დარჩენა"
+        variant="danger"
+      />
     </div>
   );
 };

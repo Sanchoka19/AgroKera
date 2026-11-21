@@ -51,6 +51,13 @@ class ProductCard extends StatelessWidget {
         errorBuilder: (_, _, _) => fallback(),
       );
     }
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return Image.network(
+        url,
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) => fallback(),
+      );
+    }
     if (url.startsWith('data:image/')) {
       try {
         final base64Str = url.split(',').last;
@@ -68,11 +75,7 @@ class ProductCard extends StatelessWidget {
         errorBuilder: (_, _, _) => fallback(),
       );
     }
-    return Image.network(
-      url,
-      fit: BoxFit.cover,
-      errorBuilder: (_, _, _) => fallback(),
-    );
+    return fallback();
   }
 
   @override

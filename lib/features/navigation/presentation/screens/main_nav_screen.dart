@@ -55,10 +55,9 @@ class _MainNavScreenState extends ConsumerState<MainNavScreen> {
   }
 
   void _onTabSelected(int index) {
+    if (_currentIndex == index) return;
     HapticFeedback.lightImpact();
     setState(() => _currentIndex = index);
-    unawaited(ref.read(marketplaceProvider.notifier).refreshFromBackend());
-    unawaited(ref.read(farmerOrdersProvider.notifier).refreshFromBackend());
   }
 
   @override

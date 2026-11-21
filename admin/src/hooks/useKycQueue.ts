@@ -6,9 +6,12 @@ export function useKycQueue() {
   const [items, setItems] = useState<KycItem[]>([]);
   const [filter, setFilter] = useState<string>("PENDING_REVIEW");
   const [isLoading, setIsLoading] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submittingFarmerId, setSubmittingFarmerId] = useState<string | null>(null);
+  const [submittingAction, setSubmittingAction] = useState<"VERIFIED" | "REJECTED" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selectedFarmer, setSelectedFarmer] = useState<KycItem | null>(null);
+
+  const isSubmitting = Boolean(submittingFarmerId);
 
   const fetchQueue = useCallback(async () => {
     setIsLoading(true);
@@ -33,7 +36,8 @@ export function useKycQueue() {
       status: "VERIFIED" | "REJECTED",
       rejectionReason?: string
     ) => {
-      setIsSubmitting(true);
+      setSubmittingFarmerId(farmerId);
+      setSubmittingAction(status);
       setError(null);
       try {
         await apiService.reviewKyc(farmerId, { status, rejectionReason });
@@ -59,7 +63,8 @@ export function useKycQueue() {
         setError(err.message || "ვერიფიკაციის სტატუსის განახლება ვერ მოხერხდა");
         return false;
       } finally {
-        setIsSubmitting(false);
+        setSubmittingFarmerId(null);
+        setSubmittingAction(null);
       }
     },
     [selectedFarmer]
@@ -71,6 +76,8 @@ export function useKycQueue() {
     setFilter,
     isLoading,
     isSubmitting,
+    submittingFarmerId,
+    submittingAction,
     error,
     selectedFarmer,
     setSelectedFarmer,

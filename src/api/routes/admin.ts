@@ -319,9 +319,9 @@ export async function handleAdminRoute(
         data: {
           userId: farmer.userId,
           title,
-          message,
-          type: "SYSTEM",
-          read: false,
+          body: message,
+          category: "kyc",
+          isRead: false,
         },
       });
 

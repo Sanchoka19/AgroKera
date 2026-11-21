@@ -15,6 +15,7 @@ import { Card, CardHeader, CardBody } from "../../components/ui/Card.tsx";
 import { Badge } from "../../components/ui/Badge.tsx";
 import { Button } from "../../components/ui/Button.tsx";
 import { Modal } from "../../components/ui/Modal.tsx";
+import { ConfirmationModal } from "../../components/ui/ConfirmationModal.tsx";
 import {
   Table,
   TableHead,
@@ -33,35 +34,20 @@ export const KycQueueView: React.FC = () => {
     setFilter,
     isLoading,
     isSubmitting,
+    submittingFarmerId,
+    submittingAction,
     selectedFarmer,
     setSelectedFarmer,
     reviewFarmer,
     refresh,
   } = useKycQueue();
 
-  const [rejectModalOpen, setRejectModalOpen] = useState(false);
+  const [farmerToApprove, setFarmerToApprove] = useState<KycItem | null>(null);
+  const [farmerToReject, setFarmerToReject] = useState<KycItem | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [activeImagePreview, setActiveImagePreview] = useState<string | null>(
     null
   );
-
-  const handleApprove = async (farmer: KycItem) => {
-    if (!confirm(`ნამდვილად გსურთ ${farmer.user.fullName}-ის ვერიფიკაცია?`)) {
-      return;
-    }
-    await reviewFarmer(farmer.id, "VERIFIED");
-  };
-
-  const handleRejectSubmit = async () => {
-    if (!selectedFarmer) return;
-    await reviewFarmer(
-      selectedFarmer.id,
-      "REJECTED",
-      rejectReason || "დოკუმენტი ბუნდოვანია ან არ შეესაბამება მოთხოვნებს"
-    );
-    setRejectModalOpen(false);
-    setRejectReason("");
-  };
 
   const filterTabs = [
     { id: "PENDING_REVIEW", label: "მოლოდინში" },
@@ -185,8 +171,12 @@ export const KycQueueView: React.FC = () => {
                             <Button
                               variant="primary"
                               size="sm"
-                              onClick={() => handleApprove(farmer)}
-                              isLoading={isSubmitting}
+                              onClick={() => setFarmerToApprove(farmer)}
+                              isLoading={
+                                submittingFarmerId === farmer.id &&
+                                submittingAction === "VERIFIED"
+                              }
+                              disabled={isSubmitting}
                             >
                               <CheckCircle2 className="w-3.5 h-3.5" />
                               დადასტურება
@@ -195,9 +185,14 @@ export const KycQueueView: React.FC = () => {
                               variant="danger"
                               size="sm"
                               onClick={() => {
-                                setSelectedFarmer(farmer);
-                                setRejectModalOpen(true);
+                                setFarmerToReject(farmer);
+                                setRejectReason("");
                               }}
+                              isLoading={
+                                submittingFarmerId === farmer.id &&
+                                submittingAction === "REJECTED"
+                              }
+                              disabled={isSubmitting}
                             >
                               <XCircle className="w-3.5 h-3.5" />
                               დახარვეზება
@@ -215,7 +210,7 @@ export const KycQueueView: React.FC = () => {
       </Card>
 
       {/* Document Inspector Modal */}
-      {selectedFarmer && !rejectModalOpen ? (
+      {selectedFarmer && !farmerToReject ? (
         <Modal
           isOpen={Boolean(selectedFarmer)}
           onClose={() => setSelectedFarmer(null)}
@@ -353,13 +348,22 @@ export const KycQueueView: React.FC = () => {
                 variant="outline"
                 size="md"
                 onClick={() => setSelectedFarmer(null)}
+                disabled={isSubmitting}
               >
                 დახურვა
               </Button>
               <Button
                 variant="danger"
                 size="md"
-                onClick={() => setRejectModalOpen(true)}
+                onClick={() => {
+                  setFarmerToReject(selectedFarmer);
+                  setRejectReason("");
+                }}
+                isLoading={
+                  submittingFarmerId === selectedFarmer.id &&
+                  submittingAction === "REJECTED"
+                }
+                disabled={isSubmitting}
               >
                 <XCircle className="w-4 h-4" />
                 დახარვეზება
@@ -367,8 +371,12 @@ export const KycQueueView: React.FC = () => {
               <Button
                 variant="primary"
                 size="md"
-                onClick={() => handleApprove(selectedFarmer)}
-                isLoading={isSubmitting}
+                onClick={() => setFarmerToApprove(selectedFarmer)}
+                isLoading={
+                  submittingFarmerId === selectedFarmer.id &&
+                  submittingAction === "VERIFIED"
+                }
+                disabled={isSubmitting}
               >
                 <CheckCircle2 className="w-4 h-4" />
                 დადასტურება
@@ -378,12 +386,38 @@ export const KycQueueView: React.FC = () => {
         </Modal>
       ) : null}
 
+      {/* Custom Confirmation Modal for Approval */}
+      <ConfirmationModal
+        isOpen={Boolean(farmerToApprove)}
+        onClose={() => setFarmerToApprove(null)}
+        onConfirm={async () => {
+          if (!farmerToApprove) return;
+          const success = await reviewFarmer(farmerToApprove.id, "VERIFIED");
+          if (success) {
+            setFarmerToApprove(null);
+          }
+        }}
+        title="ფერმერის ვერიფიკაცია"
+        message={`ნამდვილად გსურთ ${farmerToApprove?.user.fullName}-ის (${farmerToApprove?.farmName}) ვერიფიცირება? დადასტურების შემდეგ ფერმერს მიენიჭება სრული წვდომა პროდუქციის გამოქვეყნებასა და შეკვეთების მიღებაზე.`}
+        confirmText="ვერიფიცირება"
+        cancelText="გაუქმება"
+        variant="primary"
+        isLoading={
+          submittingFarmerId === farmerToApprove?.id &&
+          submittingAction === "VERIFIED"
+        }
+      />
+
       {/* Reject Reason Dialog */}
       <Modal
-        isOpen={rejectModalOpen}
-        onClose={() => setRejectModalOpen(false)}
+        isOpen={Boolean(farmerToReject)}
+        onClose={() => setFarmerToReject(null)}
         title="ვერიფიკაციის დახარვეზება"
-        description="მიუთითეთ დახარვეზების მიზეზი, რომელიც გაეგზავნება ფერმერს აპლიკაციაში"
+        description={
+          farmerToReject
+            ? `ფერმერი: ${farmerToReject.user.fullName} (${farmerToReject.farmName}) — მიუთითეთ დახარვეზების მიზეზი`
+            : "მიუთითეთ დახარვეზების მიზეზი, რომელიც გაეგზავნება ფერმერს აპლიკაციაში"
+        }
         maxWidth="md"
       >
         <div className="space-y-4">
@@ -431,15 +465,31 @@ export const KycQueueView: React.FC = () => {
             <Button
               variant="outline"
               size="md"
-              onClick={() => setRejectModalOpen(false)}
+              onClick={() => setFarmerToReject(null)}
+              disabled={isSubmitting}
             >
               გაუქმება
             </Button>
             <Button
               variant="danger"
               size="md"
-              onClick={handleRejectSubmit}
-              isLoading={isSubmitting}
+              onClick={async () => {
+                if (!farmerToReject) return;
+                const success = await reviewFarmer(
+                  farmerToReject.id,
+                  "REJECTED",
+                  rejectReason || "დოკუმენტი ბუნდოვანია ან არ შეესაბამება მოთხოვნებს"
+                );
+                if (success) {
+                  setFarmerToReject(null);
+                  setRejectReason("");
+                }
+              }}
+              isLoading={
+                submittingFarmerId === farmerToReject?.id &&
+                submittingAction === "REJECTED"
+              }
+              disabled={isSubmitting}
             >
               დახარვეზების გაგზავნა
             </Button>

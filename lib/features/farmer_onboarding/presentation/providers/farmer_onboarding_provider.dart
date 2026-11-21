@@ -49,7 +49,7 @@ class FarmerOnboardingNotifier extends Notifier<FarmerOnboardingState> {
   }
 
   void setStep(int step) {
-    if (step >= 1 && step <= 5) {
+    if (step >= 1 && step <= 4) {
       state = state.copyWith(currentStep: step);
     }
   }

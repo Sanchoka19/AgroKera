@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../core/widgets/app_filter_tab.dart';
 import '../../../../core/widgets/app_toast.dart';
+import '../../../../core/widgets/bank_account_required_bottom_sheet.dart';
 import '../../domain/models/farmer_order_model.dart';
 import '../providers/farmer_orders_provider.dart';
 import '../widgets/empty_orders_view.dart';
@@ -253,16 +254,22 @@ class _IncomingOrdersScreenState extends ConsumerState<IncomingOrdersScreen> {
                         key: ValueKey('farmer_order_${order.id}'),
                         order: order,
                         isUpdating: isUpdating,
-                        onAccept: () async {
-                          AppToast.success(
+                        onAccept: () {
+                          requireBankAccount(
                             context,
-                            'შეკვეთა #${order.id} დადასტურებულია და გადავიდა მიმდინარეში!',
+                            ref: ref,
+                            onAccountPresent: () async {
+                              AppToast.success(
+                                context,
+                                'შეკვეთა #${order.id} დადასტურებულია და გადავიდა მიმდინარეში!',
+                              );
+                              final error =
+                                  await ordersNotifier.acceptOrder(order.id);
+                              if (error != null && context.mounted) {
+                                AppToast.error(context, error);
+                              }
+                            },
                           );
-                          final error =
-                              await ordersNotifier.acceptOrder(order.id);
-                          if (error != null && context.mounted) {
-                            AppToast.error(context, error);
-                          }
                         },
                         onCancel: (reason) {
                           ordersNotifier.cancelOrder(order.id, reason: reason);

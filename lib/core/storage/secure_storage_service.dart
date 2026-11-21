@@ -23,6 +23,9 @@ class SecureStorageService {
   static const _activeAddressKey = 'agrokera_active_address';
   static const _farmLocationKey = 'agrokera_farm_location';
   static const _farmLandmarkKey = 'agrokera_farm_landmark';
+  static const _farmerIbanKey = 'agrokera_farmer_iban';
+  static const _farmerBankKey = 'agrokera_farmer_bank';
+  static const _farmerBeneficiaryKey = 'agrokera_farmer_beneficiary';
   static const _addressesJsonKey = 'agrokera_addresses_json';
   static const _notificationSettingsKey = 'agrokera_notification_settings_json';
   static const _farmerDeliverySettingsMapKey =
@@ -344,6 +347,40 @@ class SecureStorageService {
       return await _read(key);
     } catch (_) {
       return null;
+    }
+  }
+
+  Future<void> saveFarmerPayoutDetails({
+    required String iban,
+    required String bank,
+    String? beneficiary,
+    String? userId,
+  }) async {
+    try {
+      final ibanKey = await _scopedKey(_farmerIbanKey, userId);
+      final bankKey = await _scopedKey(_farmerBankKey, userId);
+      final benKey = await _scopedKey(_farmerBeneficiaryKey, userId);
+      await _write(ibanKey, iban.trim().replaceAll(' ', ''));
+      await _write(bankKey, bank.trim());
+      if (beneficiary != null) {
+        await _write(benKey, beneficiary.trim());
+      }
+    } catch (_) {}
+  }
+
+  Future<({String? iban, String? bank, String? beneficiary})> readFarmerPayoutDetails({
+    String? userId,
+  }) async {
+    try {
+      final ibanKey = await _scopedKey(_farmerIbanKey, userId);
+      final bankKey = await _scopedKey(_farmerBankKey, userId);
+      final benKey = await _scopedKey(_farmerBeneficiaryKey, userId);
+      final iban = await _read(ibanKey);
+      final bank = await _read(bankKey);
+      final beneficiary = await _read(benKey);
+      return (iban: iban, bank: bank, beneficiary: beneficiary);
+    } catch (_) {
+      return (iban: null, bank: null, beneficiary: null);
     }
   }
 

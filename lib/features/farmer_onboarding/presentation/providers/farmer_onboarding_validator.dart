@@ -7,15 +7,12 @@ class FarmerOnboardingValidator {
   /// Validates Step 1: Farm Info & Address
   static String? validateStep1({
     required String farmName,
-    required bool hasFarmPhoto,
+    bool hasFarmPhoto = false,
     required String region,
     required String city,
   }) {
     if (farmName.trim().isEmpty) {
       return 'გთხოვთ შეიყვანოთ ფერმის/მეურნეობის დასახელება';
-    }
-    if (!hasFarmPhoto) {
-      return 'გთხოვთ ატვირთოთ ფერმის ბანერი';
     }
     if (region.trim().isEmpty || city.trim().isEmpty) {
       return 'გთხოვთ აირჩიოთ რეგიონი და ქალაქი/რაიონი';

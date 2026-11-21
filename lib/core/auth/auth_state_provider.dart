@@ -343,14 +343,14 @@ class AuthNotifier extends Notifier<AuthState> {
           (email.endsWith('@agrokera.ge') ? resolved.avatarUrl : null),
       farmCoverUrl: coverUrl ?? resolved.coverUrl,
       role: UserRole.farmer,
-      kycStatus: KycStatus.verified,
+      kycStatus: KycStatus.unverified,
     );
 
     unawaited(_saveOptimisticSession(
       resolved,
       role: UserRole.farmer,
       email: email,
-      kycStatus: KycStatus.verified,
+      kycStatus: KycStatus.unverified,
       farmNameOverride: cleanFarmName,
     ));
 

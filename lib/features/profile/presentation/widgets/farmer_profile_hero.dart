@@ -8,6 +8,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../core/auth/auth_state_provider.dart';
 import '../../../../core/constants/app_assets.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/agrokera_verified_badge.dart';
 import '../../../../core/widgets/auth_required_bottom_sheet.dart';
 import '../../../marketplace/presentation/providers/marketplace_provider.dart';
 import '../../../notifications/presentation/providers/notifications_provider.dart';
@@ -411,8 +412,9 @@ class FarmerProfileHero extends ConsumerWidget {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Row(
+                                  mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Expanded(
+                                    Flexible(
                                       child: Text(
                                         authState.userName ?? 'რევაზ ბერიძე',
                                         style: GoogleFonts.notoSansGeorgian(
@@ -424,27 +426,27 @@ class FarmerProfileHero extends ConsumerWidget {
                                         overflow: TextOverflow.ellipsis,
                                       ),
                                     ),
-                                    const SizedBox(width: 4),
-                                    Tooltip(
-                                      message: 'ვერიფიცირებული ფერმერი',
-                                      child: SvgPicture.asset(
-                                        AppAssets.verifiedBadge,
-                                        width: 18,
-                                        height: 18,
-                                      ),
-                                    ),
+                                    if (authState.kycStatus == KycStatus.verified) ...[
+                                      const SizedBox(width: 6),
+                                      const AgroKeraVerifiedBadge(size: 17),
+                                    ],
                                   ],
                                 ),
-                                const SizedBox(height: 4),
+                                const SizedBox(height: 5),
                                 Row(
                                   crossAxisAlignment: CrossAxisAlignment.center,
                                   children: [
-                                    const Icon(
-                                      LucideIcons.sprout,
-                                      size: 14,
-                                      color: AppColors.primary,
+                                    SvgPicture.asset(
+                                      AppAssets.logoGreen,
+                                      width: 15,
+                                      height: 15,
+                                      placeholderBuilder: (_) => const Icon(
+                                        LucideIcons.sprout,
+                                        size: 15,
+                                        color: AppColors.primary,
+                                      ),
                                     ),
-                                    const SizedBox(width: 5),
+                                    const SizedBox(width: 6),
                                     Expanded(
                                       child: Text(
                                         (authState.farmName != null &&

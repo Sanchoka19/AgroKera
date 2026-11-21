@@ -11,12 +11,10 @@ import '../onboarding_shared_widgets.dart';
 
 class Step4ReviewAndTermsWidget extends ConsumerWidget {
   final TextEditingController farmNameController;
-  final TextEditingController ibanController;
 
   const Step4ReviewAndTermsWidget({
     super.key,
     required this.farmNameController,
-    required this.ibanController,
   });
 
   @override
@@ -30,13 +28,6 @@ class Step4ReviewAndTermsWidget extends ConsumerWidget {
     final cleanFarmName = farmNameController.text.trim().isNotEmpty
         ? farmNameController.text.trim()
         : (state.farmName.trim().isNotEmpty ? state.farmName.trim() : 'ოქროს ქვაფი');
-
-    final cleanIban = ibanController.text.trim().isNotEmpty
-        ? ibanController.text.trim()
-        : state.iban.trim();
-    final maskedIban = cleanIban.length > 7
-        ? '****${cleanIban.substring(cleanIban.length - 7)}'
-        : '****7ER9';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -162,8 +153,6 @@ class Step4ReviewAndTermsWidget extends ConsumerWidget {
                   'ორიენტირი:',
                   state.landmark.trim(),
                 ),
-              OnboardingReviewRow('ბანკი:', state.selectedBank),
-              OnboardingReviewRow('IBAN:', maskedIban),
               OnboardingReviewRow(
                 'თვითგატანა:',
                 state.isPickupEnabled ? 'აქტიურია (0 ₾)' : 'გათიშულია',

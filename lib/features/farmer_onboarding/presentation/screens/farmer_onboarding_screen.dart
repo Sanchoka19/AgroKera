@@ -11,20 +11,18 @@ import '../providers/farmer_onboarding_provider.dart';
 import '../providers/farmer_onboarding_validator.dart';
 import '../widgets/onboarding_steps/step1_farm_info_widget.dart';
 import '../widgets/onboarding_steps/step2_status_selection_widget.dart';
-import '../widgets/onboarding_steps/step3_legal_and_bank_widget.dart';
 import '../widgets/onboarding_steps/step4_delivery_widget.dart';
 import '../widgets/onboarding_steps/step4_review_and_terms_widget.dart';
 
 // Re-export LegalStatus so existing references across the app remain intact
 export '../models/farmer_onboarding_state.dart' show LegalStatus;
 
-/// 5-Step Farmer Onboarding & Verification Wizard
-/// Strictly adhering to Figma designs and cleanly decomposed:
-/// - Step 1/5: ფერმის ინფორმაცია & მისამართი (Name, Cover Photo, Region, City, Interactive Map)
-/// - Step 2/5: აირჩიე თქვენი სტატუსი (Centered large status cards)
-/// - Step 3/5: იურიდიული დეტალები & საბანკო ანგარიში (ID, Documents Upload, Bank & IBAN)
-/// - Step 4/5: მიწოდების პირობები & გრაფიკი (Self-Pickup, Scheduled Delivery & Day Toggle Buttons)
-/// - Step 5/5: დეტალები & წესები და პირობები (Summary review with spacious "შეცვლა" + 2 Checkboxes)
+/// 4-Step Farmer Onboarding Wizard
+/// Clean, high-conversion flow:
+/// - Step 1/4: ფერმის ინფორმაცია & მისამართი (Name, optional cover photo, region, city, map)
+/// - Step 2/4: აირჩიე თქვენი სტატუსი (Centered large status cards)
+/// - Step 3/4: მიწოდების პირობები & გრაფიკი (Self-Pickup, Scheduled Delivery & Day Toggle Buttons)
+/// - Step 4/4: დეტალები & წესები და პირობები (Summary review + agreements)
 class FarmerOnboardingScreen extends ConsumerStatefulWidget {
   const FarmerOnboardingScreen({super.key});
 
@@ -35,23 +33,17 @@ class FarmerOnboardingScreen extends ConsumerStatefulWidget {
 
 class _FarmerOnboardingScreenState extends ConsumerState<FarmerOnboardingScreen> {
   final _farmNameController = TextEditingController();
-  final _idNumberController = TextEditingController();
-  final _ibanController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     final st = ref.read(farmerOnboardingProvider);
     _farmNameController.text = st.farmName;
-    _idNumberController.text = st.idNumber;
-    _ibanController.text = st.iban;
   }
 
   @override
   void dispose() {
     _farmNameController.dispose();
-    _idNumberController.dispose();
-    _ibanController.dispose();
     super.dispose();
   }
 
@@ -67,22 +59,12 @@ class _FarmerOnboardingScreenState extends ConsumerState<FarmerOnboardingScreen>
       case 2:
         return null;
       case 3:
-        return FarmerOnboardingValidator.validateStep3(
-          status: state.selectedStatus,
-          idNumber: state.idNumber,
-          uploadedSelfie: state.uploadedSelfie,
-          uploadedIdFront: state.uploadedIdFront,
-          uploadedIdBack: state.uploadedIdBack,
-          bank: state.selectedBank,
-          iban: state.iban,
-        );
-      case 4:
         return FarmerOnboardingValidator.validateStep4(
           isPickupEnabled: state.isPickupEnabled,
           isDeliveryEnabled: state.isDeliveryEnabled,
           deliveryDays: state.deliveryDays,
         );
-      case 5:
+      case 4:
         return FarmerOnboardingValidator.validateStep5(
           agreeTerms: state.agreeTerms,
           agreeQuality: state.agreeQuality,
@@ -104,7 +86,7 @@ class _FarmerOnboardingScreenState extends ConsumerState<FarmerOnboardingScreen>
       return;
     }
 
-    if (currentStep < 5) {
+    if (currentStep < 4) {
       final nextStep = currentStep + 1;
       notifier.setStep(nextStep);
     } else {
@@ -136,16 +118,10 @@ class _FarmerOnboardingScreenState extends ConsumerState<FarmerOnboardingScreen>
       case 2:
         return const Step2StatusSelectionWidget();
       case 3:
-        return Step3LegalAndBankWidget(
-          idNumberController: _idNumberController,
-          ibanController: _ibanController,
-        );
-      case 4:
         return const Step4DeliveryWidget();
-      case 5:
+      case 4:
         return Step4ReviewAndTermsWidget(
           farmNameController: _farmNameController,
-          ibanController: _ibanController,
         );
       default:
         return const SizedBox.shrink();
@@ -157,11 +133,11 @@ class _FarmerOnboardingScreenState extends ConsumerState<FarmerOnboardingScreen>
       children: [
         Expanded(
           child: Row(
-            children: List.generate(5, (index) {
+            children: List.generate(4, (index) {
               final isCompletedOrActive = index < currentStep;
               return Expanded(
                 child: Padding(
-                  padding: EdgeInsets.only(right: index < 4 ? 5.0 : 0.0),
+                  padding: EdgeInsets.only(right: index < 3 ? 5.0 : 0.0),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 320),
                     curve: Curves.easeInOutCubic,
@@ -188,7 +164,7 @@ class _FarmerOnboardingScreenState extends ConsumerState<FarmerOnboardingScreen>
           child: AnimatedSwitcher(
             duration: const Duration(milliseconds: 250),
             child: Text(
-              '$currentStep/5',
+              '$currentStep/4',
               key: ValueKey<int>(currentStep),
               style: const TextStyle(
                 color: AppColors.primary,
@@ -270,7 +246,7 @@ class _FarmerOnboardingScreenState extends ConsumerState<FarmerOnboardingScreen>
                 ),
               ),
               child: PrimaryButton(
-                text: currentStep == 5 ? 'დადასტურება' : 'შემდეგი',
+                text: currentStep == 4 ? 'დადასტურება' : 'შემდეგი',
                 height: 52,
                 borderRadius: BorderRadius.circular(12),
                 backgroundColor: canProceed

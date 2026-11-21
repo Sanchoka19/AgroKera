@@ -8,6 +8,7 @@ import 'package:agrokera/core/constants/app_categories.dart';
 import 'package:agrokera/core/theme/app_colors.dart';
 import 'package:agrokera/core/widgets/app_confirmation_bottom_sheet.dart';
 import 'package:agrokera/core/widgets/app_toast.dart';
+import 'package:agrokera/core/widgets/kyc_required_bottom_sheet.dart';
 import '../../../marketplace/data/models/product_model.dart';
 import '../providers/farmer_inventory_provider.dart';
 import '../providers/product_form_validator.dart';
@@ -358,8 +359,16 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
       },
     );
 
-    if (confirmed) {
-      _handleSave();
+    if (confirmed && mounted) {
+      if (widget.existing == null) {
+        requireKyc(
+          context,
+          ref: ref,
+          onVerified: _handleSave,
+        );
+      } else {
+        _handleSave();
+      }
     }
   }
 

@@ -40,7 +40,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Step 1: Farm Info
-    expect(find.text('1/5'), findsOneWidget);
+    expect(find.text('1/4'), findsOneWidget);
     expect(find.text('ფერმის ინფორმაცია'), findsOneWidget);
     expect(find.text('მისამართი'), findsOneWidget);
     expect(find.text('შემდეგი'), findsOneWidget);
@@ -48,8 +48,8 @@ void main() {
     // Blocked if required fields are empty
     await tester.tap(find.text('შემდეგი'));
     await tester.pump();
-    expect(find.text('1/5'), findsOneWidget);
-    expect(find.text('2/5'), findsNothing);
+    expect(find.text('1/4'), findsOneWidget);
+    expect(find.text('2/4'), findsNothing);
 
     // Populate required fields for Step 1
     container.read(farmerOnboardingProvider.notifier).setFarmName('მწვანე ველი');
@@ -64,39 +64,17 @@ void main() {
     await tester.pumpAndSettle();
 
     // Step 2: Choose Status
-    expect(find.text('2/5'), findsOneWidget);
+    expect(find.text('2/4'), findsOneWidget);
     expect(find.text('ფიზიკური პირი'), findsOneWidget);
     expect(find.text('ინდ. მეწარმე'), findsOneWidget);
     expect(find.text('შპს'), findsOneWidget);
 
-    // Tap Next -> Step 3
+    // Tap Next -> Step 3: Delivery Options
     await tester.tap(find.text('შემდეგი'));
     await tester.pumpAndSettle();
 
-    // Step 3: Legal & Bank
-    expect(find.text('3/5'), findsOneWidget);
-    expect(find.text('საბანკო ანგარიში'), findsOneWidget);
-
-    // Blocked if required fields on Step 3 are empty
-    await tester.tap(find.text('შემდეგი'));
-    await tester.pump();
-    expect(find.text('3/5'), findsOneWidget);
-    expect(find.text('4/5'), findsNothing);
-
-    // Populate required fields for Step 3
-    container.read(farmerOnboardingProvider.notifier).setIdNumber('61001012345');
-    container.read(farmerOnboardingProvider.notifier).setSelfie('selfie.jpg');
-    container.read(farmerOnboardingProvider.notifier).setIdFront('front.jpg');
-    container.read(farmerOnboardingProvider.notifier).setIdBack('back.jpg');
-    container.read(farmerOnboardingProvider.notifier).setIban('GE29TB7777777777777777');
-    await tester.pumpAndSettle();
-
-    // Tap Next -> Step 4
-    await tester.tap(find.text('შემდეგი'));
-    await tester.pumpAndSettle();
-
-    // Step 4: Delivery Options
-    expect(find.text('4/5'), findsOneWidget);
+    // Step 3: Delivery Options
+    expect(find.text('3/4'), findsOneWidget);
     expect(find.text('მიწოდების პირობები'), findsOneWidget);
     expect(find.text('თვითგატანა მეურნეობიდან'), findsOneWidget);
     expect(find.text('საბაზისო პირობა • მუდმივად აქტიური'), findsOneWidget);
@@ -129,13 +107,13 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('18 ₾'), findsOneWidget);
 
-    // Tap Next -> Step 5
+    // Tap Next -> Step 4
     await tester.ensureVisible(find.text('შემდეგი'));
     await tester.tap(find.text('შემდეგი'));
     await tester.pumpAndSettle();
 
-    // Step 5: Review & Terms
-    expect(find.text('5/5'), findsOneWidget);
+    // Step 4: Review & Terms
+    expect(find.text('4/4'), findsOneWidget);
     expect(find.text('დეტალები'), findsOneWidget);
     expect(find.text('მისამართი:'), findsOneWidget);
     expect(find.text('წესები და პირობები'), findsOneWidget);
@@ -144,7 +122,7 @@ void main() {
     // Verify next is disabled/blocked while checkboxes are not checked
     await tester.tap(find.text('დადასტურება'));
     await tester.pump();
-    expect(find.text('5/5'), findsOneWidget);
+    expect(find.text('4/4'), findsOneWidget);
 
     // Check both terms and conditions checkboxes
     await tester.ensureVisible(find.byType(OnboardingCustomCheckbox).first);
@@ -153,11 +131,11 @@ void main() {
     await tester.tap(find.byType(OnboardingCustomCheckbox).last);
     await tester.pumpAndSettle();
 
-    // Tap Confirm -> completes onboarding directly without requiring second OTP
+    // Tap Confirm -> completes onboarding directly
     await tester.tap(find.text('დადასტურება'));
     await tester.pumpAndSettle();
 
-    expect(find.text('5/5'), findsNothing);
+    expect(find.text('4/4'), findsNothing);
 
     await tester.pumpWidget(const SizedBox.shrink());
   });

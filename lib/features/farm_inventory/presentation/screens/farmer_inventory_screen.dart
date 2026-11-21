@@ -9,6 +9,7 @@ import '../../../../core/widgets/app_confirmation_bottom_sheet.dart';
 import '../../../../core/widgets/app_filter_tab.dart';
 import '../../../../core/widgets/app_header.dart';
 import '../../../../core/widgets/app_toast.dart';
+import '../../../../core/widgets/kyc_required_bottom_sheet.dart';
 import '../../../marketplace/data/models/product_model.dart';
 import '../providers/farmer_inventory_provider.dart';
 import '../widgets/inventory_product_card.dart';
@@ -33,11 +34,25 @@ class FarmerInventoryScreen extends ConsumerStatefulWidget {
 
 class _FarmerInventoryScreenState extends ConsumerState<FarmerInventoryScreen> {
   void _openAddEditProduct([ProductModel? existing]) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => AddEditProductScreen(existing: existing),
-      ),
-    );
+    if (existing == null) {
+      requireKyc(
+        context,
+        ref: ref,
+        onVerified: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => const AddEditProductScreen(),
+            ),
+          );
+        },
+      );
+    } else {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => AddEditProductScreen(existing: existing),
+        ),
+      );
+    }
   }
 
   @override

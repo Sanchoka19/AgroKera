@@ -27,6 +27,9 @@ import '../widgets/profile_settings_card.dart';
 import '../providers/user_address_provider.dart';
 import 'farm_address_screen.dart';
 import 'my_addresses_screen.dart';
+import '../providers/farmer_payout_provider.dart';
+import '../../../../core/widgets/bank_account_required_bottom_sheet.dart';
+import '../../../../core/widgets/kyc_required_bottom_sheet.dart';
 import '../../../marketplace/presentation/providers/marketplace_provider.dart';
 import 'farmer_delivery_settings_screen.dart';
 import 'help_center_screen.dart';
@@ -147,6 +150,33 @@ class _GuestProfileScreenState extends ConsumerState<GuestProfileScreen> {
                   ),
                 ),
               );
+            },
+          ),
+          const ProfileRowDivider(),
+          ProfileRowItem(
+            icon: LucideIcons.creditCard,
+            title: 'საბანკო რეკვიზიტები (IBAN)',
+            subtitle: () {
+              final payout = ref.watch(farmerPayoutProvider);
+              if (payout.hasPayoutAccount) {
+                final shortIban = payout.iban.length > 8
+                    ? '${payout.iban.substring(0, 4)}...${payout.iban.substring(payout.iban.length - 4)}'
+                    : payout.iban;
+                return '${payout.bank} • $shortIban';
+              }
+              return 'თანხის მიღების ანგარიში';
+            }(),
+            onTap: () {
+              BankAccountRequiredBottomSheet.show(context);
+            },
+          ),
+          const ProfileRowDivider(),
+          ProfileRowItem(
+            icon: LucideIcons.shieldCheck,
+            title: 'პირადობის ვერიფიკაცია',
+            subtitle: authState.kycStatus.label,
+            onTap: () {
+              KycRequiredBottomSheet.show(context);
             },
           ),
           const ProfileRowDivider(),

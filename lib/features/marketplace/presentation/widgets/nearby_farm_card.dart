@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../core/widgets/agrokera_verified_badge.dart';
 import '../../../profile/presentation/widgets/profile_image_view.dart';
 import '../../domain/services/farmer_proximity_service.dart';
 import '../screens/farmer_profile_screen.dart';
@@ -132,27 +132,10 @@ class NearbyFarmCard extends StatelessWidget {
 
                     // Top-Right: Verified Badge Pill
                     if (farmer.isVerified)
-                      Positioned(
+                      const Positioned(
                         top: 8,
                         right: 8,
-                        child: Container(
-                          padding: const EdgeInsets.all(4.5),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.12),
-                                blurRadius: 4,
-                              ),
-                            ],
-                          ),
-                          child: const Icon(
-                            LucideIcons.badgeCheck,
-                            size: 14,
-                            color: AppColors.primary,
-                          ),
-                        ),
+                        child: AgroKeraVerifiedBadge(size: 20),
                       ),
                   ],
                 ),

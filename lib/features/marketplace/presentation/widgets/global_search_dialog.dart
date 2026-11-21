@@ -9,6 +9,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../core/constants/app_assets.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../core/widgets/agrokera_verified_badge.dart';
 import '../../data/models/farmer_model.dart';
 import '../../data/models/product_model.dart';
 import '../providers/marketplace_provider.dart';
@@ -683,11 +684,7 @@ class _GlobalSearchDialogState extends ConsumerState<GlobalSearchDialog> {
                       ),
                       if (farmer.isVerified) ...[
                         const SizedBox(width: 4),
-                        const Icon(
-                          LucideIcons.badgeCheck,
-                          size: 15,
-                          color: AppColors.primary,
-                        ),
+                        const AgroKeraVerifiedBadge(size: 15),
                       ],
                     ],
                   ),

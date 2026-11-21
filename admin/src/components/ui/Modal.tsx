@@ -53,9 +53,9 @@ export const Modal: React.FC<ModalProps> = ({
 
       {/* Modal Dialog */}
       <div
-        className={`relative z-10 w-full ${maxWidthStyles[maxWidth]} rounded-2xl bg-white shadow-2xl border border-slate-100 overflow-hidden transform transition-all animate-in fade-in-0 zoom-in-95 duration-150`}
+        className={`relative z-10 w-full ${maxWidthStyles[maxWidth]} max-h-[92vh] flex flex-col rounded-2xl bg-white shadow-2xl border border-slate-100 overflow-hidden transform transition-all animate-in fade-in-0 zoom-in-95 duration-150`}
       >
-        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+        <div className="flex items-center justify-between border-b border-slate-100 px-4 sm:px-6 py-3.5 sm:py-4 shrink-0">
           <div>
             <h3 className="text-base font-bold text-slate-900">{title}</h3>
             {description ? (
@@ -69,7 +69,7 @@ export const Modal: React.FC<ModalProps> = ({
             <X className="w-5 h-5" />
           </button>
         </div>
-        <div className="px-6 py-5 max-h-[85vh] overflow-y-auto">{children}</div>
+        <div className="px-4 sm:px-6 py-4 sm:py-5 overflow-y-auto flex-1">{children}</div>
       </div>
     </div>
   );

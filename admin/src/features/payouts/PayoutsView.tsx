@@ -60,7 +60,7 @@ export const PayoutsView: React.FC = () => {
       </div>
 
       {/* Action Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
         <div>
           <h3 className="text-base font-bold text-slate-900">
             ფერმერების ანგარიშსწორების რეესტრი
@@ -70,7 +70,7 @@ export const PayoutsView: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5">
           <Button
             variant="outline"
             size="sm"

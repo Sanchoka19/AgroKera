@@ -42,8 +42,8 @@ export const FarmersView: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Search and Filters Bar */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
-        <div className="flex flex-1 items-center gap-3 max-w-lg">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+        <div className="flex flex-col sm:flex-row flex-1 items-stretch sm:items-center gap-3 max-w-xl">
           <SearchInput
             placeholder="ძიება სახელით, ფერმით ან ტელეფონით..."
             value={searchQuery}
@@ -68,6 +68,7 @@ export const FarmersView: React.FC = () => {
           size="sm"
           onClick={refresh}
           isLoading={isLoading}
+          className="self-end sm:self-auto"
         >
           <RefreshCw className="w-3.5 h-3.5" />
           განახლება
